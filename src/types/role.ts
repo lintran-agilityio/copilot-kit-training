@@ -3,3 +3,8 @@ export enum Role {
   ASSISTANT = "assistant",
   SYSTEM = "system",
 }
+
+export enum Status {
+  InProgress = "inProgress",
+  Complete = "complete",
+}

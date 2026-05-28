@@ -34,12 +34,12 @@ const TodoItem = ({
             todo.isCompleted ? "text-gray-500 line-through" : "text-gray-900"
           }`}
         >
-          {todo.assignedTo && (
+          {typeof todo.assignedTo === "string" && todo.assignedTo && (
             <span className="border rounded-md text-xs py-[2px] px-1 mr-2  border-purple-700 uppercase bg-purple-400 text-black font-medium">
               {todo.assignedTo}
             </span>
           )}
-          {todo.text}
+          {typeof todo.text === "string" ? todo.text : String(todo.text ?? "")}
         </span>
       </div>
       <div>
