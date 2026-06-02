@@ -131,8 +131,6 @@ export const TodoTools = ({
           return <div>Creating task {args.items[0].text}</div>;
         case ToolCallStatus.Complete:
           return <div>Todo created: {result}</div>;
-        case ToolCallStatus.Errored:
-          return <div>Error creating todo: {result}</div>;
         default:
           return null;
       }

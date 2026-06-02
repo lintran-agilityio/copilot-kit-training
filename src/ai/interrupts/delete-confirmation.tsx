@@ -6,7 +6,7 @@ import { DeleteConfirmation } from "../../components/TodoList/DeleteConfirmation
 export const DeleteConfirmationInterrupt = () => {
   useInterrupt({
     agentId: TODO_AGENT_NAME,
-    enabled: ({ eventValue }) => eventValue.type === "delete_confirmation",
+    enabled: (event) => event.value.type === "delete_confirmation",
     render: ({ event, resolve }) => {
       return (
         <DeleteConfirmation
