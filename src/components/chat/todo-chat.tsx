@@ -84,8 +84,6 @@ const TodoChatContent = () => {
   const { suggestions } = useTodoSuggestions();
 console.log('threads=====>', threads);
   const handleSend = async (message: string) => {
-    setSelectedThreadId(randomUUID());
-
     const currentThread = threads.find((thread) => thread.id === activeThreadId);
 
     if (!currentThread?.name) {
