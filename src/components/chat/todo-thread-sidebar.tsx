@@ -2,6 +2,9 @@ type TodoThreadSidebarProps = {
   threads: { id: string; name?: string | null }[];
   activeThreadId: string;
   isLoading: boolean;
+  hasMore: boolean;
+  isFetchingMore: boolean;
+  onFetchMore: () => void;
   onSelect: (threadId: string) => void;
   // onCreate: () => void;
   onRename: (threadId: string, name: string) => void;
@@ -13,6 +16,9 @@ export const TodoThreadSidebar = ({
   activeThreadId,
   isLoading,
   onSelect,
+  hasMore,
+  isFetchingMore,
+  onFetchMore,
   // onCreate,
   onRename,
   onArchive,
@@ -64,6 +70,15 @@ export const TodoThreadSidebar = ({
               </div>
             </div>
           ))
+        )}
+        {hasMore && (
+          <button
+            disabled={isFetchingMore}
+            className="border rounded px-3 py-1 text-sm hover:bg-gray-50 bg-blue-50"
+            onClick={onFetchMore}
+          >
+            Load more
+          </button>
         )}
       </div>
     </aside>

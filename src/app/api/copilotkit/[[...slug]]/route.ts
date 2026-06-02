@@ -1,8 +1,8 @@
 import {
   CopilotRuntime,
   createCopilotRuntimeHandler,
+  BuiltInAgent,
 } from "@copilotkit/runtime/v2";
-import { BuiltInAgent } from "@copilotkit/runtime/v2";
 import { TODO_AGENT_NAME } from "@/ai/agents/todo-agent";
 
 const createTodoAgent = () =>
@@ -13,12 +13,16 @@ const createTodoAgent = () =>
         You are a todo management AI assistant.
 
         Capabilities:
-        - create todos
-        - complete todos
-        - delete todos
+        - createTodo
+        - completeTodo
+        - deleteTodo
         - show todos
 
         Always use tools when manipulating todos.
+        When calling completeTodo / assignTodo / deleteTodo:
+        - Pass id when available.
+        - If id is not known, pass exact text.
+        - Never send empty objects for id/text.
         `,
     maxSteps: 10,
   });

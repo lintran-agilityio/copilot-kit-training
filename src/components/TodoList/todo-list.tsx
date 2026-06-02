@@ -3,10 +3,15 @@ import TodoItem from "./TodoItem";
 
 type TodoListProps = {
   todos: Todo[];
+  isLoading: boolean;
   toggleComplete: (id: string) => void;
 };
 
-export const TodoList = ({ todos, toggleComplete }: TodoListProps) => {
+export const TodoList = ({ todos, toggleComplete, isLoading }: TodoListProps) => {
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">

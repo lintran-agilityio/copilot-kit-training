@@ -4,8 +4,11 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   randomUUID,
   useAgent,
+  useAgentContext,
   UseAgentUpdate,
+  useConfigureSuggestions,
   useCopilotKit,
+  useSuggestions,
   useThreads,
 } from "@copilotkit/react-core/v2";
 
@@ -14,7 +17,6 @@ import { MessageList } from "./message-list";
 import { SuggestionList } from "./suggestion-list";
 import { Role, Todo } from "@/types";
 import { TODO_AGENT_NAME } from "@/ai/agents/todo-agent";
-import { useTodoSuggestions } from "@/ai/suggestions/todo-suggestion";
 import { TodoTools } from "@/ai/tools";
 import { DeleteConfirmationInterrupt } from "@/ai/interrupts/delete-confirmation";
 import { TodoList } from "../TodoList/todo-list";
@@ -29,13 +31,87 @@ function useIsClient() {
 }
 
 const TodoChatContent = () => {
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([
+    { id: "1", text: "New todo item 1", isCompleted: false },
+  ]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [pendingThreadNames, setPendingThreadNames] = useState<
+    Record<string, string>
+  >({});
   const [defaultThreadId] = useState(() => randomUUID());
   const { copilotkit } = useCopilotKit();
 
-  const { threads, isLoading: isThreadsLoading, renameThread } = useThreads({
+  // Suggestions
+  useConfigureSuggestions({
+    consumerAgentId: TODO_AGENT_NAME,
+    providerAgentId: "default",
+    available: "always",
+    // available: todos.length ? "after-first-message" : "before-first-message",
+    instructions: `
+      You are generating smart todo suggestions.
+      Current todos: ${todos.map((todo) => `- ${todo.text} (todo.isCompleted ? 'completed' : 'active')`).join("\n")}
+
+      Rules:
+      - Generate actionable suggestions
+      - Keep suggestions short
+      - Focus on todo productivity
+      - Avoid generic chat prompts
+      - Suggest completing, assigning, organizing, or clearing todos
+      - If there are completed todos, suggest clearing them
+      - If the list is empty, suggest creating starter todos
+    `,
+    minSuggestions: 2,
+    maxSuggestions: 4,
+  });
+
+  const {
+    isLoading: isSuggestionsLoading,
+    suggestions,
+    reloadSuggestions,
+  } = useSuggestions({
     agentId: TODO_AGENT_NAME,
+  });
+
+  // Set context
+  useAgentContext({
+    description: "Todo context",
+    value: {
+      todos: todos.map((todo) => {
+        const serializedTodo: Record<string, string | boolean> = {
+          id: todo.id,
+          text: todo.text,
+          isCompleted: todo.isCompleted,
+        };
+    
+        if (todo.assignedTo !== undefined) {
+          serializedTodo.assignedTo = todo.assignedTo;
+        }
+    
+        return serializedTodo;
+      }),
+      totalTasks: todos.length,
+      completedTasks: todos.filter((todo) => todo.isCompleted).length,
+    }
+  });
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      reloadSuggestions();
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [todos, reloadSuggestions]);
+
+
+  const {
+    threads,
+    isLoading: isThreadsLoading,
+    hasMoreThreads,
+    isFetchingMoreThreads,
+    fetchMoreThreads,
+    renameThread,
+  } = useThreads({
+    agentId: TODO_AGENT_NAME,
+    limit: 20,
   });
 
   const activeThreadId =
@@ -81,21 +157,57 @@ const TodoChatContent = () => {
     };
   }, [agent, activeThreadId, copilotkit]);
 
-  const { suggestions } = useTodoSuggestions();
-console.log('threads=====>', threads);
-  const handleSend = async (message: string) => {
+  useEffect(() => {
+    const pendingName = pendingThreadNames[activeThreadId];
     const currentThread = threads.find((thread) => thread.id === activeThreadId);
 
-    if (!currentThread?.name) {
-      renameThread(activeThreadId, message.slice(0, 50));
+    if (!pendingName || !currentThread || currentThread.name) {
+      return;
     }
 
+    let cancelled = false;
+
+    const applyPendingThreadName = async () => {
+      try {
+        await renameThread(activeThreadId, pendingName);
+      } catch (error) {
+        if (!cancelled) {
+          console.warn("TodoChat: deferred renameThread failed", error);
+        }
+        return;
+      }
+
+      if (!cancelled) {
+        setPendingThreadNames((current) => {
+          if (!(activeThreadId in current)) {
+            return current;
+          }
+          const next = { ...current };
+          delete next[activeThreadId];
+          return next;
+        });
+      }
+    };
+
+    applyPendingThreadName();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeThreadId, pendingThreadNames, renameThread, threads]);
+
+  const handleSend = async (message: string) => {
+    const isNewThread = !threads.find((thread) => thread.id === activeThreadId);
     agent.addMessage({
       id: `user-${randomUUID()}`,
       role: Role.USER,
       content: message,
     });
     await copilotkit.runAgent({ agent });
+
+    // if (isNewThread) {
+    //   await renameThread(activeThreadId, message.slice(0, 50));
+    // }
   };
 
   const handleToggleComplete = (id: string) => {
@@ -116,17 +228,28 @@ console.log('threads=====>', threads);
           threads={threads}
           isLoading={isThreadsLoading}
           activeThreadId={activeThreadId}
+          hasMore={hasMoreThreads}
+          isFetchingMore={isFetchingMoreThreads}
+          onFetchMore={fetchMoreThreads}
           onSelect={setSelectedThreadId}
           onRename={handleRenameThread}
           onArchive={handleArchiveThread}
         />
       </div>
       <div className="flex-1 h-full gap-4 flex flex-col">
-        <TodoTools todos={todos} setTodos={setTodos} />
+        <TodoTools
+          todos={todos}
+          setTodos={setTodos}
+          onLoadingSuggestions={reloadSuggestions}
+        />
         <DeleteConfirmationInterrupt />
 
         <div className="space-y-4">
-          <TodoList todos={todos} toggleComplete={handleToggleComplete} />
+          <TodoList
+            todos={todos}
+            toggleComplete={handleToggleComplete}
+            isLoading={isSuggestionsLoading}
+          />
         </div>
 
         <div className="border rounded-xl p-4 flex flex-col gap-4">
@@ -138,15 +261,12 @@ console.log('threads=====>', threads);
             <MessageList messages={agent.messages} />
           </div>
 
-          <ChatInput
-            onSend={handleSend}
-            isLoading={agent.isRunning}
-          />
+          <ChatInput onSend={handleSend} isLoading={agent.isRunning} />
         </div>
       </div>
     </div>
   );
-}
+};
 
 export function TodoChat() {
   const isClient = useIsClient();
