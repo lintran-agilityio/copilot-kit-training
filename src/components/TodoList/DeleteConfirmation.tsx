@@ -7,7 +7,7 @@ interface DeleteConfirmationProps {
   onCancel: () => void;
 }
 
-const DeleteConfirmation = ({
+export const DeleteConfirmation = ({
   status,
   result,
   todoText,
@@ -65,5 +65,3 @@ const DeleteConfirmation = ({
     </div>
   )
 };
-
-export default DeleteConfirmation;

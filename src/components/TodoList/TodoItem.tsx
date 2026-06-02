@@ -3,23 +3,21 @@ import { Todo } from "@/types";
 interface TodoItemProps {
   todo: Todo;
   toggleComplete: (id: string) => void;
-  deleteTodo: (id: string) => void;
-  assignPerson: (id: string, person: string) => void;
-  hasBorder: boolean;
+  // deleteTodo: (id: string) => void;
+  // assignPerson: (id: string, person: string) => void;
 }
 
 const TodoItem = ({
   todo,
   toggleComplete,
-  deleteTodo,
-  assignPerson,
-  hasBorder,
+  // deleteTodo,
+  // assignPerson,
 }: TodoItemProps) => {
   return (
     <div
       className={
-        "flex items-center justify-between px-4 py-2 group" +
-        (hasBorder ? " border-b" : "")
+        "flex items-center justify-between px-4 py-2 group border rounded-md p-2" 
+        // (hasBorder ? " border-b" : "")
       }
     >
       <div className="flex items-center">
@@ -44,7 +42,7 @@ const TodoItem = ({
       </div>
       <div>
         <button
-          onClick={() => deleteTodo(todo.id)}
+          // onClick={() => deleteTodo(todo.id)}
           className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         >
           <svg
@@ -66,7 +64,7 @@ const TodoItem = ({
           onClick={() => {
             const name = prompt("Assign person to this task:");
             if (name) {
-              assignPerson(todo.id, name);
+              // assignPerson(todo.id, name);
             }
           }}
           className="ml-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200"

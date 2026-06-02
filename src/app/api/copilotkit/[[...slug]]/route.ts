@@ -1,23 +1,43 @@
-import { NextRequest } from "next/server";
 import {
   CopilotRuntime,
-  copilotRuntimeNextJSAppRouterEndpoint,
-} from "@copilotkit/runtime";
+  createCopilotRuntimeHandler,
+} from "@copilotkit/runtime/v2";
 import { BuiltInAgent } from "@copilotkit/runtime/v2";
+import { TODO_AGENT_NAME } from "@/ai/agents/todo-agent";
 
-const builtInAgent = new BuiltInAgent({ model: "openai/gpt-4o-mini" });
-const runtime = new CopilotRuntime({
-  agents: {
-    default: builtInAgent,
-    "support-agent": builtInAgent,
-  },
-});
+const createTodoAgent = () =>
+  new BuiltInAgent({
+    model: "openai/gpt-4o-mini",
+    apiKey: process.env.OPENAI_API_KEY,
+    prompt: `
+        You are a todo management AI assistant.
 
-export const POST = async (request: NextRequest) => {
-  const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
-    runtime,
-    endpoint: "/api/copilotkit",
+        Capabilities:
+        - create todos
+        - complete todos
+        - delete todos
+        - show todos
+
+        Always use tools when manipulating todos.
+        `,
+    maxSteps: 10,
   });
 
-  return handleRequest(request);
-};
+const runtime = new CopilotRuntime({
+  agents: {
+    [TODO_AGENT_NAME]: createTodoAgent(),
+    default: createTodoAgent(),
+  },
+  // generateThreadNames: true,
+});
+
+const handleRequest = createCopilotRuntimeHandler({
+  runtime,
+  basePath: "/api/copilotkit",
+  mode: "multi-route",
+});
+
+export const GET = handleRequest;
+export const POST = handleRequest;
+export const PATCH = handleRequest;
+export const OPTIONS = handleRequest;
