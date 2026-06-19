@@ -1,0 +1,42 @@
+{
+  "name": "agent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "mastra dev",
+    "build": "mastra build",
+    "start": "mastra start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "exports": {
+    ".": "./src/mastra/index.ts",
+    "./copilotkit": "./src/copilotkit.ts"
+  },
+  "dependencies": {
+    "@repo/constants": "workspace:*",
+    "@ag-ui/client": "^0.0.57",
+    "@ag-ui/core": "^0.0.57",
+    "@ag-ui/mastra": "^1.0.3",
+    "@mastra/core": "^1.43.0",
+    "@mastra/duckdb": "^1.4.2",
+    "@mastra/evals": "^1.3.0",
+    "@mastra/libsql": "^1.13.2",
+    "@mastra/loggers": "^1.1.2",
+    "@mastra/memory": "^1.20.5",
+    "@mastra/observability": "^1.14.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "mastra": "^1.14.0",
+    "typescript": "5.9.2"
+  }
+}
