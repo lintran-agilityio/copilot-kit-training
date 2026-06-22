@@ -3,11 +3,10 @@
 // Libs
 import { useState } from "react";
 
-import { GenerativeUIProvider } from "@/components/generative-ui/generative-ui-provider";
 import { MainLayout } from "@/components/layouts";
 import { PageHeader } from "@/components/common";
 import { ROOMS } from "@/data/rooms";
-import { ListRoom } from "@/components/rooms";
+import { ListRoom } from "@/features/room/components";
 import { ScheduleCalendar } from "@/components/calendar";
 
 const HomePage = () => {
@@ -15,7 +14,6 @@ const HomePage = () => {
 
   return (
     <>
-      <GenerativeUIProvider />
       <MainLayout>
         <PageHeader />
         <ScheduleCalendar

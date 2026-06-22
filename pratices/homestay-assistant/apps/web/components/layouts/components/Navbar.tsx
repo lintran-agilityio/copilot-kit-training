@@ -3,7 +3,7 @@
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils";
 
 import { Logo } from "../../common/Logo";
 

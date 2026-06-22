@@ -3,10 +3,9 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { addDays, startOfDay } from "@repo/utils/date";
+import { addDays, startOfDay, cn } from "@repo/utils";
 
 import { CalendarDateButton } from "@/components/calendar/CalendarDateButton";
-import { cn } from "@/lib/utils";
 
 type ScheduleCalendarProps = {
   initialDate?: Date;

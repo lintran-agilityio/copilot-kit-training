@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-
-import CopilotKitProviders from "./Providers/CopilotkitProviders";
 import { Geist, Playfair_Display } from "next/font/google";
-import { cn } from "@/lib/utils";
+
+import { cn } from "@/utils";
+import { BookingProvider } from "@/features/booking/stores/booking-provider";
+import CopilotKitProviders from "@/providers/copilot-provider";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -24,7 +25,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SPACES — Room Booking",
+  title: "HOMESTAY — Room Booking",
   description: "Find and book workspace rooms with AI assistance",
 };
 
@@ -42,7 +43,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} bg-[#s] text-white antialiased`}
       >
         <ClerkProvider>
-          <CopilotKitProviders>{children}</CopilotKitProviders>
+          <CopilotKitProviders>
+            <BookingProvider>
+              {children}
+            </BookingProvider>
+          </CopilotKitProviders>
         </ClerkProvider>
       </body>
     </html>

@@ -9,6 +9,10 @@
   "scripts": {
     "check-types": "tsc --noEmit"
   },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
+  },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "typescript": "5.9.2"

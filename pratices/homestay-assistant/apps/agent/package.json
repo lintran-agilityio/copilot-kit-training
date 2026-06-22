@@ -21,7 +21,6 @@
     "./copilotkit": "./src/copilotkit.ts"
   },
   "dependencies": {
-    "@repo/constants": "workspace:*",
     "@ag-ui/client": "^0.0.57",
     "@ag-ui/core": "^0.0.57",
     "@ag-ui/mastra": "^1.0.3",
@@ -32,6 +31,7 @@
     "@mastra/loggers": "^1.1.2",
     "@mastra/memory": "^1.20.5",
     "@mastra/observability": "^1.14.3",
+    "@repo/constants": "workspace:*",
     "zod": "^3.25.76"
   },
   "devDependencies": {

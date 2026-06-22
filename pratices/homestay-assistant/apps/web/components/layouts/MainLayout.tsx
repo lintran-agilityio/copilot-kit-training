@@ -2,12 +2,12 @@
 import { useState } from "react";
 
 // Components
-import { ChatSidebar } from "@/components/chat/ChatSidebar";
+import { ChatSidebar } from "@/features/chat/components/sidebar/ChatSidebar";
 import { Navbar } from "@/components/layouts/components/Navbar";
-import { cn } from "@/lib/utils";
-import { ThreadSidebar } from "@/modules/chat/components/ThreadSidebar";
+import { cn } from "@/utils";
 import { AGENT_KEYS } from "@repo/constants";
-import { ChatProvider } from "@/modules/chat/provider";
+import { ChatProvider } from "@/features/chat/providers/chat-provider";
+import { ThreadSidebar } from "@/features/chat/components/thread/ThreadSidebar";
 
 type MainLayoutProps = {
   children: React.ReactNode;
