@@ -67,9 +67,7 @@ export const ScheduleCalendar = ({
             <CalendarDateButton
               key={date.toISOString()}
               date={date}
-              isSelected={
-                date.toDateString() === selectedDate.toDateString()
-              }
+              isSelected={date.toDateString() === selectedDate.toDateString()}
               onSelect={handleSelect}
             />
           ))}

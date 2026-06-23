@@ -1,6 +1,6 @@
 import { Bot, Droplets } from "lucide-react";
 
-import { cn } from "@/utils";
+import { cn } from "@repo/utils";;
 
 type AvatarProps = {
   className?: string;

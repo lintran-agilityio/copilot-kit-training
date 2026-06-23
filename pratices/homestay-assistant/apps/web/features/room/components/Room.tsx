@@ -1,7 +1,7 @@
 import { RoomDetails } from "@/features/room/components/RoomDetails";
 import { RoomImage } from "@/features/room/components/RoomImage";
 import type { Room as RoomType } from "@/features/room/types/room";
-import { cn } from "@/utils";
+import { cn } from "@repo/utils";;
 
 export type RoomCardProps = RoomType & {
   compact?: boolean;

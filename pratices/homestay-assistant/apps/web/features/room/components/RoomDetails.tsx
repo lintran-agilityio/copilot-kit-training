@@ -2,7 +2,7 @@ import { Users } from "lucide-react";
 
 import { AmenitiesRoom } from "./AmenitiesRoom";
 import type { Amenity } from "@/features/room/types/room";
-import { cn } from "@/utils";
+import { cn } from "@repo/utils";
 
 type RoomDetailsProps = {
   name: string;

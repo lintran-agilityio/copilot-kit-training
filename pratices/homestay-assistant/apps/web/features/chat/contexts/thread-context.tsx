@@ -1,9 +1,18 @@
 "use client";
 
-import { type UseThreadsResult } from "@copilotkit/react-core/v2";
+import type { UseThreadsResult } from "@copilotkit/react-core/v2";
+import type { Thread } from "@copilotkit/react-core/v2";
 import { createContext, use } from "react";
 
-export const ChatThreadContext = createContext<UseThreadsResult | null>(null);
+export type ChatThreadContextValue = UseThreadsResult & {
+  agentId: string;
+  createThread: (title?: string) => Promise<Thread>;
+  refetchThreads: () => Promise<void>;
+};
+
+export const ChatThreadContext = createContext<ChatThreadContextValue | null>(
+  null,
+);
 
 export const useThreadContext = () => {
   const context = use(ChatThreadContext);

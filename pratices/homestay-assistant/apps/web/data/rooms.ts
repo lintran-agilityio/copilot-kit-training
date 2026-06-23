@@ -1,4 +1,4 @@
-import type { Room } from "@/types/room";
+import type { Room } from "@/features/room/types/room";
 
 export const ROOMS: Room[] = [
   {

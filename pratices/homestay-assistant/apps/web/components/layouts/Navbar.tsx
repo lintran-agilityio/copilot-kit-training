@@ -3,16 +3,15 @@
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 
-import { cn } from "@/utils";
-
-import { Logo } from "../../common/Logo";
+import { cn } from "@repo/utils";import { Logo } from "../common";
+;
 
 type NavbarProps = {
   activeTab?: "book" | "bookings";
   className?: string;
 };
 
-export function Navbar({ activeTab = "book", className }: NavbarProps) {
+export const Navbar = ({ activeTab = "book", className }: NavbarProps) => {
   const { user } = useUser();
   const initials =
     user?.firstName && user?.lastName

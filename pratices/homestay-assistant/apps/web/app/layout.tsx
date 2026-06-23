@@ -4,7 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Playfair_Display } from "next/font/google";
 
-import { cn } from "@/utils";
+import { cn } from "@repo/utils";;
 import { BookingProvider } from "@/features/booking/stores/booking-provider";
 import CopilotKitProviders from "@/providers/copilot-provider";
 

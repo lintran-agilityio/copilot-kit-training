@@ -1,14 +1,24 @@
+import { auth } from "@clerk/nextjs/server";
+
 import {
   CopilotRuntime,
   createCopilotRuntimeHandler,
 } from "@copilotkit/runtime/v2";
-import { copilotkitAgents } from "agent/copilotkit";
-
-const runtime = new CopilotRuntime({
-  agents: copilotkitAgents,
-});
+import { getCopilotkitAgents } from "agent/copilotkit";
 
 const basePath = "/api/copilotkit";
+
+const runtime = new CopilotRuntime({
+  agents: async () => {
+    const { userId } = await auth();
+
+    if (!userId) {
+      throw new Response("Unauthorized", { status: 401 });
+    }
+
+    return getCopilotkitAgents(userId);
+  },
+});
 
 const multiRouteHandler = createCopilotRuntimeHandler({
   runtime,
@@ -36,4 +46,3 @@ export const POST = handler;
 export const PATCH = handler;
 export const DELETE = handler;
 export const OPTIONS = handler;
-

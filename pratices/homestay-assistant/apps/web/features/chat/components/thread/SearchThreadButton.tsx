@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Search, X } from "lucide-react";
 
-import { cn } from "@/utils";
+import { cn } from "@repo/utils";;
 
 type SearchThreadButtonProps = {
   value: string;
