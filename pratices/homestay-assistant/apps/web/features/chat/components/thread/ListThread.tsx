@@ -2,13 +2,12 @@
 
 import { useMemo } from "react";
 
-import { Loading, ErrorMessages } from "@repo/components";
 import { ThreadItem } from "./ThreadItem";
-import { useThreadContext } from "@/features/chat/contexts/thread-context";
+import { Thread } from "@copilotkit/react-core/v2";
 
 type ListThreadProps = {
-  onItemSelect: () => void;
   searchQuery?: string;
+  threads: Thread[];
 };
 
 const matchesSearch = (name: string | null, query: string) => {
@@ -20,42 +19,31 @@ const matchesSearch = (name: string | null, query: string) => {
   return (name ?? "Untitled").toLowerCase().includes(normalizedQuery);
 };
 
-export const ListThread = ({ onItemSelect, searchQuery = "" }: ListThreadProps) => {
-  const {
-    isLoading,
-    error,
-    threads,
-  } = useThreadContext();
-
+export const ListThread = ({
+  threads,
+  searchQuery = "",
+}: ListThreadProps) => {
   const filteredThreads = useMemo(
     () => threads.filter((thread) => matchesSearch(thread.name, searchQuery)),
-    [threads, searchQuery],
+    [threads, searchQuery]
   );
-
-  if (isLoading) {
-    return <Loading />;
-  }
-
-  if (error) {
-    return <ErrorMessages error={error} />;
-  }
 
   return (
     <div className="flex flex-col gap-2 p-3">
-      <h1 className="text-sm font-medium text-zinc-300">List Thread</h1>
-      <div className="flex flex-col gap-2">
-        {filteredThreads.length === 0 ? (
-          <p className="text-sm text-zinc-500">
-            {searchQuery.trim()
-              ? "No conversations match your search."
-              : "No conversations yet."}
-          </p>
-        ) : (
-          filteredThreads.map((thread) => (
-            <ThreadItem key={thread.id} thread={thread} onItemSelect={onItemSelect} />
-          ))
-        )}
-      </div>
+      {filteredThreads.length === 0 ? (
+        <p className="text-sm text-zinc-500">
+          {searchQuery.trim()
+            ? "No conversations match your search."
+            : "No conversations yet."}
+        </p>
+      ) : (
+        filteredThreads.map((thread) => (
+          <ThreadItem
+            key={thread.id}
+            thread={thread}
+          />
+        ))
+      )}
     </div>
   );
 };

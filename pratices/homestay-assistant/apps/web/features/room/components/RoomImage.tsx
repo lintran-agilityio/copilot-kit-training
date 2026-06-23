@@ -1,4 +1,4 @@
-import { cn } from "@/utils";
+import { cn } from "@repo/utils";;
 
 type RoomImageProps = {
   imageUrl: string;

@@ -11,7 +11,7 @@ import {
 
 // Types
 import type { Amenity } from "@/features/room/types/room";
-import { cn } from "@/utils";
+import { cn } from "@repo/utils";;
 
 const AMENITY_ICONS: Record<Amenity, LucideIcon> = {
   monitor: Monitor,

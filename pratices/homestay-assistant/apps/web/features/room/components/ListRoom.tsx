@@ -1,6 +1,6 @@
 import { Room } from "@/features/room/components/Room";
 import type { Room as RoomType } from "@/features/room/types/room";
-import { cn } from "@/utils";
+import { cn } from "@repo/utils";;
 
 type ListRoomProps = {
   rooms: RoomType[];

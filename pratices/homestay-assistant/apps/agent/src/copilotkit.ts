@@ -1,17 +1,13 @@
 import { MastraAgent } from "@ag-ui/mastra";
-import { Mastra } from "@mastra/core/mastra";
-
 import { AGENT_KEYS } from "@repo/constants";
+import { getThreadResourceId } from "@repo/utils";
 
-import { homestayAgent } from "./mastra/agents/homestay-agent";
+import { runtimeMastra } from "./mastra/runtime";
 
-export const mastra = new Mastra({
-  agents: {
-    [AGENT_KEYS.HOMESTAY_ASSISTANT]: homestayAgent,
-  },
-});
+export { runtimeMastra as mastra } from "./mastra/runtime";
 
-export const copilotkitAgents = MastraAgent.getLocalAgents({
-  mastra,
-  resourceId: "default",
-});
+export const getCopilotkitAgents = (userId: string) =>
+  MastraAgent.getLocalAgents({
+    mastra: runtimeMastra,
+    resourceId: getThreadResourceId(userId, AGENT_KEYS.HOMESTAY_ASSISTANT),
+  });

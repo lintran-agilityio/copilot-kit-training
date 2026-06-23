@@ -1,4 +1,3 @@
-
 import { MastraAgent } from '@ag-ui/mastra';
 import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
@@ -10,6 +9,7 @@ import { AGENT_KEYS } from '@repo/constants';
 import { weatherWorkflow } from './workflows/weather-workflow';
 import { weatherAgent } from './agents/weather-agent';
 import { homestayAgent } from './agents/homestay-agent';
+import { mastraDbPath } from './runtime';
 
 export const mastra = new Mastra({
   workflows: { weatherWorkflow },
@@ -18,7 +18,7 @@ export const mastra = new Mastra({
     id: 'composite-storage',
     default: new LibSQLStore({
       id: "mastra-storage",
-      url: "file:./mastra.db",
+      url: `file:${mastraDbPath}`,
     }),
     domains: {
       observability: await new DuckDBStore().getStore('observability'),

@@ -22,5 +22,9 @@ export const homestayAgent = new Agent({
   `,
   model: 'openai/gpt-5-mini',
   tools: {},
-  memory: new Memory(),
+  memory: new Memory({
+    options: {
+      generateTitle: true,
+    },
+  }),
 });

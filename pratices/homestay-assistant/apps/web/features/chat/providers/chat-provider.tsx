@@ -1,16 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useThreads, type UseThreadsResult } from "@copilotkit/react-core/v2";
+import type { UseThreadsResult } from "@copilotkit/react-core/v2";
 
+import { useInitializeActiveThread, useMastraThreads } from "../hooks";
 import { ChatThreadContext } from "../contexts/thread-context";
+import { useChatStoreHasHydrated } from "../stores/chat-store";
 
 type ChatProviderProps = {
   children: React.ReactNode;
   agentId: string;
 };
 
-const INITIAL_THREADS: UseThreadsResult = {
+const INITIAL_THREADS: UseThreadsResult & {
+  agentId: string;
+  createThread: (title?: string) => Promise<never>;
+  refetchThreads: () => Promise<void>;
+} = {
+  agentId: "",
   threads: [],
   isLoading: true,
   error: null,
@@ -20,26 +26,37 @@ const INITIAL_THREADS: UseThreadsResult = {
   renameThread: async () => {},
   archiveThread: async () => {},
   deleteThread: async () => {},
+  createThread: async () => {
+    throw new Error("Chat provider is not mounted");
+  },
+  refetchThreads: async () => {},
 };
 
 const ChatProviderContent = ({ children, agentId }: ChatProviderProps) => {
-  const threads = useThreads({ agentId });
+  const initThreads = useMastraThreads({ agentId });
 
-  return <ChatThreadContext value={threads}>{children}</ChatThreadContext>;
+  useInitializeActiveThread({
+    agentId,
+    threads: initThreads.threads,
+    isLoading: initThreads.isLoading,
+    error: initThreads.error,
+  });
+
+  return <ChatThreadContext value={initThreads}>{children}</ChatThreadContext>;
 };
 
 export const ChatProvider = ({ children, agentId }: ChatProviderProps) => {
-  const [mounted, setMounted] = useState(false);
+  const hasHydrated = useChatStoreHasHydrated();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
+  if (!hasHydrated) {
     return (
-      <ChatThreadContext value={INITIAL_THREADS}>{children}</ChatThreadContext>
+      <ChatThreadContext value={{ ...INITIAL_THREADS, agentId }}>
+        {children}
+      </ChatThreadContext>
     );
   }
 
-  return <ChatProviderContent agentId={agentId}>{children}</ChatProviderContent>;
+  return (
+    <ChatProviderContent agentId={agentId}>{children}</ChatProviderContent>
+  );
 };

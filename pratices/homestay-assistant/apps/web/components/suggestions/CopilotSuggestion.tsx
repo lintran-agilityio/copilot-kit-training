@@ -7,7 +7,7 @@ import {
   type CopilotChatSuggestionPillProps
 } from "@copilotkit/react-core/v2";
 
-import { cn } from "@/utils";
+import { cn } from "@repo/utils";;
 
 export const CopilotSuggestion = forwardRef<
 HTMLButtonElement,
