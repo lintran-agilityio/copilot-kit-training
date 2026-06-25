@@ -61,7 +61,7 @@ export const fetchThreadMessages = async <TMessage>(
 ): Promise<TMessage[]> => {
   const response = await fetch(
     API_ROUTES.threads.messages(threadId, agentId),
-    { signal },
+    { cache: "no-store", signal },
   );
 
   if (!response.ok) {

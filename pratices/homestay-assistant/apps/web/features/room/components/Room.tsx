@@ -1,5 +1,4 @@
-import { RoomDetails } from "@/features/room/components/RoomDetails";
-import { RoomImage } from "@/features/room/components/RoomImage";
+import { RoomInfo, RoomImage } from "@/features/room/components";
 import type { Room as RoomType } from "@/features/room/types/room";
 import { cn } from "@repo/utils";;
 
@@ -29,7 +28,7 @@ export const Room = ({
         availableSlots={room.availableSlots}
         compact={compact}
       />
-      <RoomDetails
+      <RoomInfo
         name={room.name}
         capacity={room.capacity}
         description={room.description}

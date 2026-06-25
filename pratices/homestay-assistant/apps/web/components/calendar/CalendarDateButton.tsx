@@ -6,12 +6,14 @@ type CalendarDateButtonProps = {
   date: Date;
   isSelected: boolean;
   onSelect: (date: Date) => void;
+  className?: string;
 };
 
 export const CalendarDateButton = ({
   date,
   isSelected,
   onSelect,
+  className,
 }: CalendarDateButtonProps) => {
   const weekday = date
     .toLocaleDateString("en-US", { weekday: "short" })
@@ -25,7 +27,8 @@ export const CalendarDateButton = ({
         "flex min-w-[52px] flex-col items-center rounded-xl px-1.5 py-1.5 transition-colors",
         isSelected
           ? "bg-[#E6C547] text-black"
-          : "text-zinc-400 hover:bg-white/5 hover:text-white"
+          : "text-zinc-400 hover:bg-white/5 hover:text-white",
+        className,
       )}
     >
       <span className="text-[11px] font-medium tracking-[0.12em]">

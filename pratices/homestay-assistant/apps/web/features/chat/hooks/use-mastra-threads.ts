@@ -45,6 +45,10 @@ export const hydrateThreadMessages = async <TMessage>({
       return;
     }
 
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return;
+    }
+
     console.error("Failed to hydrate thread messages", error);
   }
 };

@@ -1,5 +1,6 @@
 import {
   availableRoomsResponseSchema,
+  roomSchema,
   type Room,
 } from "../mastra/schemas/rooms";
 import { ROUTES } from "../constants/routes";
@@ -20,4 +21,9 @@ export const getAvailableRooms = async (date: string): Promise<Room[]> =>
   get(`${ROUTES.ROOMS}`, availableRoomsResponseSchema, {
     searchParams: { date },
     errorMessage: "Failed to fetch available rooms",
+  });
+
+export const getRoom = async (roomId: string): Promise<Room> =>
+  get(`${ROUTES.ROOMS}/${roomId}`, roomSchema, {
+    errorMessage: "Failed to fetch room",
   });
