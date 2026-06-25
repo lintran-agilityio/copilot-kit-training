@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 
 import { getThreadMessages } from "agent/threads";
 
+export const dynamic = "force-dynamic";
+
 type RouteContext = {
   params: Promise<{ threadId: string }>;
 };

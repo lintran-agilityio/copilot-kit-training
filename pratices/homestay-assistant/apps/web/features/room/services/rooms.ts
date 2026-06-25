@@ -22,17 +22,3 @@ export const fetchRooms = async ({
 
   return (await response.json()) as Room[];
 };
-
-export const fetchRoomsByIds = async (
-  roomIds: string[],
-  signal?: AbortSignal,
-): Promise<Room[]> => {
-  if (!roomIds.length) {
-    return [];
-  }
-
-  const idSet = new Set(roomIds);
-  const allRooms = await fetchRooms({ signal });
-
-  return allRooms.filter((room) => idSet.has(room.id));
-};

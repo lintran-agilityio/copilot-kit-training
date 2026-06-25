@@ -20,6 +20,10 @@ export class RoomsRepository {
     });
   }
 
+  async findById(id: string): Promise<RoomEntity | null> {
+    return this.roomRepository.findOne({ where: { id } });
+  }
+
   async findAvailableBetween(
     checkInDate: Date,
     checkOutDate: Date,
