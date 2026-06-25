@@ -1,4 +1,21 @@
-export const PAGE_ONLY_GENERATIVE_TOOLS = new Set(["renderRooms", "room"]);
+import { TOOL_KEYS } from "@repo/constants";
+import type { CopilotChatAssistantMessageProps } from "@copilotkit/react-core/v2";
+
+/** Room/data tools and page UI actions — hidden from chat; effects render on the page. */
+export const CHAT_HIDDEN_TOOLS = new Set([
+  TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
+  TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_DRAWER,
+  TOOL_KEYS.GET.ROOMS,
+  TOOL_KEYS.GET.AVAILABLE_ROOMS,
+  TOOL_KEYS.GET.ROOM,
+  "getRooms",
+  "getAvailableRooms",
+  "getRoomById",
+  "room",
+  "renderRooms",
+]);
+
+export const PAGE_ONLY_GENERATIVE_TOOLS = CHAT_HIDDEN_TOOLS;
 
 export const PAGE_ROOMS_THREAD_ID = "__page_rooms__";
 
@@ -11,7 +28,7 @@ export const isPageOnlyGenerativeTool = (toolName: string) =>
   PAGE_ONLY_GENERATIVE_TOOLS.has(toolName);
 
 type ToolCall = NonNullable<
-  import("@ag-ui/client").AssistantMessage["toolCalls"]
+  CopilotChatAssistantMessageProps["message"]["toolCalls"]
 >[number];
 
 export const getChatVisibleToolCalls = (toolCalls?: ToolCall[]) => {

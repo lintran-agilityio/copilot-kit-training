@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   addDays,
   isEmptyDateValue,
@@ -23,5 +23,15 @@ export class RoomsService {
     const checkOutDate = addDays(checkInDate, 1);
 
     return this.roomsRepository.findAvailableBetween(checkInDate, checkOutDate);
+  }
+
+  async getRoomById(id: string): Promise<RoomResponseDto> {
+    const room = await this.roomsRepository.findById(id);
+
+    if (!room) {
+      throw new NotFoundException(`Room with id "${id}" not found`);
+    }
+
+    return room;
   }
 }

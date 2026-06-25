@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { GetAvailableRoomsQueryDto } from '../dto/get-available-rooms-query.dto';
@@ -19,5 +19,12 @@ export class RoomsController {
     @Query() query: GetAvailableRoomsQueryDto,
   ): Promise<RoomResponseDto[]> {
     return this.roomsService.getRooms(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a single room by ID' })
+  @ApiOkResponse({ type: RoomResponseDto })
+  getRoomById(@Param('id') id: string): Promise<RoomResponseDto> {
+    return this.roomsService.getRoomById(id);
   }
 }

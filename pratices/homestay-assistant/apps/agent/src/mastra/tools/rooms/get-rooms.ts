@@ -10,7 +10,7 @@ import {
 } from "../../schemas/rooms";
 
 export const getRoomsTool = createTool({
-  id: TOOL_KEYS.GET_ROOMS,
+  id: TOOL_KEYS.GET.ROOMS,
   description: "Get all rooms in the homestay booking system",
   inputSchema: getRoomsInputSchema,
   outputSchema: getRoomsOutputSchema,
@@ -21,7 +21,7 @@ export const getRoomsTool = createTool({
 });
 
 export const getAvailableRoomsTool = createTool({
-  id: TOOL_KEYS.GET_AVAILABLE_ROOMS,
+  id: TOOL_KEYS.GET.AVAILABLE_ROOMS,
   description: "Get all available rooms for a given check-in date",
   inputSchema: getAvailableRoomsInputSchema,
   outputSchema: getAvailableRoomsOutputSchema,

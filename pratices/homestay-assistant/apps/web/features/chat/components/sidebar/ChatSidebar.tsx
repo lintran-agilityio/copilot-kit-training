@@ -1,7 +1,5 @@
 "use client";
 
-import { cn } from "@repo/utils";
-
 import { useActiveThread } from "../../hooks";
 import { ChatDraftPanel } from "./ChatDraftPanel";
 import { ChatSidebarContent } from "./ChatSidebarContent";
