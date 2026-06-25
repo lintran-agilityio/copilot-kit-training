@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 
+import { isPageInternalThread } from "@/features/copilot/constants/page-generative-ui";
 import { ThreadItem } from "./ThreadItem";
 import { Thread } from "@copilotkit/react-core/v2";
 
@@ -24,8 +25,13 @@ export const ListThread = ({
   searchQuery = "",
 }: ListThreadProps) => {
   const filteredThreads = useMemo(
-    () => threads.filter((thread) => matchesSearch(thread.name, searchQuery)),
-    [threads, searchQuery]
+    () =>
+      threads.filter(
+        (thread) =>
+          !isPageInternalThread(thread.id) &&
+          matchesSearch(thread.name, searchQuery),
+      ),
+    [threads, searchQuery],
   );
 
   return (

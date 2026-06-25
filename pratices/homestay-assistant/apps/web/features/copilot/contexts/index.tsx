@@ -1,11 +1,7 @@
 "use client";
 
-import { RoomAgentContext } from "./RoomAgentContext";
+import { BookingReadable } from "@/features/copilot/readable/booking-readable";
 
 export const CopilotContexts = () => {
-  return (
-    <>
-      <RoomAgentContext />
-    </>
-  )
+  return <BookingReadable />;
 };

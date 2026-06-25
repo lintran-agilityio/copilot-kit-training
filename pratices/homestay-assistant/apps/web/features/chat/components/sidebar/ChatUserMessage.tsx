@@ -8,6 +8,7 @@ import {
 } from "@copilotkit/react-core/v2";
 
 import { ChatUserAvatar } from "@/features/chat/components/sidebar/ChatAvatars";
+import { isHiddenAgentPrompt, getMessageTextContent } from "@/features/copilot/constants/page-generative-ui";
 import { getMessageTopSpacing } from "@/features/chat/utils";
 import { cn } from "@repo/utils";;
 
@@ -19,6 +20,10 @@ export const ChatUserMessage = ({
   const agentId = useCopilotChatConfiguration()?.agentId;
   const { agent } = useAgent({ agentId });
   const topSpacing = getMessageTopSpacing(agent.messages, message.id, "user");
+
+  if (isHiddenAgentPrompt(getMessageTextContent(message.content))) {
+    return null;
+  }
 
   return (
     <CopilotChatUserMessage

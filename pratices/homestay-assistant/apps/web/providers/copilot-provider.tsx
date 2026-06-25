@@ -1,12 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-
 import { CopilotKit } from "@copilotkit/react-core/v2";
+
 import { AGENT_KEYS, AGENT_URLS } from "@repo/constants";
-
 import { ROUTES } from "@/constants";
-
 import { AppProvider } from "./app-provider";
 
 type CopilotKitProvidersProps = {

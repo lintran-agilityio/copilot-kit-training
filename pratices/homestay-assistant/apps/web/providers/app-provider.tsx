@@ -1,5 +1,6 @@
 "use client";
 
+import { BookingProvider } from "@/features/booking/stores/booking-provider";
 import { CopilotProvider } from "@/features/copilot/providers/copilot-provider";
 
 type AppProviderProps = {
@@ -8,8 +9,8 @@ type AppProviderProps = {
 
 export const AppProvider = ({ children }: AppProviderProps) => {
   return (
-    <CopilotProvider>
-      {children}
-    </CopilotProvider>
-  )
-}
+    <BookingProvider>
+      <CopilotProvider>{children}</CopilotProvider>
+    </BookingProvider>
+  );
+};

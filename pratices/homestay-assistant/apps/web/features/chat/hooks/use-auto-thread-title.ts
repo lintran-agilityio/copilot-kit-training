@@ -3,8 +3,12 @@
 import { useEffect, useRef } from "react";
 
 import { Role } from "@/types";
+import {
+  getMessageTextContent,
+  isHiddenAgentPrompt,
+} from "@/features/copilot/constants/page-generative-ui";
 import { useThreadContext } from "../contexts/thread-context";
-import { deriveThreadTitle, getMessageText } from "../utils/thread-title";
+import { deriveThreadTitle } from "../utils/thread-title";
 
 type UseAutoThreadTitleInput = {
   threadId: string;
@@ -31,13 +35,15 @@ export const useAutoThreadTitle = ({
     }
 
     const firstUserMessage = messages.find(
-      (message) => message.role === Role.USER && getMessageText(message),
+      (message) => message.role === Role.USER && message.content,
     );
     const messageText = firstUserMessage
-      ? getMessageText(firstUserMessage)
+      ? getMessageTextContent(
+          firstUserMessage.content as string | Array<{ type: string; text?: string }>,
+        )
       : null;
 
-    if (!messageText) {
+    if (!messageText || isHiddenAgentPrompt(messageText)) {
       return;
     }
 

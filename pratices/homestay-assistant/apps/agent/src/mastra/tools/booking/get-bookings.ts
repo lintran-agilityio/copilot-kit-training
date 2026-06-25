@@ -2,8 +2,7 @@
 import { z } from "zod";
 import { createTool } from "@mastra/core/tools";
 
-import { TOOL_KEYS } from "@repo/constants";
-import { bookings } from "../data/bookings";
+import { TOOL_KEYS } from "@repo/constants/tool-keys";
 
 export const getBookingsTool = createTool({
   id: TOOL_KEYS.GET_BOOKINGS,
@@ -16,6 +15,6 @@ export const getBookingsTool = createTool({
     })),
   }),
   execute: async () => {
-    return { bookings };
+    return { bookings: [] };
   },
 });

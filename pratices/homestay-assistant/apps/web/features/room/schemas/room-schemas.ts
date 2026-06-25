@@ -33,7 +33,9 @@ export const roomCardSchema = z.object({
 export const roomGridSchema = z.object({
   roomIds: z
     .array(z.string())
-    .describe("Room IDs to display. Use known IDs like meridian, studio-north, the-loft, observatory"),
+    .describe(
+      "Room IDs returned from getRooms or getAvailableRooms — pass IDs only, not full objects",
+    ),
   title: z
     .string()
     .optional()
