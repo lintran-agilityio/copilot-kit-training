@@ -31,7 +31,7 @@ export const MainLayout = ({ children, className }: MainLayoutProps) => {
         <div className="flex min-h-0 min-w-0 flex-1">
           <ChatProvider agentId={AGENT_KEYS.HOMESTAY_ASSISTANT}>
             <ThreadSidebar open={open} onOpenChange={setOpen} />
-            <main className="flex-1 overflow-y-auto px-6 py-8 md:px-4">
+            <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
               {children}
             </main>
             <div className="hidden h-full min-h-0 w-[min(100%,380px)] shrink-0 lg:block">

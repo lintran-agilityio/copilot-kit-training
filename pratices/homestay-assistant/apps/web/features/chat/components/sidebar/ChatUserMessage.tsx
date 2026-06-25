@@ -40,6 +40,7 @@ export const ChatUserMessage = ({
           className={cn("flex items-start justify-end gap-3", topSpacing)}
         >
           <div className="
+            app-scrollbar
             max-w-[85%]
             max-h-[400px]
             overflow-y-auto

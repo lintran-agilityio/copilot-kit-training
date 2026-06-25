@@ -150,7 +150,7 @@ export const ChatSidebarContent = ({
           autoScroll="pin-to-bottom"
           className="flex h-full min-h-0 flex-1 flex-col overflow-hidden pt-4"
           scrollView={{
-            className: "min-h-0 flex-1",
+            className: "app-scrollbar min-h-0 flex-1",
           }}
           labels={{
             chatInputPlaceholder: "Ask me anything...",

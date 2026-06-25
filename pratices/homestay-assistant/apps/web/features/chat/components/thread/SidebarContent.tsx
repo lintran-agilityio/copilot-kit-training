@@ -20,8 +20,8 @@ export const SidebarContent = ({
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <>
-      <div className="flex flex-col gap-2 border-b border-border p-3">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 flex-col gap-2 border-b border-border p-3">
         <NewChatButton onNewChatClick={onItemSelect} />
         <SearchThreadButton
           value={searchQuery}
@@ -30,10 +30,12 @@ export const SidebarContent = ({
           onOpenChange={setIsSearchOpen}
         />
       </div>
-      <ListThread
-        threads={threads ?? []}
-        searchQuery={searchQuery}
-      />
-    </>
+      <div className="app-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <ListThread
+          threads={threads ?? []}
+          searchQuery={searchQuery}
+        />
+      </div>
+    </div>
   );
 };

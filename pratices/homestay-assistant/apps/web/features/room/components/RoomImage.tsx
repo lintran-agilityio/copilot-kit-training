@@ -1,4 +1,9 @@
-import { cn } from "@repo/utils";;
+"use client";
+
+import { cn } from "@repo/utils";
+import defaultRoomImage from "@/images/bed_room.jpg";
+import Image, { type StaticImageData } from "next/image";
+import { useState } from "react";
 
 type RoomImageProps = {
   imageUrl: string;
@@ -17,6 +22,7 @@ export function RoomImage({
   availableSlots,
   compact = false,
 }: RoomImageProps) {
+  const [url, setUrl] = useState<string | StaticImageData>(imageUrl);
   return (
     <div
       className={cn(
@@ -24,11 +30,16 @@ export function RoomImage({
         compact ? "aspect-[16/10]" : "aspect-[4/3]",
       )}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={imageUrl}
+      <Image
+        src={url}
         alt={name}
-        className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+        fill
+        sizes={compact ? "(max-width: 768px) 100vw, 384px" : "(max-width: 768px) 100vw, 300px"}
+        onError={() => {
+          setUrl(defaultRoomImage);
+        }}
+        loading="lazy"
+        className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
 
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4">

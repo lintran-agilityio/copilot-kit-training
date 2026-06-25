@@ -1,3 +1,4 @@
 export { DatabaseModule } from './database.module';
-export { PrismaService } from './prisma.service';
-export * from './generated/prisma/client';
+export { databaseEntities } from './entities';
+export { Amenity, BookingStatus } from './entities/enums';
+export { UserEntity } from './entities/user.entity';
