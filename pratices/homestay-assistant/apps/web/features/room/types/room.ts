@@ -15,7 +15,9 @@ export type Room = {
   capacity: number;
   description: string;
   imageUrl: string;
+  imageUrls?: string[];
   availableSlots: number;
+  pricePerNight?: number;
   amenities: Amenity[];
 };
 

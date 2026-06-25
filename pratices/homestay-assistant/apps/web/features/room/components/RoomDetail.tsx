@@ -1,0 +1,167 @@
+"use client";
+
+import { CalendarCheck, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { useBooking } from "@/features/booking/hooks/use-booking";
+import { AmenitiesRoom } from "@/features/room/components";
+import { RoomBookingDates } from "@/features/room/components/RoomBookingDates";
+import { RoomImageGallery } from "@/features/room/components/RoomImageGallery";
+import { useRoomStore } from "@/features/room/stores/room-store";
+import type { Room } from "@/features/room/types/room";
+import { addDays, startOfDay, cn, toDateKey, formatPrice, countNightOfDates } from "@repo/utils";
+
+type RoomDetailProps = Room & {
+  className?: string;
+  imageUrls?: string[];
+};
+
+export const RoomDetail = ({
+  className,
+  pricePerNight,
+  imageUrls,
+  ...room
+}: RoomDetailProps) => {
+  const setSelectedRoom = useBooking((state) => state.setSelectedRoom);
+  const setCheckInDate = useBooking((state) => state.setCheckInDate);
+  const setCheckOutDate = useBooking((state) => state.setCheckOutDate);
+  const setGuests = useBooking((state) => state.setGuests);
+  const calculateTotalPrice = useBooking((state) => state.calculateTotalPrice);
+  const closeRoomDetailDrawer = useRoomStore(
+    (state) => state.closeRoomDetailDrawer,
+  );
+
+  const [checkInDate, setLocalCheckIn] = useState<string | null>(() =>
+    toDateKey(startOfDay(new Date())),
+  );
+  const [checkOutDate, setLocalCheckOut] = useState<string | null>(() =>
+    toDateKey(addDays(startOfDay(new Date()), 1)),
+  );
+
+  useEffect(() => {
+    if (!checkInDate || !checkOutDate) {
+      return;
+    }
+
+    const checkIn = new Date(`${checkInDate}T00:00:00`);
+    const checkOut = new Date(`${checkOutDate}T00:00:00`);
+
+    if (checkOut <= checkIn) {
+      setLocalCheckOut(toDateKey(addDays(checkIn, 1)));
+    }
+  }, [checkInDate, checkOutDate]);
+
+  const formattedPrice = formatPrice(pricePerNight);
+  const canBook =
+    Boolean(checkInDate && checkOutDate && pricePerNight != null) &&
+    checkInDate !== checkOutDate;
+
+  const estimatedTotal = useMemo(() => {
+    if (!canBook || !pricePerNight || !checkInDate || !checkOutDate) {
+      return null;
+    }
+
+    return formatPrice(countNightOfDates(checkInDate, checkOutDate) * pricePerNight);
+  }, [canBook, checkInDate, checkOutDate, pricePerNight]);
+
+  const handleBook = () => {
+    if (!canBook || !checkInDate || !checkOutDate || pricePerNight == null) {
+      return;
+    }
+
+    setSelectedRoom({
+      id: room.id,
+      name: room.name,
+      pricePerNight,
+      capacity: room.capacity,
+    });
+    setCheckInDate(checkInDate);
+    setCheckOutDate(checkOutDate);
+    setGuests(1);
+    calculateTotalPrice();
+    closeRoomDetailDrawer();
+  };
+
+  return (
+    <article
+      className={cn(
+        "overflow-hidden rounded-xl border border-white/8 bg-[#111111]",
+        className,
+      )}
+    >
+      <RoomImageGallery
+        roomId={room.id}
+        imageUrl={room.imageUrl}
+        imageUrls={imageUrls}
+        name={room.name}
+        level={room.level}
+        levelColor={room.levelColor}
+        availableSlots={room.availableSlots}
+      />
+
+      <div className="flex flex-col gap-5 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
+              Room detail
+            </p>
+            <h2 className="text-xl font-semibold text-white">{room.name}</h2>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-zinc-300">
+            <Users className="size-4" />
+            <span className="text-sm">{room.capacity} guests</span>
+          </div>
+        </div>
+
+        {formattedPrice ? (
+          <p className="text-lg font-medium text-emerald-300">
+            {formattedPrice}
+            <span className="text-sm font-normal text-zinc-500"> / night</span>
+          </p>
+        ) : null}
+
+        <p className="text-sm leading-relaxed text-zinc-400">
+          {room.description}
+        </p>
+
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
+            Amenities
+          </p>
+          <AmenitiesRoom amenities={room.amenities} />
+        </div>
+
+        <RoomBookingDates
+          checkInDate={checkInDate}
+          checkOutDate={checkOutDate}
+          onCheckInChange={setLocalCheckIn}
+          onCheckOutChange={setLocalCheckOut}
+        />
+
+        <div className="space-y-3 border-t border-white/8 pt-4">
+          {estimatedTotal ? (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-500">Estimated total</span>
+              <span className="font-medium text-emerald-300">
+                {estimatedTotal}
+              </span>
+            </div>
+          ) : null}
+
+          <Button
+            type="button"
+            size="lg"
+            className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400"
+            disabled={!canBook}
+            onClick={handleBook}
+          >
+            <CalendarCheck className="size-4" />
+            Book this room
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+};

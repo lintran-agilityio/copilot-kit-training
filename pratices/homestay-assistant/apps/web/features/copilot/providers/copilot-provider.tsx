@@ -1,6 +1,7 @@
 "use client";
 
 import { CopilotContexts } from "../contexts";
+import { RoomDetailDrawer } from "@/features/room/components/RoomDetailDrawer";
 import { RoomToolsProvider } from "@/features/room/copilot";
 
 type CopilotProviderProps = {
@@ -12,6 +13,7 @@ export const CopilotProvider = ({ children }: CopilotProviderProps) => {
     <>
       <CopilotContexts />
       <RoomToolsProvider />
+      <RoomDetailDrawer />
       {children}
     </>
   )

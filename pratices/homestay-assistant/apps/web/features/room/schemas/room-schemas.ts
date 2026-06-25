@@ -30,11 +30,23 @@ export const roomCardSchema = z.object({
     .describe("Use compact layout when rendering inside chat"),
 });
 
-export const roomGridSchema = z.object({
-  roomIds: z
-    .array(z.string())
+const roomObjectSchema = roomCardSchema
+  .omit({ compact: true })
+  .extend({
+    pricePerNight: z.number().describe("Price per night in VND"),
+  });
+
+export const openRoomDetailDrawerSchema = z.object({
+  room: roomObjectSchema.describe(
+    "The full room object returned from getRoomById — pass the room field as-is",
+  ),
+});
+
+export const updateRoomListSchema = z.object({
+  rooms: z
+    .array(roomObjectSchema)
     .describe(
-      "Room IDs returned from getRooms or getAvailableRooms — pass IDs only, not full objects",
+      "Full room objects returned from getRooms or getAvailableRooms — pass the rooms array as-is",
     ),
   title: z
     .string()

@@ -1,5 +1,5 @@
 export const AGENT_KEYS = {
-  HOMESTAY_ASSISTANT: "homestay-assistant",
+  HOMESTAY_ASSISTANT: "homestay-assistant_1",
   BOOKING_ASSISTANT: "booking-assistant",
   HOMESTAY_AGENT_UPDATE: "homestay-agent",
 };

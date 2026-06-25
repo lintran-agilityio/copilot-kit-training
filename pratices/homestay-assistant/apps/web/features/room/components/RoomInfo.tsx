@@ -4,7 +4,7 @@ import { AmenitiesRoom } from "./AmenitiesRoom";
 import type { Amenity } from "@/features/room/types/room";
 import { cn } from "@repo/utils";
 
-type RoomDetailsProps = {
+type RoomInfoProps = {
   name: string;
   capacity: number;
   description: string;
@@ -13,14 +13,14 @@ type RoomDetailsProps = {
   className?: string;
 };
 
-export const RoomDetails = ({
+export const RoomInfo = ({
   name,
   capacity,
   description,
   amenities,
   compact = false,
   className,
-}: RoomDetailsProps) => {
+}: RoomInfoProps) => {
   return (
     <div className={cn("flex flex-col gap-3 p-4", className)}>
       <div className="flex items-start justify-between gap-3">

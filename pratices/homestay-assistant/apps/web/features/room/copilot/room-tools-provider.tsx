@@ -1,23 +1,21 @@
 "use client";
 
 import {
-  useComponent,
   useFrontendTool,
   useHumanInTheLoop,
 } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { useBooking } from "@/features/booking/hooks/use-booking";
-import { Room } from "@/features/room/components";
-import { RenderRooms } from "@/features/room/generative";
 import {
   confirmBookingSchema,
   selectRoomForBookingSchema,
 } from "@/features/room/schemas/booking-schemas";
 import {
-  roomCardSchema,
-  roomGridSchema,
+  openRoomDetailDrawerSchema,
+  updateRoomListSchema,
 } from "@/features/room/schemas/room-schemas";
+import { useRoomStore } from "@/features/room/stores/room-store";
 
 import { ConfirmBookingPrompt } from "./ConfirmBookingPrompt";
 
@@ -28,25 +26,32 @@ export const RoomToolsProvider = () => {
   const setGuests = useBooking((state) => state.setGuests);
   const calculateTotalPrice = useBooking((state) => state.calculateTotalPrice);
 
-  useComponent(
+  useFrontendTool(
     {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
-      name: "room",
-      description: "Display a single room recommendation card.",
-      parameters: roomCardSchema,
-      render: Room,
+      name: TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
+      description:
+        "Update the room grid on the page. Pass the rooms array returned from getRooms or getAvailableRooms.",
+      parameters: updateRoomListSchema,
+      handler: async ({ rooms, title }) => {
+        useRoomStore.getState().updateRoomList(rooms, title);
+        return `Updated room grid with ${rooms.length} room(s).`;
+      },
     },
     [],
   );
 
-  useComponent(
+  useFrontendTool(
     {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
-      name: TOOL_KEYS.RENDER_ROOMS,
+      name: TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_DRAWER,
       description:
-        "Display a list of matching rooms. Pass room IDs returned by getRooms or getAvailableRooms.",
-      parameters: roomGridSchema,
-      render: RenderRooms,
+        "Open the room detail drawer. Pass the room object returned from getRoomById.",
+      parameters: openRoomDetailDrawerSchema,
+      handler: async ({ room }) => {
+        useRoomStore.getState().openRoomDetailDrawer(room);
+        return `Opened room detail drawer for ${room.name}.`;
+      },
     },
     [],
   );
