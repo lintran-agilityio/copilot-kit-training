@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isEmptyDateValue } from './utils/date.util';
 import { GetAvailableRoomsQueryDto } from './modules/rooms/dto/get-available-rooms-query.dto';
 import { RoomResponseDto } from './modules/rooms/dto/room-response.dto';
 import { RoomsService } from './modules/rooms/services/rooms.service';
@@ -11,9 +12,13 @@ export class AppService {
     return 'Homestay Assistant API';
   }
 
-  getAvailableRooms(
+  getAvailableRoomsToday(
     query: GetAvailableRoomsQueryDto = {},
   ): Promise<RoomResponseDto[]> {
-    return this.roomsService.getAvailableRooms(query);
+    const date = isEmptyDateValue(query.date)
+      ? new Date().toISOString().slice(0, 10)
+      : query.date;
+
+    return this.roomsService.getRooms({ date });
   }
 }

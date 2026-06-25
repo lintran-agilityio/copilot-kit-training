@@ -11,18 +11,13 @@ export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all rooms' })
+  @ApiOperation({
+    summary: 'List all rooms, or rooms available on a given date',
+  })
   @ApiOkResponse({ type: RoomResponseDto, isArray: true })
-  getRooms(): Promise<RoomResponseDto[]> {
-    return this.roomsService.getRooms();
-  }
-
-  @Get('available')
-  @ApiOperation({ summary: 'List rooms available on a given date' })
-  @ApiOkResponse({ type: RoomResponseDto, isArray: true })
-  getAvailableRooms(
+  getRooms(
     @Query() query: GetAvailableRoomsQueryDto,
   ): Promise<RoomResponseDto[]> {
-    return this.roomsService.getAvailableRooms(query);
+    return this.roomsService.getRooms(query);
   }
 }

@@ -22,7 +22,12 @@ export const ListRoom = ({
   return (
     <section className={cn("space-y-4", className)}>
       {title ? (
-        <h2 className="text-sm font-medium text-zinc-300">{title}</h2>
+        <div className="flex items-center gap-2">
+          <span
+            className="h-4 w-1 rounded-full bg-emerald-500"
+          />
+          <h2 className="text-lg font-medium text-zinc-300">{title}</h2>
+        </div>
       ) : null}
 
       <div

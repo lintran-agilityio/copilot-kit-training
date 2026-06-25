@@ -3,7 +3,7 @@ import { RoomImage } from "@/features/room/components/RoomImage";
 import type { Room as RoomType } from "@/features/room/types/room";
 import { cn } from "@repo/utils";;
 
-export type RoomCardProps = RoomType & {
+export type Room = RoomType & {
   compact?: boolean;
   className?: string;
 };
@@ -12,7 +12,7 @@ export const Room = ({
   compact = false,
   className,
   ...room
-}: RoomCardProps) => {
+}: Room) => {
   return (
     <article
       className={cn(

@@ -12,7 +12,7 @@ export class AppController {
   @ApiOperation({ summary: 'API health and today’s available room count' })
   @ApiOkResponse({ type: RootResponseDto })
   async getRoot(): Promise<RootResponseDto> {
-    const rooms = await this.appService.getAvailableRooms();
+    const rooms = await this.appService.getAvailableRoomsToday();
 
     return {
       message: this.appService.getHello(),

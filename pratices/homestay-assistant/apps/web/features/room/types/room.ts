@@ -18,3 +18,8 @@ export type Room = {
   availableSlots: number;
   amenities: Amenity[];
 };
+
+export enum RoomLoadMode {
+  ALL = "all",
+  AVAILABLE = "available",
+};
