@@ -165,6 +165,33 @@ a {
   .font-serif {
     font-family: var(--font-serif), ui-serif, Georgia, serif;
   }
+
+  .app-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(82 82 91 / 0.7) transparent;
+  }
+
+  .app-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgb(82 82 91 / 0.7);
+    border-radius: 9999px;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(52 211 153 / 0.55);
+  }
+
+  .app-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }
 
 /* CopilotKit dark theme overrides for SPACES sidebar */
@@ -232,6 +259,38 @@ a {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(82 82 91 / 0.7) transparent;
+}
+
+[data-sidebar-chat]
+  [data-testid="copilot-chat"]
+  > div:first-child
+  > div:first-child::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+[data-sidebar-chat]
+  [data-testid="copilot-chat"]
+  > div:first-child
+  > div:first-child::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-sidebar-chat]
+  [data-testid="copilot-chat"]
+  > div:first-child
+  > div:first-child::-webkit-scrollbar-thumb {
+  background-color: rgb(82 82 91 / 0.7);
+  border-radius: 9999px;
+}
+
+[data-sidebar-chat]
+  [data-testid="copilot-chat"]
+  > div:first-child
+  > div:first-child::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(52 211 153 / 0.55);
 }
 
 .chat-assistant-bubble [class*="cpk:prose"] {

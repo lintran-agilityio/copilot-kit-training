@@ -53,7 +53,7 @@ export const DateSelected = ({
           <ChevronLeft className="size-4" />
         </button>
 
-        <div className="flex flex-1 gap-2 overflow-x-auto pb-1">
+        <div className="app-scrollbar flex flex-1 gap-2 overflow-x-auto pb-1">
           {dates.map((date) => {
             const isDisabled = minDate ? date < minDate : date < today;
 

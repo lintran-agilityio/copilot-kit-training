@@ -1,34 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
+import Image, { StaticImageData } from "next/image";
 
 import { cn } from "@repo/utils";
-
-const ROOM_GALLERY_IMAGES: Record<string, string[]> = {
-  meridian: [
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1497215842964-222b430d1738?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=600&q=80",
-  ],
-  "studio-north": [
-    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=600&q=80",
-  ],
-  "the-loft": [
-    "https://images.unsplash.com/photo-1497215842964-222b430d1738?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=600&q=80",
-  ],
-  observatory: [
-    "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1497215842964-222b430d1738?auto=format&fit=crop&w=600&q=80",
-  ],
-};
+import {
+  DEFAULT_ROOM_GALLERY_IMAGES,
+  ROOM_GALLERY_IMAGES,
+} from "@/mocking/room";
+import defaultRoomImage from "@/images/bed_room.jpg";
 
 type RoomImageGalleryProps = {
   roomId: string;
@@ -49,25 +29,31 @@ export const RoomImageGallery = ({
   availableSlots,
   imageUrls,
 }: RoomImageGalleryProps) => {
+  const [url, setUrl] = useState<string | StaticImageData>(imageUrl);
   const images = useMemo(() => {
     const gallery = imageUrls?.length
       ? imageUrls
-      : (ROOM_GALLERY_IMAGES[roomId] ?? [imageUrl]);
+      : (ROOM_GALLERY_IMAGES[roomId] ?? DEFAULT_ROOM_GALLERY_IMAGES);
 
     return gallery.includes(imageUrl) ? gallery : [imageUrl, ...gallery];
   }, [imageUrl, imageUrls, roomId]);
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const activeImage = images[activeIndex] ?? imageUrl;
+  const activeImage = images[activeIndex] ?? url;
 
   return (
     <div className="space-y-3">
       <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={activeImage}
           alt={`${name} — photo ${activeIndex + 1}`}
-          className="size-full object-cover transition-opacity duration-300"
+          fill
+          sizes="(max-width: 768px) 100vw, 300px"
+          onError={() => {
+            setUrl(defaultRoomImage);
+          }}
+          loading="lazy"
+          className="object-cover transition-opacity duration-300"
         />
 
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4">
@@ -88,7 +74,7 @@ export const RoomImageGallery = ({
       </div>
 
       {images.length > 1 ? (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="app-scrollbar flex gap-2 overflow-x-auto pb-1">
           {images.map((url, index) => (
             <button
               key={`${url}-${index}`}
@@ -107,7 +93,9 @@ export const RoomImageGallery = ({
                 alt={`${name} thumbnail ${index + 1}`}
                 width={80}
                 height={80}
+                sizes="(max-width: 768px) 100vw, 80px"
                 className="size-full object-cover"
+                loading="lazy"
               />
             </button>
           ))}

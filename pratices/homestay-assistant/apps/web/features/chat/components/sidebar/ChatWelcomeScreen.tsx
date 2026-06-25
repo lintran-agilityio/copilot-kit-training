@@ -22,7 +22,7 @@ export const ChatWelcomeScreen = ({
       data-testid="copilot-welcome-screen"
       className={cn("flex min-h-0 flex-1 flex-col", className)}
     >
-      <div className="flex-1 overflow-y-auto px-4 pt-6">
+      <div className="app-scrollbar flex-1 overflow-y-auto px-4 pt-6">
         <div className="flex items-start gap-3">
           <ChatAgentAvatar />
           <p className="max-w-[85%] rounded-2xl bg-zinc-800/80 px-4 py-3 text-sm leading-relaxed text-zinc-100">

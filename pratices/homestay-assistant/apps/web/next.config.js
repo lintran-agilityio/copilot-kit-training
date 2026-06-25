@@ -6,6 +6,14 @@ const nextConfig = {
     "@libsql/client",
     "libsql",
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

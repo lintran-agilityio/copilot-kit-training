@@ -1,6 +1,6 @@
 import { Room } from "@/features/room/components/Room";
 import type { Room as RoomType } from "@/features/room/types/room";
-import { cn } from "@repo/utils";;
+import { cn } from "@repo/utils";
 
 type ListRoomProps = {
   rooms: RoomType[];
@@ -32,9 +32,10 @@ export const ListRoom = ({
 
       <div
         className={cn(
+          "app-scrollbar",
           compact
-            ? "flex flex-col gap-3"
-            : "flex flex-wrap gap-4 justify-center",
+            ? "flex max-h-[70vh] flex-col gap-3 overflow-y-auto pr-1"
+            : "flex flex-wrap gap-4 justify-center overflow-x-auto pb-1",
         )}
       >
         {rooms.map((room) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, Users } from "lucide-react";
+import { CalendarCheck, Minus, Plus, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export const RoomDetail = ({
   const [checkOutDate, setLocalCheckOut] = useState<string | null>(() =>
     toDateKey(addDays(startOfDay(new Date()), 1)),
   );
+  const [guests, setLocalGuests] = useState(1);
 
   useEffect(() => {
     if (!checkInDate || !checkOutDate) {
@@ -55,7 +56,9 @@ export const RoomDetail = ({
   const formattedPrice = formatPrice(pricePerNight);
   const canBook =
     Boolean(checkInDate && checkOutDate && pricePerNight != null) &&
-    checkInDate !== checkOutDate;
+    checkInDate !== checkOutDate &&
+    guests >= 1 &&
+    guests <= room.capacity;
 
   const estimatedTotal = useMemo(() => {
     if (!canBook || !pricePerNight || !checkInDate || !checkOutDate) {
@@ -78,7 +81,7 @@ export const RoomDetail = ({
     });
     setCheckInDate(checkInDate);
     setCheckOutDate(checkOutDate);
-    setGuests(1);
+    setGuests(guests);
     calculateTotalPrice();
     closeRoomDetailDrawer();
   };
@@ -139,6 +142,46 @@ export const RoomDetail = ({
           onCheckInChange={setLocalCheckIn}
           onCheckOutChange={setLocalCheckOut}
         />
+
+        <div className="space-y-3 rounded-xl border border-white/8 bg-white/[0.02] p-4">
+          <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
+            Guests
+          </p>
+
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-zinc-400">
+              Up to {room.capacity} guest{room.capacity === 1 ? "" : "s"}
+            </p>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                aria-label="Decrease guests"
+                disabled={guests <= 1}
+                onClick={() => setLocalGuests((count) => Math.max(1, count - 1))}
+                className="flex size-8 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30"
+              >
+                <Minus className="size-4" />
+              </button>
+
+              <span className="min-w-6 text-center text-sm font-medium text-white">
+                {guests}
+              </span>
+
+              <button
+                type="button"
+                aria-label="Increase guests"
+                disabled={guests >= room.capacity}
+                onClick={() =>
+                  setLocalGuests((count) => Math.min(room.capacity, count + 1))
+                }
+                className="flex size-8 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30"
+              >
+                <Plus className="size-4" />
+              </button>
+            </div>
+          </div>
+        </div>
 
         <div className="space-y-3 border-t border-white/8 pt-4">
           {estimatedTotal ? (

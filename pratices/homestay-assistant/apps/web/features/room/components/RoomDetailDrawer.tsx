@@ -27,7 +27,7 @@ export const RoomDetailDrawer = () => {
       }}
       direction="left"
     >
-      <DrawerContent className="data-[vaul-drawer-direction=left]:!w-[700px] data-[vaul-drawer-direction=left]:!max-w-[650px]">
+      <DrawerContent className="bg-[#0a0a0a] text-zinc-100 data-[vaul-drawer-direction=left]:!h-full data-[vaul-drawer-direction=left]:!w-[700px] data-[vaul-drawer-direction=left]:!max-w-[700px] data-[vaul-drawer-direction=left]:sm:!max-w-[700px]">
         <DrawerHeader className="sr-only">
           <DrawerTitle>{selectedRoom?.name ?? "Room detail"}</DrawerTitle>
           <DrawerDescription>
@@ -35,7 +35,7 @@ export const RoomDetailDrawer = () => {
           </DrawerDescription>
         </DrawerHeader>
 
-        <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4">
+        <div className="app-scrollbar min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4">
           {selectedRoom ? <RoomDetail {...selectedRoom} /> : null}
         </div>
       </DrawerContent>

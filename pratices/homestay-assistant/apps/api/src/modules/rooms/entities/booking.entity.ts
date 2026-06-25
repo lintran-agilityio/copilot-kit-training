@@ -1,21 +1,30 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryColumn,
 } from 'typeorm';
 import { BaseEntity } from '../../../common/base/entity';
 import { BookingStatus } from '../../../database/entities/enums';
+import { UserEntity } from '../../../database/entities/user.entity';
 import { RoomEntity } from './room.entity';
 
 @Entity('bookings')
+@Index(['roomId', 'checkInDate', 'checkOutDate'])
 export class BookingEntity extends BaseEntity {
   @PrimaryColumn()
   id: string;
 
   @Column({ name: 'user_id' })
   userId: string;
+
+  @ManyToOne(() => UserEntity, (user) => user.bookings, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'user_id' })
+  user: UserEntity;
 
   @Column({ name: 'room_id' })
   roomId: string;

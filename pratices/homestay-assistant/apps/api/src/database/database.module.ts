@@ -1,8 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BookingEntity } from '../modules/rooms/entities/booking.entity';
-import { RoomEntity } from '../modules/rooms/entities/room.entity';
-import { PrismaService } from './prisma.service';
+import { databaseEntities } from './entities';
 
 @Global()
 @Module({
@@ -10,11 +8,10 @@ import { PrismaService } from './prisma.service';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      entities: [RoomEntity, BookingEntity],
+      entities: databaseEntities,
       synchronize: false,
     }),
   ],
-  providers: [PrismaService],
-  exports: [TypeOrmModule, PrismaService],
+  exports: [TypeOrmModule],
 })
 export class DatabaseModule {}

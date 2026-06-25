@@ -19,7 +19,7 @@ export const ThreadSidebar = ({
   };
 
   return (
-    <aside className="flex h-full w-70 shrink-0 flex-col border-r border-border bg-card/70">
+    <aside className="flex h-full min-h-0 w-70 shrink-0 flex-col overflow-hidden border-r border-border bg-card/70">
       {isLoading ? (
         <Loading />
       ) : error ? (
