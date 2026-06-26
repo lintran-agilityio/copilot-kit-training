@@ -9,7 +9,7 @@ import {
 import { BaseEntity } from '../../../common/base/entity';
 import { BookingStatus } from '../../../database/entities/enums';
 import { UserEntity } from '../../../database/entities/user.entity';
-import { RoomEntity } from './room.entity';
+import { RoomEntity } from '../../rooms/entities/room.entity';
 
 @Entity('bookings')
 @Index(['roomId', 'checkInDate', 'checkOutDate'])

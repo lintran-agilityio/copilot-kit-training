@@ -3,7 +3,7 @@ import {
   addDays,
   isEmptyDateValue,
   resolveDateOrToday,
-} from '../../../utils/date.util';
+} from '../../../utils/date-utils';
 import { GetAvailableRoomsQueryDto } from '../dto/get-available-rooms-query.dto';
 import { RoomResponseDto } from '../dto/room-response.dto';
 import { RoomsRepository } from '../repositories/rooms.repository';

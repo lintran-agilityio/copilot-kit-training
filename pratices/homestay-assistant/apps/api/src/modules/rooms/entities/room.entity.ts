@@ -1,7 +1,7 @@
 import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
 import { BaseEntity } from '../../../common/base/entity';
 import { Amenity } from '../../../database/entities/enums';
-import { BookingEntity } from './booking.entity';
+import { BookingEntity } from '../../booking/entities/booking.entity';
 
 @Entity('rooms')
 export class RoomEntity extends BaseEntity {
