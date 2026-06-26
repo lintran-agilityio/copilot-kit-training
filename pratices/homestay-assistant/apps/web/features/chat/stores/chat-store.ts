@@ -6,11 +6,13 @@ interface ChatStore {
   activeThreadIds: Record<string, string | undefined>;
   preferDraftMode: Record<string, boolean | undefined>;
   pendingOutboundMessages: Record<string, string | undefined>;
+  threadTitles: Record<string, string | undefined>;
   setActiveThreadId: (scopeKey: string, threadId: string) => void;
   clearActiveThreadId: (scopeKey: string) => void;
   setPreferDraftMode: (scopeKey: string, enabled: boolean) => void;
   setPendingOutboundMessage: (scopeKey: string, message: string) => void;
   consumePendingOutboundMessage: (scopeKey: string) => string | undefined;
+  setThreadTitle: (threadId: string, title: string) => void;
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -19,6 +21,7 @@ export const useChatStore = create<ChatStore>()(
       activeThreadIds: {},
       preferDraftMode: {},
       pendingOutboundMessages: {},
+      threadTitles: {},
       setActiveThreadId: (scopeKey, threadId) =>
         set((state) => ({
           activeThreadIds: {
@@ -72,11 +75,19 @@ export const useChatStore = create<ChatStore>()(
 
         return message;
       },
+      setThreadTitle: (threadId, title) =>
+        set((state) => ({
+          threadTitles: {
+            ...state.threadTitles,
+            [threadId]: title,
+          },
+        })),
     }),
     {
       name: "homestay-chat-store",
       partialize: (state) => ({
         activeThreadIds: state.activeThreadIds,
+        threadTitles: state.threadTitles,
       }),
       skipHydration: true,
     },

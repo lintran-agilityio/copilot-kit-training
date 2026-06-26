@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image";
 
 import { cn } from "@repo/utils";
 import {
   DEFAULT_ROOM_GALLERY_IMAGES,
   ROOM_GALLERY_IMAGES,
 } from "@/mocking/room";
-import defaultRoomImage from "@/images/bed_room.jpg";
+
+const FALLBACK_ROOM_IMAGE = DEFAULT_ROOM_GALLERY_IMAGES[0]!;
 
 type RoomImageGalleryProps = {
   roomId: string;
@@ -29,7 +30,6 @@ export const RoomImageGallery = ({
   availableSlots,
   imageUrls,
 }: RoomImageGalleryProps) => {
-  const [url, setUrl] = useState<string | StaticImageData>(imageUrl);
   const images = useMemo(() => {
     const gallery = imageUrls?.length
       ? imageUrls
@@ -39,18 +39,33 @@ export const RoomImageGallery = ({
   }, [imageUrl, imageUrls, roomId]);
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const activeImage = images[activeIndex] ?? url;
+  const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
+  const activeImage = images[activeIndex] ?? imageUrl;
+  const resolveImage = (src: string) =>
+    failedImages.has(src) ? FALLBACK_ROOM_IMAGE : src;
+
+  const markImageFailed = (src: string) => {
+    setFailedImages((current) => {
+      if (current.has(src)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.add(src);
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-3">
       <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
         <Image
-          src={activeImage}
+          src={resolveImage(activeImage)}
           alt={`${name} — photo ${activeIndex + 1}`}
           fill
           sizes="(max-width: 768px) 100vw, 300px"
           onError={() => {
-            setUrl(defaultRoomImage);
+            markImageFailed(activeImage);
           }}
           loading="lazy"
           className="object-cover transition-opacity duration-300"
@@ -89,13 +104,16 @@ export const RoomImageGallery = ({
               )}
             >
               <Image
-                src={url}
+                src={resolveImage(url)}
                 alt={`${name} thumbnail ${index + 1}`}
                 width={80}
                 height={80}
                 sizes="(max-width: 768px) 100vw, 80px"
                 className="size-full object-cover"
                 loading="lazy"
+                onError={() => {
+                  markImageFailed(url);
+                }}
               />
             </button>
           ))}

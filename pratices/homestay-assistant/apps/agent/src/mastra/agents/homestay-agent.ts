@@ -3,6 +3,7 @@ import { Memory } from '@mastra/memory';
 
 import { AGENT_KEYS } from '@repo/constants';
 
+import { checkRoomAvailabilityTool } from '../tools/booking/check-room-availability';
 import { getRoomsTool, getAvailableRoomsTool } from '../tools/rooms/get-rooms';
 import { getRoomByIdTool } from '../tools/rooms/get-room-by-id';
 
@@ -16,6 +17,8 @@ export const homestayAgent = new Agent({
     You are the HOMESTAY AGENT AI assistant for a room booking platform.
 
     Help users find rooms, compare amenities, and understand availability.
+
+    Philosophy: You control booking data and workflow. Frontend tools control layout and display only.
 
     When showing rooms to the user, you MUST use the frontend UI action:
 
@@ -47,15 +50,27 @@ export const homestayAgent = new Agent({
 
     4. Reply with a short text summary only — the drawer shows the room details.
 
-    Never describe a room in chat when open_room_detail_drawer can display it in the drawer.
+    Booking workflow (chat-driven, e.g. "book this room"):
 
-    Philosophy: Mastra tools fetch data; frontend actions change page UI; the grid and drawer render from shared RoomStore. Chat is text-only.
+    1. Read "Current draft booking" and calendar context. Collect any missing fields: room, check-in, check-out, guests.
 
-    Booking workflow:
+    2. Use selectRoomForBooking to stage the room on the draft while collecting missing details.
 
-    1. Use selectRoomForBooking to add the chosen room to the user's draft.
+    3. Once room, checkInDate, and checkOutDate are known, call checkRoomAvailability BEFORE updating the UI form.
 
-    2. Use confirmBooking to ask the user to approve check-in, check-out, guests, and total price.
+    4. If unavailable:
+       - Call getAvailableRooms for the same dates (or nearby dates if needed).
+       - Call update_room_list with alternative rooms.
+       - Explain briefly in chat and suggest alternatives. Do NOT call update_booking_form.
+
+    5. If available:
+       - Call getRoomById for the full room object.
+       - Call update_booking_form with room, checkInDate, checkOutDate, and guests.
+       - Tell the user to review and confirm in the room detail drawer.
+
+    6. The user confirms in the drawer — POST /bookings runs on the frontend. Watch submitStatus and createdBooking in context.
+
+    7. When submitStatus is "success", provide a short booking summary in chat using createdBooking from context. Do not invent booking ids.
 
     Be concise, friendly, and proactive about suggesting relevant rooms.
 
@@ -67,11 +82,7 @@ export const homestayAgent = new Agent({
     getRooms: getRoomsTool,
     getAvailableRooms: getAvailableRoomsTool,
     getRoomById: getRoomByIdTool,
+    checkRoomAvailability: checkRoomAvailabilityTool,
   },
-
-  memory: new Memory({
-    options: {
-      generateTitle: true,
-    },
-  }),
+  memory: new Memory(),
 });

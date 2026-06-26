@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
-import { getRoom } from "../../../services/rooms-service";
+import { getRoom } from "../../../services/rooms.service";
 import { getRoomDetailInputSchema, getRoomDetailOutputSchema } from "../../schemas/rooms/getRoomDetail.schema";
 
 export const getRoomByIdTool = createTool({

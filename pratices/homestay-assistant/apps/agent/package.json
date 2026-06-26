@@ -19,7 +19,7 @@
   "exports": {
     ".": "./src/mastra/index.ts",
     "./copilotkit": "./src/copilotkit.ts",
-    "./threads": "./src/services/thread-service.ts"
+    "./services": "./src/services/index.ts"
   },
   "dependencies": {
     "@ag-ui/client": "^0.0.57",
@@ -34,6 +34,7 @@
     "@mastra/observability": "^1.14.3",
     "@repo/constants": "workspace:*",
     "@repo/utils": "workspace:*",
+    "@repo/types": "workspace:*",
     "zod": "^3.25.76"
   },
   "devDependencies": {

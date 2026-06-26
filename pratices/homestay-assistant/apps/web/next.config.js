@@ -1,16 +1,19 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  turbopack: {
+    root: path.join(__dirname, "../.."),
+  },
   transpilePackages: ["@repo/constants", "@repo/shared", "agent"],
-  serverExternalPackages: [
-    "@mastra/libsql",
-    "@libsql/client",
-    "libsql",
-  ],
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
+        protocol: "https",
+        hostname: "images.unsplash.com",
       },
     ],
   },
