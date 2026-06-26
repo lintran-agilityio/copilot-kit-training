@@ -1,4 +1,4 @@
-import { BookingEntity } from '../modules/rooms/entities/booking.entity';
+import { BookingEntity } from '../modules/booking/entities/booking.entity';
 import { RoomEntity } from '../modules/rooms/entities/room.entity';
 import { UserEntity } from './entities/user.entity';
 

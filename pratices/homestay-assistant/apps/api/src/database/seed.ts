@@ -3,6 +3,14 @@ import 'dotenv/config';
 import { RoomEntity } from '../modules/rooms/entities/room.entity';
 import dataSource from './data-source';
 import { Amenity } from './entities/enums';
+import { UserEntity } from './entities/user.entity';
+
+const guestUser = {
+  id: 'guest-user',
+  email: 'guest@homestay.local',
+  name: 'Guest User',
+  password: 'guest-password',
+};
 
 const rooms = [
   {
@@ -48,7 +56,7 @@ const rooms = [
     description:
       'Corner room with a private balcony facing the hills. King bed, rainfall shower, and a small desk for slow mornings with tea.',
     imageUrl:
-      'https://images.unsplash.com/photo-1611892440504-42a784e15d7f?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
     availableSlots: 9,
     pricePerNight: 980_000,
     amenities: [Amenity.WIFI, Amenity.COFFEE, Amenity.MONITOR, Amenity.VIDEO],
@@ -151,7 +159,7 @@ const rooms = [
     description:
       'Elevated pavilion room with wraparound windows and misty valley views at dawn. King bed, rain shower, and in-room yoga mats.',
     imageUrl:
-      'https://images.unsplash.com/photo-1598928506311-c55ded91a2c2?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=800&q=80',
     availableSlots: 5,
     pricePerNight: 1_420_000,
     amenities: [Amenity.WIFI, Amenity.COFFEE, Amenity.MONITOR, Amenity.VIDEO],
@@ -165,19 +173,30 @@ const rooms = [
     description:
       'Bright mezzanine loft with orchid planters on the landing. Twin beds on the upper level, open living nook below with sofa and minibar.',
     imageUrl:
-      'https://images.unsplash.com/photo-1595576504838-8260f4ffb4b7?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80',
     availableSlots: 8,
     pricePerNight: 890_000,
     amenities: [Amenity.WIFI, Amenity.COFFEE, Amenity.MONITOR, Amenity.MIC],
   },
 ];
 
+const legacyImageUrlFixes: Record<string, string> = {
+  'the-loft':
+    'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80',
+};
+
 async function main(): Promise<void> {
   await dataSource.initialize();
 
   const roomRepository = dataSource.getRepository(RoomEntity);
+  const userRepository = dataSource.getRepository(UserEntity);
 
   const now = new Date();
+
+  await userRepository.save({
+    ...guestUser,
+    updatedAt: now,
+  });
 
   await roomRepository.save(
     rooms.map((room) => ({
@@ -186,7 +205,11 @@ async function main(): Promise<void> {
     })),
   );
 
-  console.log(`Seeded ${rooms.length} rooms.`);
+  for (const [id, imageUrl] of Object.entries(legacyImageUrlFixes)) {
+    await roomRepository.update({ id }, { imageUrl, updatedAt: now });
+  }
+
+  console.log(`Seeded guest user and ${rooms.length} rooms.`);
 }
 
 main()
