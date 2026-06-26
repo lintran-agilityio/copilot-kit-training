@@ -1,30 +1,23 @@
 "use client";
 
-import {
-  useFrontendTool,
-  useHumanInTheLoop,
-} from "@copilotkit/react-core/v2";
+import { useFrontendTool } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { useBooking } from "@/features/booking/hooks/use-booking";
 import {
-  confirmBookingSchema,
   selectRoomForBookingSchema,
+  updateBookingFormSchema,
 } from "@/features/room/schemas/booking-schemas";
 import {
   openRoomDetailDrawerSchema,
   updateRoomListSchema,
 } from "@/features/room/schemas/room-schemas";
 import { useRoomStore } from "@/features/room/stores/room-store";
-
-import { ConfirmBookingPrompt } from "./ConfirmBookingPrompt";
+import type { Room } from "@/features/room/types/room";
 
 export const RoomToolsProvider = () => {
   const setSelectedRoom = useBooking((state) => state.setSelectedRoom);
-  const setCheckInDate = useBooking((state) => state.setCheckInDate);
-  const setCheckOutDate = useBooking((state) => state.setCheckOutDate);
-  const setGuests = useBooking((state) => state.setGuests);
-  const calculateTotalPrice = useBooking((state) => state.calculateTotalPrice);
+  const updateBookingForm = useBooking((state) => state.updateBookingForm);
 
   useFrontendTool(
     {
@@ -61,61 +54,42 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: "selectRoomForBooking",
       description:
-        "Add a room to the user's booking draft. Use after the user picks a room.",
+        "Stage a room on the booking draft while collecting missing booking details in chat.",
       parameters: selectRoomForBookingSchema,
       handler: async ({ id, name, pricePerNight, capacity }) => {
         setSelectedRoom({ id, name, pricePerNight, capacity });
-        return `Selected ${name} for the booking draft.`;
+        return `Staged ${name} on the booking draft.`;
       },
     },
     [setSelectedRoom],
   );
 
-  useHumanInTheLoop(
+  useFrontendTool(
     {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
-      name: "confirmBooking",
+      name: TOOL_KEYS.ACTION.UPDATE_BOOKING_FORM,
       description:
-        "Ask the user to confirm a room booking before finalizing the draft.",
-      parameters: confirmBookingSchema,
-      render: ({ status, args, respond }) => {
-        if (status === "inProgress") {
-          return (
-            <p className="text-sm text-zinc-400">Preparing booking summary…</p>
-          );
-        }
+        "Update the booking form in the room detail drawer after availability is confirmed. Opens the drawer for user review.",
+      parameters: updateBookingFormSchema,
+      handler: async ({ room, checkInDate, checkOutDate, guests }) => {
+        updateBookingForm({
+          room: {
+            id: room.id,
+            name: room.name,
+            pricePerNight: room.pricePerNight,
+            capacity: room.capacity,
+          },
+          checkInDate,
+          checkOutDate,
+          guests,
+        });
+        useRoomStore.getState().openRoomDetailDrawer(room as Room);
 
-        if (status === "complete") {
-          return (
-            <p className="text-sm text-zinc-300">
-              Booking decision recorded for {args.roomName}.
-            </p>
-          );
-        }
-
-        if (status !== "executing" || !respond) {
-          return (
-            <p className="text-sm text-zinc-400">Awaiting booking confirmation…</p>
-          );
-        }
-
-        return (
-          <ConfirmBookingPrompt
-            args={args}
-            disabled={false}
-            onApprove={() => {
-              setCheckInDate(args.checkInDate);
-              setCheckOutDate(args.checkOutDate);
-              setGuests(args.guests);
-              calculateTotalPrice();
-              respond({ confirmed: true, totalPrice: args.totalPrice });
-            }}
-            onDeny={() => respond({ confirmed: false })}
-          />
-        );
+        return `Updated booking form for ${room.name}. The room detail drawer is open for review.`;
       },
+      followUp: false,
     },
-    [calculateTotalPrice, setCheckInDate, setCheckOutDate, setGuests],
+    [updateBookingForm],
   );
 
   return null;

@@ -2,7 +2,7 @@
 
 import type { UseThreadsResult } from "@copilotkit/react-core/v2";
 
-import { useInitializeActiveThread, useMastraThreads } from "../hooks";
+import { useInitializeActiveThread, useCopilotThreads } from "../hooks";
 import { ChatThreadContext } from "../contexts/thread-context";
 import { useChatStoreHasHydrated } from "../stores/chat-store";
 
@@ -33,7 +33,7 @@ const INITIAL_THREADS: UseThreadsResult & {
 };
 
 const ChatProviderContent = ({ children, agentId }: ChatProviderProps) => {
-  const initThreads = useMastraThreads({ agentId });
+  const initThreads = useCopilotThreads({ agentId });
 
   useInitializeActiveThread({
     agentId,

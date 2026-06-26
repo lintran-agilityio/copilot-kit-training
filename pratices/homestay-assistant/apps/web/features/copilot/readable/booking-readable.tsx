@@ -11,6 +11,9 @@ export const BookingReadable = () => {
   const checkOutDate = useBooking((state) => state.checkOutDate);
   const guests = useBooking((state) => state.guests);
   const totalPrice = useBooking((state) => state.totalPrice);
+  const isFormReady = useBooking((state) => state.isFormReady);
+  const submitStatus = useBooking((state) => state.submitStatus);
+  const createdBooking = useBooking((state) => state.createdBooking);
 
   const contextValue = useMemo(
     () =>
@@ -21,13 +24,25 @@ export const BookingReadable = () => {
           checkOutDate,
           guests,
           totalPrice,
+          isFormReady,
+          submitStatus,
+          createdBooking,
         }),
       ),
-    [selectedRoom, checkInDate, checkOutDate, guests, totalPrice],
+    [
+      selectedRoom,
+      checkInDate,
+      checkOutDate,
+      guests,
+      totalPrice,
+      isFormReady,
+      submitStatus,
+      createdBooking,
+    ],
   );
 
   useAgentContext({
-    description: "Current draft booking",
+    description: "Current draft booking and submission state",
     value: contextValue,
   });
 

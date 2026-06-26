@@ -1,3 +1,3 @@
-export * from "./rooms-service";
 export * from "./common";
-export * from "./thread-service";
+export * from "./rooms.service";
+export * from "./booking.services";

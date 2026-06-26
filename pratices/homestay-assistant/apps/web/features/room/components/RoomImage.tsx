@@ -1,9 +1,11 @@
 "use client";
 
 import { cn } from "@repo/utils";
-import defaultRoomImage from "@/images/bed_room.jpg";
 import Image, { type StaticImageData } from "next/image";
 import { useState } from "react";
+import { DEFAULT_ROOM_GALLERY_IMAGES } from "@/mocking/room";
+
+const FALLBACK_ROOM_IMAGE = DEFAULT_ROOM_GALLERY_IMAGES[0]!;
 
 type RoomImageProps = {
   imageUrl: string;
@@ -36,9 +38,9 @@ export function RoomImage({
         fill
         sizes={compact ? "(max-width: 768px) 100vw, 384px" : "(max-width: 768px) 100vw, 300px"}
         onError={() => {
-          setUrl(defaultRoomImage);
+          setUrl(FALLBACK_ROOM_IMAGE);
         }}
-        loading="lazy"
+        priority
         className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
 

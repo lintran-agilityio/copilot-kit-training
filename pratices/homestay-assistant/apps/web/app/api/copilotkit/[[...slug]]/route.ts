@@ -6,14 +6,16 @@ import {
 } from "@copilotkit/runtime/v2";
 import { getCopilotkitAgents } from "agent/copilotkit";
 
+export const runtime = "nodejs";
+
 const basePath = "/api/copilotkit";
 
-const runtime = new CopilotRuntime({
+const copilotRuntime = new CopilotRuntime({
   agents: async () => {
     const { userId } = await auth();
 
     if (!userId) {
-      throw new Response("Unauthorized", { status: 401 });
+      return {};
     }
 
     return getCopilotkitAgents(userId);
@@ -21,12 +23,12 @@ const runtime = new CopilotRuntime({
 });
 
 const multiRouteHandler = createCopilotRuntimeHandler({
-  runtime,
+  runtime: copilotRuntime,
   basePath,
 });
 
 const singleRouteHandler = createCopilotRuntimeHandler({
-  runtime,
+  runtime: copilotRuntime,
   basePath,
   mode: "single-route",
 });

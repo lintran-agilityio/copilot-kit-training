@@ -39,11 +39,16 @@ export const getChatVisibleToolCalls = (toolCalls?: ToolCall[]) => {
   const seen = new Set<string>();
 
   return toolCalls.filter((toolCall) => {
-    if (isPageOnlyGenerativeTool(toolCall.function.name)) {
+    const toolName = toolCall.function?.name;
+    if (!toolName) {
       return false;
     }
 
-    if (seen.has(toolCall.id)) {
+    if (isPageOnlyGenerativeTool(toolName)) {
+      return false;
+    }
+
+    if (!toolCall.id || seen.has(toolCall.id)) {
       return false;
     }
 

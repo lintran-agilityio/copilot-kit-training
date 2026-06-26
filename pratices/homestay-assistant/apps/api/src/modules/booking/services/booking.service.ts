@@ -42,13 +42,7 @@ export class BookingService {
     ]);
     this.assertPositiveGuests(dto.guests);
 
-    const user = await this.userRepository.findOne({
-      where: { id: dto.userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with id "${dto.userId}" not found`);
-    }
+    await this.findOrCreateUser(dto.userId);
 
     const room = await this.getRoomOrThrow(dto.roomId);
     this.assertGuestCapacity(room, dto.guests);
@@ -185,6 +179,24 @@ export class BookingService {
 
   async cancel(id: string): Promise<BookingResponseDto> {
     return this.update(id, { status: BookingStatus.CANCELLED });
+  }
+
+  private async findOrCreateUser(userId: string): Promise<UserEntity> {
+    const existing = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    return this.userRepository.save({
+      id: userId,
+      email: `${userId}@users.local`,
+      name: null,
+      password: 'n/a',
+      updatedAt: new Date(),
+    });
   }
 
   private async getRoomOrThrow(roomId: string): Promise<RoomEntity> {
