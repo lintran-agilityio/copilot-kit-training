@@ -1,3 +1,5 @@
+import { BookingStatus } from "@repo/types";
+
 import {
   bookingSchema,
   checkRoomAvailabilityOutputSchema,
@@ -9,14 +11,22 @@ import { ROUTES } from "../constants/routes";
 import { get, post } from "./common";
 import { z } from "zod";
 
+export type GetBookingsParams = {
+  userId?: string;
+  roomId?: string;
+  status?: BookingStatus;
+};
+
 export const createBooking = async (
   booking: CreateBookingSchema,
 ): Promise<Booking> =>
   post(ROUTES.BOOKINGS, booking, bookingSchema, "Failed to create booking");
 
-export const getBookings = async (userId?: string): Promise<Booking[]> =>
+export const getBookings = async (
+  params?: GetBookingsParams,
+): Promise<Booking[]> =>
   get(ROUTES.BOOKINGS, z.array(bookingSchema), {
-    searchParams: userId ? { userId } : undefined,
+    searchParams: params,
     errorMessage: "Failed to fetch bookings",
   });
 

@@ -1,3 +1,26 @@
+import type { Room } from "@/features/room/types/room";
+
+export enum BookingStatus {
+  PENDING = "pending",
+  CONFIRMED = "confirmed",
+  CANCELLED = "cancelled",
+}
+
+export type BookingSubmitStatus = "idle" | "submitting" | "success" | "error";
+export interface BookingItem {
+  id: string;
+  userId: string;
+  roomId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  guests: number;
+  totalPrice: number;
+  status: BookingStatus;
+};
+
+export interface BookingResponse extends BookingItem {
+  room?: Room;
+}
 export interface SelectedRoom {
   id: string;
   name: string;
@@ -12,19 +35,6 @@ export interface BookingDraft {
   guests: number;
   totalPrice: number;
 }
-
-export interface CreatedBooking {
-  id: string;
-  roomId: string;
-  userId: string;
-  checkInDate: string;
-  checkOutDate: string;
-  guests: number;
-  totalPrice: number;
-  status: string;
-}
-
-export type BookingSubmitStatus = "idle" | "submitting" | "success" | "error";
 
 export type UpdateBookingFormInput = {
   room: {

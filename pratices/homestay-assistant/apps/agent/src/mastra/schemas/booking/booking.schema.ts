@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { BookingStatus } from "@repo/types";
+import { roomSchema } from "../rooms/room.schema";
 
 export const bookingSchema = z.object({
   id: z.string(),
@@ -10,6 +11,7 @@ export const bookingSchema = z.object({
   guests: z.number(),
   totalPrice: z.number(),
   status: z.enum(Object.values(BookingStatus) as [string, ...string[]]),
+  room: roomSchema.optional(),
 });
 
 export type Booking = z.infer<typeof bookingSchema>;

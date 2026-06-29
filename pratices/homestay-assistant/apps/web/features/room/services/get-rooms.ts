@@ -1,10 +1,7 @@
-import "server-only";
-
 import type { Room } from "@/features/room/types/room";
+import { getApiUrl } from "@/utils";
 
-const getApiUrl = () => process.env.API_URL ?? "http://localhost:5001";
-
-export const getRoomsServer = async (date?: string): Promise<Room[]> => {
+export const getRooms = async (date?: string): Promise<Room[]> => {
   const path = date
     ? `/rooms?date=${encodeURIComponent(date)}`
     : "/rooms";

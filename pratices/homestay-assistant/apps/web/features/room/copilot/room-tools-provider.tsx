@@ -1,37 +1,96 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import { useFrontendTool } from "@copilotkit/react-core/v2";
+import { z } from "zod";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
-import { useBooking } from "@/features/booking/hooks/use-booking";
+import { ROUTES } from "@/constants";
+import { useBooking } from "@/features/booking/hooks";
 import {
   selectRoomForBookingSchema,
   updateBookingFormSchema,
-} from "@/features/room/schemas/booking-schemas";
-import {
-  openRoomDetailDrawerSchema,
-  updateRoomListSchema,
-} from "@/features/room/schemas/room-schemas";
+} from "@/features/room/schemas";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
 
+const openRoomDetailDrawerSchema = z.object({
+  roomId: z
+    .string()
+    .describe("Room ID to open in the detail drawer."),
+});
+
+const showAvailableRoomsSchema = z.object({
+  date: z
+    .string()
+    .optional()
+    .describe("Check-in date (YYYY-MM-DD). Defaults to today."),
+});
+
+const navigateToHomeIfNeeded = (
+  pathname: string,
+  router: ReturnType<typeof useRouter>,
+) => {
+  if (pathname === ROUTES.BOOKINGS) {
+    router.push(ROUTES.HOME);
+  }
+};
+
 export const RoomToolsProvider = () => {
+  const router = useRouter();
+  const pathname = usePathname();
   const setSelectedRoom = useBooking((state) => state.setSelectedRoom);
   const updateBookingForm = useBooking((state) => state.updateBookingForm);
 
   useFrontendTool(
     {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
-      name: TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
+      name: TOOL_KEYS.ACTION.SHOW_ALL_ROOMS_PAGE,
       description:
-        "Update the room grid on the page. Pass the rooms array returned from getRooms or getAvailableRooms.",
-      parameters: updateRoomListSchema,
-      handler: async ({ rooms, title }) => {
-        useRoomStore.getState().updateRoomList(rooms, title);
-        return `Updated room grid with ${rooms.length} room(s).`;
+        "Show all rooms on the home page. No parameters needed.",
+      handler: async () => {
+        const response = await fetch("/api/rooms");
+
+        if (!response.ok) {
+          return "Failed to load rooms. Please try again.";
+        }
+
+        const rooms = (await response.json()) as Room[];
+        useRoomStore.getState().updateRoomList(rooms, undefined);
+        navigateToHomeIfNeeded(pathname, router);
+
+        return `Showing ${rooms.length} room(s) on the home page.`;
       },
     },
-    [],
+    [pathname, router],
+  );
+
+  useFrontendTool(
+    {
+      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      name: TOOL_KEYS.ACTION.SHOW_AVAILABLE_ROOMS_PAGE,
+      description:
+        "Show available rooms on the home page for a check-in date.",
+      parameters: showAvailableRoomsSchema,
+      handler: async ({ date }) => {
+        const checkInDate =
+          date ?? new Date().toISOString().slice(0, 10);
+        const response = await fetch(
+          `/api/rooms?date=${encodeURIComponent(checkInDate)}`,
+        );
+
+        if (!response.ok) {
+          return "Failed to load available rooms. Please try again.";
+        }
+
+        const rooms = (await response.json()) as Room[];
+        useRoomStore.getState().updateRoomList(rooms, "Available rooms");
+        navigateToHomeIfNeeded(pathname, router);
+
+        return `Showing ${rooms.length} available room(s) for ${checkInDate}.`;
+      },
+    },
+    [pathname, router],
   );
 
   useFrontendTool(
@@ -39,10 +98,20 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_DRAWER,
       description:
-        "Open the room detail drawer. Pass the room object returned from getRoomById.",
+        "Open the room detail drawer by room ID. Pass roomId only.",
       parameters: openRoomDetailDrawerSchema,
-      handler: async ({ room }) => {
+      handler: async ({ roomId }) => {
+        const response = await fetch(
+          `/api/rooms/${encodeURIComponent(roomId)}`,
+        );
+
+        if (!response.ok) {
+          return `Could not find room "${roomId}".`;
+        }
+
+        const room = (await response.json()) as Room;
         useRoomStore.getState().openRoomDetailDrawer(room);
+
         return `Opened room detail drawer for ${room.name}.`;
       },
     },

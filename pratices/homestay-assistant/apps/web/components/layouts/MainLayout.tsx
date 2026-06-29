@@ -10,13 +10,19 @@ import { ChatProvider } from "@/features/chat/providers/chat-provider";
 // Components
 import { Navbar } from "@/components/layouts";
 import { ChatSidebar, ThreadSidebar } from "@/features/chat/components";
+import { NavbarTab } from "@repo/types";
 
 type MainLayoutProps = {
   children: React.ReactNode;
   className?: string;
+  activeTab?: NavbarTab.HOME | NavbarTab.MY_BOOKINGS;
 };
 
-export const MainLayout = ({ children, className }: MainLayoutProps) => {
+export const MainLayout = ({
+  children,
+  className,
+  activeTab = NavbarTab.HOME,
+}: MainLayoutProps) => {
   const [open, setOpen] = useState(true);
 
   return (
@@ -27,7 +33,7 @@ export const MainLayout = ({ children, className }: MainLayoutProps) => {
           className
         )}
       >
-        <Navbar />
+        <Navbar activeTab={activeTab} />
         <div className="flex min-h-0 min-w-0 flex-1">
           <ChatProvider agentId={AGENT_KEYS.HOMESTAY_ASSISTANT}>
             <ThreadSidebar open={open} onOpenChange={setOpen} />
