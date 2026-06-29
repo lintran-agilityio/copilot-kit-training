@@ -8,7 +8,7 @@ import {
   type CreateBookingSchema,
 } from "../mastra/schemas/booking";
 import { ROUTES } from "../constants/routes";
-import { get, post } from "./common";
+import { get, post, del } from "./common";
 import { z } from "zod";
 
 export type GetBookingsParams = {
@@ -18,12 +18,12 @@ export type GetBookingsParams = {
 };
 
 export const createBooking = async (
-  booking: CreateBookingSchema,
+  booking: CreateBookingSchema
 ): Promise<Booking> =>
   post(ROUTES.BOOKINGS, booking, bookingSchema, "Failed to create booking");
 
 export const getBookings = async (
-  params?: GetBookingsParams,
+  params?: GetBookingsParams
 ): Promise<Booking[]> =>
   get(ROUTES.BOOKINGS, z.array(bookingSchema), {
     searchParams: params,
@@ -31,9 +31,16 @@ export const getBookings = async (
   });
 
 export const checkRoomAvailability = async (
-  input: CheckRoomAvailabilityInput,
+  input: CheckRoomAvailabilityInput
 ) =>
   get(ROUTES.BOOKING_AVAILABILITY, checkRoomAvailabilityOutputSchema, {
     searchParams: input,
     errorMessage: "Failed to check room availability",
   });
+
+export const cancelBooking = async (bookingId: string): Promise<Booking> =>
+  del(
+    `${ROUTES.BOOKINGS}/${encodeURIComponent(bookingId)}`,
+    bookingSchema,
+    "Failed to cancel booking"
+  );

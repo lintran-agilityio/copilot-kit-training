@@ -36,12 +36,6 @@ const roomObjectSchema = roomCardSchema
     pricePerNight: z.number().describe("Price per night in VND"),
   });
 
-export const openRoomDetailDrawerSchema = z.object({
-  room: roomObjectSchema.describe(
-    "The full room object returned from getRoomById — pass the room field as-is",
-  ),
-});
-
 export const updateRoomListSchema = z.object({
   rooms: z
     .array(roomObjectSchema)
@@ -52,4 +46,17 @@ export const updateRoomListSchema = z.object({
     .string()
     .optional()
     .describe("Optional heading above the room grid"),
+});
+
+export const showAvailableRoomsSchema = z.object({
+  date: z
+    .string()
+    .optional()
+    .describe("Check-in date (YYYY-MM-DD). Defaults to today."),
+});
+
+export const openRoomDetailDrawerSchema = z.object({
+  roomId: z
+    .string()
+    .describe("Room ID to open in the detail drawer."),
 });

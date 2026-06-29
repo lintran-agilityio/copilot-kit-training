@@ -1,9 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-  addDays,
-  isEmptyDateValue,
-  resolveDateOrToday,
-} from '../../../utils/date-utils';
+import { addDays, isEmptyDateValue, resolveDateOrToday } from '../../../utils';
 import { GetAvailableRoomsQueryDto } from '../dto/get-available-rooms-query.dto';
 import { RoomResponseDto } from '../dto/room-response.dto';
 import { RoomsRepository } from '../repositories/rooms.repository';

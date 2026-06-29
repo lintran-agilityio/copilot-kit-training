@@ -1,6 +1,19 @@
 import { z } from "zod";
 import { BookingStatus } from "@repo/types";
-import { roomSchema } from "../rooms/room.schema";
+
+/** Room shape embedded in booking list responses (often partial). */
+export const bookingRoomSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  level: z.number().optional(),
+  levelColor: z.string().optional(),
+  capacity: z.number().optional(),
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
+  availableSlots: z.number().optional(),
+  pricePerNight: z.number().optional(),
+  amenities: z.array(z.string()).optional(),
+});
 
 export const bookingSchema = z.object({
   id: z.string(),
@@ -11,7 +24,7 @@ export const bookingSchema = z.object({
   guests: z.number(),
   totalPrice: z.number(),
   status: z.enum(Object.values(BookingStatus) as [string, ...string[]]),
-  room: roomSchema.optional(),
+  room: bookingRoomSummarySchema.optional(),
 });
 
 export type Booking = z.infer<typeof bookingSchema>;

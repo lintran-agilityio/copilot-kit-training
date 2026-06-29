@@ -35,7 +35,7 @@ export const ListRoom = ({
           "app-scrollbar",
           compact
             ? "flex max-h-[70vh] flex-col gap-3 overflow-y-auto pr-1"
-            : "flex flex-wrap gap-4 justify-center overflow-x-auto pb-1",
+            : "flex flex-wrap gap-4 overflow-x-auto pb-1",
         )}
       >
         {rooms.map((room) => (

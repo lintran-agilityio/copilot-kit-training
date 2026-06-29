@@ -14,6 +14,8 @@ export const TOOL_KEYS = {
     GET: "get-bookings",
     UPDATE: "update-booking",
     DELETE: "delete-booking",
+    CANCEL_BY_ROOM: "cancel-booking-by-room",
+    FIND_BY_ROOM: "find-booking-by-room",
     CHECK_AVAILABILITY: "check-room-availability",
   },
   ACTION: {

@@ -1,0 +1,71 @@
+"use client";
+
+import { useState } from "react";
+import { ToolCallStatus } from "@copilotkit/react-core/v2";
+
+import { ConfirmDeleteDialog } from "@/components/confirm-modal";
+import { useCancelBooking } from "../hooks";
+import type { ConfirmDeleteBookingResult } from "../schemas";
+import type { BookingDetails } from "../types";
+
+type ConfirmDeleteBookingModalProps = {
+  status: ToolCallStatus;
+  bookingItem: BookingDetails;
+  respond?: (result: ConfirmDeleteBookingResult) => Promise<void>;
+};
+
+export const ConfirmDeleteBookingModal = ({
+  status,
+  bookingItem,
+  respond,
+}: ConfirmDeleteBookingModalProps) => {
+  const cancelBooking = useCancelBooking();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const canRespond = status === "executing" && respond != null;
+  const open = status === "executing" || status === "inProgress";
+
+  const handleCancel = () => {
+    if (!canRespond) {
+      return;
+    }
+
+    void respond({ confirmed: false });
+  };
+
+  const handleConfirm = async () => {
+    if (!canRespond || !bookingItem.bookingId) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await cancelBooking(bookingItem.bookingId);
+      await respond({
+        confirmed: true,
+        bookingId: bookingItem.bookingId,
+      });
+    } catch {
+      setIsDeleting(false);
+      await respond({ confirmed: false });
+    }
+  };
+
+  return (
+    <ConfirmDeleteDialog
+      open={open}
+      booking={{
+        bookingId: bookingItem.bookingId ?? "",
+        roomName: bookingItem.roomName ?? "this room",
+        checkInDate: bookingItem.checkInDate ?? "",
+        checkOutDate: bookingItem.checkOutDate ?? "",
+        guests: bookingItem.guests,
+        totalPrice: bookingItem.totalPrice,
+      }}
+      isDeleting={isDeleting}
+      canRespond={canRespond}
+      onCancel={handleCancel}
+      onConfirm={handleConfirm}
+    />
+  );
+};

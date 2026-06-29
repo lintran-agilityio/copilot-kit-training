@@ -1,13 +1,21 @@
 import type { Room } from "@/features/room/types/room";
 import { getApiUrl } from "@/utils";
 
-export const getRoomById = async (id: string): Promise<Room> => {
-  const response = await fetch(`${getApiUrl()}/rooms/${encodeURIComponent(id)}`, {
+type GetRoomByIdProps = {
+  configUrl?: string;
+  roomId: string;
+};
+
+export const getRoomById = async ({
+  configUrl = getApiUrl(),
+  roomId,
+}: GetRoomByIdProps): Promise<Room> => {
+  const response = await fetch(`${configUrl}/rooms/${encodeURIComponent(roomId)}`, {
     cache: "no-store",
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch rooms");
+    throw new Error("Failed to fetch room");
   }
 
   return (await response.json()) as Room;

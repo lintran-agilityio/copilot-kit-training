@@ -2,30 +2,19 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useFrontendTool } from "@copilotkit/react-core/v2";
-import { z } from "zod";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { ROUTES } from "@/constants";
 import { useBooking } from "@/features/booking/hooks";
 import {
+  openRoomDetailDrawerSchema,
   selectRoomForBookingSchema,
+  showAvailableRoomsSchema,
   updateBookingFormSchema,
 } from "@/features/room/schemas";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
-
-const openRoomDetailDrawerSchema = z.object({
-  roomId: z
-    .string()
-    .describe("Room ID to open in the detail drawer."),
-});
-
-const showAvailableRoomsSchema = z.object({
-  date: z
-    .string()
-    .optional()
-    .describe("Check-in date (YYYY-MM-DD). Defaults to today."),
-});
+import { getRooms, getRoomById } from "../services";
 
 const navigateToHomeIfNeeded = (
   pathname: string,
@@ -49,13 +38,9 @@ export const RoomToolsProvider = () => {
       description:
         "Show all rooms on the home page. No parameters needed.",
       handler: async () => {
-        const response = await fetch("/api/rooms");
-
-        if (!response.ok) {
-          return "Failed to load rooms. Please try again.";
-        }
-
-        const rooms = (await response.json()) as Room[];
+        const rooms = await getRooms({
+          configUrl: '/api',
+        });
         useRoomStore.getState().updateRoomList(rooms, undefined);
         navigateToHomeIfNeeded(pathname, router);
 
@@ -75,15 +60,11 @@ export const RoomToolsProvider = () => {
       handler: async ({ date }) => {
         const checkInDate =
           date ?? new Date().toISOString().slice(0, 10);
-        const response = await fetch(
-          `/api/rooms?date=${encodeURIComponent(checkInDate)}`,
-        );
 
-        if (!response.ok) {
-          return "Failed to load available rooms. Please try again.";
-        }
-
-        const rooms = (await response.json()) as Room[];
+        const rooms = await getRooms({
+          configUrl: '/api',
+          date: checkInDate
+        });
         useRoomStore.getState().updateRoomList(rooms, "Available rooms");
         navigateToHomeIfNeeded(pathname, router);
 
@@ -109,7 +90,11 @@ export const RoomToolsProvider = () => {
           return `Could not find room "${roomId}".`;
         }
 
-        const room = (await response.json()) as Room;
+        // const room = (await response.json()) as Room;
+        const room = await getRoomById({
+          configUrl: '/api',
+          roomId: encodeURIComponent(roomId)
+        });
         useRoomStore.getState().openRoomDetailDrawer(room);
 
         return `Opened room detail drawer for ${room.name}.`;

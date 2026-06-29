@@ -82,3 +82,15 @@ export const update = async <T>(
     schema,
     errorMessage ?? `Failed to update ${path}`,
   );
+
+export const del = async <T>(
+  path: string,
+  schema: z.ZodType<T>,
+  errorMessage?: string,
+): Promise<T> =>
+  request(
+    buildUrl(path),
+    { method: "DELETE" },
+    schema,
+    errorMessage ?? `Failed to delete ${path}`,
+  );
