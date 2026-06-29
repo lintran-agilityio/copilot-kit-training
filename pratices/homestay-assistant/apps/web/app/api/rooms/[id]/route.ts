@@ -1,4 +1,5 @@
 import { getRoomById } from "@/features/room/services";
+import { getApiUrl } from "@/utils";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -7,7 +8,10 @@ type RouteContext = {
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
-  const response = await getRoomById(id);
+  const room = await getRoomById({
+    configUrl: getApiUrl(),
+    roomId: id,
+  });
 
-  return response;
+  return Response.json(room);
 }

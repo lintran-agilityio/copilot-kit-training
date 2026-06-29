@@ -3,12 +3,16 @@ import type { BookingResponse } from "../types";
 
 export const mappingBookedToRooms = (
   bookings: BookingResponse[],
-): Room[] => [
-  ...new Map(
-    bookings
-      .filter((booking): booking is BookingResponse & { room: Room } =>
-        booking.room != null,
-      )
-      .map((booking) => [booking.room.id, booking.room] as const),
-  ).values(),
-];
+  rooms: Room[],
+): Room[] => {
+  const roomsById = new Map(rooms.map((room) => [room.id, room]));
+
+  return [
+    ...new Map(
+      bookings
+        .map((booking) => roomsById.get(booking.roomId))
+        .filter((room): room is Room => room != null)
+        .map((room) => [room.id, room] as const),
+    ).values(),
+  ];
+};

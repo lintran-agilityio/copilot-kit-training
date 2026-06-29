@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { ROUTES } from "@/constants";
 import { getMyBookings } from "@/features/booking/services";
+import { getRooms } from "@/features/room/services";
 
 import { BookingsPageClient } from "./bookings-page-client";
 import { mappingBookedToRooms } from "@/features/booking/utils";
@@ -14,8 +15,11 @@ const BookingsPage = async () => {
     redirect(ROUTES.LOGIN);
   }
 
-  const bookings = await getMyBookings(userId);
-  const bookedRooms = mappingBookedToRooms(bookings);
+  const [bookings, rooms] = await Promise.all([
+    getMyBookings({ userId }),
+    getRooms(),
+  ]);
+  const bookedRooms = mappingBookedToRooms(bookings, rooms);
 
   return <BookingsPageClient bookedRooms={bookedRooms} />;
 };

@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 
 import { BookingStatus } from '../../../database/entities/enums';
 import { UserEntity } from '../../../database/entities/user.entity';
-import { parseDateRange, toDateKey } from '../../../utils/date-utils';
+import { parseDateRange, toDateKey } from '../../../utils';
 import { RoomsRepository } from '../../rooms/repositories/rooms.repository';
 import { RoomEntity } from '../../rooms/entities/room.entity';
 import {

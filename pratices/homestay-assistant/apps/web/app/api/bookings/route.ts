@@ -9,7 +9,7 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const bookings = await getMyBookings(userId);
+  const bookings = await getMyBookings({ userId });
 
-  return bookings;
+  return Response.json(bookings);
 }

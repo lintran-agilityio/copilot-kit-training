@@ -12,7 +12,22 @@ type RoomGridProps = {
 export const RoomGrid = ({ initialRooms, className }: RoomGridProps) => {
   const storeRooms = useRoomStore((state) => state.rooms);
   const title = useRoomStore((state) => state.roomListTitle);
-  const rooms = storeRooms.length > 0 ? storeRooms : initialRooms;
+  const rooms =
+    title !== undefined
+      ? storeRooms
+      : storeRooms.length > 0
+        ? storeRooms
+        : initialRooms;
 
-  return <ListRoom rooms={rooms} title={title} className={className} />;
+  return (
+    <>
+      {rooms.length > 0 ? (
+        <ListRoom rooms={rooms} title={title} className={className} />
+      ) : (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-zinc-400">No rooms found</p>
+        </div>
+      )}
+    </>
+  );
 };

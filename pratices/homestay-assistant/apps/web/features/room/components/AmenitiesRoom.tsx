@@ -28,7 +28,7 @@ type AmenitiesRoomProps = {
   className?: string;
 };
 
-export const AmenitiesRoom = ({ amenities, className }: AmenitiesRoomProps) => {
+export const AmenitiesRoom = ({ amenities = [], className }: AmenitiesRoomProps) => {
   return (
     <div className={cn("flex items-center gap-3 text-zinc-500", className)}>
       {amenities.map((amenity) => {

@@ -47,3 +47,12 @@ export type UpdateBookingFormInput = {
   checkOutDate: string;
   guests: number;
 };
+
+export type BookingDetails = {
+  bookingId: string;
+  roomName: string;
+  checkInDate: string;
+  checkOutDate: string;
+  guests?: number;
+  totalPrice?: number;
+};

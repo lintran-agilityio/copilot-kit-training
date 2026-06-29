@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import {
   ACTIVE_BOOKING_STATUSES,
   BOOKING_OVERLAP_JOIN_CONDITION,
-} from '../../../utils/booking-overlap.util';
+} from '../../../utils';
 import { RoomEntity } from '../entities/room.entity';
 
 @Injectable()

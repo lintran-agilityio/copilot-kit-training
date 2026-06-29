@@ -1,12 +1,20 @@
 import type { Room } from "@/features/room/types/room";
 import { getApiUrl } from "@/utils";
 
-export const getRooms = async (date?: string): Promise<Room[]> => {
+type GetRoomsProps = {
+  configUrl?: string;
+  date?: string;
+};
+
+export const getRooms = async ({
+  configUrl = getApiUrl(),
+  date,
+}: GetRoomsProps = {}): Promise<Room[]> => {
   const path = date
     ? `/rooms?date=${encodeURIComponent(date)}`
     : "/rooms";
 
-  const response = await fetch(`${getApiUrl()}${path}`, {
+  const response = await fetch(`${configUrl}${path}`, {
     cache: "no-store",
   });
 

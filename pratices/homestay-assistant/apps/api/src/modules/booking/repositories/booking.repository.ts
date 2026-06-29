@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ACTIVE_BOOKING_STATUSES } from '../../../utils/booking-overlap.util';
-import { toDateKey } from '../../../utils/date-utils';
+
+import { toDateKey, ACTIVE_BOOKING_STATUSES } from '../../../utils';
 import { ListBookingsQueryDto } from '../dto/list-bookings-query.dto';
 import { BookingEntity } from '../entities/booking.entity';
 
@@ -17,6 +17,9 @@ export class BookingRepository {
     const query = this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.room', 'room')
+      .where('booking.status IN (:...activeStatuses)', {
+        activeStatuses: ACTIVE_BOOKING_STATUSES,
+      })
       .orderBy('booking.createdAt', 'DESC');
 
     if (filters.userId) {

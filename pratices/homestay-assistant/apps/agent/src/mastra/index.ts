@@ -6,13 +6,14 @@ import { DuckDBStore } from "@mastra/duckdb";
 import { MastraCompositeStore } from '@mastra/core/storage';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
 import { AGENT_KEYS } from '@repo/constants';
+import { cancelBookingWorkflow } from './workflows/cancel-booking-workflow';
 import { weatherWorkflow } from './workflows/weather-workflow';
 import { homestayAgent } from './agents/homestay-agent';
 import { studioDbPath } from './db-paths';
 import { bookingAgent } from './agents/booking-agent';
 
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow },
+  workflows: { weatherWorkflow, cancelBookingWorkflow },
   agents: {
     [AGENT_KEYS.HOMESTAY_ASSISTANT]: homestayAgent,
     [AGENT_KEYS.BOOKING_ASSISTANT]: bookingAgent,

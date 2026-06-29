@@ -8,8 +8,7 @@ import { PageHeader } from "@/components/common";
 import { RoomGrid } from "@/features/room/components";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
-
-const BOOKED_ROOMS_TITLE = "Room are booked";
+import { BOOKED_ROOMS_TITLE } from "@/features/booking/utils";
 
 type BookingsPageClientProps = {
   bookedRooms: Room[];
