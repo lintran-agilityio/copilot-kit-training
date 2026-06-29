@@ -1,2 +1,2 @@
-export * from "./rooms";
-export * from "./get-rooms-server";
+export * from "./get-rooms";
+export * from "./get-room-by-id";

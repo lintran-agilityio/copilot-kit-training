@@ -5,14 +5,14 @@ import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS } from "@repo/constants";
 
-import type { CreatedBooking } from "@/features/booking/types/booking";
+import type { BookingItem } from "@/features/booking/types";
 
 export const useNotifyAgentBookingSummary = () => {
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
 
   return useCallback(
-    async (booking: CreatedBooking, roomName: string) => {
+    async (booking: BookingItem, roomName: string) => {
       if (copilotkit.runtimeConnectionStatus !== "connected") {
         return;
       }

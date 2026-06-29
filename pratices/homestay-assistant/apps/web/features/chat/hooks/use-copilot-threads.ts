@@ -12,6 +12,7 @@ import { AGENT_URLS } from "@repo/constants";
 import { getThreadResourceId } from "@repo/utils";
 
 import { useChatStore } from "../stores/chat-store";
+import { normalizeThreadMessages } from "../utils/normalize-thread-messages";
 
 type HydrateThreadMessagesInput<TMessage> = {
   threadId: string;
@@ -40,7 +41,7 @@ export const hydrateThreadMessages = async <TMessage>({
     }
 
     const data = (await response.json()) as { messages?: TMessage[] };
-    const messages = data.messages ?? [];
+    const messages = normalizeThreadMessages(data.messages ?? []);
 
     if (signal?.aborted) {
       return;

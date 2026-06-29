@@ -18,6 +18,9 @@ export const TOOL_KEYS = {
   },
   ACTION: {
     OPEN_ROOM_DETAIL_DRAWER: "open_room_detail_drawer",
+    OPEN_BOOKINGS_PAGE: "open_bookings_page",
+    SHOW_ALL_ROOMS_PAGE: "show_all_rooms_page",
+    SHOW_AVAILABLE_ROOMS_PAGE: "show_available_rooms_page",
     UPDATE_BOOKING_FORM: "update_booking_form",
     UPDATE_ROOM_LIST: "update_room_list",
   },

@@ -1,8 +1,6 @@
+import { toRoomResponseDto } from '../../rooms/mappers/room.mapper';
 import { BookingEntity } from '../entities/booking.entity';
-import {
-  BookingResponseDto,
-  BookingRoomSummaryDto,
-} from '../dto/booking-response.dto';
+import { BookingResponseDto } from '../dto/booking-response.dto';
 
 export const toBookingResponseDto = (
   booking: BookingEntity,
@@ -21,13 +19,7 @@ export const toBookingResponseDto = (
   };
 
   if (booking.room) {
-    const room: BookingRoomSummaryDto = {
-      id: booking.room.id,
-      name: booking.room.name,
-      pricePerNight: booking.room.pricePerNight,
-      capacity: booking.room.capacity,
-    };
-    response.room = room;
+    response.room = toRoomResponseDto(booking.room);
   }
 
   return response;

@@ -1,9 +1,9 @@
-import { getRoomsServer } from "@/features/room/services/get-rooms-server";
+import { getRooms } from "@/features/room/services";
 
 import { HomePageClient } from "./home-page-client";
 
 const HomePage = async () => {
-  const rooms = await getRoomsServer();
+  const rooms = await getRooms();
 
   return <HomePageClient initialRooms={rooms} />;
 };

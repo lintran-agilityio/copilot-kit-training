@@ -3,15 +3,17 @@
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 
-import { cn } from "@repo/utils";import { Logo } from "../common";
-;
+import { cn } from "@repo/utils";
+import { NavbarTab } from "@repo/types";
+import { ROUTES } from "@/constants";
+import { Logo } from "../common";
 
 type NavbarProps = {
-  activeTab?: "book" | "bookings";
+  activeTab?: NavbarTab.HOME | NavbarTab.MY_BOOKINGS;
   className?: string;
 };
 
-export const Navbar = ({ activeTab = "book", className }: NavbarProps) => {
+export const Navbar = ({ activeTab = NavbarTab.HOME, className }: NavbarProps) => {
   const { user } = useUser();
   const initials =
     user?.firstName && user?.lastName
@@ -32,19 +34,19 @@ export const Navbar = ({ activeTab = "book", className }: NavbarProps) => {
           href="/"
           className={cn(
             "text-sm transition-colors",
-            activeTab === "book"
-              ? "text-white"
+              activeTab === NavbarTab.HOME
+              ? "text-white bg-emerald-500 rounded-md px-4 py-2"
               : "text-zinc-500 hover:text-zinc-300",
           )}
         >
-          Book a Room
+          HomeStay
         </Link>
         <Link
-          href="#"
+          href={ROUTES.BOOKINGS}
           className={cn(
             "text-sm transition-colors",
-            activeTab === "bookings"
-              ? "text-white"
+            activeTab === NavbarTab.MY_BOOKINGS
+              ? "text-white bg-emerald-500 rounded-md px-4 py-2"
               : "text-zinc-500 hover:text-zinc-300",
           )}
         >

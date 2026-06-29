@@ -2,10 +2,9 @@
 
 import { auth } from "@clerk/nextjs/server";
 
-import type { CreatedBooking } from "@/features/booking/types/booking";
 import { BookingStatus } from "@repo/types";
-
-const getApiUrl = () => process.env.API_URL ?? "http://localhost:5001";
+import type { BookingItem } from "@/features/booking/types/booking";
+import { getApiUrl } from "@/utils";
 
 export type CreateBookingInput = {
   roomId: string;
@@ -16,7 +15,7 @@ export type CreateBookingInput = {
 
 export const createBookingAction = async (
   input: CreateBookingInput,
-): Promise<CreatedBooking> => {
+): Promise<BookingItem> => {
   const { userId } = await auth();
 
   if (!userId) {
@@ -44,12 +43,12 @@ export const createBookingAction = async (
       } else if (Array.isArray(body.message)) {
         message = body.message.join(", ");
       }
-    } catch {
-      // keep default message
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : "Failed to create booking");
     }
 
     throw new Error(message);
   }
 
-  return (await response.json()) as CreatedBooking;
+  return (await response.json()) as BookingItem;
 };
