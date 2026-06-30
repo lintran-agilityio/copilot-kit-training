@@ -1,18 +1,20 @@
-import { Agent } from '@mastra/core/agent';
-import { Memory } from '@mastra/memory';
+import { Agent } from "@mastra/core/agent";
+import { Memory } from "@mastra/memory";
 
-import { AGENT_KEYS } from '@repo/constants';
+import { AGENT_KEYS } from "@repo/constants";
 
-import { checkRoomAvailabilityTool } from '../tools/booking/check-room-availability';
-import { findBookingByRoomTool } from '../tools/booking/find-booking-by-room';
-import { getBookingsTool } from '../tools/booking/get-bookings';
-import { getRoomsTool, getAvailableRoomsTool } from '../tools/rooms/get-rooms';
-import { getRoomByIdTool } from '../tools/rooms/get-room-by-id';
+import { checkRoomAvailabilityTool } from "../tools/booking/check-room-availability";
+import { findBookingByRoomTool, getBookingsTool } from "../tools/booking";
+import {
+  getRoomsTool,
+  getAvailableRoomsTool,
+  getRoomByIdTool,
+} from "../tools/rooms";
 
 export const homestayAgent = new Agent({
   id: AGENT_KEYS.HOMESTAY_ASSISTANT,
 
-  name: 'Homestay Agent1',
+  name: "Homestay Agent",
 
   instructions: `
 
@@ -104,7 +106,7 @@ export const homestayAgent = new Agent({
 
   `,
 
-  model: 'openai/gpt-5-mini',
+  model: "openai/gpt-5-mini",
 
   tools: {
     getRooms: getRoomsTool,

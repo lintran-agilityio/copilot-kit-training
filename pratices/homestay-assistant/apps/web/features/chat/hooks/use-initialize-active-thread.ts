@@ -28,7 +28,10 @@ export const useInitializeActiveThread = ({
   } = useActiveThread(agentId);
   const hasHydrated = useChatStoreHasHydrated();
   const preferDraftMode = useChatStore((state) =>
-    scopeKey ? Boolean(state.preferDraftMode[scopeKey]) : false
+    scopeKey ? Boolean(state.preferDraftMode[scopeKey]) : false,
+  );
+  const pendingOutboundMessages = useChatStore(
+    (state) => state.pendingOutboundMessages,
   );
 
   useEffect(() => {
@@ -44,6 +47,11 @@ export const useInitializeActiveThread = ({
       activeThreadId && threads.some((thread) => thread.id === activeThreadId);
 
     if (hasActiveThread) {
+      return;
+    }
+
+    // A new conversation may set activeThreadId before the merged thread list updates.
+    if (activeThreadId && pendingOutboundMessages[scopeKey]) {
       return;
     }
 
@@ -63,6 +71,7 @@ export const useInitializeActiveThread = ({
     hasHydrated,
     isLoading,
     isReady,
+    pendingOutboundMessages,
     preferDraftMode,
     scopeKey,
     setActiveThreadId,

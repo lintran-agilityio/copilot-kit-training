@@ -1,6 +1,7 @@
 import type { Room } from "@/features/room/types/room";
 import { PREFIX_URL } from "@/types";
 import { getBaseUrl } from "@/utils";
+import { ROUTES } from "@repo/constants";
 
 type GetRoomsProps = {
   via?: PREFIX_URL;
@@ -12,8 +13,8 @@ export const getRooms = async ({
   date,
 }: GetRoomsProps = {}): Promise<Room[]> => {
   const path = date
-    ? `/rooms?date=${encodeURIComponent(date)}`
-    : "/rooms";
+    ? `${ROUTES.ROOMS}?date=${encodeURIComponent(date)}`
+    : ROUTES.ROOMS;
   const baseUrl = getBaseUrl(via);
 
   const response = await fetch(`${baseUrl}${path}`, {

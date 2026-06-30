@@ -37,6 +37,9 @@ export const hydrateThreadMessages = async <TMessage>({
     );
 
     if (!response.ok) {
+      console.error(
+        `Failed to hydrate thread messages (${response.status}) for thread ${threadId}`,
+      );
       return;
     }
 

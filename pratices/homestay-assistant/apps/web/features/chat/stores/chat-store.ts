@@ -13,6 +13,11 @@ interface ChatStore {
   setPendingOutboundMessage: (scopeKey: string, message: string) => void;
   consumePendingOutboundMessage: (scopeKey: string) => string | undefined;
   setThreadTitle: (threadId: string, title: string) => void;
+  startNewConversation: (
+    scopeKey: string,
+    threadId: string,
+    message: string,
+  ) => void;
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -80,6 +85,21 @@ export const useChatStore = create<ChatStore>()(
           threadTitles: {
             ...state.threadTitles,
             [threadId]: title,
+          },
+        })),
+      startNewConversation: (scopeKey, threadId, message) =>
+        set((state) => ({
+          activeThreadIds: {
+            ...state.activeThreadIds,
+            [scopeKey]: threadId,
+          },
+          preferDraftMode: {
+            ...state.preferDraftMode,
+            [scopeKey]: false,
+          },
+          pendingOutboundMessages: {
+            ...state.pendingOutboundMessages,
+            [scopeKey]: message,
           },
         })),
     }),

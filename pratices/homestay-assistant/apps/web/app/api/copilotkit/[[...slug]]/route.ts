@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
-
 import {
   CopilotRuntime,
+  InMemoryAgentRunner,
   createCopilotRuntimeHandler,
 } from "@copilotkit/runtime/v2";
 import { getCopilotkitAgents } from "agent/copilotkit";
@@ -20,6 +20,9 @@ const copilotRuntime = new CopilotRuntime({
 
     return getCopilotkitAgents(userId);
   },
+  // Thread list/messages HTTP routes only support InMemoryAgentRunner in SSE mode.
+  // SqliteAgentRunner persists runs but does not implement listThreads/getThreadMessages.
+  runner: new InMemoryAgentRunner(),
 });
 
 const multiRouteHandler = createCopilotRuntimeHandler({

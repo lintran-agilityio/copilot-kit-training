@@ -5,7 +5,8 @@
   "exports": {
     ".": "./index.ts",
     "./agent-keys": "./agent-keys.ts",
-    "./tool-keys": "./tool-keys.ts"
+    "./tool-keys": "./tool-keys.ts",
+    "./routes": "./routes.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"

@@ -1,5 +1,6 @@
-import { BookingStatus } from "@repo/types";
+import { z } from "zod";
 
+import { BookingStatus } from "@repo/types";
 import {
   bookingSchema,
   checkRoomAvailabilityOutputSchema,
@@ -7,9 +8,8 @@ import {
   type CheckRoomAvailabilityInput,
   type CreateBookingSchema,
 } from "../mastra/schemas/booking";
-import { ROUTES } from "../constants/routes";
+import { ROUTES } from "@repo/constants";
 import { get, post, del } from "./common";
-import { z } from "zod";
 
 export type GetBookingsParams = {
   userId?: string;
