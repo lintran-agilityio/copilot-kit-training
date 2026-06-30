@@ -1,10 +1,11 @@
+import { ROUTES } from "@repo/constants";
 import type { BookingItem } from "../types/booking";
 
 export const cancelBooking = async (
   bookingId: string,
 ): Promise<BookingItem> => {
   const response = await fetch(
-    `/api/bookings/${encodeURIComponent(bookingId)}`,
+    `/api${ROUTES.BOOKINGS}/${encodeURIComponent(bookingId)}`,
     { method: "DELETE" },
   );
 

@@ -16,6 +16,11 @@
 # production
 /build
 
+# copilotkit thread persistence
+/data/
+*.db
+*.db-*
+
 # misc
 .DS_Store
 *.pem

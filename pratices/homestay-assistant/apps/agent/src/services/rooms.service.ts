@@ -3,7 +3,7 @@ import {
   roomSchema,
   type Room,
 } from "../mastra/schemas/rooms";
-import { ROUTES } from "../constants/routes";
+import { ROUTES } from "@repo/constants";
 import { get } from "./common";
 
 export const getRooms = async (): Promise<Room[]> => {

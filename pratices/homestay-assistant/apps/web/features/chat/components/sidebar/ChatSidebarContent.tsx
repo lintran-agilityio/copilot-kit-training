@@ -40,23 +40,65 @@ export const ChatSidebarContent = ({
   const { refetchThreads } = useThreadContext();
   const { scopeKey } = useActiveThread(agentId);
   const consumePendingOutboundMessage = useChatStore(
-    (state) => state.consumePendingOutboundMessage
+    (state) => state.consumePendingOutboundMessage,
   );
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId });
   const agentRef = useRef(agent);
   const copilotkitRef = useRef(copilotkit);
+  const isRuntimeConnectedRef = useRef(
+    copilotkit.runtimeConnectionStatus === "connected",
+  );
+  const wasRuntimeConnectedRef = useRef(isRuntimeConnectedRef.current);
   agentRef.current = agent;
   copilotkitRef.current = copilotkit;
-  const isRuntimeConnected = copilotkit.runtimeConnectionStatus === "connected";
+  isRuntimeConnectedRef.current =
+    copilotkit.runtimeConnectionStatus === "connected";
+
+  const isRuntimeConnected =
+    copilotkit.runtimeConnectionStatus === "connected";
 
   useChatScroll([threadId, agent.messages.length]);
 
   useAutoThreadTitle({ threadId, messages: agent.messages });
 
-  useEffect(() => {
+  const sendPendingMessageRef = useRef<(() => Promise<void>) | undefined>(
+    undefined,
+  );
+
+  sendPendingMessageRef.current = async () => {
+    if (!isRuntimeConnectedRef.current || !scopeKey) {
+      return;
+    }
+
+    const pendingMessage = consumePendingOutboundMessage(scopeKey);
+    if (!pendingMessage) {
+      return;
+    }
+
     const currentAgent = agentRef.current;
     const currentCopilotkit = copilotkitRef.current;
+
+    if (currentAgent.threadId !== threadId) {
+      currentAgent.threadId = threadId;
+    }
+
+    currentAgent.addMessage({
+      id: crypto.randomUUID(),
+      role: "user",
+      content: pendingMessage,
+    });
+
+    try {
+      await currentCopilotkit.runAgent({ agent: currentAgent });
+    } catch (error) {
+      console.error("Failed to send pending message", error);
+    }
+  };
+
+  // Load persisted history when the active thread changes.
+  useEffect(() => {
+    const currentAgent = agentRef.current;
 
     if (typeof currentAgent.setMessages !== "function") {
       return;
@@ -67,7 +109,7 @@ export const ChatSidebarContent = ({
 
     const controller = new AbortController();
 
-    const syncThread = async () => {
+    const loadHistory = async () => {
       await hydrateThreadMessages({
         threadId,
         agentId,
@@ -80,44 +122,25 @@ export const ChatSidebarContent = ({
         return;
       }
 
-      if (!isRuntimeConnected) {
-        return;
-      }
-
-      const pendingMessage = scopeKey
-        ? consumePendingOutboundMessage(scopeKey)
-        : undefined;
-
-      if (!pendingMessage) {
-        return;
-      }
-
-      currentAgent.addMessage({
-        id: crypto.randomUUID(),
-        role: "user",
-        content: pendingMessage,
-      });
-
-      try {
-        await currentCopilotkit.runAgent({ agent: currentAgent });
-      } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        console.error("Failed to send pending message", error);
-      }
+      await sendPendingMessageRef.current?.();
     };
 
-    syncThread();
+    loadHistory();
+
     return () => controller.abort();
-  }, [
-    agentId,
-    consumePendingOutboundMessage,
-    isRuntimeConnected,
-    scopeKey,
-    threadId,
-  ]);
+  }, [agentId, threadId]);
+
+  // Send a draft-panel message when the runtime connects after hydration.
+  useEffect(() => {
+    const wasConnected = wasRuntimeConnectedRef.current;
+    wasRuntimeConnectedRef.current = isRuntimeConnected;
+
+    if (!isRuntimeConnected || wasConnected) {
+      return;
+    }
+
+    sendPendingMessageRef.current?.();
+  }, [isRuntimeConnected, scopeKey, threadId]);
 
   useEffect(() => {
     if (!agent.isRunning) {
@@ -130,7 +153,7 @@ export const ChatSidebarContent = ({
       className={cn(
         "flex h-full w-full flex-col border-l border-white/10 bg-[#0a0a0a]",
 
-        className
+        className,
       )}
     >
       <HeaderChat />
@@ -140,7 +163,7 @@ export const ChatSidebarContent = ({
         className={cn(
           "flex min-h-0 flex-1 flex-col overflow-hidden",
 
-          "[&_.copilotKitChat]:flex [&_.copilotKitChat]:h-full [&_.copilotKitChat]:min-h-0 [&_.copilotKitChat]:flex-col"
+          "[&_.copilotKitChat]:flex [&_.copilotKitChat]:h-full [&_.copilotKitChat]:min-h-0 [&_.copilotKitChat]:flex-col",
         )}
       >
         <CopilotChat

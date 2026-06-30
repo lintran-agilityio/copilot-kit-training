@@ -19,11 +19,8 @@ export const ChatDraftPanel = ({ className, agentId }: ChatSidebarProps) => {
   const [input, setInput] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const { createThread } = useThreadContext();
-  const { scopeKey, setActiveThreadId } = useActiveThread(agentId);
-  const setPreferDraftMode = useChatStore((state) => state.setPreferDraftMode);
-  const setPendingOutboundMessage = useChatStore(
-    (state) => state.setPendingOutboundMessage,
-  );
+  const { scopeKey } = useActiveThread(agentId);
+  const startNewConversation = useChatStore((state) => state.startNewConversation);
 
   const startConversation = async (message: string) => {
     const trimmed = message.trim();
@@ -34,9 +31,7 @@ export const ChatDraftPanel = ({ className, agentId }: ChatSidebarProps) => {
     setIsStarting(true);
     try {
       const thread = await createThread();
-      setPreferDraftMode(scopeKey, false);
-      setPendingOutboundMessage(scopeKey, trimmed);
-      setActiveThreadId(thread.id);
+      startNewConversation(scopeKey, thread.id, trimmed);
       setInput("");
     } catch (error) {
       console.error("Failed to start a new conversation", error);

@@ -1,6 +1,7 @@
 import { getBaseUrl } from "@/utils";
 import type { BookingResponse } from "../types/booking";
 import { PREFIX_URL } from "@/types";
+import { ROUTES } from "@repo/constants";
 
 type GetMyBookingsProps = {
   via?: PREFIX_URL;
@@ -13,8 +14,8 @@ export const getMyBookings = async ({
 }: GetMyBookingsProps = {}): Promise<BookingResponse[]> => {
   const path =
     via === PREFIX_URL.WEB
-      ? "/bookings"
-      : `/bookings?userId=${encodeURIComponent(userId ?? "")}`;
+      ? ROUTES.BOOKINGS
+      : `${ROUTES.BOOKINGS}?userId=${encodeURIComponent(userId ?? "")}`;
   const baseUrl = getBaseUrl(via);
 
   const response = await fetch(`${baseUrl}${path}`, {

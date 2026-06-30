@@ -1,6 +1,7 @@
 import type { Room } from "@/features/room/types/room";
 import { PREFIX_URL } from "@/types";
 import { getBaseUrl } from "@/utils";
+import { ROUTES } from "@repo/constants";
 
 type GetRoomByIdProps = {
   via?: PREFIX_URL;
@@ -33,7 +34,7 @@ export const getRoomById = async ({
   }
 
   const query = params.toString();
-  const path = `/rooms/${encodeURIComponent(roomId)}${query ? `?${query}` : ""}`;
+  const path = `${ROUTES.ROOMS}/${encodeURIComponent(roomId)}${query ? `?${query}` : ""}`;
   const response = await fetch(`${baseUrl}${path}`, {
     cache: "no-store",
   });
