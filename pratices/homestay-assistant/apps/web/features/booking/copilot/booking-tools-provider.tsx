@@ -17,7 +17,7 @@ import {
   type ConfirmDeleteBookingResult,
 } from "@/features/booking/schemas";
 import type { BookingDetails } from "@/features/booking/types";
-import { refreshBookedRooms } from "../utils";
+import { refreshMyBookings } from "../utils";
 
 export const BookingToolsProvider = () => {
   const router = useRouter();
@@ -29,14 +29,14 @@ export const BookingToolsProvider = () => {
       description:
         "Show the user's booked rooms on the My Bookings page. No parameters needed.",
       handler: async () => {
-        const bookedRooms = await refreshBookedRooms();
+        const bookings = await refreshMyBookings();
         router.push(ROUTES.BOOKINGS);
 
-        if (!bookedRooms.length) {
+        if (!bookings.length) {
           return "Opened My Bookings. You have no booked rooms yet.";
         }
 
-        return `Opened My Bookings with ${bookedRooms.length} booked room(s).`;
+        return `Opened My Bookings with ${bookings.length} booking(s).`;
       },
     },
     [router],

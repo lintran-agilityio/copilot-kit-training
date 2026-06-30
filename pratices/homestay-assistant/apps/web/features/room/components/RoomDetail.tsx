@@ -1,9 +1,10 @@
 "use client";
 
 import { CalendarCheck, CheckCircle2, Minus, Plus, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
 import { useCreateBooking } from "@/features/booking/hooks/use-create-booking";
 import { useNotifyAgentBookingSummary } from "@/features/booking/hooks/use-notify-agent-booking-summary";
 import { useRequestRoomBooking } from "@/features/booking/hooks/use-request-room-booking";
@@ -11,8 +12,10 @@ import { useBooking } from "@/features/booking/hooks/use-booking";
 import { AmenitiesRoom } from "@/features/room/components";
 import { RoomBookingDates } from "@/features/room/components/RoomBookingDates";
 import { RoomImageGallery } from "@/features/room/components/RoomImageGallery";
+import { getRoomById } from "@/features/room/services";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
+import { PREFIX_URL } from "@/types";
 import {
   addDays,
   startOfDay,
@@ -27,6 +30,19 @@ type RoomDetailProps = Room & {
   imageUrls?: string[];
 };
 
+const dateKeysEqual = (
+  a: string | null | undefined,
+  b: string | null | undefined,
+) => Boolean(a && b && a === b);
+
+const getDefaultDates = () => {
+  const today = startOfDay(new Date());
+  return {
+    checkIn: toDateKey(today),
+    checkOut: toDateKey(addDays(today, 1)),
+  };
+};
+
 export const RoomDetail = ({
   className,
   pricePerNight,
@@ -39,6 +55,7 @@ export const RoomDetail = ({
   const setGuests = useBooking((state) => state.setGuests);
   const calculateTotalPrice = useBooking((state) => state.calculateTotalPrice);
   const isFormReady = useBooking((state) => state.isFormReady);
+  const setFormReady = useBooking((state) => state.setFormReady);
   const formRevision = useBooking((state) => state.formRevision);
   const storeCheckInDate = useBooking((state) => state.checkInDate);
   const storeCheckOutDate = useBooking((state) => state.checkOutDate);
@@ -55,16 +72,68 @@ export const RoomDetail = ({
     (state) => state.closeRoomDetailDrawer,
   );
 
-  const [checkInDate, setLocalCheckIn] = useState<string | null>(() =>
-    toDateKey(startOfDay(new Date())),
+  const {
+    id,
+    name,
+    capacity,
+    description,
+    imageUrl,
+    availableSlots,
+    level,
+    levelColor,
+    amenities = [],
+    bookingStatus,
+    checkInDate: roomCheckInDate,
+    checkOutDate: roomCheckOutDate,
+  } = room;
+
+  const [checkInDate, setLocalCheckIn] = useState<string | null>(() => {
+    if (roomCheckInDate) {
+      return roomCheckInDate;
+    }
+
+    return getDefaultDates().checkIn;
+  });
+  const [checkOutDate, setLocalCheckOut] = useState<string | null>(() => {
+    if (roomCheckOutDate) {
+      return roomCheckOutDate;
+    }
+
+    return getDefaultDates().checkOut;
+  });
+  const [guests, setLocalGuests] = useState(storeGuests ?? 1);
+  const [isAvailable, setIsAvailable] = useState<boolean | undefined>(
+    room.available,
   );
-  const [checkOutDate, setLocalCheckOut] = useState<string | null>(() =>
-    toDateKey(addDays(startOfDay(new Date()), 1)),
-  );
-  const [guests, setLocalGuests] = useState(1);
 
   useEffect(() => {
-    if (storeSelectedRoomId !== room.id) {
+    if (roomCheckInDate && roomCheckOutDate) {
+      setLocalCheckIn(roomCheckInDate);
+      setLocalCheckOut(roomCheckOutDate);
+      return;
+    }
+
+    if (
+      storeSelectedRoomId === id &&
+      storeCheckInDate &&
+      storeCheckOutDate
+    ) {
+      setLocalCheckIn(storeCheckInDate);
+      setLocalCheckOut(storeCheckOutDate);
+      if (storeGuests) {
+        setLocalGuests(storeGuests);
+      }
+      return;
+    }
+
+    const defaults = getDefaultDates();
+    setLocalCheckIn(defaults.checkIn);
+    setLocalCheckOut(defaults.checkOut);
+    setLocalGuests(1);
+  }, [id, roomCheckInDate, roomCheckOutDate, storeCheckInDate, storeCheckOutDate, storeGuests, storeSelectedRoomId]);
+
+  useEffect(() => {
+    if (storeSelectedRoomId !== id) {
       return;
     }
 
@@ -81,7 +150,7 @@ export const RoomDetail = ({
     }
   }, [
     formRevision,
-    room.id,
+    id,
     storeCheckInDate,
     storeCheckOutDate,
     storeGuests,
@@ -101,12 +170,82 @@ export const RoomDetail = ({
     }
   }, [checkInDate, checkOutDate]);
 
+  const matchesExistingBooking = useMemo(
+    () =>
+      Boolean(bookingStatus) &&
+      dateKeysEqual(checkInDate, roomCheckInDate) &&
+      dateKeysEqual(checkOutDate, roomCheckOutDate),
+    [bookingStatus, checkInDate, checkOutDate, roomCheckInDate, roomCheckOutDate],
+  );
+
+  const matchesAgentDraft = useMemo(
+    () =>
+      isFormReady &&
+      storeSelectedRoomId === id &&
+      dateKeysEqual(checkInDate, storeCheckInDate) &&
+      dateKeysEqual(checkOutDate, storeCheckOutDate) &&
+      guests === storeGuests,
+    [
+      isFormReady,
+      storeSelectedRoomId,
+      id,
+      checkInDate,
+      checkOutDate,
+      storeCheckInDate,
+      storeCheckOutDate,
+      guests,
+      storeGuests,
+    ],
+  );
+
+  useEffect(() => {
+    if (
+      !checkInDate ||
+      !checkOutDate ||
+      checkInDate === checkOutDate ||
+      matchesExistingBooking
+    ) {
+      setIsAvailable(undefined);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchAvailability = async () => {
+      try {
+        const result = await getRoomById({
+          via: PREFIX_URL.WEB,
+          roomId: id,
+          checkInDate,
+          checkOutDate,
+        });
+
+        if (!cancelled) {
+          setIsAvailable(result.available);
+        }
+      } catch {
+        if (!cancelled) {
+          setIsAvailable(undefined);
+        }
+      }
+    };
+
+    void fetchAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [checkInDate, checkOutDate, id, matchesExistingBooking]);
+
   const formattedPrice = formatPrice(pricePerNight);
   const canProceed =
     Boolean(checkInDate && checkOutDate && pricePerNight != null) &&
     checkInDate !== checkOutDate &&
     guests >= 1 &&
-    guests <= room.capacity;
+    guests <= capacity;
+
+  const isBookingDisabled =
+    matchesExistingBooking || isAvailable === false;
 
   const estimatedTotal = useMemo(() => {
     if (!canProceed || !pricePerNight || !checkInDate || !checkOutDate) {
@@ -118,16 +257,41 @@ export const RoomDetail = ({
     );
   }, [canProceed, checkInDate, checkOutDate, pricePerNight]);
 
+  const invalidateDraftIfDrifted = useCallback(
+    (nextCheckIn: string, nextCheckOut: string, nextGuests: number) => {
+      if (
+        !isFormReady ||
+        storeSelectedRoomId !== id ||
+        (dateKeysEqual(nextCheckIn, storeCheckInDate) &&
+          dateKeysEqual(nextCheckOut, storeCheckOutDate) &&
+          nextGuests === storeGuests)
+      ) {
+        return;
+      }
+
+      setFormReady(false);
+    },
+    [
+      id,
+      isFormReady,
+      setFormReady,
+      storeCheckInDate,
+      storeCheckOutDate,
+      storeGuests,
+      storeSelectedRoomId,
+    ],
+  );
+
   const syncDraft = () => {
     if (!checkInDate || !checkOutDate || pricePerNight == null) {
       return;
     }
 
     setSelectedRoom({
-      id: room.id,
-      name: room.name,
+      id,
+      name,
       pricePerNight,
-      capacity: room.capacity,
+      capacity,
     });
     setCheckInDate(checkInDate);
     setCheckOutDate(checkOutDate);
@@ -136,53 +300,79 @@ export const RoomDetail = ({
   };
 
   const handleBook = () => {
-    if (!canProceed || !checkInDate || !checkOutDate || pricePerNight == null) {
+    if (
+      isBookingDisabled ||
+      !canProceed ||
+      !checkInDate ||
+      !checkOutDate ||
+      pricePerNight == null
+    ) {
       return;
     }
 
     syncDraft();
     requestRoomBooking(
-      `Book ${room.name} from ${checkInDate} to ${checkOutDate} for ${guests} guest${guests === 1 ? "" : "s"}.`,
+      `Book ${name} from ${checkInDate} to ${checkOutDate} for ${guests} guest${guests === 1 ? "" : "s"}.`,
     );
     closeRoomDetailDrawer();
   };
 
   const handleConfirm = async () => {
-    if (!canProceed || !checkInDate || !checkOutDate || pricePerNight == null) {
+    if (
+      isBookingDisabled ||
+      !canProceed ||
+      !checkInDate ||
+      !checkOutDate ||
+      pricePerNight == null
+    ) {
       return;
     }
 
     syncDraft();
 
     try {
-      const booking = await createBooking({
-        roomId: room.id,
-        checkInDate,
-        checkOutDate,
-        guests,
-      });
-      await notifyAgentBookingSummary(booking, room.name);
-    } catch {
-      // submitError is set in useCreateBooking
+      const booking = await createBooking(
+        {
+          roomId: id,
+          checkInDate,
+          checkOutDate,
+          guests,
+        },
+        room,
+      );
+      await notifyAgentBookingSummary(booking, name);
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to create booking",
+      );
     }
   };
 
   const handleCheckInChange = (dateKey: string) => {
     setLocalCheckIn(dateKey);
     setCheckInDate(dateKey);
+    invalidateDraftIfDrifted(dateKey, checkOutDate ?? "", guests);
     calculateTotalPrice();
   };
 
   const handleCheckOutChange = (dateKey: string) => {
     setLocalCheckOut(dateKey);
     setCheckOutDate(dateKey);
+    invalidateDraftIfDrifted(checkInDate ?? "", dateKey, guests);
     calculateTotalPrice();
   };
 
   const handleGuestsChange = (count: number) => {
     setLocalGuests(count);
     setGuests(count);
+    invalidateDraftIfDrifted(checkInDate ?? "", checkOutDate ?? "", count);
   };
+
+  const headerLabel = matchesExistingBooking
+    ? "Your booking"
+    : matchesAgentDraft
+      ? "Review booking"
+      : "Room detail";
 
   return (
     <article
@@ -192,27 +382,33 @@ export const RoomDetail = ({
       )}
     >
       <RoomImageGallery
-        roomId={room.id}
-        imageUrl={room.imageUrl}
+        roomId={id}
+        imageUrl={imageUrl}
         imageUrls={imageUrls}
-        name={room.name}
-        level={room.level}
-        levelColor={room.levelColor}
-        availableSlots={room.availableSlots}
+        name={name}
+        level={level ?? 0}
+        levelColor={levelColor ?? ""}
+        availableSlots={availableSlots}
       />
 
       <div className="flex flex-col gap-5 p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
-              {isFormReady ? "Review booking" : "Room detail"}
+              {headerLabel}
             </p>
-            <h2 className="text-xl font-semibold text-white">{room.name}</h2>
+            <h2 className="text-xl font-semibold text-white">{name}</h2>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-zinc-300">
-            <Users className="size-4" />
-            <span className="text-sm">{room.capacity} guests</span>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {bookingStatus ? (
+              <BookingStatusBadge status={bookingStatus} />
+            ) : null}
+
+            <div className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-zinc-300">
+              <Users className="size-4" />
+              <span className="text-sm">{capacity} guests</span>
+            </div>
           </div>
         </div>
 
@@ -223,15 +419,13 @@ export const RoomDetail = ({
           </p>
         ) : null}
 
-        <p className="text-sm leading-relaxed text-zinc-400">
-          {room.description}
-        </p>
+        <p className="text-sm leading-relaxed text-zinc-400">{description}</p>
 
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
             Amenities
           </p>
-          <AmenitiesRoom amenities={room.amenities} />
+          <AmenitiesRoom amenities={amenities} />
         </div>
 
         {submitStatus === "success" && createdBooking ? (
@@ -250,7 +444,9 @@ export const RoomDetail = ({
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-zinc-500">Guests</dt>
-                <dd className="text-right text-zinc-100">{createdBooking.guests}</dd>
+                <dd className="text-right text-zinc-100">
+                  {createdBooking.guests}
+                </dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-zinc-500">Total</dt>
@@ -287,7 +483,7 @@ export const RoomDetail = ({
 
               <div className="flex items-center justify-between gap-4">
                 <p className="text-sm text-zinc-400">
-                  Up to {room.capacity} guest{room.capacity === 1 ? "" : "s"}
+                  Up to {capacity} guest{capacity === 1 ? "" : "s"}
                 </p>
 
                 <div className="flex items-center gap-3">
@@ -295,9 +491,7 @@ export const RoomDetail = ({
                     type="button"
                     aria-label="Decrease guests"
                     disabled={guests <= 1}
-                    onClick={() =>
-                      handleGuestsChange(Math.max(1, guests - 1))
-                    }
+                    onClick={() => handleGuestsChange(Math.max(1, guests - 1))}
                     className="flex size-8 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30"
                   >
                     <Minus className="size-4" />
@@ -310,9 +504,9 @@ export const RoomDetail = ({
                   <button
                     type="button"
                     aria-label="Increase guests"
-                    disabled={guests >= room.capacity}
+                    disabled={guests >= capacity}
                     onClick={() =>
-                      handleGuestsChange(Math.min(room.capacity, guests + 1))
+                      handleGuestsChange(Math.min(capacity, guests + 1))
                     }
                     className="flex size-8 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30"
                   >
@@ -321,6 +515,19 @@ export const RoomDetail = ({
                 </div>
               </div>
             </div>
+
+            {matchesExistingBooking ? (
+              <p className="text-sm text-zinc-400">
+                You already have a booking for these dates. Select different
+                dates to book another stay.
+              </p>
+            ) : null}
+
+            {isAvailable === false ? (
+              <p className="text-sm text-red-400">
+                The room is not available for this date. Select another date range to book this room.
+              </p>
+            ) : null}
 
             {submitError ? (
               <p className="text-sm text-red-400">{submitError}</p>
@@ -336,12 +543,16 @@ export const RoomDetail = ({
                 </div>
               ) : null}
 
-              {isFormReady ? (
+              {matchesAgentDraft ? (
                 <Button
                   type="button"
                   size="lg"
-                  className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400"
-                  disabled={!canProceed || submitStatus === "submitting"}
+                  className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed"
+                  disabled={
+                    !canProceed ||
+                    isBookingDisabled ||
+                    submitStatus === "submitting"
+                  }
                   onClick={() => void handleConfirm()}
                 >
                   <CalendarCheck className="size-4" />
@@ -353,8 +564,8 @@ export const RoomDetail = ({
                 <Button
                   type="button"
                   size="lg"
-                  className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400"
-                  disabled={!canProceed}
+                  className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed"
+                  disabled={!canProceed || isBookingDisabled}
                   onClick={handleBook}
                 >
                   <CalendarCheck className="size-4" />

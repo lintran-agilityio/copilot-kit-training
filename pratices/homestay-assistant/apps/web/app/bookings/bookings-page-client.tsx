@@ -1,28 +1,39 @@
 "use client";
 
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 
 import { NavbarTab } from "@repo/types";
 import { MainLayout } from "@/components/layouts";
 import { PageHeader } from "@/components/common";
-import { RoomGrid } from "@/features/room/components";
-import { useRoomStore } from "@/features/room/stores/room-store";
-import type { Room } from "@/features/room/types/room";
-import { BOOKED_ROOMS_TITLE } from "@/features/booking/utils";
+import { BookingList } from "@/features/booking/components";
+import { useBookingsStore } from "@/features/booking/stores/bookings-store";
+import type { BookingResponse } from "@/features/booking/types/booking";
+
+const MY_BOOKINGS_TITLE = "Your reservations";
 
 type BookingsPageClientProps = {
-  bookedRooms: Room[];
+  bookings: BookingResponse[];
 };
 
-export const BookingsPageClient = ({ bookedRooms }: BookingsPageClientProps) => {
+export const BookingsPageClient = ({ bookings }: BookingsPageClientProps) => {
+  const [hydrated, setHydrated] = useState(false);
+  const storeBookings = useBookingsStore((state) => state.bookings);
+
   useLayoutEffect(() => {
-    useRoomStore.getState().updateRoomList(bookedRooms, BOOKED_ROOMS_TITLE);
-  }, [bookedRooms]);
+    useBookingsStore.getState().setBookings(bookings);
+    setHydrated(true);
+  }, [bookings]);
+
+  const displayBookings = hydrated ? storeBookings : bookings;
 
   return (
     <MainLayout activeTab={NavbarTab.MY_BOOKINGS}>
       <PageHeader label="MY BOOKINGS" title="Your reservations" />
-      <RoomGrid className="mt-8" initialRooms={bookedRooms} />
+      <BookingList
+        bookings={displayBookings}
+        title={MY_BOOKINGS_TITLE}
+        className="mt-8"
+      />
     </MainLayout>
   );
 };

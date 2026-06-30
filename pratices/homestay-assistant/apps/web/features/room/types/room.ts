@@ -1,3 +1,5 @@
+import type { BookingStatus } from "@repo/types";
+
 export type Amenity =
   | "monitor"
   | "coffee"
@@ -19,6 +21,10 @@ export type Room = {
   availableSlots: number;
   pricePerNight?: number;
   amenities: Amenity[];
+  bookingStatus?: BookingStatus;
+  checkInDate?: string;
+  checkOutDate?: string;
+  available?: boolean;
 };
 
 export enum RoomLoadMode {

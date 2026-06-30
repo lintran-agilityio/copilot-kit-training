@@ -18,7 +18,6 @@ export const CHAT_HIDDEN_TOOLS = new Set([
   "getBookings",
   "findBookingByRoom",
   TOOL_KEYS.BOOKING.FIND_BY_ROOM,
-  "workflow-cancelBookingWorkflow",
   "open_bookings_page",
   "show_all_rooms_page",
   "show_available_rooms_page",

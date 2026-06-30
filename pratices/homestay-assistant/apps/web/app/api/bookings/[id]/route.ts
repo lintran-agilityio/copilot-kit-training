@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 
-import { getApiUrl } from "@/utils";
+import { getBaseUrl } from "@/utils";
+import { PREFIX_URL } from "@/types";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -14,8 +15,9 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  const baseUrl = getBaseUrl(PREFIX_URL.BACKEND);
 
-  const response = await fetch(`${getApiUrl()}/bookings/${encodeURIComponent(id)}`, {
+  const response = await fetch(`${baseUrl}/bookings/${encodeURIComponent(id)}`, {
     method: "DELETE",
     cache: "no-store",
   });

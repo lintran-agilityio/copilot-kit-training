@@ -6,8 +6,9 @@ import {
   ManyToOne,
   PrimaryColumn,
 } from 'typeorm';
+
+import { BookingStatus } from '../../../types/enum';
 import { BaseEntity } from '../../../common/base/entity';
-import { BookingStatus } from '../../../database/entities/enums';
 import { UserEntity } from '../../../database/entities/user.entity';
 import { RoomEntity } from '../../rooms/entities/room.entity';
 

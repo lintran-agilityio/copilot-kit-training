@@ -11,6 +11,7 @@ import { DateSelected } from "./DateSelected";
 type RoomBookingDatesProps = {
   checkInDate: string | null;
   checkOutDate: string | null;
+  disabled?: boolean;
   onCheckInChange: (dateKey: string) => void;
   onCheckOutChange: (dateKey: string) => void;
 };
@@ -18,6 +19,7 @@ type RoomBookingDatesProps = {
 export const RoomBookingDates = ({
   checkInDate,
   checkOutDate,
+  disabled = false,
   onCheckInChange,
   onCheckOutChange,
 }: RoomBookingDatesProps) => {
@@ -28,13 +30,14 @@ export const RoomBookingDates = ({
   return (
     <div className="space-y-4 rounded-xl border border-white/8 bg-white/[0.02] p-4">
       <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
-        Select dates
+        {disabled ? "Booking dates" : "Select dates"}
       </p>
 
       <DateSelected
         label="Check-in"
         selectedDate={checkIn}
         minDate={startOfDay(new Date())}
+        disabled={disabled}
         onSelect={(date) => onCheckInChange(toDateKey(date))}
       />
 
@@ -42,6 +45,7 @@ export const RoomBookingDates = ({
         label="Check-out"
         selectedDate={checkOut}
         minDate={minCheckOut}
+        disabled={disabled}
         onSelect={(date) => onCheckOutChange(toDateKey(date))}
       />
     </div>

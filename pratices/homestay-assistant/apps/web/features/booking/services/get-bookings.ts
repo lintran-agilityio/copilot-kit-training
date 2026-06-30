@@ -1,21 +1,23 @@
-import { getApiUrl } from "@/utils";
+import { getBaseUrl } from "@/utils";
 import type { BookingResponse } from "../types/booking";
+import { PREFIX_URL } from "@/types";
 
 type GetMyBookingsProps = {
-  configUrl?: string;
+  via?: PREFIX_URL;
   userId?: string;
 };
 
 export const getMyBookings = async ({
-  configUrl = getApiUrl(),
+  via = PREFIX_URL.BACKEND,
   userId,
 }: GetMyBookingsProps = {}): Promise<BookingResponse[]> => {
   const path =
-    configUrl === "/api"
+    via === PREFIX_URL.WEB
       ? "/bookings"
       : `/bookings?userId=${encodeURIComponent(userId ?? "")}`;
+  const baseUrl = getBaseUrl(via);
 
-  const response = await fetch(`${configUrl}${path}`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     cache: "no-store",
   });
 

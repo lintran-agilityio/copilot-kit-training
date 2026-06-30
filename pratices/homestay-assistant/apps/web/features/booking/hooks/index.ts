@@ -1,4 +1,5 @@
 export * from "./use-booking";
+export * from "./use-bookings";
 export * from "./use-create-booking";
 export * from "./use-cancel-booking";
 export * from "./use-notify-agent-booking-summary";

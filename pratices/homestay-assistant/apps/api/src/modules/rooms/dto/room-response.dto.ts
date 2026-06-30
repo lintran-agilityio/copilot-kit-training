@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Amenity } from '../../../database/entities/enums';
+import { BookingStatus } from '../../../types/enum';
 
 export class RoomResponseDto {
   @ApiProperty({
@@ -57,6 +58,23 @@ export class RoomResponseDto {
   pricePerNight: number;
 
   @ApiProperty({
+    description:
+      'Active booking status for the requested user on this room, when userId is provided',
+    enum: BookingStatus,
+    required: false,
+    example: BookingStatus.CONFIRMED,
+  })
+  bookingStatus?: BookingStatus;
+
+  @ApiProperty({
+    description:
+      'Whether the room is available for the requested date range, when checkInDate and checkOutDate are provided',
+    required: false,
+    example: true,
+  })
+  available?: boolean;
+
+  @ApiProperty({
     description: 'Room amenities',
     example: [
       Amenity.MONITOR,
@@ -68,4 +86,18 @@ export class RoomResponseDto {
     isArray: true,
   })
   amenities: Amenity[];
+
+  @ApiProperty({
+    description: 'Check-in date of the active booking',
+    example: '2026-07-01',
+    required: false,
+  })
+  checkInDate?: string;
+
+  @ApiProperty({
+    description: 'Check-out date of the active booking',
+    example: '2026-07-03',
+    required: false,
+  })
+  checkOutDate?: string;
 }
