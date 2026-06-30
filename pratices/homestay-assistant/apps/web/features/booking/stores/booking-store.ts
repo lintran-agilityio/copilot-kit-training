@@ -4,7 +4,7 @@ import { createStore } from "zustand";
 import type {
   BookingDraft,
   BookingSubmitStatus,
-  CreatedBooking,
+  BookingItem,
   SelectedRoom,
   UpdateBookingFormInput,
 } from "@/features/booking/types/booking";
@@ -14,7 +14,7 @@ export interface BookingStore extends BookingDraft {
   formRevision: number;
   submitStatus: BookingSubmitStatus;
   submitError: string | null;
-  createdBooking: CreatedBooking | null;
+  createdBooking: BookingItem | null;
   setSelectedRoom: (room: SelectedRoom) => void;
   setCheckInDate: (date: string) => void;
   setCheckOutDate: (date: string) => void;
@@ -23,7 +23,7 @@ export interface BookingStore extends BookingDraft {
   updateBookingForm: (input: UpdateBookingFormInput) => void;
   setFormReady: (ready: boolean) => void;
   setSubmitStatus: (status: BookingSubmitStatus, error?: string | null) => void;
-  setCreatedBooking: (booking: CreatedBooking) => void;
+  setCreatedBooking: (booking: BookingItem) => void;
   resetBooking: () => void;
 }
 

@@ -3,11 +3,11 @@
 import { useCallback } from "react";
 
 import { cancelBookingAction } from "@/features/booking/actions/cancel-booking-action";
-import { refreshBookedRooms } from "@/features/booking/utils";
+import { useBookingsStore } from "@/features/booking/stores/bookings-store";
 
 export const useCancelBooking = () =>
   useCallback(async (bookingId: string) => {
     const booking = await cancelBookingAction(bookingId);
-    await refreshBookedRooms();
+    useBookingsStore.getState().removeBooking(bookingId);
     return booking;
   }, []);

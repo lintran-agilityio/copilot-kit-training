@@ -1,22 +1,20 @@
-import { BookingStatus } from "@repo/types";
+import {
+  BookingStatus,
+  type CancellationBookingSummary,
+  type FindBookingByRoomResult,
+} from "@repo/types";
 
-import type { Booking } from "../mastra/schemas/booking";
 import { getBookings } from "./booking.services";
-import { getRooms } from "./rooms.service";
 
-export type CancellationBookingMatch = {
-  bookingId: string;
-  roomName: string;
+type BookingWithRoom = {
+  id: string;
   checkInDate: string;
   checkOutDate: string;
   guests: number;
   totalPrice: number;
+  status: string;
+  room?: { name?: string };
 };
-
-export type FindBookingByRoomResult =
-  | { status: "found"; booking: CancellationBookingMatch }
-  | { status: "not_found"; message: string }
-  | { status: "ambiguous"; bookings: CancellationBookingMatch[]; message: string };
 
 const normalizeRoomName = (name: string) => name.trim().toLowerCase();
 
@@ -33,10 +31,10 @@ const matchesRoomName = (roomName: string, query: string) => {
 
 const isActiveBooking = (status: string) => status !== BookingStatus.CANCELLED;
 
-const toCancellationMatch = (
-  booking: Booking,
+const toCancellationSummary = (
+  booking: BookingWithRoom,
   roomName: string,
-): CancellationBookingMatch => ({
+): CancellationBookingSummary => ({
   bookingId: booking.id,
   roomName,
   checkInDate: booking.checkInDate,
@@ -58,27 +56,22 @@ export const findBookingByRoomName = async (
     };
   }
 
-  const [bookings, rooms] = await Promise.all([
-    getBookings({ userId }),
-    getRooms(),
-  ]);
-
-  const roomsById = new Map(rooms.map((room) => [room.id, room.name]));
+  const bookings = await getBookings({ userId });
   const activeBookings = bookings.filter((booking) =>
     isActiveBooking(booking.status),
   );
 
   const matches = activeBookings
     .map((booking) => {
-      const name = booking.room?.name ?? roomsById.get(booking.roomId);
+      const name = booking.room?.name;
 
       if (!name || !matchesRoomName(name, trimmedRoomName)) {
         return null;
       }
 
-      return toCancellationMatch(booking, name);
+      return toCancellationSummary(booking, name);
     })
-    .filter((match): match is CancellationBookingMatch => match != null);
+    .filter((match): match is CancellationBookingSummary => match != null);
 
   if (matches.length === 0) {
     return {

@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { BookingStatus } from '../../../database/entities/enums';
+import { BookingStatus } from '../../../types/enum';
 import { UserEntity } from '../../../database/entities/user.entity';
 import { parseDateRange, toDateKey } from '../../../utils';
 import { RoomsRepository } from '../../rooms/repositories/rooms.repository';

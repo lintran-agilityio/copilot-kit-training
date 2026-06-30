@@ -15,6 +15,7 @@ import {
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
 import { getRooms, getRoomById } from "../services";
+import { PREFIX_URL } from "@/types";
 
 const navigateToHomeIfNeeded = (
   pathname: string,
@@ -39,7 +40,7 @@ export const RoomToolsProvider = () => {
         "Show all rooms on the home page. No parameters needed.",
       handler: async () => {
         const rooms = await getRooms({
-          configUrl: '/api',
+          via: PREFIX_URL.WEB,
         });
         useRoomStore.getState().updateRoomList(rooms, undefined);
         navigateToHomeIfNeeded(pathname, router);
@@ -62,7 +63,7 @@ export const RoomToolsProvider = () => {
           date ?? new Date().toISOString().slice(0, 10);
 
         const rooms = await getRooms({
-          configUrl: '/api',
+          via: PREFIX_URL.WEB,
           date: checkInDate
         });
         useRoomStore.getState().updateRoomList(rooms, "Available rooms");
@@ -82,18 +83,9 @@ export const RoomToolsProvider = () => {
         "Open the room detail drawer by room ID. Pass roomId only.",
       parameters: openRoomDetailDrawerSchema,
       handler: async ({ roomId }) => {
-        const response = await fetch(
-          `/api/rooms/${encodeURIComponent(roomId)}`,
-        );
-
-        if (!response.ok) {
-          return `Could not find room "${roomId}".`;
-        }
-
-        // const room = (await response.json()) as Room;
         const room = await getRoomById({
-          configUrl: '/api',
-          roomId: encodeURIComponent(roomId)
+          via: PREFIX_URL.WEB,
+          roomId,
         });
         useRoomStore.getState().openRoomDetailDrawer(room);
 

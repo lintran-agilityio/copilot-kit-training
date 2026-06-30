@@ -8,6 +8,7 @@ type DateStripProps = {
   label: string;
   selectedDate: Date | null;
   minDate?: Date;
+  disabled?: boolean;
   onSelect: (date: Date) => void;
 };
 
@@ -15,6 +16,7 @@ export const DateSelected = ({
   label,
   selectedDate,
   minDate,
+  disabled = false,
   onSelect,
 }: DateStripProps) => {
   const today = startOfDay(new Date());
@@ -47,15 +49,17 @@ export const DateSelected = ({
         <button
           type="button"
           aria-label={`Previous ${label.toLowerCase()} dates`}
+          disabled={disabled}
           onClick={() => setWindowStart((current) => addDays(current, -7))}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30"
         >
           <ChevronLeft className="size-4" />
         </button>
 
         <div className="app-scrollbar flex flex-1 gap-2 overflow-x-auto pb-1">
           {dates.map((date) => {
-            const isDisabled = minDate ? date < minDate : date < today;
+            const isDisabled =
+              disabled || (minDate ? date < minDate : date < today);
 
             return (
               <CalendarDateButton
@@ -78,8 +82,9 @@ export const DateSelected = ({
         <button
           type="button"
           aria-label={`Next ${label.toLowerCase()} dates`}
+          disabled={disabled}
           onClick={() => setWindowStart((current) => addDays(current, 7))}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30"
         >
           <ChevronRight className="size-4" />
         </button>

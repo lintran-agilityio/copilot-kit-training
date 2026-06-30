@@ -1,16 +1,40 @@
 import type { Room } from "@/features/room/types/room";
-import { getApiUrl } from "@/utils";
+import { PREFIX_URL } from "@/types";
+import { getBaseUrl } from "@/utils";
 
 type GetRoomByIdProps = {
-  configUrl?: string;
+  via?: PREFIX_URL;
   roomId: string;
+  userId?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
 };
 
 export const getRoomById = async ({
-  configUrl = getApiUrl(),
+  via = PREFIX_URL.BACKEND,
   roomId,
+  userId,
+  checkInDate,
+  checkOutDate,
 }: GetRoomByIdProps): Promise<Room> => {
-  const response = await fetch(`${configUrl}/rooms/${encodeURIComponent(roomId)}`, {
+  const baseUrl = getBaseUrl(via);
+  const params = new URLSearchParams();
+
+  if (via === PREFIX_URL.BACKEND && userId) {
+    params.set("userId", userId);
+  }
+
+  if (checkInDate) {
+    params.set("checkInDate", checkInDate);
+  }
+
+  if (checkOutDate) {
+    params.set("checkOutDate", checkOutDate);
+  }
+
+  const query = params.toString();
+  const path = `/rooms/${encodeURIComponent(roomId)}${query ? `?${query}` : ""}`;
+  const response = await fetch(`${baseUrl}${path}`, {
     cache: "no-store",
   });
 

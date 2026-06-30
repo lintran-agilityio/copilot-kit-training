@@ -4,7 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 
 import { BookingStatus } from "@repo/types";
 import type { BookingItem } from "@/features/booking/types/booking";
-import { getApiUrl } from "@/utils";
+import { PREFIX_URL } from "@/types";
+import { getBaseUrl } from "@/utils";
 
 export type CreateBookingInput = {
   roomId: string;
@@ -22,7 +23,9 @@ export const createBookingAction = async (
     throw new Error("You must be signed in to create a booking.");
   }
 
-  const response = await fetch(`${getApiUrl()}/bookings`, {
+  const baseUrl = getBaseUrl(PREFIX_URL.BACKEND);
+
+  const response = await fetch(`${baseUrl}/bookings`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
