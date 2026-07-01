@@ -4,29 +4,25 @@ import { usePathname, useRouter } from "next/navigation";
 import { useFrontendTool, useHumanInTheLoop } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
-import { ROUTES } from "@/constants";
 import { useBooking } from "@/features/booking/hooks";
 import { PickRoomForDetailModal } from "@/features/room/components";
 import {
   openRoomDetailDrawerSchema,
   pickRoomForDetailSchema,
   selectRoomForBookingSchema,
-  showAvailableRoomsSchema,
   updateBookingFormSchema,
+  updateRoomListSchema,
 } from "@/features/room/schemas";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
-import { getRooms, getRoomById } from "../services";
+import { getRoomById } from "../services";
 import { PREFIX_URL } from "@/types";
 
-const navigateToHomeIfNeeded = (
-  pathname: string,
-  router: ReturnType<typeof useRouter>,
-) => {
-  if (pathname === ROUTES.BOOKINGS) {
-    router.push(ROUTES.HOME);
-  }
-};
+import {
+  formatRoomListSyncResult,
+  syncRoomListToStore,
+} from "./room-list-ui";
+import { navigateToHomeIfNeeded } from "@/utils";
 
 export const RoomToolsProvider = () => {
   const router = useRouter();
@@ -37,41 +33,27 @@ export const RoomToolsProvider = () => {
   useFrontendTool(
     {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
-      name: TOOL_KEYS.ACTION.SHOW_ALL_ROOMS_PAGE,
+      name: TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
       description:
-        "Show all rooms on the home page. No parameters needed.",
-      handler: async () => {
-        const rooms = await getRooms({
-          via: PREFIX_URL.WEB,
-        });
-        useRoomStore.getState().updateRoomList(rooms, undefined);
-        navigateToHomeIfNeeded(pathname, router);
-
-        return `Showing ${rooms.length} room(s) on the home page.`;
+        "Update the room grid on the home page. Pass rooms from getRooms or getAvailableRooms as-is.",
+      parameters: updateRoomListSchema,
+      handler: async ({ rooms, title }) => {
+        syncRoomListToStore(rooms, title);
+        return formatRoomListSyncResult(rooms, title);
       },
     },
-    [pathname, router],
+    [],
   );
 
   useFrontendTool(
     {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
-      name: TOOL_KEYS.ACTION.SHOW_AVAILABLE_ROOMS_PAGE,
+      name: TOOL_KEYS.ACTION.NAVIGATE_TO_HOME_PAGE,
       description:
-        "Show available rooms on the home page for a check-in date.",
-      parameters: showAvailableRoomsSchema,
-      handler: async ({ date }) => {
-        const checkInDate =
-          date ?? new Date().toISOString().slice(0, 10);
-
-        const rooms = await getRooms({
-          via: PREFIX_URL.WEB,
-          date: checkInDate
-        });
-        useRoomStore.getState().updateRoomList(rooms, "Available rooms");
+        "Navigate to the home page so the room grid is visible. No parameters needed.",
+      handler: async () => {
         navigateToHomeIfNeeded(pathname, router);
-
-        return `Showing ${rooms.length} available room(s) for ${checkInDate}.`;
+        return "Navigated to home page.";
       },
     },
     [pathname, router],

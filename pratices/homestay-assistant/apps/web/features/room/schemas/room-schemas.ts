@@ -48,13 +48,6 @@ export const updateRoomListSchema = z.object({
     .describe("Optional heading above the room grid"),
 });
 
-export const showAvailableRoomsSchema = z.object({
-  date: z
-    .string()
-    .optional()
-    .describe("Check-in date (YYYY-MM-DD). Defaults to today."),
-});
-
 export const openRoomDetailDrawerSchema = z
   .object({
     room: roomObjectSchema
