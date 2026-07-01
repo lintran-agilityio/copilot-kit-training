@@ -6,7 +6,7 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(request: Request, context: RouteContext) {
+export async function GET(_request: Request, context: RouteContext) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -14,15 +14,10 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
-  const { searchParams } = new URL(request.url);
-  const checkInDate = searchParams.get("checkInDate") ?? undefined;
-  const checkOutDate = searchParams.get("checkOutDate") ?? undefined;
 
   const room = await getRoomById({
     roomId: id,
     userId,
-    checkInDate,
-    checkOutDate,
   });
 
   return Response.json(room);

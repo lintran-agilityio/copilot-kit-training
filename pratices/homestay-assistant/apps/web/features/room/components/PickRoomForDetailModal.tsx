@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import type { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { Button } from "@/components/ui/button";
@@ -13,13 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useRoomStore } from "@/features/room/stores/room-store";
-import type { Room } from "@/features/room/types/room";
 import type {
   PickRoomForDetailArgs,
   PickRoomForDetailResult,
 } from "../schemas";
-import { navigateToHomeIfNeeded } from "@/utils";
 
 type PickRoomForDetailModalProps = {
   status: ToolCallStatus;
@@ -34,16 +30,12 @@ export const PickRoomForDetailModal = ({
   args,
   respond,
 }: PickRoomForDetailModalProps) => {
-  const router = useRouter();
-  const pathname = usePathname();
   const [selectedRoom, setSelectedRoom] = useState<PickRoomItem | null>(null);
   const canRespond = status === "executing" && respond != null;
   const open = status === "executing" || status === "inProgress";
   const rooms = args.rooms ?? [];
 
-  const openDrawerAndRespond = async (room: PickRoomItem) => {
-    navigateToHomeIfNeeded(pathname, router);
-    useRoomStore.getState().openRoomDetailDrawer(room as Room);
+  const confirmSelection = async (room: PickRoomItem) => {
     await respond?.({ confirmed: true, room });
   };
 
@@ -88,7 +80,7 @@ export const PickRoomForDetailModal = ({
               type="button"
               className="bg-white text-black hover:bg-zinc-200"
               disabled={!canRespond}
-              onClick={() => void openDrawerAndRespond(selectedRoom)}
+              onClick={() => void confirmSelection(selectedRoom)}
             >
               View room
             </Button>

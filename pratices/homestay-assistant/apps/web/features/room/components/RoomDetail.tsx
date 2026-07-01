@@ -12,7 +12,7 @@ import { useBooking } from "@/features/booking/hooks/use-booking";
 import { AmenitiesRoom } from "@/features/room/components";
 import { RoomBookingDates } from "@/features/room/components/RoomBookingDates";
 import { RoomImageGallery } from "@/features/room/components/RoomImageGallery";
-import { getRoomById } from "@/features/room/services";
+import { checkRoomAvailability } from "@/features/booking/services";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
 import { PREFIX_URL } from "@/types";
@@ -213,7 +213,7 @@ export const RoomDetail = ({
 
     const fetchAvailability = async () => {
       try {
-        const result = await getRoomById({
+        const result = await checkRoomAvailability({
           via: PREFIX_URL.WEB,
           roomId: id,
           checkInDate,
@@ -230,7 +230,7 @@ export const RoomDetail = ({
       }
     };
 
-    void fetchAvailability();
+    fetchAvailability();
 
     return () => {
       cancelled = true;
