@@ -4,10 +4,9 @@ import type { CopilotChatAssistantMessageProps } from "@copilotkit/react-core/v2
 /** Room/data tools and page UI actions — hidden from chat; effects render on the page. */
 export const CHAT_HIDDEN_TOOLS = new Set([
   TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
+  TOOL_KEYS.ACTION.NAVIGATE_TO_HOME_PAGE,
   TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_DRAWER,
   TOOL_KEYS.ACTION.OPEN_BOOKINGS_PAGE,
-  TOOL_KEYS.ACTION.SHOW_ALL_ROOMS_PAGE,
-  TOOL_KEYS.ACTION.SHOW_AVAILABLE_ROOMS_PAGE,
   TOOL_KEYS.BOOKING.GET,
   TOOL_KEYS.GET.ROOMS,
   TOOL_KEYS.GET.AVAILABLE_ROOMS,
@@ -21,8 +20,8 @@ export const CHAT_HIDDEN_TOOLS = new Set([
   "findBookingByRoom",
   TOOL_KEYS.BOOKING.FIND_BY_ROOM,
   "open_bookings_page",
-  "show_all_rooms_page",
-  "show_available_rooms_page",
+  "navigate_to_home_page",
+  "update_room_list",
   "show_rooms_page",
   "room",
   "renderRooms",

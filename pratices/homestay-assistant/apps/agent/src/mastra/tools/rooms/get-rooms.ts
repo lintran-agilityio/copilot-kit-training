@@ -11,7 +11,8 @@ import {
 
 export const getRoomsTool = createTool({
   id: TOOL_KEYS.GET.ROOMS,
-  description: "Get all rooms in the homestay booking system",
+  description:
+    "Fetch all rooms. After calling, pass result.rooms to update_room_list and call navigate_to_home_page.",
   inputSchema: getRoomsInputSchema,
   outputSchema: getRoomsOutputSchema,
   execute: async () => {
@@ -22,7 +23,8 @@ export const getRoomsTool = createTool({
 
 export const getAvailableRoomsTool = createTool({
   id: TOOL_KEYS.GET.AVAILABLE_ROOMS,
-  description: "Get all available rooms for a given check-in date",
+  description:
+    "Fetch rooms available for a check-in date (YYYY-MM-DD). After calling, pass result.rooms to update_room_list and call navigate_to_home_page.",
   inputSchema: getAvailableRoomsInputSchema,
   outputSchema: getAvailableRoomsOutputSchema,
   execute: async (inputData) => {

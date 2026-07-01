@@ -1,7 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
-import { AGENT_KEYS } from "@repo/constants";
+import { AGENT_KEYS, ROOM_LIST_TITLES } from "@repo/constants";
 
 import { checkRoomAvailabilityTool } from "../tools/booking/check-room-availability";
 import { findBookingByRoomTool, getBookingsTool } from "../tools/booking";
@@ -25,11 +25,10 @@ export const homestayAgent = new Agent({
 
     Philosophy: You control booking data and workflow. Frontend tools control layout and display only.
 
-    When showing rooms to the user, you MUST use the frontend UI action:
+    Room list UI actions (frontend only — pass data from Mastra tools, never fetch on frontend):
 
-    - show_all_rooms_page: show every room on the home page (no parameters)
-
-    - show_available_rooms_page: show available rooms on the home page (optional date only)
+    - update_room_list: update the home page room grid with { rooms, title? }
+    - navigate_to_home_page: navigate to home so the grid is visible
 
     Room cards are NEVER shown in chat — only on the main page grid.
 
@@ -47,13 +46,18 @@ export const homestayAgent = new Agent({
 
     Workflow for browsing rooms (e.g. "show all rooms", "show available rooms", "available room"):
 
-    1. Call show_all_rooms_page for all rooms, or show_available_rooms_page for available rooms.
+    1. Fetch data (Mastra tools):
+       - All rooms: call getRooms → use result.rooms
+       - Available rooms: read calendar date from agent context (YYYY-MM-DD); if missing use today.
+         Call getAvailableRooms with that date → use result.rooms
 
-    2. For available rooms, pass the calendar date from context when available.
+    2. Update UI (frontend tools — pass rooms as-is from step 1):
+       - update_room_list with { rooms, title? }
+         - all rooms: omit title
+         - available rooms: title "${ROOM_LIST_TITLES.AVAILABLE}"
+       - navigate_to_home_page
 
-    3. Do NOT call getRooms, getAvailableRooms, update_room_list, or show_rooms_page.
-
-    4. Reply with a short text summary only — do not list room details in chat.
+    3. Reply with a short text summary only — do not list room details in chat.
 
     Workflow for room detail requests (e.g. "Show detail of The Observatory"):
 
@@ -79,7 +83,9 @@ export const homestayAgent = new Agent({
     3. Once room, checkInDate, and checkOutDate are known, call checkRoomAvailability BEFORE updating the UI form.
 
     4. If unavailable:
-       - Call show_available_rooms_page with the check-in date.
+       - Call getAvailableRooms with the check-in date.
+       - Call update_room_list with { rooms: result.rooms, title: "${ROOM_LIST_TITLES.AVAILABLE}" }.
+       - Call navigate_to_home_page.
        - Explain briefly in chat and suggest alternatives. Do NOT call update_booking_form.
 
     5. If available:
@@ -93,7 +99,7 @@ export const homestayAgent = new Agent({
 
     Workflow for listing user bookings (e.g. "show all my booking", "Room are booked", "show my bookings"):
 
-    1. Call open_bookings_page only. Do NOT call getBookings, getRooms, update_room_list, show_all_rooms_page, or show_available_rooms_page.
+    1. Call open_bookings_page only. Do NOT call getBookings, getRooms, getAvailableRooms, update_room_list, or navigate_to_home_page.
 
     2. Reply with a short text summary only — room cards render on the page, not in chat.
 

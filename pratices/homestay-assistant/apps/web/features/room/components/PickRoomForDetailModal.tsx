@@ -13,13 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ROUTES } from "@/constants";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
 import type {
   PickRoomForDetailArgs,
   PickRoomForDetailResult,
-} from "../schemas/pick-room-for-detail-schema";
+} from "../schemas";
+import { navigateToHomeIfNeeded } from "@/utils";
 
 type PickRoomForDetailModalProps = {
   status: ToolCallStatus;
@@ -28,15 +28,6 @@ type PickRoomForDetailModalProps = {
 };
 
 type PickRoomItem = PickRoomForDetailArgs["rooms"][number];
-
-const navigateToHomeIfNeeded = (
-  pathname: string,
-  router: ReturnType<typeof useRouter>,
-) => {
-  if (pathname === ROUTES.BOOKINGS) {
-    router.push(ROUTES.HOME);
-  }
-};
 
 export const PickRoomForDetailModal = ({
   status,
