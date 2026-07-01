@@ -3,13 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  addDays,
-  isEmptyDateValue,
-  parseDateRange,
-  resolveDateOrToday,
-  toDateKey,
-} from '../../../utils';
+import { addDays, isEmptyDateValue, resolveDateOrToday } from '../../../utils';
 import {
   GetRoomByIdQueryDto,
   GetAvailableRoomsQueryDto,
@@ -56,21 +50,6 @@ export class RoomsService {
       response.bookingStatus = activeBooking.status;
       response.checkInDate = activeBooking.checkInDate;
       response.checkOutDate = activeBooking.checkOutDate;
-    }
-
-    if (query.checkInDate && query.checkOutDate) {
-      const { checkInDate, checkOutDate } = parseDateRange(
-        query.checkInDate,
-        query.checkOutDate,
-      );
-
-      const hasOverlap = await this.roomsRepository.hasOverlappingActiveBooking(
-        id,
-        toDateKey(checkInDate),
-        toDateKey(checkOutDate),
-      );
-
-      response.available = room.availableSlots > 0 && !hasOverlap;
     }
 
     return response;

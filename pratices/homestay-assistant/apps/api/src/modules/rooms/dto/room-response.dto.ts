@@ -109,7 +109,7 @@ export class RoomResponseDto {
 
   @ApiProperty({
     description:
-      'Whether the room is available for the requested date range, when checkInDate and checkOutDate are provided',
+      'Deprecated on room responses — use GET /bookings/availability instead',
     required: false,
     example: true,
   })

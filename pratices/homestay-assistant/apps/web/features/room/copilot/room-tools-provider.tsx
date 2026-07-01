@@ -13,15 +13,16 @@ import {
   updateBookingFormSchema,
   updateRoomListSchema,
 } from "@/features/room/schemas";
-import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
-import { getRoomById } from "../services";
-import { PREFIX_URL } from "@/types";
 
 import {
   formatRoomListSyncResult,
   syncRoomListToStore,
 } from "./room-list-ui";
+import {
+  formatOpenRoomDetailResult,
+  openRoomDetailDrawerUi,
+} from "./room-detail-ui";
 import { navigateToHomeIfNeeded } from "@/utils";
 
 export const RoomToolsProvider = () => {
@@ -64,19 +65,11 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_DRAWER,
       description:
-        "Open the room detail drawer. Prefer passing the full room object from getRoomByName. Use roomId only as a fallback.",
+        "Open the room detail drawer. Pass the full room object from getRoomByName or getRoomById as-is.",
       parameters: openRoomDetailDrawerSchema,
-      handler: async ({ room, roomId }) => {
-        const resolvedRoom =
-          room ??
-          (await getRoomById({
-            via: PREFIX_URL.WEB,
-            roomId: roomId!,
-          }));
-
-        useRoomStore.getState().openRoomDetailDrawer(resolvedRoom);
-
-        return `Opened room detail drawer for ${resolvedRoom.name}.`;
+      handler: async ({ room }) => {
+        openRoomDetailDrawerUi(room);
+        return formatOpenRoomDetailResult(room);
       },
     },
     [],
@@ -116,7 +109,7 @@ export const RoomToolsProvider = () => {
           checkOutDate,
           guests,
         });
-        useRoomStore.getState().openRoomDetailDrawer(room as Room);
+        openRoomDetailDrawerUi(room as Room);
 
         return `Updated booking form for ${room.name}. The room detail drawer is open for review.`;
       },
@@ -130,7 +123,7 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.PICK_ROOM_FOR_DETAIL,
       description:
-        "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Use only when rooms.length > 1.",
+        "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Returns the user's chosen room — then call navigate_to_home_page and open_room_detail_drawer.",
       parameters: pickRoomForDetailSchema,
       render: ({ status, args, respond }) => (
         <PickRoomForDetailModal

@@ -7,30 +7,18 @@ type GetRoomByIdProps = {
   via?: PREFIX_URL;
   roomId: string;
   userId?: string;
-  checkInDate?: string;
-  checkOutDate?: string;
 };
 
 export const getRoomById = async ({
   via = PREFIX_URL.BACKEND,
   roomId,
   userId,
-  checkInDate,
-  checkOutDate,
 }: GetRoomByIdProps): Promise<Room> => {
   const baseUrl = getBaseUrl(via);
   const params = new URLSearchParams();
 
   if (via === PREFIX_URL.BACKEND && userId) {
     params.set("userId", userId);
-  }
-
-  if (checkInDate) {
-    params.set("checkInDate", checkInDate);
-  }
-
-  if (checkOutDate) {
-    params.set("checkOutDate", checkOutDate);
   }
 
   const query = params.toString();

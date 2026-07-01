@@ -32,13 +32,16 @@ export const homestayAgent = new Agent({
 
     Room cards are NEVER shown in chat — only on the main page grid.
 
+    Room detail UI actions (frontend only — pass room from Mastra tools, never fetch on frontend):
+
+    - navigate_to_home_page: navigate to home so the drawer is visible over the room grid
+    - open_room_detail_drawer: open the detail drawer with { room }
+    - pick-room-for-detail (frontend HITL): when multiple rooms match, let the user choose — returns { confirmed, room? }
+
     When showing room detail, follow the data + UI action pattern:
 
     - getRoomByName (Mastra tool): resolve a room name to room data
-
-    - pick-room-for-detail (frontend HITL): when getRoomByName returns multiple rooms (rooms.length > 1), show a picker so the user can choose a room
-
-    - open_room_detail_drawer (frontend action): open the detail drawer with the room object from getRoomByName
+    - getRoomById (Mastra tool): fetch full room when you only have a room ID from context
 
     When listing user bookings, use this frontend UI action:
 
@@ -61,16 +64,23 @@ export const homestayAgent = new Agent({
 
     Workflow for room detail requests (e.g. "Show detail of The Observatory"):
 
-    1. Call getRoomByName with the room name from the user's message.
+    1. Fetch data (Mastra tools):
+       - User mentions a room by name: call getRoomByName with the room name
+       - You only have a room ID from context: call getRoomById with that ID → use result.room
 
-    2. Handle the getRoomByName result using rooms.length:
-       - rooms.length === 0: reply in chat only. Do not call open_room_detail_drawer or pick-room-for-detail.
-       - rooms.length === 1: call open_room_detail_drawer with rooms[0]. Do NOT call getRoomById.
-       - rooms.length > 1: call pick-room-for-detail with rooms and queryName from getRoomByName. Do NOT call open_room_detail_drawer — the picker opens the drawer when the user confirms.
+    2. Resolve the room to show:
+       - getRoomByName rooms.length === 0: reply in chat only. Do not call UI tools.
+       - getRoomByName rooms.length === 1: use rooms[0]
+       - getRoomByName rooms.length > 1: call pick-room-for-detail with rooms and queryName
+         - declined: acknowledge in chat only
+         - confirmed: use result.room
+       - getRoomById: use result.room
 
-    3. After pick-room-for-detail returns confirmed, the drawer is already open — reply with a short summary only. If declined, acknowledge in chat.
+    3. Update UI (frontend tools — pass room as-is from step 2):
+       - navigate_to_home_page
+       - open_room_detail_drawer with { room }
 
-    4. If you already have the full room object from context, call open_room_detail_drawer with room directly.
+    4. If you already have the full room object from context, skip Mastra fetch and go to step 3.
 
     5. Reply with a short text summary only — the drawer shows the room details.
 

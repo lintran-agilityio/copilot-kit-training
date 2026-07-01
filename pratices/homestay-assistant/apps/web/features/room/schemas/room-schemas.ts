@@ -30,7 +30,7 @@ export const roomCardSchema = z.object({
     .describe("Use compact layout when rendering inside chat"),
 });
 
-const roomObjectSchema = roomCardSchema
+export const roomObjectSchema = roomCardSchema
   .omit({ compact: true })
   .extend({
     pricePerNight: z.number().describe("Price per night in VND"),
@@ -48,18 +48,8 @@ export const updateRoomListSchema = z.object({
     .describe("Optional heading above the room grid"),
 });
 
-export const openRoomDetailDrawerSchema = z
-  .object({
-    room: roomObjectSchema
-      .optional()
-      .describe(
-        "Full room object from getRoomByName — pass as-is to avoid a redundant fetch",
-      ),
-    roomId: z
-      .string()
-      .optional()
-      .describe("Room ID fallback when the full room object is unavailable"),
-  })
-  .refine((value) => value.room ?? value.roomId, {
-    message: "Either room or roomId is required",
-  });
+export const openRoomDetailDrawerSchema = z.object({
+  room: roomObjectSchema.describe(
+    "Full room object from getRoomByName or getRoomById — pass as-is",
+  ),
+});

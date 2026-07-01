@@ -10,7 +10,7 @@ import {
 export const getRoomByNameTool = createTool({
   id: TOOL_KEYS.GET.ROOM_BY_NAME,
   description:
-    "Find a room by display name. Returns rooms array and queryName. Use rooms.length before open_room_detail_drawer or pick-room-for-detail.",
+    "Find rooms by display name. Use rooms.length to decide next step: 0 = reply in chat; 1 = navigate_to_home_page + open_room_detail_drawer; >1 = pick-room-for-detail then UI tools with chosen room.",
   inputSchema: getRoomByNameInputSchema,
   outputSchema: getRoomByNameOutputSchema,
   execute: async ({ roomName }) => findRoomByName(roomName),
