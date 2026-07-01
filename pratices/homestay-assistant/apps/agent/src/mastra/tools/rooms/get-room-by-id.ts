@@ -5,7 +5,7 @@ import { getRoomDetailInputSchema, getRoomDetailOutputSchema } from "../../schem
 
 export const getRoomByIdTool = createTool({
   id: TOOL_KEYS.GET.ROOM,
-  description: "Get detailed information about a room by its ID. Call getRooms first when the user refers to a room by name so you can resolve the correct roomId.",
+  description: "Get detailed information about a room by its ID. Call getRoomByName when the user refers to a room by name.",
   inputSchema: getRoomDetailInputSchema,
   outputSchema: getRoomDetailOutputSchema,
   execute: async (inputData) => {

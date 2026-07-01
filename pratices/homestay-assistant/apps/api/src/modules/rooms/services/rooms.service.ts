@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   addDays,
   isEmptyDateValue,
@@ -70,5 +74,21 @@ export class RoomsService {
     }
 
     return response;
+  }
+
+  async getRoomsByName(name: string): Promise<RoomResponseDto[]> {
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      throw new BadRequestException('Room name is required');
+    }
+
+    const rooms = await this.roomsRepository.findByName(trimmedName);
+
+    if (!rooms.length) {
+      throw new NotFoundException('No rooms found');
+    }
+
+    return rooms.map(toRoomResponseDto);
   }
 }

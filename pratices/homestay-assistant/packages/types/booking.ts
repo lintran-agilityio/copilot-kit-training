@@ -14,11 +14,8 @@ export type CancellationBookingSummary = {
   totalPrice: number;
 };
 
-export type FindBookingByRoomResult =
-  | { status: 'found'; booking: CancellationBookingSummary }
-  | { status: 'not_found'; message: string }
-  | {
-      status: 'ambiguous';
-      bookings: CancellationBookingSummary[];
-      message: string;
-    };
+/** Active bookings matching a room-name lookup (Mastra → CopilotKit cancel flow). */
+export type BookingByRoomLookup = {
+  bookings: CancellationBookingSummary[];
+  queryName: string;
+};

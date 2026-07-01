@@ -53,7 +53,7 @@ export const ConfirmDeleteDialog = ({
               <AlertTriangle className="size-5" />
             </div>
             <div className="space-y-1.5">
-              <DialogTitle className="text-white font-medium text-base">
+              <DialogTitle className="text-white font-medium text-lg">
                 Cancel this booking?
               </DialogTitle>
               <DialogDescription className="text-zinc-400">

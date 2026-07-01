@@ -8,3 +8,4 @@ export * from "./RoomImage";
 export * from "./RoomImageGallery";
 export * from "./RoomBookingDates";
 export * from "./AmenitiesRoom";
+export * from "./PickRoomForDetailModal";
