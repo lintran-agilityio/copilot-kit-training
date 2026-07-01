@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BookingStatus } from '../../../types/enum';
+import {
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsNumber,
+} from 'class-validator';
 
 export class UpdateBookingDto {
   @ApiProperty({
@@ -7,6 +16,10 @@ export class UpdateBookingDto {
     example: '2026-07-01',
     required: false,
   })
+  @IsString()
+  @IsNotEmpty()
+  @IsDateString()
+  @IsOptional()
   checkInDate?: string;
 
   @ApiProperty({
@@ -14,6 +27,10 @@ export class UpdateBookingDto {
     example: '2026-07-03',
     required: false,
   })
+  @IsString()
+  @IsNotEmpty()
+  @IsDateString()
+  @IsOptional()
   checkOutDate?: string;
 
   @ApiProperty({
@@ -22,6 +39,10 @@ export class UpdateBookingDto {
     minimum: 1,
     required: false,
   })
+  @IsNumber()
+  @IsNotEmpty()
+  @IsPositive()
+  @IsOptional()
   guests?: number;
 
   @ApiProperty({
@@ -29,5 +50,7 @@ export class UpdateBookingDto {
     enum: BookingStatus,
     required: false,
   })
+  @IsEnum(BookingStatus)
+  @IsOptional()
   status?: BookingStatus;
 }

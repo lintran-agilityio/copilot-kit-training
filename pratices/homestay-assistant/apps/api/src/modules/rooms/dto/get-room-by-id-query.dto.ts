@@ -1,16 +1,33 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsDateString, IsOptional, IsString } from 'class-validator';
+
 export class GetRoomByIdQueryDto {
-  /**
-   * When provided, returns the user's active booking status for this room.
-   */
+  @ApiProperty({
+    description: 'User ID',
+    example: '123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
   userId?: string;
 
-  /**
-   * Check-in date (YYYY-MM-DD) used with checkOutDate to compute availability.
-   */
+  @ApiProperty({
+    description: 'Check-in date (YYYY-MM-DD)',
+    example: '2026-07-01',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @IsDateString()
   checkInDate?: string;
 
-  /**
-   * Check-out date (YYYY-MM-DD) used with checkInDate to compute availability.
-   */
+  @ApiProperty({
+    description: 'Check-out date (YYYY-MM-DD)',
+    example: '2026-07-03',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @IsDateString()
   checkOutDate?: string;
 }

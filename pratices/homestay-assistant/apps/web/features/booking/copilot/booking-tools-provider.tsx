@@ -47,7 +47,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.BOOKING.CANCEL_BY_ROOM,
       description:
-        "Show a cancellation dialog after findBookingByRoom. Pass the full lookup result (status, message, booking or candidates). Use only after calling findBookingByRoom.",
+        "Show a cancellation dialog after findBookingByRoom. Pass bookings and queryName from findBookingByRoom. Use only after calling findBookingByRoom.",
       parameters: cancelBookingByRoomSchema,
       render: ({ status, args, respond, result }) => {
         const cancelResult = result as CancelBookingByRoomResult | undefined;

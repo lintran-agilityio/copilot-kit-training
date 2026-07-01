@@ -1,6 +1,7 @@
 export const TOOL_KEYS = {
   GET: {
     ROOM: "get-room",
+    ROOM_BY_NAME: "get-room-by-name",
     ROOMS: "get-rooms",
     AVAILABLE_ROOMS: "get-available-rooms",
     BOOKINGS: "get-bookings",
@@ -19,6 +20,7 @@ export const TOOL_KEYS = {
     CHECK_AVAILABILITY: "check-room-availability",
   },
   ACTION: {
+    PICK_ROOM_FOR_DETAIL: "pick-room-for-detail",
     OPEN_ROOM_DETAIL_DRAWER: "open_room_detail_drawer",
     OPEN_BOOKINGS_PAGE: "open_bookings_page",
     SHOW_ALL_ROOMS_PAGE: "show_all_rooms_page",

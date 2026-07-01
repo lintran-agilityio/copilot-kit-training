@@ -27,13 +27,15 @@ type CancelBookingByRoomModalProps = {
   result?: CancelBookingByRoomResult;
 };
 
-const toBookingDetails = (booking: CancelBookingByRoomArgs["booking"]): BookingDetails => ({
-  bookingId: booking!.bookingId,
-  roomName: booking!.roomName,
-  checkInDate: booking!.checkInDate,
-  checkOutDate: booking!.checkOutDate,
-  guests: booking!.guests,
-  totalPrice: booking!.totalPrice,
+type BookingItem = CancelBookingByRoomArgs["bookings"][number];
+
+const toBookingDetails = (booking: BookingItem): BookingDetails => ({
+  bookingId: booking.bookingId,
+  roomName: booking.roomName,
+  checkInDate: booking.checkInDate,
+  checkOutDate: booking.checkOutDate,
+  guests: booking.guests,
+  totalPrice: booking.totalPrice,
 });
 
 export const CancelBookingByRoomModal = ({
@@ -47,102 +49,119 @@ export const CancelBookingByRoomModal = ({
   );
   const canRespond = status === "executing" && respond != null;
   const open = status === "executing" || status === "inProgress";
+  const bookings = args.bookings ?? [];
+
+  const handleClose = () => {
+    respond?.({ confirmed: false, reason: "not_found" })
+  };
+
+  const handleOpenChangeNotFound = (nextOpen: boolean) => {
+    if (!nextOpen && canRespond) {
+      respond?.({ confirmed: false, reason: "not_found" });
+    }
+  };
+
+  const handleOpenDialogCancelBooking = (nextOpen: boolean) => {
+    if (!nextOpen && canRespond) {
+      respond?.({ confirmed: false, reason: "declined" });
+    }
+  };
+
+  const handleKeepBookings = () => {
+    respond?.({ confirmed: false, reason: "declined" })
+  };
+
 
   if (status === ToolCallStatus.Complete && result?.confirmed) {
     return <ConfirmDeleteSuccessModal />;
   }
 
-  if (!args.status) {
+  const confirmRespond = (bookingItem: BookingDetails) =>
+    respond
+      ? async (deleteResult: { confirmed: boolean; bookingId?: string }) => {
+          if (deleteResult.confirmed && deleteResult.bookingId) {
+            await respond({
+              confirmed: true,
+              bookingId: deleteResult.bookingId,
+              roomName: bookingItem.roomName,
+            });
+            return;
+          }
+
+          await respond({ confirmed: false, reason: "declined" });
+        }
+      : undefined;
+
+  if (!bookings.length) {
     return (
-      <Dialog open={open}>
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => handleOpenChangeNotFound(nextOpen)}
+      >
         <DialogContent className="border-white/10 bg-[#111111] text-zinc-100 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">Preparing cancellation…</DialogTitle>
+            <DialogTitle className="text-white">Booking not found</DialogTitle>
             <DialogDescription className="text-zinc-400">
-              {args.message ?? "Waiting for booking details from the assistant."}
+              No active booking found
+              {args.queryName ? ` for "${args.queryName}"` : ""}.
             </DialogDescription>
           </DialogHeader>
+
+          <DialogFooter className="border-white/8 bg-transparent">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
+              disabled={!canRespond}
+              onClick={handleClose}
+            >
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     );
   }
 
-  if (args.status === "found" && args.booking) {
+  if (bookings.length === 1 && bookings[0]) {
     return (
       <ConfirmDeleteBookingModal
         status={status}
-        bookingItem={toBookingDetails(args.booking)}
-        respond={
-          respond
-            ? async (deleteResult) => {
-                if (deleteResult.confirmed) {
-                  await respond({
-                    confirmed: true,
-                    bookingId: deleteResult.bookingId,
-                    roomName: args.booking!.roomName,
-                  });
-                  return;
-                }
-
-                await respond({ confirmed: false, reason: "declined" });
-              }
-            : undefined
-        }
+        bookingItem={toBookingDetails(bookings[0])}
+        respond={confirmRespond(toBookingDetails(bookings[0]))}
       />
     );
   }
 
-  if (args.status === "ambiguous" && selectedBooking) {
+  if (selectedBooking) {
     return (
       <ConfirmDeleteBookingModal
         status={status}
         bookingItem={selectedBooking}
-        respond={
-          respond
-            ? async (deleteResult) => {
-                if (deleteResult.confirmed) {
-                  await respond({
-                    confirmed: true,
-                    bookingId: deleteResult.bookingId,
-                    roomName: selectedBooking.roomName,
-                  });
-                  return;
-                }
-
-                await respond({ confirmed: false, reason: "declined" });
-              }
-            : undefined
-        }
+        respond={confirmRespond(selectedBooking)}
       />
     );
   }
 
-  if (args.status === "ambiguous" && args.candidates?.length) {
+  if (bookings.length > 1) {
     return (
       <Dialog
         open={open}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen && canRespond) {
-            void respond?.({
-              confirmed: false,
-              reason: "ambiguous",
-              message: args.message,
-            });
-          }
-        }}
+        onOpenChange={(nextOpen) => handleOpenDialogCancelBooking(nextOpen)}
       >
         <DialogContent className="border-white/10 bg-[#111111] text-zinc-100 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">
+            <DialogTitle className="text-white font-medium text-base">
               Which booking should be cancelled?
             </DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              {args.message}
+            <DialogDescription className="text-zinc-400 text-sm">
+              Multiple bookings match &ldquo;{args.queryName}&rdquo;. Select one
+              to cancel.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
-            {args.candidates.map((booking) => (
+            {bookings.map((booking) => (
               <button
                 key={booking.bookingId}
                 type="button"
@@ -166,13 +185,7 @@ export const CancelBookingByRoomModal = ({
               variant="outline"
               className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
               disabled={!canRespond}
-              onClick={() =>
-                void respond?.({
-                  confirmed: false,
-                  reason: "ambiguous",
-                  message: args.message,
-                })
-              }
+              onClick={handleKeepBookings}
             >
               Keep bookings
             </Button>
@@ -182,49 +195,16 @@ export const CancelBookingByRoomModal = ({
     );
   }
 
-  if (args.status === "not_found") {
-    return (
-      <Dialog
-        open={open}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen && canRespond) {
-            void respond?.({
-              confirmed: false,
-              reason: "not_found",
-              message: args.message,
-            });
-          }
-        }}
-      >
-        <DialogContent className="border-white/10 bg-[#111111] text-zinc-100 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-white">Booking not found</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              {args.message}
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="border-white/8 bg-transparent">
-            <Button
-              type="button"
-              variant="outline"
-              className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
-              disabled={!canRespond}
-              onClick={() =>
-                void respond?.({
-                  confirmed: false,
-                  reason: "not_found",
-                  message: args.message,
-                })
-              }
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  return null;
+  return (
+    <Dialog open={open}>
+      <DialogContent className="border-white/10 bg-[#111111] text-zinc-100 sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-white">Preparing cancellation…</DialogTitle>
+          <DialogDescription className="text-zinc-400">
+            Waiting for booking details from the assistant.
+          </DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  );
 };

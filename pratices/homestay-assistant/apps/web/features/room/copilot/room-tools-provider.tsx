@@ -1,13 +1,15 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useFrontendTool } from "@copilotkit/react-core/v2";
+import { useFrontendTool, useHumanInTheLoop } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { ROUTES } from "@/constants";
 import { useBooking } from "@/features/booking/hooks";
+import { PickRoomForDetailModal } from "@/features/room/components";
 import {
   openRoomDetailDrawerSchema,
+  pickRoomForDetailSchema,
   selectRoomForBookingSchema,
   showAvailableRoomsSchema,
   updateBookingFormSchema,
@@ -80,16 +82,19 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_DRAWER,
       description:
-        "Open the room detail drawer by room ID. Pass roomId only.",
+        "Open the room detail drawer. Prefer passing the full room object from getRoomByName. Use roomId only as a fallback.",
       parameters: openRoomDetailDrawerSchema,
-      handler: async ({ roomId }) => {
-        const room = await getRoomById({
-          via: PREFIX_URL.WEB,
-          roomId,
-        });
-        useRoomStore.getState().openRoomDetailDrawer(room);
+      handler: async ({ room, roomId }) => {
+        const resolvedRoom =
+          room ??
+          (await getRoomById({
+            via: PREFIX_URL.WEB,
+            roomId: roomId!,
+          }));
 
-        return `Opened room detail drawer for ${room.name}.`;
+        useRoomStore.getState().openRoomDetailDrawer(resolvedRoom);
+
+        return `Opened room detail drawer for ${resolvedRoom.name}.`;
       },
     },
     [],
@@ -136,6 +141,24 @@ export const RoomToolsProvider = () => {
       followUp: false,
     },
     [updateBookingForm],
+  );
+
+  useHumanInTheLoop(
+    {
+      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      name: TOOL_KEYS.ACTION.PICK_ROOM_FOR_DETAIL,
+      description:
+        "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Use only when rooms.length > 1.",
+      parameters: pickRoomForDetailSchema,
+      render: ({ status, args, respond }) => (
+        <PickRoomForDetailModal
+          status={status}
+          args={args}
+          respond={respond}
+        />
+      ),
+    },
+    [],
   );
 
   return null;

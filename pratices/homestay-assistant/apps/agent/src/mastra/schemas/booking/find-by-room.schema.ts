@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { cancellationBookingSchema } from "./cancel-schema";
 
 export const findBookingByRoomInputSchema = z.object({
@@ -8,10 +9,12 @@ export const findBookingByRoomInputSchema = z.object({
 });
 
 export const findBookingByRoomOutputSchema = z.object({
-  status: z.enum(["found", "not_found", "ambiguous"]),
-  message: z.string(),
-  booking: cancellationBookingSchema.optional(),
-  candidates: z.array(cancellationBookingSchema).optional(),
+  bookings: z
+    .array(cancellationBookingSchema)
+    .describe("Matching active bookings — use bookings.length to decide the next step"),
+  queryName: z
+    .string()
+    .describe("Trimmed room name from the user's message"),
 });
 
 export type FindBookingByRoomInput = z.infer<

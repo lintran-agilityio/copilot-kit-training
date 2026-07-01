@@ -9,6 +9,7 @@ import {
   getRoomsTool,
   getAvailableRoomsTool,
   getRoomByIdTool,
+  getRoomByNameTool,
 } from "../tools/rooms";
 
 export const homestayAgent = new Agent({
@@ -34,11 +35,15 @@ export const homestayAgent = new Agent({
 
     When showing room detail, follow the data + UI action pattern:
 
-    - getRooms (Mastra tool): resolve a room name to its id when needed
+    - getRoomByName (Mastra tool): resolve a room name to room data
 
-    - open_room_detail_drawer (frontend action): open the detail drawer by roomId only
+    - pick-room-for-detail (frontend HITL): when getRoomByName returns multiple rooms (rooms.length > 1), show a picker so the user can choose a room
 
-    - open_bookings_page (frontend action): show the user's booked rooms on My Bookings
+    - open_room_detail_drawer (frontend action): open the detail drawer with the room object from getRoomByName
+
+    When listing user bookings, use this frontend UI action:
+
+    - open_bookings_page: show the user's booked rooms on My Bookings
 
     Workflow for browsing rooms (e.g. "show all rooms", "show available rooms", "available room"):
 
@@ -52,11 +57,18 @@ export const homestayAgent = new Agent({
 
     Workflow for room detail requests (e.g. "Show detail of The Observatory"):
 
-    1. If you do not already know the room ID, call getRooms to match the room name to its id.
+    1. Call getRoomByName with the room name from the user's message.
 
-    2. Call open_room_detail_drawer with roomId only. Do NOT pass the full room object.
+    2. Handle the getRoomByName result using rooms.length:
+       - rooms.length === 0: reply in chat only. Do not call open_room_detail_drawer or pick-room-for-detail.
+       - rooms.length === 1: call open_room_detail_drawer with rooms[0]. Do NOT call getRoomById.
+       - rooms.length > 1: call pick-room-for-detail with rooms and queryName from getRoomByName. Do NOT call open_room_detail_drawer — the picker opens the drawer when the user confirms.
 
-    3. Reply with a short text summary only — the drawer shows the room details.
+    3. After pick-room-for-detail returns confirmed, the drawer is already open — reply with a short summary only. If declined, acknowledge in chat.
+
+    4. If you already have the full room object from context, call open_room_detail_drawer with room directly.
+
+    5. Reply with a short text summary only — the drawer shows the room details.
 
     Booking workflow (chat-driven, e.g. "book this room"):
 
@@ -91,10 +103,9 @@ export const homestayAgent = new Agent({
 
     2. When a room name is known, call findBookingByRoom (Mastra tool) with roomName to resolve the booking on the server. Do NOT look up bookings in the frontend.
 
-    3. Pass the findBookingByRoom result to cancel-booking-by-room:
-       - status "found": pass booking details and message
-       - status "ambiguous": pass candidates and message so the user can pick in the dialog
-       - status "not_found": pass message only — reply in chat; do not call cancel-booking-by-room
+    3. Pass the findBookingByRoom result to cancel-booking-by-room using bookings.length:
+       - bookings.length === 0: reply in chat only. Do not call cancel-booking-by-room.
+       - bookings.length >= 1: call cancel-booking-by-room with bookings and queryName from findBookingByRoom.
 
     4. Wait for the user to confirm or decline in the dialog. Do not say the booking is cancelled until they confirm.
 
@@ -109,6 +120,7 @@ export const homestayAgent = new Agent({
   model: "openai/gpt-5-mini",
 
   tools: {
+    getRoomByName: getRoomByNameTool,
     getRooms: getRoomsTool,
     getAvailableRooms: getAvailableRoomsTool,
     getRoomById: getRoomByIdTool,

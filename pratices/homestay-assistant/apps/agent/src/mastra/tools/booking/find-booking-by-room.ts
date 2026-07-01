@@ -7,12 +7,11 @@ import {
 } from "../../schemas/booking";
 import { resolveAgentUserId } from "../../utils/resolve-agent-user-id";
 import { findBookingByRoomName } from "../../../services";
-import { mapFindBookingByRoomResult } from "./map-find-booking-result";
 
 export const findBookingByRoomTool = createTool({
   id: TOOL_KEYS.BOOKING.FIND_BY_ROOM,
   description:
-    "Find an active user booking by room name. Always call this before cancel-booking-by-room when the user wants to cancel by room name.",
+    "Find active user bookings by room name. Returns bookings array and queryName. Use bookings.length before cancel-booking-by-room.",
   inputSchema: findBookingByRoomInputSchema,
   outputSchema: findBookingByRoomOutputSchema,
   execute: async ({ roomName }, context) => {
@@ -21,7 +20,6 @@ export const findBookingByRoomTool = createTool({
       "Authentication required to find bookings for cancellation",
     );
 
-    const result = await findBookingByRoomName(userId, roomName);
-    return mapFindBookingByRoomResult(result);
+    return findBookingByRoomName(userId, roomName);
   },
 });

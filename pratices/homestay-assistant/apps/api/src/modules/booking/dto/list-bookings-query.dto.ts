@@ -1,3 +1,10 @@
+import {
+  IsNotEmpty,
+  IsUUID,
+  IsString,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { BookingStatus } from '../../../types/enum';
 
@@ -7,6 +14,9 @@ export class ListBookingsQueryDto {
     required: false,
     example: 'guest-user',
   })
+  @IsString()
+  @IsNotEmpty()
+  @IsUUID()
   userId?: string;
 
   @ApiProperty({
@@ -14,6 +24,9 @@ export class ListBookingsQueryDto {
     required: false,
     example: 'lotus-garden',
   })
+  @IsString()
+  @IsNotEmpty()
+  @IsUUID()
   roomId?: string;
 
   @ApiProperty({
@@ -21,5 +34,7 @@ export class ListBookingsQueryDto {
     enum: BookingStatus,
     required: false,
   })
+  @IsEnum(BookingStatus)
+  @IsOptional()
   status?: BookingStatus;
 }

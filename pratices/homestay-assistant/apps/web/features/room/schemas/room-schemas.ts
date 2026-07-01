@@ -55,8 +55,18 @@ export const showAvailableRoomsSchema = z.object({
     .describe("Check-in date (YYYY-MM-DD). Defaults to today."),
 });
 
-export const openRoomDetailDrawerSchema = z.object({
-  roomId: z
-    .string()
-    .describe("Room ID to open in the detail drawer."),
-});
+export const openRoomDetailDrawerSchema = z
+  .object({
+    room: roomObjectSchema
+      .optional()
+      .describe(
+        "Full room object from getRoomByName — pass as-is to avoid a redundant fetch",
+      ),
+    roomId: z
+      .string()
+      .optional()
+      .describe("Room ID fallback when the full room object is unavailable"),
+  })
+  .refine((value) => value.room ?? value.roomId, {
+    message: "Either room or roomId is required",
+  });
