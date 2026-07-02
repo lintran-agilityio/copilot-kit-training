@@ -7,6 +7,7 @@ import { cn } from "@repo/utils";
 import { NavbarTab } from "@repo/types";
 import { ROUTES } from "@/constants";
 import { Logo } from "../common";
+import { Loading } from "@repo/components";
 
 type NavbarProps = {
   activeTab?: NavbarTab.HOME | NavbarTab.MY_BOOKINGS;
@@ -14,11 +15,15 @@ type NavbarProps = {
 };
 
 export const Navbar = ({ activeTab = NavbarTab.HOME, className }: NavbarProps) => {
-  const { user } = useUser();
+  const { isLoaded, user } = useUser();
   const initials =
     user?.firstName && user?.lastName
       ? `${user.firstName[0]}${user.lastName[0]}`
       : (user?.firstName?.[0] ?? "AL");
+
+  if (!isLoaded) {
+    return <Loading />;
+  }
 
   return (
     <header

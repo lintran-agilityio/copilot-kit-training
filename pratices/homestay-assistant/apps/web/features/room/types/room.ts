@@ -26,8 +26,3 @@ export type Room = {
   checkOutDate?: string;
   available?: boolean;
 };
-
-export enum RoomLoadMode {
-  ALL = "all",
-  AVAILABLE = "available",
-};

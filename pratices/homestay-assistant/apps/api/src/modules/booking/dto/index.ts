@@ -4,3 +4,6 @@ export * from './list-bookings-query.dto';
 export * from './check-availability-query.dto';
 export * from './availability-response.dto';
 export * from './booking-response.dto';
+export * from './find-bookings-by-room-query.dto';
+export * from './find-bookings-by-room-response.dto';
+export * from './cancellation-booking-summary.dto';

@@ -18,3 +18,16 @@ export const countNightOfDates = (checkIn: string, checkOut: string) => {
     Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
   );
 };
+
+export const normalizeRoomName = (name: string) => name.trim().toLowerCase();
+
+export const matchesRoomName = (roomName: string, query: string) => {
+  const normalizedRoom = normalizeRoomName(roomName);
+  const normalizedQuery = normalizeRoomName(query);
+
+  return (
+    normalizedRoom === normalizedQuery ||
+    normalizedRoom.includes(normalizedQuery) ||
+    normalizedQuery.includes(normalizedRoom)
+  );
+};

@@ -8,7 +8,6 @@ export class CheckAvailabilityQueryDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsUUID()
   roomId: string;
 
   @ApiProperty({

@@ -15,10 +15,9 @@ import {
 import type {
   CancelBookingByRoomArgs,
   CancelBookingByRoomResult,
-} from "../schemas/cancel-booking-by-room-schema";
+} from "../schemas";
 import type { BookingDetails } from "../types";
 import { ConfirmDeleteBookingModal } from "./ConfirmDeleteBookingModal";
-import { ConfirmDeleteSuccessModal } from "./ConfirmDeleteSuccessModal";
 
 type CancelBookingByRoomModalProps = {
   status: ToolCallStatus;
@@ -73,7 +72,7 @@ export const CancelBookingByRoomModal = ({
 
 
   if (status === ToolCallStatus.Complete && result?.confirmed) {
-    return <ConfirmDeleteSuccessModal />;
+    return null;
   }
 
   const confirmRespond = (bookingItem: BookingDetails) =>

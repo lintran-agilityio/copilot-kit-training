@@ -32,10 +32,3 @@ export const getBookingStatusMeta = (status: string): BookingStatusMeta => {
       };
   }
 };
-
-export const formatBookingDate = (date: string) =>
-  new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });

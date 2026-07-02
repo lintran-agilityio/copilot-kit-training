@@ -19,6 +19,8 @@ import { AvailabilityResponseDto } from '../dto/availability-response.dto';
 import { BookingResponseDto } from '../dto/booking-response.dto';
 import { CheckAvailabilityQueryDto } from '../dto/check-availability-query.dto';
 import { CreateBookingDto } from '../dto/create-booking.dto';
+import { FindBookingsByRoomQueryDto } from '../dto/find-bookings-by-room-query.dto';
+import { FindBookingsByRoomResponseDto } from '../dto/find-bookings-by-room-response.dto';
 import { ListBookingsQueryDto } from '../dto/list-bookings-query.dto';
 import { UpdateBookingDto } from '../dto/update-booking.dto';
 import { BookingService } from '../services/booking.service';
@@ -49,6 +51,15 @@ export class BookingController {
   @ApiOkResponse({ type: BookingResponseDto, isArray: true })
   findAll(@Query() query: ListBookingsQueryDto): Promise<BookingResponseDto[]> {
     return this.bookingService.findAll(query);
+  }
+
+  @Get('by-name')
+  @ApiOperation({ summary: 'Find active bookings by room display name' })
+  @ApiOkResponse({ type: FindBookingsByRoomResponseDto })
+  findByRoomName(
+    @Query() query: FindBookingsByRoomQueryDto,
+  ): Promise<FindBookingsByRoomResponseDto> {
+    return this.bookingService.findByRoomName(query);
   }
 
   @Get(':id')

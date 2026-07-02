@@ -18,6 +18,26 @@ const buildUrl = (path: string, searchParams?: SearchParams) => {
   return url;
 };
 
+const parseApiErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const body = (await response.json()) as {
+      message?: string | string[];
+    };
+
+    if (typeof body.message === "string" && body.message.trim()) {
+      return body.message;
+    }
+
+    if (Array.isArray(body.message) && body.message.length > 0) {
+      return body.message.join(", ");
+    }
+  } catch (error) {
+    throw new Error(`Failed to parse API error message: ${error}`);
+  }
+
+  return "";
+};
+
 const request = async <T>(
   url: URL,
   init: RequestInit,
@@ -27,7 +47,9 @@ const request = async <T>(
   const response = await fetch(url, init);
 
   if (!response.ok) {
-    throw new Error(`${errorMessage} (${response.status})`);
+    const apiMessage = await parseApiErrorMessage(response);
+    const detail = apiMessage || `${errorMessage} (${response.status})`;
+    throw new Error(detail);
   }
 
   const data = await response.json();
