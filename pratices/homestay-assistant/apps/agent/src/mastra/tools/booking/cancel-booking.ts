@@ -7,7 +7,7 @@ import { cancelBooking } from "../../../services";
 export const cancelBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.DELETE,
   description:
-    "Cancel a booking by ID. Use only after the user has confirmed they want to remove the reservation.",
+    "Cancel a booking by ID after the user confirmed in the dialog. Then call getBookings, update_bookings_list, and show_cancellation_success.",
   inputSchema: cancelBookingInputSchema,
   outputSchema: bookingSchema,
   execute: async ({ bookingId }) => cancelBooking(bookingId),

@@ -4,20 +4,19 @@ import type { BookingResponse } from "@/features/booking/types/booking";
 
 type BookingsStore = {
   bookings: BookingResponse[];
+  cancellationNotice: { roomName: string } | null;
   setBookings: (bookings: BookingResponse[]) => void;
-  removeBooking: (bookingId: string) => void;
+  setCancellationNotice: (notice: { roomName: string } | null) => void;
   upsertBooking: (booking: BookingResponse) => void;
 };
 
 export const useBookingsStore = create<BookingsStore>()((set) => ({
   bookings: [],
+  cancellationNotice: null,
 
   setBookings: (bookings) => set({ bookings }),
 
-  removeBooking: (bookingId) =>
-    set((state) => ({
-      bookings: state.bookings.filter((booking) => booking.id !== bookingId),
-    })),
+  setCancellationNotice: (cancellationNotice) => set({ cancellationNotice }),
 
   upsertBooking: (booking) =>
     set((state) => {

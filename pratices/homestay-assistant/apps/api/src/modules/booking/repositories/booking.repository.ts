@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { normalizeRoomName } from '@repo/utils';
+
 import { toDateKey, ACTIVE_BOOKING_STATUSES } from '../../../utils';
 import { ListBookingsQueryDto } from '../dto/list-bookings-query.dto';
 import { BookingEntity } from '../entities/booking.entity';
@@ -35,6 +37,34 @@ export class BookingRepository {
     }
 
     return query.getMany();
+  }
+
+  async findBookingByRoomName(
+    userId: string,
+    roomName: string,
+  ): Promise<BookingEntity[]> {
+    const normalizedQuery = normalizeRoomName(roomName);
+
+    return this.bookingRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.room', 'room')
+      .where('booking.status IN (:...activeStatuses)', {
+        activeStatuses: ACTIVE_BOOKING_STATUSES,
+      })
+      .andWhere('booking.userId = :userId', { userId })
+      .andWhere(
+        `(
+          LOWER(TRIM(room.name)) = :normalizedQuery
+          OR LOWER(TRIM(room.name)) LIKE :queryContains
+          OR POSITION(LOWER(TRIM(room.name)) IN :normalizedQuery) > 0
+        )`,
+        {
+          normalizedQuery,
+          queryContains: `%${normalizedQuery}%`,
+        },
+      )
+      .orderBy('booking.createdAt', 'DESC')
+      .getMany();
   }
 
   async findById(id: string): Promise<BookingEntity | null> {

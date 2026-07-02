@@ -2,13 +2,13 @@ export const startOfDay = (date: Date) => {
   const next = new Date(date);
   next.setHours(0, 0, 0, 0);
   return next;
-}
+};
 
 export const addDays = (date: Date, days: number) => {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
   return next;
-}
+};
 
 export const toDateKey = (date: Date) => {
   const year = date.getFullYear();
@@ -17,4 +17,15 @@ export const toDateKey = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-export const parseDateKey = (value: string) => startOfDay(new Date(`${value}T00:00:00`));
+export const parseDateKey = (value: string) =>
+  startOfDay(new Date(`${value}T00:00:00`));
+
+export const isCheckOutAfterCheckIn = (checkIn: string, checkOut: string) =>
+  parseDateKey(checkOut).getTime() > parseDateKey(checkIn).getTime();
+
+export const formatShortDateForDisplay = (date: string) =>
+  new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });

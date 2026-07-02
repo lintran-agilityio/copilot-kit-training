@@ -1,13 +1,21 @@
 {
   "name": "@repo/utils",
   "version": "0.0.0",
+  "type": "module",
   "private": true,
   "exports": {
-    ".": "./index.ts",
-    "./date": "./date.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./date": {
+      "types": "./dist/date.d.ts",
+      "default": "./dist/date.js"
+    }
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "clsx": "^2.1.1",

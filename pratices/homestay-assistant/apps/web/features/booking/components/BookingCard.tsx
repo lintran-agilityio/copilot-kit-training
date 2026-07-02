@@ -6,9 +6,8 @@ import { useState } from "react";
 
 import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
 import type { BookingResponse } from "@/features/booking/types/booking";
-import { formatBookingDate } from "@/features/booking/utils/booking-status";
 import { DEFAULT_ROOM_GALLERY_IMAGES } from "@/mocking/room";
-import { cn, formatPrice } from "@repo/utils";
+import { cn, formatPrice, formatShortDateForDisplay } from "@repo/utils";
 
 const FALLBACK_ROOM_IMAGE = DEFAULT_ROOM_GALLERY_IMAGES[0]!;
 
@@ -77,8 +76,8 @@ export const BookingCard = ({ booking, className }: BookingCardProps) => {
         <div className="flex items-start gap-2 text-sm text-zinc-400">
           <CalendarRange className="mt-0.5 size-4 shrink-0 text-zinc-500" />
           <p>
-            {formatBookingDate(booking.checkInDate)} →{" "}
-            {formatBookingDate(booking.checkOutDate)}
+            {formatShortDateForDisplay(booking.checkInDate)} →{" "}
+            {formatShortDateForDisplay(booking.checkOutDate)}
           </p>
         </div>
 

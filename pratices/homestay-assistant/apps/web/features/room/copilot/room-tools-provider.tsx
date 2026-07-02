@@ -78,7 +78,7 @@ export const RoomToolsProvider = () => {
   useFrontendTool(
     {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
-      name: "selectRoomForBooking",
+      name: TOOL_KEYS.ACTION.SELECT_ROOM_FOR_BOOKING,
       description:
         "Stage a room on the booking draft while collecting missing booking details in chat.",
       parameters: selectRoomForBookingSchema,

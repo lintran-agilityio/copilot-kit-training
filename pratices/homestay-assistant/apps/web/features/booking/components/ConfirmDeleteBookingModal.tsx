@@ -4,7 +4,6 @@ import { useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { ConfirmDeleteDialog } from "@/components/confirm-modal";
-import { useCancelBooking } from "../hooks";
 import type { ConfirmDeleteBookingResult } from "../schemas";
 import type { BookingDetails } from "../types";
 
@@ -19,8 +18,7 @@ export const ConfirmDeleteBookingModal = ({
   bookingItem,
   respond,
 }: ConfirmDeleteBookingModalProps) => {
-  const cancelBooking = useCancelBooking();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const canRespond = status === "executing" && respond != null;
   const open = status === "executing" || status === "inProgress";
 
@@ -37,17 +35,15 @@ export const ConfirmDeleteBookingModal = ({
       return;
     }
 
-    setIsDeleting(true);
+    setIsSubmitting(true);
 
     try {
-      await cancelBooking(bookingItem.bookingId);
       await respond({
         confirmed: true,
         bookingId: bookingItem.bookingId,
       });
-    } catch {
-      setIsDeleting(false);
-      await respond({ confirmed: false });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -62,7 +58,7 @@ export const ConfirmDeleteBookingModal = ({
         guests: bookingItem.guests,
         totalPrice: bookingItem.totalPrice,
       }}
-      isDeleting={isDeleting}
+      isDeleting={isSubmitting}
       canRespond={canRespond}
       onCancel={handleCancel}
       onConfirm={handleConfirm}

@@ -5,8 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
-import { useCreateBooking } from "@/features/booking/hooks/use-create-booking";
-import { useNotifyAgentBookingSummary } from "@/features/booking/hooks/use-notify-agent-booking-summary";
+import { useConfirmBookingDraft } from "@/features/booking/hooks/use-confirm-booking-draft";
 import { useRequestRoomBooking } from "@/features/booking/hooks/use-request-room-booking";
 import { useBooking } from "@/features/booking/hooks/use-booking";
 import { AmenitiesRoom } from "@/features/room/components";
@@ -23,6 +22,8 @@ import {
   toDateKey,
   formatPrice,
   countNightOfDates,
+  isCheckOutAfterCheckIn,
+  parseDateKey,
 } from "@repo/utils";
 
 type RoomDetailProps = Room & {
@@ -66,8 +67,7 @@ export const RoomDetail = ({
   const createdBooking = useBooking((state) => state.createdBooking);
   const resetBooking = useBooking((state) => state.resetBooking);
   const requestRoomBooking = useRequestRoomBooking();
-  const createBooking = useCreateBooking();
-  const notifyAgentBookingSummary = useNotifyAgentBookingSummary();
+  const confirmBookingDraft = useConfirmBookingDraft();
   const closeRoomDetailDrawer = useRoomStore(
     (state) => state.closeRoomDetailDrawer,
   );
@@ -107,7 +107,7 @@ export const RoomDetail = ({
   );
 
   useEffect(() => {
-    if (roomCheckInDate && roomCheckOutDate) {
+    if (roomCheckInDate && roomCheckOutDate && isCheckOutAfterCheckIn(roomCheckInDate, roomCheckOutDate)) {
       setLocalCheckIn(roomCheckInDate);
       setLocalCheckOut(roomCheckOutDate);
       return;
@@ -116,7 +116,8 @@ export const RoomDetail = ({
     if (
       storeSelectedRoomId === id &&
       storeCheckInDate &&
-      storeCheckOutDate
+      storeCheckOutDate &&
+      isCheckOutAfterCheckIn(storeCheckInDate, storeCheckOutDate)
     ) {
       setLocalCheckIn(storeCheckInDate);
       setLocalCheckOut(storeCheckOutDate);
@@ -134,6 +135,10 @@ export const RoomDetail = ({
 
   useEffect(() => {
     if (storeSelectedRoomId !== id) {
+      return;
+    }
+
+    if (storeCheckInDate && storeCheckOutDate && !isCheckOutAfterCheckIn(storeCheckInDate, storeCheckOutDate)) {
       return;
     }
 
@@ -158,16 +163,11 @@ export const RoomDetail = ({
   ]);
 
   useEffect(() => {
-    if (!checkInDate || !checkOutDate) {
+    if (!checkInDate || !checkOutDate || isCheckOutAfterCheckIn(checkInDate, checkOutDate)) {
       return;
     }
 
-    const checkIn = new Date(`${checkInDate}T00:00:00`);
-    const checkOut = new Date(`${checkOutDate}T00:00:00`);
-
-    if (checkOut <= checkIn) {
-      setLocalCheckOut(toDateKey(addDays(checkIn, 1)));
-    }
+    setLocalCheckOut(toDateKey(addDays(parseDateKey(checkInDate), 1)));
   }, [checkInDate, checkOutDate]);
 
   const matchesExistingBooking = useMemo(
@@ -202,7 +202,7 @@ export const RoomDetail = ({
     if (
       !checkInDate ||
       !checkOutDate ||
-      checkInDate === checkOutDate ||
+      !isCheckOutAfterCheckIn(checkInDate, checkOutDate) ||
       matchesExistingBooking
     ) {
       setIsAvailable(undefined);
@@ -238,9 +238,14 @@ export const RoomDetail = ({
   }, [checkInDate, checkOutDate, id, matchesExistingBooking]);
 
   const formattedPrice = formatPrice(pricePerNight);
+  const hasValidDateRange =
+    checkInDate != null &&
+    checkOutDate != null &&
+    isCheckOutAfterCheckIn(checkInDate, checkOutDate);
+
   const canProceed =
-    Boolean(checkInDate && checkOutDate && pricePerNight != null) &&
-    checkInDate !== checkOutDate &&
+    hasValidDateRange &&
+    pricePerNight != null &&
     guests >= 1 &&
     guests <= capacity;
 
@@ -329,23 +334,7 @@ export const RoomDetail = ({
     }
 
     syncDraft();
-
-    try {
-      const booking = await createBooking(
-        {
-          roomId: id,
-          checkInDate,
-          checkOutDate,
-          guests,
-        },
-        room,
-      );
-      await notifyAgentBookingSummary(booking, name);
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : "Failed to create booking",
-      );
-    }
+    await confirmBookingDraft();
   };
 
   const handleCheckInChange = (dateKey: string) => {

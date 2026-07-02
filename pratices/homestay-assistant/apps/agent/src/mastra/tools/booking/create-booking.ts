@@ -6,31 +6,44 @@ import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import {
   createBookingSchema,
   bookingSchema,
-  CreateBookingSchema,
+  type CreateBookingSchema,
 } from "../../schemas/booking";
+import { resolveAgentUserId } from "../../utils/resolve-agent-user-id";
 import { createBooking } from "../../../services/booking.services";
+
+const resolveCreateBookingUserId = (
+  params: CreateBookingSchema,
+  resourceId?: string,
+) => {
+  if (params.userId) {
+    return params.userId;
+  }
+
+  return resolveAgentUserId(
+    resourceId,
+    "Authentication required to create a booking",
+  );
+};
 
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE,
   description:
-    "Create a confirmed room booking after the user has approved the draft. Requires roomId, userId, check-in, check-out, and guest count.",
+    "Create a confirmed room booking after the user approved the draft in the drawer. Then call sync_booking_result with the booking. The signed-in user is resolved automatically from the server session.",
   inputSchema: createBookingSchema,
   outputSchema: bookingSchema,
-  execute: async ({
-    roomId,
-    userId,
-    checkInDate,
-    checkOutDate,
-    guests,
-    status,
-  }: CreateBookingSchema) => {
+  execute: async (params, context) => {
+    const userId = resolveCreateBookingUserId(
+      params,
+      context.agent?.resourceId,
+    );
+
     const booking = await createBooking({
-      roomId,
+      roomId: params.roomId,
       userId,
-      checkInDate,
-      checkOutDate,
-      guests,
-      status: status ?? BookingStatus.CONFIRMED,
+      checkInDate: params.checkInDate,
+      checkOutDate: params.checkOutDate,
+      guests: params.guests,
+      status: params.status ?? BookingStatus.CONFIRMED,
     });
     return booking;
   },

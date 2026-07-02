@@ -20,6 +20,10 @@ import {
   ListBookingsQueryDto,
   UpdateBookingDto,
 } from '../dto';
+import { CancellationBookingSummaryDto } from '../dto/cancellation-booking-summary.dto';
+import { FindBookingsByRoomQueryDto } from '../dto/find-bookings-by-room-query.dto';
+import { FindBookingsByRoomResponseDto } from '../dto/find-bookings-by-room-response.dto';
+import { BookingEntity } from '../entities/booking.entity';
 import { toBookingResponseDto } from '../mappers/booking.mapper';
 import { BookingRepository } from '../repositories/booking.repository';
 
@@ -80,6 +84,26 @@ export class BookingService {
   ): Promise<BookingResponseDto[]> {
     const bookings = await this.bookingRepository.findAll(query);
     return bookings.map(toBookingResponseDto);
+  }
+
+  async findByRoomName(
+    query: FindBookingsByRoomQueryDto,
+  ): Promise<FindBookingsByRoomResponseDto> {
+    const queryName = query.roomName.trim();
+
+    if (!queryName) {
+      return { bookings: [], queryName: '' };
+    }
+
+    const bookings = await this.bookingRepository.findBookingByRoomName(
+      query.userId,
+      queryName,
+    );
+
+    return {
+      bookings: bookings.map((booking) => this.toCancellationSummary(booking)),
+      queryName,
+    };
   }
 
   async findById(id: string): Promise<BookingResponseDto> {
@@ -179,6 +203,21 @@ export class BookingService {
 
   async cancel(id: string): Promise<BookingResponseDto> {
     return this.update(id, { status: BookingStatus.CANCELLED });
+  }
+
+  private toCancellationSummary(
+    booking: BookingEntity,
+  ): CancellationBookingSummaryDto {
+    const roomName = booking.room?.name ?? '';
+
+    return {
+      bookingId: booking.id,
+      roomName,
+      checkInDate: booking.checkInDate,
+      checkOutDate: booking.checkOutDate,
+      guests: booking.guests,
+      totalPrice: booking.totalPrice,
+    };
   }
 
   private async findOrCreateUser(userId: string): Promise<UserEntity> {
