@@ -2,7 +2,7 @@ import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { bookingSchema, cancelBookingInputSchema } from "../../schemas/booking";
-import { cancelBooking } from "../../../services";
+import { cancelBooking } from "../../services";
 
 export const cancelBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.DELETE,

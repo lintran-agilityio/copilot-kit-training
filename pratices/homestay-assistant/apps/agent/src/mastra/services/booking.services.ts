@@ -4,12 +4,12 @@ import { BookingStatus, BookingByRoomLookup } from "@repo/types";
 import {
   bookingSchema,
   checkRoomAvailabilityOutputSchema,
-  FindBookingByRoomOutput,
-  findBookingByRoomOutputSchema,
+  FindBookingByNameOutput,
+  findBookingByNameOutputSchema,
   type Booking,
   type CheckRoomAvailabilityInput,
   type CreateBookingPayload,
-} from "../mastra/schemas/booking";
+} from "../schemas/booking";
 import { ROUTES } from "@repo/constants";
 import { get, post, del } from "./common";
 
@@ -57,9 +57,9 @@ export const cancelBooking = async (bookingId: string): Promise<Booking> =>
       return { bookings: [], queryName: "" };
     }
 
-    return get<FindBookingByRoomOutput>(
+    return get<FindBookingByNameOutput>(
       ROUTES.BOOKINGS_BY_NAME,
-      findBookingByRoomOutputSchema,
+      findBookingByNameOutputSchema,
       {
         searchParams: { userId, roomName: queryName },
         errorMessage: "Failed to find bookings by room name",

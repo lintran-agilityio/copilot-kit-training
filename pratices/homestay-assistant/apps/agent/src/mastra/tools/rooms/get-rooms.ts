@@ -1,7 +1,7 @@
 import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
-import { getAvailableRooms, getRooms } from "../../../services/rooms.service";
+import { getAvailableRooms, getRooms } from "../../services";
 import {
   getRoomsInputSchema,
   getRoomsOutputSchema,

@@ -6,8 +6,8 @@ import { NavbarTab } from "@repo/types";
 import { MainLayout } from "@/components/layouts";
 import { PageHeader } from "@/components/common";
 import { BookingList } from "@/features/booking/components";
-import { useBookingsStore } from "@/features/booking/stores/bookings-store";
-import type { BookingResponse } from "@/features/booking/types/booking";
+import { useBookingsStore } from "@/features/booking/stores/booking-store";
+import type { BookingResponse } from "@/features/booking/types";
 
 const MY_BOOKINGS_TITLE = "Your reservations";
 

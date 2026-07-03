@@ -9,7 +9,7 @@ import { bookingSchema } from "../../schemas/booking";
 import {
   getBookings,
   type GetBookingsParams,
-} from "../../../services/booking.services";
+} from "../../services";
 
 const getBookingsInputSchema = z.object({
   userId: z

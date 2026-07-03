@@ -1,5 +1,5 @@
 // Libs
-import { createStore } from "zustand";
+import { createStore, create } from "zustand";
 
 import type {
   BookingDraft,
@@ -8,6 +8,7 @@ import type {
   SelectedRoom,
   UpdateBookingFormInput,
 } from "@/features/booking/types/booking";
+import type { BookingResponse } from "../types";
 
 export interface BookingStore extends BookingDraft {
   isFormReady: boolean;
@@ -26,6 +27,14 @@ export interface BookingStore extends BookingDraft {
   setCreatedBooking: (booking: BookingItem) => void;
   resetBooking: () => void;
 }
+
+type BookingsStore = {
+  bookings: BookingResponse[];
+  cancellationNotice: { roomName: string } | null;
+  setBookings: (bookings: BookingResponse[]) => void;
+  setCancellationNotice: (notice: { roomName: string } | null) => void;
+  upsertBooking: (booking: BookingResponse) => void;
+};
 
 export const createBookingStore = (initialState?: Partial<BookingDraft>) => {
   return createStore<BookingStore>()((set, get) => ({
@@ -94,3 +103,25 @@ export const createBookingStore = (initialState?: Partial<BookingDraft>) => {
       }),
   }));
 };
+
+export const useBookingsStore = create<BookingsStore>()((set) => ({
+  bookings: [],
+  cancellationNotice: null,
+
+  setBookings: (bookings) => set({ bookings }),
+
+  setCancellationNotice: (cancellationNotice) => set({ cancellationNotice }),
+
+  upsertBooking: (booking) =>
+    set((state) => {
+      const index = state.bookings.findIndex((item) => item.id === booking.id);
+
+      if (index === -1) {
+        return { bookings: [booking, ...state.bookings] };
+      }
+
+      const next = [...state.bookings];
+      next[index] = booking;
+      return { bookings: next };
+    }),
+}));

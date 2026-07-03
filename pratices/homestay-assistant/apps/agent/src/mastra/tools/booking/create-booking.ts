@@ -9,7 +9,7 @@ import {
   type CreateBookingSchema,
 } from "../../schemas/booking";
 import { resolveAgentUserId } from "../../utils/resolve-agent-user-id";
-import { createBooking } from "../../../services/booking.services";
+import { createBooking } from "../../services";
 
 const resolveCreateBookingUserId = (
   params: CreateBookingSchema,

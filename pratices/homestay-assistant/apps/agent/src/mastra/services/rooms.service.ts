@@ -6,7 +6,7 @@ import {
   GetRoomByNameOutput,
   roomSchema,
   type Room,
-} from "../mastra/schemas/rooms";
+} from "../schemas/rooms";
 import { get } from "./common";
 
 const getRoomsByNameResponseSchema = z.array(roomSchema);

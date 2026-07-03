@@ -1,6 +1,6 @@
 import { getBookingStoreState } from "@/features/booking/stores/booking-provider";
-import { useBookingsStore } from "@/features/booking/stores/bookings-store";
-import type { SyncBookingResultArgs } from "@/features/booking/schemas/sync-booking-result-schema";
+import { useBookingsStore } from "@/features/booking/stores/booking-store";
+import type { SyncBookingResultArgs } from "@/features/booking/schemas";
 import type {
   BookingItem,
   BookingResponse,
