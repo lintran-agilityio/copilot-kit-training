@@ -24,6 +24,6 @@ export const TOOL_KEYS = {
     UPDATE_BOOKINGS_LIST: "update_bookings_list",
     NAVIGATE_TO_BOOKINGS_PAGE: "navigate_to_bookings_page",
     SHOW_CANCELLATION_SUCCESS: "show_cancellation_success",
-    SELECT_ROOM_FOR_BOOKING: "selectRoomForBooking",
+    SELECT_ROOM_FOR_BOOKING: "select_room_for_booking",
   },
 };

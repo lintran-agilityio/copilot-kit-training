@@ -1,7 +1,7 @@
 import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
-import { findRoomByName } from "../../../services";
+import { findRoomByName } from "../../services";
 import {
   getRoomByNameInputSchema,
   getRoomByNameOutputSchema,

@@ -1,50 +1,39 @@
 import { TOOL_KEYS } from "@repo/constants";
-
 import type { CopilotChatAssistantMessageProps } from "@copilotkit/react-core/v2";
 
 import { BOOKING_CONFIRM_PROMPT_PREFIX } from "@repo/constants";
 
-/** Room/data tools and page UI actions — hidden from chat; effects render on the page. */
+const { ACTION, BOOKING, GET } = TOOL_KEYS;
 
+/** Room/data tools and page UI actions — hidden from chat; effects render on the page. */
 export const CHAT_HIDDEN_TOOLS = new Set([
-  TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
-  TOOL_KEYS.ACTION.NAVIGATE_TO_HOME_PAGE,
-  TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_DRAWER,
-  TOOL_KEYS.ACTION.PICK_ROOM_FOR_DETAIL,
-  TOOL_KEYS.ACTION.SYNC_BOOKING_RESULT,
-  TOOL_KEYS.ACTION.UPDATE_BOOKINGS_LIST,
-  TOOL_KEYS.ACTION.NAVIGATE_TO_BOOKINGS_PAGE,
-  TOOL_KEYS.ACTION.SHOW_CANCELLATION_SUCCESS,
-  TOOL_KEYS.ACTION.UPDATE_BOOKING_FORM,
-  TOOL_KEYS.ACTION.SELECT_ROOM_FOR_BOOKING,
-  TOOL_KEYS.BOOKING.CREATE,
-  TOOL_KEYS.BOOKING.GET,
-  TOOL_KEYS.GET.ROOMS,
-  TOOL_KEYS.GET.AVAILABLE_ROOMS,
-  TOOL_KEYS.GET.ROOM,
-  TOOL_KEYS.GET.ROOM_BY_NAME,
-  "getRooms",
-  "getAvailableRooms",
-  "getRoomById",
-  "getRoomByName",
-  "getBookings",
-  "createBooking",
-  "cancelBooking",
-  "findBookingByRoom",
+  ACTION.UPDATE_ROOM_LIST,
+  ACTION.NAVIGATE_TO_HOME_PAGE,
+  ACTION.OPEN_ROOM_DETAIL_DRAWER,
+  ACTION.PICK_ROOM_FOR_DETAIL,
+  ACTION.SYNC_BOOKING_RESULT,
+  ACTION.UPDATE_BOOKINGS_LIST,
+  ACTION.NAVIGATE_TO_BOOKINGS_PAGE,
+  ACTION.SHOW_CANCELLATION_SUCCESS,
+  ACTION.UPDATE_BOOKING_FORM,
+  ACTION.SELECT_ROOM_FOR_BOOKING,
+  BOOKING.CREATE,
+  BOOKING.GET,
+  GET.ROOMS,
+  GET.AVAILABLE_ROOMS,
+  GET.ROOM,
+  GET.ROOM_BY_NAME,
   TOOL_KEYS.BOOKING.FIND_BY_ROOM,
-  "navigate_to_home_page",
-  "navigate_to_bookings_page",
-  "update_room_list",
-  "update_bookings_list",
-  "sync_booking_result",
-  "show_cancellation_success",
-  "open_room_detail_drawer",
-  "pick-room-for-detail",
-  "selectRoomForBooking",
-  "update_booking_form",
-  "show_rooms_page",
-  "room",
-  "renderRooms",
+  ACTION.NAVIGATE_TO_BOOKINGS_PAGE,
+  ACTION.NAVIGATE_TO_HOME_PAGE,
+  ACTION.UPDATE_ROOM_LIST,
+  ACTION.UPDATE_BOOKINGS_LIST,
+  ACTION.SYNC_BOOKING_RESULT,
+  ACTION.SHOW_CANCELLATION_SUCCESS,
+  ACTION.OPEN_ROOM_DETAIL_DRAWER,
+  ACTION.PICK_ROOM_FOR_DETAIL,
+  ACTION.SELECT_ROOM_FOR_BOOKING,
+  ACTION.UPDATE_BOOKING_FORM,
 ]);
 
 export const PAGE_ONLY_GENERATIVE_TOOLS = CHAT_HIDDEN_TOOLS;

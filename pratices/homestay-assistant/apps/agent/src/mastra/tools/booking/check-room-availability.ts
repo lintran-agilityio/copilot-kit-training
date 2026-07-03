@@ -6,7 +6,7 @@ import {
   checkRoomAvailabilityInputSchema,
   checkRoomAvailabilityOutputSchema,
 } from "../../schemas/booking";
-import { checkRoomAvailability } from "../../../services/booking.services";
+import { checkRoomAvailability } from "../../services";
 
 export const checkRoomAvailabilityTool = createTool({
   id: TOOL_KEYS.BOOKING.CHECK_AVAILABILITY,

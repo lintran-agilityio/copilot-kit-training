@@ -25,7 +25,7 @@ import {
   type CancelBookingByRoomResult,
 } from "@/features/booking/schemas";
 import type { BookingDetails, BookingResponse } from "@/features/booking/types";
-import { useBookingsStore } from "@/features/booking/stores/bookings-store";
+import { useBookingsStore } from "@/features/booking/stores/booking-store";
 
 const BookingCancellationNotice = () => {
   const noticeCancellation = useBookingsStore((state) => state.cancellationNotice);
