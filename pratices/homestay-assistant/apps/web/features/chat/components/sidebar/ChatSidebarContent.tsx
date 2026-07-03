@@ -13,7 +13,7 @@ import { WELCOME_MESSAGE } from "../../constants";
 import {
   hydrateThreadMessages,
   useActiveThread,
-  useConfigureChatSuggestions,
+  useChatSuggestions,
   useChatScroll,
   useAutoThreadTitle,
 } from "../../hooks";
@@ -23,10 +23,10 @@ import {
   ChatWelcomeScreen,
   ChatAssistantMessage,
 } from "@/features/chat/components/sidebar";
-import { CopilotSuggestion } from "@/components/suggestions/CopilotSuggestion";
 import { useThreadContext } from "../../contexts/thread-context";
 import { useChatStore } from "../../stores/chat-store";
 import { ChatSidebarProps } from "./ChatSidebar";
+import { SuggestionBar } from "@/components/suggestions";
 
 export const ChatSidebarContent = ({
   className,
@@ -35,7 +35,7 @@ export const ChatSidebarContent = ({
 
   threadId,
 }: ChatSidebarProps & { threadId: string }) => {
-  useConfigureChatSuggestions({ agentId });
+  const suggestions = useChatSuggestions();
 
   const { refetchThreads } = useThreadContext();
   const { scopeKey } = useActiveThread(agentId);
@@ -161,11 +161,11 @@ export const ChatSidebarContent = ({
       <div
         data-sidebar-chat
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-hidden",
-
+          "flex min-h-0 flex-1 flex-col overflow-hidden items-bottom",
           "[&_.copilotKitChat]:flex [&_.copilotKitChat]:h-full [&_.copilotKitChat]:min-h-0 [&_.copilotKitChat]:flex-col",
         )}
       >
+        <SuggestionBar suggestions={suggestions} />
         <CopilotChat
           key={threadId}
           agentId={agentId}
@@ -195,13 +195,6 @@ export const ChatSidebarContent = ({
             bottomAnchored: true,
 
             className: "pointer-events-auto m-4",
-          }}
-          suggestionView={{
-            suggestion: CopilotSuggestion,
-
-            container: {
-              className: "flex flex-wrap gap-2 pointer-events-auto",
-            },
           }}
         />
       </div>
