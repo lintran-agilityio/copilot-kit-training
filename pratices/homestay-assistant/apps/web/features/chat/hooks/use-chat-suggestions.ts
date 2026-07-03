@@ -1,17 +1,8 @@
-import { useConfigureSuggestions } from "@copilotkit/react-core/v2";
+import { SUGGESTIONS_BY_STATE } from "../constants";
+import { useChatSuggestionState } from "./use-chat-suggestion-state";
 
-import { CHAT_SUGGESTIONS } from "../constants";
+export const useChatSuggestions = () => {
+  const state = useChatSuggestionState();
 
-type UseConfigureChatSuggestionsProps = {
-  agentId: string;
-};
-
-export const useConfigureChatSuggestions = ({
-  agentId,
-}: UseConfigureChatSuggestionsProps) => {
-  useConfigureSuggestions({
-    suggestions: CHAT_SUGGESTIONS,
-    available: "before-first-message",
-    consumerAgentId: agentId,
-  });
+  return SUGGESTIONS_BY_STATE[state];
 };
