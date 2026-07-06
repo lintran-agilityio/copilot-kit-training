@@ -1,13 +1,11 @@
 import type { Room } from "@/features/room/types/room";
 
 export const stripRoomBookingOverlay = (room: Room): Room => {
-  const {
-    bookingStatus: _bookingStatus,
-    checkInDate: _checkInDate,
-    checkOutDate: _checkOutDate,
-    available: _available,
-    ...roomWithoutBookingOverlay
-  } = room;
+  const roomWithoutBookingOverlay = { ...room };
+  delete roomWithoutBookingOverlay.bookingStatus;
+  delete roomWithoutBookingOverlay.checkInDate;
+  delete roomWithoutBookingOverlay.checkOutDate;
+  delete roomWithoutBookingOverlay.available;
 
   return roomWithoutBookingOverlay;
 };

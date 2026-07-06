@@ -38,12 +38,7 @@ export const CHAT_HIDDEN_TOOLS = new Set([
 
 export const PAGE_ONLY_GENERATIVE_TOOLS = CHAT_HIDDEN_TOOLS;
 
-export const PAGE_ROOMS_THREAD_ID = "__page_rooms__";
-
 export const PAGE_ROOMS_PROMPT_PREFIX = "[page-rooms]";
-
-export const isPageInternalThread = (threadId: string) =>
-  threadId.startsWith("__page_");
 
 export const isPageOnlyGenerativeTool = (toolName: string) =>
   PAGE_ONLY_GENERATIVE_TOOLS.has(toolName);

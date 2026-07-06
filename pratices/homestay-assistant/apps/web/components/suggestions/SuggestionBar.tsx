@@ -4,14 +4,28 @@ import { ChatSuggestion } from "@/features/chat/types";
 import { AGENT_KEYS } from "@repo/constants";
 import { CopilotSuggestion } from "./CopilotSuggestion";
 
-export const SuggestionBar = ({ suggestions }: { suggestions: ChatSuggestion[] }) => {
+type SuggestionBarProps = {
+  suggestions: ChatSuggestion[];
+  agentId?: string;
+  threadId?: string;
+};
+
+export const SuggestionBar = ({
+  suggestions,
+  agentId = AGENT_KEYS.HOMESTAY_ASSISTANT,
+  threadId,
+}: SuggestionBarProps) => {
   const { agent } = useAgent({
-    agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+    agentId,
   });
 
   const { copilotkit } = useCopilotKit();
 
   const handleSuggestionClick = async (prompt: string) => {
+    if (threadId) {
+      agent.threadId = threadId;
+    }
+
     agent.addMessage({
       id: crypto.randomUUID(),
       role: "user",
