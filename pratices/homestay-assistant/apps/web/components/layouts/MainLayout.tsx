@@ -10,7 +10,7 @@ import { AGENT_KEYS } from "@repo/constants";
 import { Navbar } from "@/components/layouts";
 import { ChatSidebar } from "@/features/chat/components";
 import { NavbarTab } from "@repo/types";
-import { ChatThreadList } from "@/features/chat/components/sidebar/ChatThreadList";
+import { ChatThreadList } from "@/features/chat/components/ChatThreadList";
 import { useChatScopeKey, useChatThreads } from "@/features/chat/hooks";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 
@@ -37,6 +37,8 @@ export const MainLayout = ({
     threads,
     isLoading: isLoadingThreads,
     refetchThreads,
+    renameThread,
+    deleteThread,
   } = useChatThreads({
     agentId,
     enabled: Boolean(scopeKey),
@@ -107,6 +109,49 @@ export const MainLayout = ({
     agent.setMessages?.([]);
   }, [agent, scopeKey, startNewThread]);
 
+  const handleRenameThread = useCallback(
+    async (threadId: string, name: string) => {
+      await renameThread(threadId, name);
+    },
+    [renameThread],
+  );
+
+  const handleDeleteThread = useCallback(
+    async (threadId: string) => {
+      if (!scopeKey) {
+        return;
+      }
+
+      await deleteThread(threadId);
+
+      if (currentThreadId !== threadId) {
+        return;
+      }
+
+      const nextThread = threads.find((thread) => thread.id !== threadId);
+
+      if (nextThread) {
+        agent.threadId = nextThread.id;
+        agent.setMessages?.([]);
+        setCurrentThreadId(scopeKey, nextThread.id);
+        return;
+      }
+
+      const nextThreadId = startNewThread(scopeKey);
+      agent.threadId = nextThreadId;
+      agent.setMessages?.([]);
+    },
+    [
+      agent,
+      currentThreadId,
+      deleteThread,
+      scopeKey,
+      setCurrentThreadId,
+      startNewThread,
+      threads,
+    ],
+  );
+
   return (
     <div className="flex h-screen w-full justify-center mx-2 bg-[#010507]">
       <div
@@ -124,6 +169,8 @@ export const MainLayout = ({
               isLoading={isLoadingThreads}
               onSelectThread={handleSelectThread}
               onStartNewThread={handleStartNewThread}
+              onRenameThread={handleRenameThread}
+              onDeleteThread={handleDeleteThread}
             />
           </div>
           <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
