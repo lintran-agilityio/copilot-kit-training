@@ -13,6 +13,10 @@ type ChatThreadsResponse = {
   threads?: ChatThread[];
 };
 
+type RenameThreadResponse = {
+  thread?: ChatThread;
+};
+
 export const useChatThreads = ({
   agentId,
   enabled = true,
@@ -54,6 +58,56 @@ export const useChatThreads = ({
     }
   }, [agentId, enabled]);
 
+  const renameThread = useCallback(
+    async (threadId: string, name: string) => {
+      const response = await fetch(`/api/threads/${encodeURIComponent(threadId)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ agentId, name }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to rename thread: ${response.status}`);
+      }
+
+      const data = (await response.json()) as RenameThreadResponse;
+
+      if (!data.thread) {
+        await refetchThreads();
+        return;
+      }
+
+      setThreads((currentThreads) =>
+        currentThreads.map((thread) =>
+          thread.id === threadId ? data.thread ?? thread : thread,
+        ),
+      );
+    },
+    [agentId, refetchThreads],
+  );
+
+  const deleteThread = useCallback(
+    async (threadId: string) => {
+      const response = await fetch(
+        `/api/threads/${encodeURIComponent(threadId)}?${new URLSearchParams({
+          agentId,
+        }).toString()}`,
+        { method: "DELETE" },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete thread: ${response.status}`);
+      }
+
+      setThreads((currentThreads) =>
+        currentThreads.filter((thread) => thread.id !== threadId),
+      );
+    },
+    [agentId],
+  );
+
   useEffect(() => {
     void refetchThreads();
   }, [refetchThreads]);
@@ -63,5 +117,7 @@ export const useChatThreads = ({
     isLoading,
     error,
     refetchThreads,
+    renameThread,
+    deleteThread,
   };
 };

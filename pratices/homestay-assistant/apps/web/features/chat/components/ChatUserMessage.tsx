@@ -7,7 +7,7 @@ import {
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
 
-import { ChatUserAvatar } from "@/features/chat/components/sidebar/ChatAvatars";
+import { ChatUserAvatar } from "@/features/chat/components/ChatAvatars";
 import { isHiddenAgentPrompt, getMessageTextContent } from "@/features/copilot/constants/page-generative-ui";
 import { getMessageTopSpacing } from "@/features/chat/utils";
 import { cn } from "@repo/utils";;

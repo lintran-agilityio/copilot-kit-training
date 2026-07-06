@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChatThread } from "@/features/chat/types";
-import { cn } from "@repo/utils";
+import { ThreadItem } from "./ThreadItem";
 
 type ChatThreadListProps = {
   threads: ChatThread[];
@@ -9,16 +9,8 @@ type ChatThreadListProps = {
   isLoading?: boolean;
   onSelectThread: (threadId: string) => void;
   onStartNewThread: () => void;
-};
-
-const getThreadLabel = (thread: ChatThread) => {
-  const name = thread.name?.trim();
-
-  if (!name) {
-    return "New chat";
-  }
-
-  return name.length > 42 ? `${name.slice(0, 39)}...` : name;
+  onRenameThread: (threadId: string, name: string) => Promise<void>;
+  onDeleteThread: (threadId: string) => Promise<void>;
 };
 
 export const ChatThreadList = ({
@@ -27,6 +19,8 @@ export const ChatThreadList = ({
   isLoading = false,
   onSelectThread,
   onStartNewThread,
+  onRenameThread,
+  onDeleteThread,
 }: ChatThreadListProps) => {
   return (
     <div className="flex h-full min-h-0 w-48 shrink-0 flex-col border-r border-white/10 px-3 py-3">
@@ -57,22 +51,16 @@ export const ChatThreadList = ({
         ) : null}
 
         {threads.map((thread) => (
-          <button
-            key={thread.id}
-            type="button"
-            onClick={() => onSelectThread(thread.id)}
-            className={cn(
-              "rounded-xl px-3 py-2 text-left text-xs transition",
-              currentThreadId === thread.id
-                ? "bg-white/10 text-white"
-                : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200",
-            )}
-          >
-            <span className="block truncate">{getThreadLabel(thread)}</span>
-            <span className="mt-0.5 block text-[10px] text-zinc-600">
-              {thread.messageCount} messages
-            </span>
-          </button>
+          <div key={thread.id}>
+            <ThreadItem
+              key={thread.id}
+              thread={thread}
+              currentThreadId={currentThreadId}
+              onSelectThread={onSelectThread}
+              onRenameThread={onRenameThread}
+              onDeleteThread={onDeleteThread}
+            />
+          </div>
         ))}
       </div>
     </div>

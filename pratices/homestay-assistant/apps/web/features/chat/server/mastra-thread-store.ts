@@ -22,6 +22,10 @@ type MastraMessageRow = {
   content: string;
 };
 
+type MastraThreadIdRow = {
+  id: string;
+};
+
 type MastraMessageContent = {
   content?: unknown;
   parts?: Array<{
@@ -34,7 +38,8 @@ const getDatabasePath = () =>
   process.env.MASTRA_DB_PATH ??
   path.resolve(process.cwd(), "../agent/mastra.db");
 
-const getDatabase = () => new Database(getDatabasePath(), { readonly: true });
+const getDatabase = (readonly = true) =>
+  new Database(getDatabasePath(), { readonly });
 
 const readMessageContent = (content: string) => {
   try {
@@ -117,6 +122,117 @@ export const listMastraThreads = ({
       ...(row.lastRunAt ? { lastRunAt: row.lastRunAt } : {}),
       messageCount: row.messageCount,
     }));
+  } finally {
+    database.close();
+  }
+};
+
+export const renameMastraThread = ({
+  userId,
+  agentId,
+  threadId,
+  name,
+}: {
+  userId: string;
+  agentId: string;
+  threadId: string;
+  name: string;
+}): ChatThread | null => {
+  const resourceId = getAgentResourceId(userId, agentId);
+  const database = getDatabase(false);
+  const trimmedName = name.trim();
+
+  try {
+    const existingThread = database
+      .prepare<[string, string], MastraThreadIdRow>(
+        `
+          SELECT id
+          FROM mastra_threads
+          WHERE id = ?
+            AND resourceId = ?
+        `,
+      )
+      .get(threadId, resourceId);
+
+    if (!existingThread) {
+      return null;
+    }
+
+    database
+      .prepare<[string, string, string, string]>(
+        `
+          UPDATE mastra_threads
+          SET title = ?,
+              updatedAt = ?
+          WHERE id = ?
+            AND resourceId = ?
+        `,
+      )
+      .run(trimmedName, new Date().toISOString(), threadId, resourceId);
+
+    const thread = listMastraThreads({ userId, agentId }).find(
+      (currentThread) => currentThread.id === threadId,
+    );
+
+    return thread ?? null;
+  } finally {
+    database.close();
+  }
+};
+
+export const deleteMastraThread = ({
+  userId,
+  agentId,
+  threadId,
+}: {
+  userId: string;
+  agentId: string;
+  threadId: string;
+}): boolean => {
+  const resourceId = getAgentResourceId(userId, agentId);
+  const database = getDatabase(false);
+
+  try {
+    const deleteThread = database.transaction(() => {
+      const existingThread = database
+        .prepare<[string, string], MastraThreadIdRow>(
+          `
+            SELECT id
+            FROM mastra_threads
+            WHERE id = ?
+              AND resourceId = ?
+          `,
+        )
+        .get(threadId, resourceId);
+
+      if (!existingThread) {
+        return false;
+      }
+
+      database
+        .prepare<[string, string]>(
+          `
+            DELETE FROM mastra_messages
+            WHERE thread_id = ?
+              AND resourceId = ?
+          `,
+        )
+        .run(threadId, resourceId);
+
+      database
+        .prepare<[string, string]>(
+          `
+            DELETE FROM mastra_threads
+            WHERE id = ?
+              AND resourceId = ?
+          `,
+        )
+        .run(threadId, resourceId);
+
+      return true;
+    });
+
+    return deleteThread();
   } finally {
     database.close();
   }

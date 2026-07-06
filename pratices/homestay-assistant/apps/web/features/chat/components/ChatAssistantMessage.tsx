@@ -5,7 +5,7 @@ import {
   type CopilotChatToolCallsViewProps,
 } from "@copilotkit/react-core/v2";
 
-import { ChatAgentAvatar } from "@/features/chat/components/sidebar/ChatAvatars";
+import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
 import {
   getChatVisibleToolCalls,
   getMessageTextContent,
