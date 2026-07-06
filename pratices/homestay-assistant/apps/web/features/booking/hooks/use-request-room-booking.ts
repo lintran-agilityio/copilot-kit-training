@@ -5,7 +5,7 @@ import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { useCallback } from "react";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { getThreadResourceId } from "@repo/utils";
+import { getAgentResourceId } from "@repo/utils";
 
 import { useChatStore } from "@/features/chat/stores/chat-store";
 
@@ -13,17 +13,11 @@ export const useRequestRoomBooking = () => {
   const { user, isLoaded } = useUser();
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
+  const currentThreadIds = useChatStore((state) => state.currentThreadIds);
   const setPendingOutboundMessage = useChatStore(
     (state) => state.setPendingOutboundMessage,
   );
-  const activeThreadId = useChatStore((state) => {
-    if (!isLoaded || !user?.id) {
-      return undefined;
-    }
-
-    const scopeKey = getThreadResourceId(user.id, AGENT_KEYS.HOMESTAY_ASSISTANT);
-    return state.activeThreadIds[scopeKey];
-  });
+  const startNewThread = useChatStore((state) => state.startNewThread);
 
   return useCallback(
     (message = "Book this room") => {
@@ -31,12 +25,12 @@ export const useRequestRoomBooking = () => {
         return;
       }
 
-      const scopeKey = getThreadResourceId(user.id, AGENT_KEYS.HOMESTAY_ASSISTANT);
+      const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.HOMESTAY_ASSISTANT);
+      const threadId = currentThreadIds[scopeKey] ?? startNewThread(scopeKey);
 
-      if (
-        activeThreadId &&
-        copilotkit.runtimeConnectionStatus === "connected"
-      ) {
+      if (copilotkit.runtimeConnectionStatus === "connected") {
+        agent.threadId = threadId;
+
         agent.addMessage({
           id: crypto.randomUUID(),
           role: "user",
@@ -52,11 +46,12 @@ export const useRequestRoomBooking = () => {
       setPendingOutboundMessage(scopeKey, message);
     },
     [
-      activeThreadId,
       agent,
       copilotkit,
+      currentThreadIds,
       isLoaded,
       setPendingOutboundMessage,
+      startNewThread,
       user?.id,
     ],
   );

@@ -139,7 +139,7 @@ const normalizeToolCall = (toolCall: unknown): CopilotKitToolCall | null => {
   return null;
 };
 
-const normalizeThreadMessage = <TMessage>(message: TMessage): TMessage => {
+const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
   if (!message || typeof message !== "object") {
     return message;
   }
@@ -155,7 +155,9 @@ const normalizeThreadMessage = <TMessage>(message: TMessage): TMessage => {
     .filter((toolCall): toolCall is CopilotKitToolCall => toolCall !== null);
 
   if (toolCalls.length === 0) {
-    const { toolCalls: _toolCalls, ...rest } = candidate;
+    const rest = { ...candidate };
+    delete rest.toolCalls;
+
     return rest as TMessage;
   }
 
@@ -165,6 +167,6 @@ const normalizeThreadMessage = <TMessage>(message: TMessage): TMessage => {
   } as TMessage;
 };
 
-export const normalizeThreadMessages = <TMessage>(
+export const normalizeMessages = <TMessage>(
   messages: TMessage[],
-): TMessage[] => messages.map(normalizeThreadMessage);
+): TMessage[] => messages.map(normalizeMessage);

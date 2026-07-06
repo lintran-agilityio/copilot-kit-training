@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { createTool } from "@mastra/core/tools";
 import { BookingStatus } from "@repo/types";
-import { parseThreadResourceId } from "@repo/utils";
+import { parseAgentResourceId } from "@repo/utils";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { bookingSchema } from "../../schemas/booking";
@@ -34,7 +34,7 @@ const resolveUserId = (
   }
 
   if (resourceId) {
-    return parseThreadResourceId(resourceId).userId;
+    return parseAgentResourceId(resourceId).userId;
   }
 
   return undefined;

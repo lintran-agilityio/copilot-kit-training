@@ -1,26 +1,40 @@
 "use client";
 
 import { useCallback } from "react";
+import { useUser } from "@clerk/nextjs";
 import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, BOOKING_CONFIRM_PROMPT_PREFIX } from "@repo/constants";
+import { getAgentResourceId } from "@repo/utils";
 
 import { useBooking } from "@/features/booking/hooks";
+import { useChatStore } from "@/features/chat/stores/chat-store";
 
 const BOOKING_CONFIRM_MESSAGE = `${BOOKING_CONFIRM_PROMPT_PREFIX} User confirmed the booking draft in the room detail drawer. Read Current draft booking and Signed-in user from context. Call createBooking, then sync_booking_result with the result.`;
 
 export const useConfirmBookingDraft = () => {
+  const { user, isLoaded } = useUser();
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const setSubmitStatus = useBooking((state) => state.setSubmitStatus);
+  const currentThreadIds = useChatStore((state) => state.currentThreadIds);
+  const startNewThread = useChatStore((state) => state.startNewThread);
 
   return useCallback(async () => {
+    if (!isLoaded || !user?.id) {
+      setSubmitStatus("error", "Sign in before confirming a booking.");
+      return;
+    }
+
     if (copilotkit.runtimeConnectionStatus !== "connected") {
       setSubmitStatus("error", "Chat is not connected. Try again in a moment.");
       return;
     }
 
     setSubmitStatus("submitting");
+
+    const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.HOMESTAY_ASSISTANT);
+    agent.threadId = currentThreadIds[scopeKey] ?? startNewThread(scopeKey);
 
     agent.addMessage({
       id: crypto.randomUUID(),
@@ -36,5 +50,13 @@ export const useConfirmBookingDraft = () => {
         error instanceof Error ? error.message : "Failed to confirm booking",
       );
     }
-  }, [agent, copilotkit, setSubmitStatus]);
+  }, [
+    agent,
+    copilotkit,
+    currentThreadIds,
+    isLoaded,
+    setSubmitStatus,
+    startNewThread,
+    user?.id,
+  ]);
 };

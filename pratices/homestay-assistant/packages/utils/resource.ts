@@ -1,7 +1,7 @@
-export const getThreadResourceId = (userId: string, agentId: string) =>
+export const getAgentResourceId = (userId: string, agentId: string) =>
   `${userId}:${agentId}`;
 
-export const parseThreadResourceId = (resourceId: string) => {
+export const parseAgentResourceId = (resourceId: string) => {
   const separatorIndex = resourceId.indexOf(":");
 
   if (separatorIndex === -1) {

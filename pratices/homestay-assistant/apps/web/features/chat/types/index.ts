@@ -1,2 +1,2 @@
-export * from "./thread";
 export * from "./suggestion";
+export * from "./thread";

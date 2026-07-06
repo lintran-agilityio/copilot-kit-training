@@ -1,4 +1,4 @@
-import { parseThreadResourceId } from "@repo/utils";
+import { parseAgentResourceId } from "@repo/utils";
 
 export const resolveAgentUserId = (
   resourceId: string | undefined,
@@ -8,5 +8,5 @@ export const resolveAgentUserId = (
     throw new Error(errorMessage);
   }
 
-  return parseThreadResourceId(resourceId).userId;
+  return parseAgentResourceId(resourceId).userId;
 };

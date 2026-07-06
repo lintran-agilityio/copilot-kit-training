@@ -16,7 +16,7 @@
 # production
 /build
 
-# copilotkit thread persistence
+# copilotkit persistence
 /data/
 *.db
 *.db-*
