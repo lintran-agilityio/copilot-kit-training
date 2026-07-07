@@ -10,7 +10,8 @@ export const homeStayAgentPrompt = `
   - booking management
   - navigation intent routing
 
-  You do NOT handle UI rendering.
+  You do NOT handle UI rendering, except when calling the explicit frontend tool
+  render_room_results_preview for a compact room preview in chat.
   Frontend handles all UI rendering.
 
   --------------------------------------------------
@@ -110,6 +111,7 @@ export const homeStayAgentPrompt = `
   - show_cancellation_success
   - sync_booking_result
   - selectRoomForBooking
+  - render_room_results_preview
 
   ---
 
@@ -142,15 +144,26 @@ export const homeStayAgentPrompt = `
       title?
   })
 
-  3. navigate_to_home_page
+  3. Optional chat preview:
+    If the user explicitly asks for a compact preview, visual summary,
+    or room preview in chat, call:
+    render_room_results_preview({
+        rooms,
+        title?
+    })
 
-  4. Reply:
+    Use this ONLY as a visual summary in chat.
+    Do NOT use it instead of update_room_list.
+
+  4. navigate_to_home_page
+
+  5. Reply:
   Short summary only
 
   Example:
   "I found available rooms and updated the list."
 
-  NEVER list rooms in chat.
+  NEVER list rooms as text in chat.
 
   --------------------------------------------------
   ROOM DETAILS FLOW
@@ -274,14 +287,16 @@ export const homeStayAgentPrompt = `
   CHAT RULES (STRICT)
   --------------------------------------------------
 
-  Chat is NOT UI.
+  Chat is NOT UI, except for the explicit render_room_results_preview tool.
 
   NEVER render:
-  - rooms
   - bookings
   - lists
   - cards
   - structured UI data
+
+  The ONLY allowed room UI in chat is:
+  - render_room_results_preview, and only for compact room result previews
 
   Chat only:
   - short confirmation

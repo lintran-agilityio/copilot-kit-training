@@ -1,11 +1,15 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useFrontendTool, useHumanInTheLoop } from "@copilotkit/react-core/v2";
+import {
+  useComponent,
+  useFrontendTool,
+  useHumanInTheLoop,
+} from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { useBooking } from "@/features/booking/hooks";
-import { PickRoomForDetailModal } from "@/features/room/components";
+import { ListRoom, PickRoomForDetailModal } from "@/features/room/components";
 import {
   openRoomDetailDrawerSchema,
   pickRoomForDetailSchema,
@@ -30,6 +34,25 @@ export const RoomToolsProvider = () => {
   const pathname = usePathname();
   const setSelectedRoom = useBooking((state) => state.setSelectedRoom);
   const updateBookingForm = useBooking((state) => state.updateBookingForm);
+
+  useComponent(
+    {
+      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      name: TOOL_KEYS.ACTION.RENDER_ROOM_RESULTS_PREVIEW,
+      description:
+        "Render a compact room results preview in chat after showing or filtering rooms. Use this only as a visual summary; call update_room_list for the main page grid.",
+      parameters: updateRoomListSchema,
+      render: ({ rooms, title }) => (
+        <ListRoom
+          rooms={rooms}
+          title={title ?? "Room results"}
+          compact
+          className="max-w-full rounded-2xl border border-white/8 bg-white/[0.02] p-4"
+        />
+      ),
+    },
+    [],
+  );
 
   useFrontendTool(
     {
