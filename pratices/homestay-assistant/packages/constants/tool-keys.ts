@@ -20,6 +20,7 @@ export const TOOL_KEYS = {
     NAVIGATE_TO_HOME_PAGE: "navigate_to_home_page",
     UPDATE_BOOKING_FORM: "update_booking_form",
     UPDATE_ROOM_LIST: "update_room_list",
+    RENDER_ROOM_RESULTS_PREVIEW: "render_room_results_preview",
     SYNC_BOOKING_RESULT: "sync_booking_result",
     UPDATE_BOOKINGS_LIST: "update_bookings_list",
     NAVIGATE_TO_BOOKINGS_PAGE: "navigate_to_bookings_page",
