@@ -7,7 +7,7 @@ import { AGENT_KEYS } from "@repo/constants";
 import { normalizeMessages } from "@/features/chat/utils";
 
 export const AgentMessagesSanitizer = () => {
-  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
   const isSanitizingRef = useRef(false);
 
   useEffect(() => {

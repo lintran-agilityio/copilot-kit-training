@@ -15,7 +15,7 @@ const BOOKING_CONFIRM_MESSAGE = `${BOOKING_CONFIRM_PROMPT_PREFIX} User confirmed
 export const useConfirmBookingDraft = () => {
   const { user, isLoaded } = useUser();
   const { copilotkit } = useCopilotKit();
-  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
   const setSubmitStatus = useBooking((state) => state.setSubmitStatus);
   const currentThreadIds = useChatStore((state) => state.currentThreadIds);
   const startNewThread = useChatStore((state) => state.startNewThread);
@@ -33,7 +33,7 @@ export const useConfirmBookingDraft = () => {
 
     setSubmitStatus("submitting");
 
-    const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.HOMESTAY_ASSISTANT);
+    const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
     agent.threadId = currentThreadIds[scopeKey] ?? startNewThread(scopeKey);
 
     agent.addMessage({

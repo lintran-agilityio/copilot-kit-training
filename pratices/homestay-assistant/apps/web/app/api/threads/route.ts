@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const agentId = searchParams.get("agentId") ?? AGENT_KEYS.HOMESTAY_ASSISTANT;
+  const agentId = searchParams.get("agentId") ?? AGENT_KEYS.MANAGE_ASSISTANT;
   const threads = listMastraThreads({ userId, agentId });
 
   return Response.json({ threads });

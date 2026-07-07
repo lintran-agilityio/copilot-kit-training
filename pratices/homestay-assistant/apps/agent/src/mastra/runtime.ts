@@ -4,10 +4,12 @@ import { AGENT_KEYS } from "@repo/constants";
 
 import { homestayAgent } from "./agents/homestay-agent";
 import { bookingAgent } from "./agents/booking-agent";
+import { manageAgent } from "./agents/manage-agent";
 import { runtimeDbPath } from "./db-paths";
 
 export const runtimeMastra = new Mastra({
   agents: {
+    [AGENT_KEYS.MANAGE_ASSISTANT]: manageAgent,
     [AGENT_KEYS.HOMESTAY_ASSISTANT]: homestayAgent,
     [AGENT_KEYS.BOOKING_ASSISTANT]: bookingAgent,
   },

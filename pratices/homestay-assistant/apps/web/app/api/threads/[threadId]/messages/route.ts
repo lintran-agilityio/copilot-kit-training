@@ -17,7 +17,7 @@ export async function GET(
 
   const { threadId } = await params;
   const { searchParams } = new URL(request.url);
-  const agentId = searchParams.get("agentId") ?? AGENT_KEYS.HOMESTAY_ASSISTANT;
+  const agentId = searchParams.get("agentId") ?? AGENT_KEYS.MANAGE_ASSISTANT;
   const messages = listMastraThreadMessages({ userId, agentId, threadId });
 
   return Response.json({ messages });

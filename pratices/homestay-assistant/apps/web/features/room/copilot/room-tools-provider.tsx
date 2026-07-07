@@ -37,7 +37,7 @@ export const RoomToolsProvider = () => {
 
   useComponent(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.RENDER_ROOM_RESULTS_PREVIEW,
       description:
         "Render a compact room results preview in chat after showing or filtering rooms. Use this only as a visual summary; call update_room_list for the main page grid.",
@@ -56,7 +56,7 @@ export const RoomToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
       description:
         "Update the room grid on the home page. Pass rooms from getRooms or getAvailableRooms as-is.",
@@ -71,7 +71,7 @@ export const RoomToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.NAVIGATE_TO_HOME_PAGE,
       description:
         "Navigate to the home page so the room grid is visible. No parameters needed.",
@@ -85,7 +85,7 @@ export const RoomToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_DRAWER,
       description:
         "Open the room detail drawer. Pass the full room object from getRoomByName or getRoomById as-is.",
@@ -100,7 +100,7 @@ export const RoomToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.SELECT_ROOM_FOR_BOOKING,
       description:
         "Stage a room on the booking draft while collecting missing booking details in chat.",
@@ -115,7 +115,7 @@ export const RoomToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.UPDATE_BOOKING_FORM,
       description:
         "Update the booking form in the room detail drawer after availability is confirmed. Opens the drawer for user review.",
@@ -143,7 +143,7 @@ export const RoomToolsProvider = () => {
 
   useHumanInTheLoop(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.PICK_ROOM_FOR_DETAIL,
       description:
         "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Returns the user's chosen room — then call navigate_to_home_page and open_room_detail_drawer.",

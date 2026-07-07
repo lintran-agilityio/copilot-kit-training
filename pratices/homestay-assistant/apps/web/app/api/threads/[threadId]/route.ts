@@ -28,7 +28,7 @@ export async function PATCH(request: Request, { params }: ThreadRouteContext) {
 
   const { threadId } = await params;
   const body = (await request.json()) as RenameThreadRequest;
-  const agentId = body.agentId ?? AGENT_KEYS.HOMESTAY_ASSISTANT;
+  const agentId = body.agentId ?? AGENT_KEYS.MANAGE_ASSISTANT;
   const name = body.name?.trim();
 
   if (!name) {
@@ -53,7 +53,7 @@ export async function DELETE(request: Request, { params }: ThreadRouteContext) {
 
   const { threadId } = await params;
   const { searchParams } = new URL(request.url);
-  const agentId = searchParams.get("agentId") ?? AGENT_KEYS.HOMESTAY_ASSISTANT;
+  const agentId = searchParams.get("agentId") ?? AGENT_KEYS.MANAGE_ASSISTANT;
   const didDelete = deleteMastraThread({ userId, agentId, threadId });
 
   if (!didDelete) {

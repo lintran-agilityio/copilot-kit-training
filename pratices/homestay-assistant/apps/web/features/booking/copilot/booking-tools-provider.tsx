@@ -62,7 +62,7 @@ export const BookingToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.SYNC_BOOKING_RESULT,
       description:
         "Sync createBooking result to the room detail drawer. Pass booking from createBooking on success.",
@@ -74,7 +74,7 @@ export const BookingToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.UPDATE_BOOKINGS_LIST,
       description:
         "Update the My Bookings page list. Pass bookings from getBookings as-is.",
@@ -87,7 +87,7 @@ export const BookingToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.NAVIGATE_TO_BOOKINGS_PAGE,
       description: "Navigate to the My Bookings page. No parameters needed.",
       handler: async () => {
@@ -100,7 +100,7 @@ export const BookingToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.SHOW_CANCELLATION_SUCCESS,
       description:
         "Show a brief cancellation success notice after cancelBooking succeeds.",
@@ -112,10 +112,10 @@ export const BookingToolsProvider = () => {
 
   useHumanInTheLoop(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.BOOKING.CANCEL_BY_ROOM,
       description:
-        "Show a cancellation dialog after findBookingByRoom. Pass bookings and queryName from findBookingByRoom. On confirm, agent must call cancelBooking then update_bookings_list.",
+        "Show a cancellation dialog after findBookingByRoom. Pass bookings and queryName from findBookingByRoom. On confirm, agent must call cancelBooking, getBookings, update_bookings_list, then show_cancellation_success.",
       parameters: cancelBookingByRoomSchema,
       render: ({ status, args, respond, result }) => {
         const cancelResult = result as CancelBookingByRoomResult | undefined;
@@ -135,10 +135,10 @@ export const BookingToolsProvider = () => {
 
   useHumanInTheLoop(
     {
-      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.BOOKING.DELETE,
       description:
-        "Ask the user to confirm cancelling a booking when you already have full booking details. On confirm, agent must call cancelBooking then update_bookings_list.",
+        "Ask the user to confirm cancelling a booking when you already have full booking details. On confirm, agent must call cancelBooking, getBookings, update_bookings_list, then show_cancellation_success.",
       parameters: confirmDeleteBookingSchema,
       render: ({ status, args, respond }) => (
         <ConfirmDeleteBookingModal

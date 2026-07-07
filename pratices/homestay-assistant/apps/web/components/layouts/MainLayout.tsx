@@ -25,7 +25,7 @@ export const MainLayout = ({
   className,
   activeTab = NavbarTab.HOME,
 }: MainLayoutProps) => {
-  const agentId = AGENT_KEYS.HOMESTAY_ASSISTANT;
+  const agentId = AGENT_KEYS.MANAGE_ASSISTANT;
   const { scopeKey } = useChatScopeKey(agentId);
   const currentThreadId = useChatStore((state) =>
     scopeKey ? state.currentThreadIds[scopeKey] : undefined,

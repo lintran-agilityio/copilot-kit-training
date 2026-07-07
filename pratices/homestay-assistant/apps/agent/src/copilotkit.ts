@@ -9,5 +9,5 @@ export { runtimeMastra as mastra } from "./mastra/runtime";
 export const getCopilotkitAgents = (userId: string) =>
   MastraAgent.getLocalAgents({
     mastra: runtimeMastra,
-    resourceId: getAgentResourceId(userId, AGENT_KEYS.HOMESTAY_ASSISTANT),
+    resourceId: getAgentResourceId(userId, AGENT_KEYS.MANAGE_ASSISTANT),
   });

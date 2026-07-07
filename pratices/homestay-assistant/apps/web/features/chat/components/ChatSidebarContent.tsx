@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CopilotChat,
   CopilotChatAssistantMessage,
@@ -41,6 +41,7 @@ export const ChatSidebarContent = ({
   );
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId });
+  const [hasHydrated, setHasHydrated] = useState(false);
   const agentRef = useRef(agent);
   const copilotkitRef = useRef(copilotkit);
   const wasRuntimeConnectedRef = useRef(
@@ -51,9 +52,14 @@ export const ChatSidebarContent = ({
 
   const isRuntimeConnected =
     copilotkit.runtimeConnectionStatus === "connected";
+  const displayedOnlineStatus = hasHydrated && isRuntimeConnected;
 
   useChatScroll(agent.messages.length);
   useThreadMessages({ agent, agentId, threadId: currentThreadId });
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (currentThreadId) {
@@ -114,7 +120,7 @@ export const ChatSidebarContent = ({
         className,
       )}
     >
-      <HeaderChat online={isRuntimeConnected} />
+      <HeaderChat online={displayedOnlineStatus} />
       <div
         data-sidebar-chat
         className={cn(
