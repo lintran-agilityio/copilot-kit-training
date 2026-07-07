@@ -12,7 +12,7 @@ type SuggestionBarProps = {
 
 export const SuggestionBar = ({
   suggestions,
-  agentId = AGENT_KEYS.HOMESTAY_ASSISTANT,
+  agentId = AGENT_KEYS.MANAGE_ASSISTANT,
   threadId,
 }: SuggestionBarProps) => {
   const { agent } = useAgent({

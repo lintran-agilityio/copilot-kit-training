@@ -23,9 +23,9 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
 
   return (
     <CopilotKit
-      agent={AGENT_KEYS.HOMESTAY_ASSISTANT}
+      agent={AGENT_KEYS.MANAGE_ASSISTANT}
       credentials="include"
-      runtimeUrl={AGENT_URLS.HOMESTAY_ASSISTANT}
+      runtimeUrl={AGENT_URLS.MANAGE_ASSISTANT}
     >
       <AppProvider>{children}</AppProvider>
     </CopilotKit>
