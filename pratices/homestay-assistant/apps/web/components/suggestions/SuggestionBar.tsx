@@ -1,6 +1,6 @@
 import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
-import { ChatSuggestion } from "@/features/chat/types";
+import { ChatSuggestion } from "@/features/assistant-ui/types";
 import { AGENT_KEYS } from "@repo/constants";
 import { CopilotSuggestion } from "./CopilotSuggestion";
 

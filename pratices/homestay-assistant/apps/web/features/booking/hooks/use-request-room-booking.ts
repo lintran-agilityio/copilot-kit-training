@@ -7,7 +7,7 @@ import { useCallback } from "react";
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
-import { useChatStore } from "@/features/chat/stores/chat-store";
+import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
 
 export const useRequestRoomBooking = () => {
   const { user, isLoaded } = useUser();

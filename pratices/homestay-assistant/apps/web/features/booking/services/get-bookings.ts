@@ -1,6 +1,6 @@
 import { getBaseUrl } from "@/utils";
 import type { BookingResponse } from "../types/booking";
-import { PREFIX_URL } from "@/types";
+import { PREFIX_URL } from "@repo/types";
 import { ROUTES } from "@repo/constants";
 
 type GetMyBookingsProps = {

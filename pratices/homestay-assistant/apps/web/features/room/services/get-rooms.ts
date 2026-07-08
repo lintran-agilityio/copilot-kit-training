@@ -1,5 +1,5 @@
 import type { Room } from "@/features/room/types/room";
-import { PREFIX_URL } from "@/types";
+import { PREFIX_URL } from "@repo/types";
 import { getBaseUrl } from "@/utils";
 import { ROUTES } from "@repo/constants";
 

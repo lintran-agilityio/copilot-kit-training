@@ -1,7 +1,7 @@
 "use client";
 
 import { BookingProvider } from "@/features/booking/stores/booking-provider";
-import { CopilotProvider } from "@/features/copilot/providers/copilot-provider";
+import { CopilotProvider } from "@/features/ai-elements/providers/copilot-provider";
 
 type AppProviderProps = {
   children: React.ReactNode;

@@ -14,7 +14,7 @@ import { RoomImageGallery } from "@/features/room/components/RoomImageGallery";
 import { checkRoomAvailability } from "@/features/booking/services";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
-import { PREFIX_URL } from "@/types";
+import { PREFIX_URL } from "@repo/types";
 import {
   addDays,
   startOfDay,
