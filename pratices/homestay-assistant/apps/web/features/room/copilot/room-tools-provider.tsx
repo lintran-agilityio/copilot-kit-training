@@ -9,15 +9,17 @@ import {
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { useBooking } from "@/features/booking/hooks";
-import { ListRoom, PickRoomForDetailModal } from "@/features/room/components";
+import { PickRoomForDetailModal } from "@/features/room/components";
 import {
   openRoomDetailDrawerSchema,
   pickRoomForDetailSchema,
+  setRoomListLoadingSchema,
   selectRoomForBookingSchema,
   updateBookingFormSchema,
   updateRoomListSchema,
 } from "@/features/room/schemas";
 import type { Room } from "@/features/room/types/room";
+import { useRoomStore } from "@/features/room/stores/room-store";
 
 import {
   formatRoomListSyncResult,
@@ -28,30 +30,51 @@ import {
   openRoomDetailDrawerUi,
 } from "./room-detail-ui";
 import { navigateToHomeIfNeeded } from "@/utils";
+import { RoomResultsPreview } from "../components";
+
+const ROOM_RESULTS_PREVIEW_LIMIT = 5;
 
 export const RoomToolsProvider = () => {
   const router = useRouter();
   const pathname = usePathname();
   const setSelectedRoom = useBooking((state) => state.setSelectedRoom);
   const updateBookingForm = useBooking((state) => state.updateBookingForm);
+  const setRoomListLoading = useRoomStore(
+    (state) => state.setRoomListLoading,
+  );
 
   useComponent(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.RENDER_ROOM_RESULTS_PREVIEW,
       description:
-        "Render a compact room results preview in chat after showing or filtering rooms. Use this only as a visual summary; call update_room_list for the main page grid.",
+        "Render 2-5 compact room cards in chat after showing or filtering rooms. Use this only as a visual demo; call update_room_list with the full list for the main page grid.",
       parameters: updateRoomListSchema,
       render: ({ rooms, title }) => (
-        <ListRoom
-          rooms={rooms}
-          title={title ?? "Room results"}
-          compact
-          className="max-w-full rounded-2xl border border-white/8 bg-white/[0.02] p-4"
+        <RoomResultsPreview
+          rooms={rooms?.slice(0, ROOM_RESULTS_PREVIEW_LIMIT)}
+          title={title}
         />
       ),
     },
     [],
+  );
+
+  useFrontendTool(
+    {
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      name: TOOL_KEYS.ACTION.SET_ROOM_LIST_LOADING,
+      description:
+        "Show or hide the room grid loading skeleton while room list data is being fetched.",
+      parameters: setRoomListLoadingSchema,
+      handler: async ({ isLoading }) => {
+        setRoomListLoading(isLoading);
+        return isLoading
+          ? "Room list loading indicator is visible."
+          : "Room list loading indicator is hidden.";
+      },
+    },
+    [setRoomListLoading],
   );
 
   useFrontendTool(

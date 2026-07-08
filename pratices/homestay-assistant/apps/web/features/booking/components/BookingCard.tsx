@@ -6,10 +6,11 @@ import { useState } from "react";
 
 import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
 import type { BookingResponse } from "@/features/booking/types/booking";
-import { DEFAULT_ROOM_GALLERY_IMAGES } from "@/mocking/room";
+import {
+  FALLBACK_ROOM_IMAGE,
+  resolveRoomImage,
+} from "@/features/room/utils/room-image";
 import { cn, formatPrice, formatShortDateForDisplay } from "@repo/utils";
-
-const FALLBACK_ROOM_IMAGE = DEFAULT_ROOM_GALLERY_IMAGES[0]!;
 
 type BookingCardProps = {
   booking: BookingResponse;
@@ -20,7 +21,7 @@ export const BookingCard = ({ booking, className }: BookingCardProps) => {
   const room = booking.room;
   const imageUrl = room?.imageUrl ?? "";
   const [url, setUrl] = useState<string | StaticImageData>(
-    imageUrl || FALLBACK_ROOM_IMAGE,
+    resolveRoomImage(imageUrl),
   );
 
   return (

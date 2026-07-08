@@ -3,9 +3,10 @@
 import { cn } from "@repo/utils";
 import Image, { type StaticImageData } from "next/image";
 import { useState } from "react";
-import { DEFAULT_ROOM_GALLERY_IMAGES } from "@/mocking/room";
-
-const FALLBACK_ROOM_IMAGE = DEFAULT_ROOM_GALLERY_IMAGES[0]!;
+import {
+  FALLBACK_ROOM_IMAGE,
+  resolveRoomImage,
+} from "@/features/room/utils/room-image";
 
 type RoomImageProps = {
   imageUrl: string;
@@ -24,7 +25,10 @@ export function RoomImage({
   availableSlots,
   compact = false,
 }: RoomImageProps) {
-  const [url, setUrl] = useState<string | StaticImageData>(imageUrl);
+  const [url, setUrl] = useState<string | StaticImageData>(
+    resolveRoomImage(imageUrl),
+  );
+
   return (
     <div
       className={cn(

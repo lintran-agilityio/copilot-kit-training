@@ -2,18 +2,10 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Geist, Playfair_Display } from "next/font/google";
 
 import { cn } from "@repo/utils";
 import { AppErrorBoundary } from "@/providers/app-error-boundary";
 import CopilotKitProviders from "@/providers/copilot-provider";
-
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-serif",
-});
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -39,8 +31,8 @@ export default function RootLayout({
       <body
         className={cn(
           "font-sans antialiased",
-          geist.variable,
-          playfair.variable,
+          // geistSans.variable,
+          // geistMono.variable,
           geistSans.variable,
           geistMono.variable,
         )}

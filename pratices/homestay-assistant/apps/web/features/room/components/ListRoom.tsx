@@ -15,33 +15,40 @@ export const ListRoom = ({
   compact = false,
   className,
 }: ListRoomProps) => {
-  if (rooms.length === 0) {
-    return null;
-  }
-
   return (
     <section className={cn("space-y-4", className)}>
-      {title ? (
-        <div className="flex items-center gap-2">
-          <span
-            className="h-4 w-1 rounded-full bg-emerald-500"
-          />
-          <h2 className="text-lg font-medium text-zinc-300">{title}</h2>
-        </div>
-      ) : null}
+      {rooms?.length > 0 ? (
+        <>
+          {title ? (
+            <div className="flex items-center gap-2">
+              <span
+                className="h-4 w-1 rounded-full bg-emerald-500"
+              />
+              <h2 className="text-lg font-medium text-zinc-300">{title}</h2>
+            </div>
+          ) : null}
 
-      <div
-        className={cn(
-          "app-scrollbar",
-          compact
-            ? "flex max-h-[70vh] flex-col gap-3 overflow-y-auto pr-1"
-            : "flex flex-wrap gap-4 overflow-x-auto pb-1",
-        )}
-      >
-        {rooms.map((room) => (
-          <Room key={room.id} {...room} compact={compact} />
-        ))}
-      </div>
+          <div
+            className={cn(
+              "app-scrollbar",
+              compact
+                ? "flex max-h-[70vh] flex-col gap-3 overflow-y-auto pr-1"
+                : "flex flex-wrap gap-4 overflow-x-auto pb-1",
+            )}
+          >
+            {rooms.map((room) => (
+              <div key={room.id}>
+                <Room key={room.id} {...room} compact={compact} />
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-zinc-400">No rooms found</p>
+        </div>
+      )}
+      
     </section>
   );
 }

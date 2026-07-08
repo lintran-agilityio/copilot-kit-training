@@ -5,9 +5,11 @@ import type { Room } from "@/features/room/types/room";
 type RoomStore = {
   rooms: Room[];
   roomListTitle: string | undefined;
+  isRoomListLoading: boolean;
   selectedRoom: Room | null;
   isDrawerOpen: boolean;
   updateRoomList: (rooms: Room[], title?: string) => void;
+  setRoomListLoading: (isLoading: boolean) => void;
   openRoomDetailDrawer: (room: Room) => void;
   closeRoomDetailDrawer: () => void;
 };
@@ -15,10 +17,14 @@ type RoomStore = {
 export const useRoomStore = create<RoomStore>()((set) => ({
   rooms: [],
   roomListTitle: undefined,
+  isRoomListLoading: false,
   selectedRoom: null,
   isDrawerOpen: false,
 
-  updateRoomList: (rooms, title) => set({ rooms, roomListTitle: title }),
+  updateRoomList: (rooms, title) =>
+    set({ rooms, roomListTitle: title, isRoomListLoading: false }),
+
+  setRoomListLoading: (isLoading) => set({ isRoomListLoading: isLoading }),
 
   openRoomDetailDrawer: (room) =>
     set({ selectedRoom: room, isDrawerOpen: true }),

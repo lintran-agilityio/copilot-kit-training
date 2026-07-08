@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { CopilotKit } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, AGENT_URLS } from "@repo/constants";
@@ -16,9 +17,14 @@ const isLoginRoute = (pathname: string) =>
 
 const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
   const pathname = usePathname();
+  const { isLoaded, userId } = useAuth();
 
   if (isLoginRoute(pathname)) {
     return children;
+  }
+
+  if (!isLoaded || !userId) {
+    return null;
   }
 
   return (

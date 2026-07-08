@@ -48,6 +48,12 @@ export const updateRoomListSchema = z.object({
     .describe("Optional heading above the room grid"),
 });
 
+export const setRoomListLoadingSchema = z.object({
+  isLoading: z
+    .boolean()
+    .describe("Set true while room list data is loading, false when loading ends"),
+});
+
 export const openRoomDetailDrawerSchema = z.object({
   room: roomObjectSchema.describe(
     "Full room object from getRoomByName or getRoomById — pass as-is",
