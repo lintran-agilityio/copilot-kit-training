@@ -22,7 +22,7 @@ export const Room = ({
     >
       <RoomImage
         imageUrl={room.imageUrl}
-        name={room.name}
+        name={room.name || "Room Image"}
         level={room.level}
         levelColor={room.levelColor}
         availableSlots={room.availableSlots}

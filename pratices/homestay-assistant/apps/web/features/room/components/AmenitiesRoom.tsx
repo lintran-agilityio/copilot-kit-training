@@ -4,24 +4,23 @@ import {
   Mic,
   Monitor,
   Phone,
-  Presentation,
   Wifi,
   type LucideIcon,
 } from "lucide-react";
 
 // Types
 import type { Amenity } from "@/features/room/types/room";
-import { cn } from "@repo/utils";;
+import { cn } from "@repo/utils";
 
-const AMENITY_ICONS: Record<Amenity, LucideIcon> = {
+const AMENITY_ICONS = {
   monitor: Monitor,
   coffee: Coffee,
   mic: Mic,
   wifi: Wifi,
-  video: Presentation,
-  whiteboard: Presentation,
+  video: Monitor,
+  whiteboard: Monitor,
   phone: Phone,
-};
+} satisfies Partial<Record<Amenity, LucideIcon>>;
 
 type AmenitiesRoomProps = {
   amenities: Amenity[];
@@ -31,8 +30,12 @@ type AmenitiesRoomProps = {
 export const AmenitiesRoom = ({ amenities = [], className }: AmenitiesRoomProps) => {
   return (
     <div className={cn("flex items-center gap-3 text-zinc-500", className)}>
-      {amenities.map((amenity) => {
+      {amenities?.length > 0 && amenities.map((amenity) => {
         const Icon = AMENITY_ICONS[amenity];
+        if (!Icon) {
+          return null;
+        }
+
         return (
           <Icon
             key={amenity}

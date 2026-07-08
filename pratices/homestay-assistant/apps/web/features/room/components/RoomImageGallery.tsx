@@ -5,11 +5,13 @@ import Image from "next/image";
 
 import { cn } from "@repo/utils";
 import {
+  FALLBACK_ROOM_IMAGE,
+  resolveRoomImage,
+} from "@/features/room/utils/room-image";
+import {
   DEFAULT_ROOM_GALLERY_IMAGES,
   ROOM_GALLERY_IMAGES,
 } from "@/mocking/room";
-
-const FALLBACK_ROOM_IMAGE = DEFAULT_ROOM_GALLERY_IMAGES[0]!;
 
 type RoomImageGalleryProps = {
   roomId: string;
@@ -42,7 +44,7 @@ export const RoomImageGallery = ({
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   const activeImage = images[activeIndex] ?? imageUrl;
   const resolveImage = (src: string) =>
-    failedImages.has(src) ? FALLBACK_ROOM_IMAGE : src;
+    failedImages.has(src) ? FALLBACK_ROOM_IMAGE : resolveRoomImage(src);
 
   const markImageFailed = (src: string) => {
     setFailedImages((current) => {

@@ -16,8 +16,6 @@ import {
   getRoomByNameTool,
   getRoomsTool,
 } from "../tools/rooms";
-import { bookingAgent } from "./booking-agent";
-import { homestayAgent } from "./homestay-agent";
 
 export const manageAgent = new Agent({
   id: AGENT_KEYS.MANAGE_ASSISTANT,
@@ -26,11 +24,17 @@ export const manageAgent = new Agent({
     "Public chat agent that coordinates room discovery and booking workflows.",
   instructions: manageAgentPrompt,
   model: "openai/gpt-5-mini",
-  agents: {
-    homestayAgent,
-    bookingAgent,
+  tools: {
+    getRooms: getRoomsTool,
+    getAvailableRooms: getAvailableRoomsTool,
+    getRoomByName: getRoomByNameTool,
+    getRoomById: getRoomByIdTool,
+    checkRoomAvailability: checkRoomAvailabilityTool,
+    createBooking: createBookingTool,
+    getBookings: getBookingsTool,
+    findBookingByRoom: findBookingByRoomTool,
+    cancelBooking: cancelBookingTool,
   },
-  tools: {},
   memory: new Memory({
     options: {
       workingMemory: {

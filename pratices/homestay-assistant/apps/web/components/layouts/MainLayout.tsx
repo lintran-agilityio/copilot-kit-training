@@ -1,6 +1,7 @@
 "use client";
 
 // Libs
+import dynamic from "next/dynamic";
 import { useCallback, useEffect } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 import { cn } from "@repo/utils";
@@ -8,11 +9,37 @@ import { AGENT_KEYS } from "@repo/constants";
 
 // Components
 import { Navbar } from "@/components/layouts";
-import { ChatSidebar } from "@/features/chat/components";
 import { NavbarTab } from "@repo/types";
-import { ChatThreadList } from "@/features/chat/components/ChatThreadList";
 import { useChatScopeKey, useChatThreads } from "@/features/chat/hooks";
 import { useChatStore } from "@/features/chat/stores/chat-store";
+
+const ChatSidebar = dynamic(
+  () =>
+    import("@/features/chat/components/ChatSidebar").then(
+      (mod) => mod.ChatSidebar,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full rounded-xl border border-white/10 bg-white/[0.03]" />
+    ),
+  },
+);
+
+const ChatThreadList = dynamic(
+  () =>
+    import("@/features/chat/components/ChatThreadList").then(
+      (mod) => mod.ChatThreadList,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-48 border-r border-white/10 px-3 py-3 text-xs text-zinc-500">
+        Loading threads...
+      </div>
+    ),
+  },
+);
 
 type MainLayoutProps = {
   children: React.ReactNode;

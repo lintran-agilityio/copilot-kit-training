@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { useAgentContext } from "@copilotkit/react-core/v2";
 
 import { MainLayout } from "@/components/layouts";
@@ -14,7 +15,7 @@ type HomePageClientProps = {
   initialRooms: Room[];
 };
 
-export const HomePageClient = ({ initialRooms }: HomePageClientProps) => {
+const HomePageContent = ({ initialRooms }: HomePageClientProps) => {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const selectedDateKey = selectedDate.toISOString().slice(0, 10);
 
@@ -40,4 +41,14 @@ export const HomePageClient = ({ initialRooms }: HomePageClientProps) => {
       <RoomGrid className="mt-8" initialRooms={initialRooms} />
     </MainLayout>
   );
+};
+
+export const HomePageClient = ({ initialRooms }: HomePageClientProps) => {
+  const { isLoaded, user } = useUser();
+
+  if (!isLoaded || !user) {
+    return null;
+  }
+
+  return <HomePageContent initialRooms={initialRooms} />;
 };

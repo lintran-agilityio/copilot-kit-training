@@ -12,7 +12,7 @@ const LoginPage = () => {
         <SignIn routing="path" path={ROUTES.LOGIN} />
       </div>
     </main>
-  )
+  );
 };
 
 export default LoginPage;
