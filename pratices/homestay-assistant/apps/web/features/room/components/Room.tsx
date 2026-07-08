@@ -19,6 +19,7 @@ export const Room = ({
         compact ? "max-w-sm" : "min-w-[260px] max-w-[300px] flex-1",
         className,
       )}
+      key={room.id}
     >
       <RoomImage
         imageUrl={room.imageUrl}

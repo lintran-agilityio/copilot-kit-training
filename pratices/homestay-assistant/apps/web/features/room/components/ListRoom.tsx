@@ -36,8 +36,8 @@ export const ListRoom = ({
                 : "flex flex-wrap gap-4 overflow-x-auto pb-1",
             )}
           >
-            {rooms.map((room) => (
-              <div key={room.id}>
+            {rooms.map((room, index) => (
+              <div key={`${room.id}-${index}`}>
                 <Room key={room.id} {...room} compact={compact} />
               </div>
             ))}
