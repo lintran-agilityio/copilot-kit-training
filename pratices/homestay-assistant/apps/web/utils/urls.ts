@@ -1,4 +1,4 @@
-import { PREFIX_URL } from "@/types";
+import { PREFIX_URL } from "@repo/types";
 
 export const getApiUrl = () => process.env.API_URL ?? "http://localhost:5001";
 export const WEB_API_BASE = "/api" as const;

@@ -1,13 +1,13 @@
 import { auth } from "@clerk/nextjs/server";
 import { AGENT_KEYS } from "@repo/constants";
 
-import { listMastraThreadMessages } from "@/features/chat/server/mastra-thread-store";
+import { listMastraThreadMessages } from "@/features/assistant-ui/server/mastra-thread-store";
 
 export const runtime = "nodejs";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ threadId: string }> },
+  { params }: { params: Promise<{ threadId: string }> }
 ) {
   const { userId } = await auth();
 

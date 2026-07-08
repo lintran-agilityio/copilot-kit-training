@@ -10,12 +10,12 @@ import { AGENT_KEYS } from "@repo/constants";
 // Components
 import { Navbar } from "@/components/layouts";
 import { NavbarTab } from "@repo/types";
-import { useChatScopeKey, useChatThreads } from "@/features/chat/hooks";
-import { useChatStore } from "@/features/chat/stores/chat-store";
+import { useChatScopeKey, useChatThreads } from "@/features/assistant-ui/hooks";
+import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
 
 const ChatSidebar = dynamic(
   () =>
-    import("@/features/chat/components/ChatSidebar").then(
+    import("@/features/assistant-ui/components/ChatSidebar").then(
       (mod) => mod.ChatSidebar,
     ),
   {
@@ -28,7 +28,7 @@ const ChatSidebar = dynamic(
 
 const ChatThreadList = dynamic(
   () =>
-    import("@/features/chat/components/ChatThreadList").then(
+    import("@/features/assistant-ui/components/ChatThreadList").then(
       (mod) => mod.ChatThreadList,
     ),
   {

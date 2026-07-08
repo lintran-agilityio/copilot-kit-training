@@ -1,6 +1,6 @@
 import { ROUTES } from "@repo/constants";
 
-import { PREFIX_URL } from "@/types";
+import { PREFIX_URL } from "@repo/types";
 import { getBaseUrl } from "@/utils";
 
 import type {

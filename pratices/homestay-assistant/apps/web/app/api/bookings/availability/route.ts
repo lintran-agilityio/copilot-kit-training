@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 
 import { checkRoomAvailability } from "@/features/booking/services";
-import { PREFIX_URL } from "@/types";
+import { PREFIX_URL } from "@repo/types";
 
 export async function GET(request: Request) {
   const { userId } = await auth();
