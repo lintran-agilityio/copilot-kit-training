@@ -3,7 +3,7 @@ import {
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
 
-import { ChatAgentAvatar } from "./ChatAvatars";
+import { ChatAgentAvatar } from "@/features/assistant-ui/components/ChatAvatars";
 import { cn } from "@repo/utils";;
 
 type ChatWelcomeScreenProps = React.ComponentProps<

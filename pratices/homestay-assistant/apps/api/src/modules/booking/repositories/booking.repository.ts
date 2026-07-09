@@ -4,9 +4,9 @@ import { Repository } from 'typeorm';
 
 import { normalizeRoomName } from '@repo/utils';
 
-import { toDateKey, ACTIVE_BOOKING_STATUSES } from '../../../utils';
-import { ListBookingsQueryDto } from '../dto/list-bookings-query.dto';
-import { BookingEntity } from '../entities/booking.entity';
+import { toDateKey, ACTIVE_BOOKING_STATUSES } from '@/utils';
+import { ListBookingsQueryDto } from '@/modules/booking/dto/list-bookings-query.dto';
+import { BookingEntity } from '@/modules/booking/entities/booking.entity';
 
 @Injectable()
 export class BookingRepository {

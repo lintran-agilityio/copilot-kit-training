@@ -7,11 +7,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { BookingStatus } from '../../../types/enum';
-import { UserEntity } from '../../../database/entities/user.entity';
-import { parseDateRange, toDateKey } from '../../../utils';
-import { RoomsRepository } from '../../rooms/repositories/rooms.repository';
-import { RoomEntity } from '../../rooms/entities/room.entity';
+import { BookingStatus } from '@/types/enum';
+import { UserEntity } from '@/database/entities/user.entity';
+import { parseDateRange, toDateKey } from '@/utils';
+import { RoomsRepository } from '@/modules/rooms/repositories/rooms.repository';
+import { RoomEntity } from '@/modules/rooms/entities/room.entity';
 import {
   AvailabilityResponseDto,
   BookingResponseDto,
@@ -19,13 +19,13 @@ import {
   CreateBookingDto,
   ListBookingsQueryDto,
   UpdateBookingDto,
-} from '../dto';
-import { CancellationBookingSummaryDto } from '../dto/cancellation-booking-summary.dto';
-import { FindBookingsByRoomQueryDto } from '../dto/find-bookings-by-room-query.dto';
-import { FindBookingsByRoomResponseDto } from '../dto/find-bookings-by-room-response.dto';
-import { BookingEntity } from '../entities/booking.entity';
-import { toBookingResponseDto } from '../mappers/booking.mapper';
-import { BookingRepository } from '../repositories/booking.repository';
+} from '@/modules/booking/dto';
+import { CancellationBookingSummaryDto } from '@/modules/booking/dto/cancellation-booking-summary.dto';
+import { FindBookingsByRoomQueryDto } from '@/modules/booking/dto/find-bookings-by-room-query.dto';
+import { FindBookingsByRoomResponseDto } from '@/modules/booking/dto/find-bookings-by-room-response.dto';
+import { BookingEntity } from '@/modules/booking/entities/booking.entity';
+import { toBookingResponseDto } from '@/modules/booking/mappers/booking.mapper';
+import { BookingRepository } from '@/modules/booking/repositories/booking.repository';
 
 @Injectable()
 export class BookingService {

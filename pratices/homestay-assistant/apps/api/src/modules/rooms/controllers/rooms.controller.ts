@@ -1,11 +1,11 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { GetAvailableRoomsQueryDto } from '../dto/get-available-rooms-query.dto';
-import { GetRoomByIdQueryDto } from '../dto/get-room-by-id-query.dto';
-import { GetRoomByNameQueryDto } from '../dto/get-room-by-name-query.dto';
-import { RoomResponseDto } from '../dto/room-response.dto';
-import { RoomsService } from '../services/rooms.service';
+import { GetAvailableRoomsQueryDto } from '@/modules/rooms/dto/get-available-rooms-query.dto';
+import { GetRoomByIdQueryDto } from '@/modules/rooms/dto/get-room-by-id-query.dto';
+import { GetRoomByNameQueryDto } from '@/modules/rooms/dto/get-room-by-name-query.dto';
+import { RoomResponseDto } from '@/modules/rooms/dto/room-response.dto';
+import { RoomsService } from '@/modules/rooms/services/rooms.service';
 
 @ApiTags('rooms')
 @Controller('rooms')

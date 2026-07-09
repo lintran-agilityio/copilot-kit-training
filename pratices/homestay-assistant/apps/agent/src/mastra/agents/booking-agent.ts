@@ -3,15 +3,15 @@ import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { checkRoomAvailabilityTool } from "../tools/booking/check-room-availability";
+import { checkRoomAvailabilityTool } from "@/mastra/tools/booking/check-room-availability";
 import {
   createBookingTool,
   cancelBookingTool,
   findBookingByRoomTool,
   getBookingsTool,
-} from "../tools/booking";
-import { getAvailableRoomsTool, getRoomByIdTool } from "../tools/rooms";
-import { bookingAgentPrompt } from "../constants/prompts";
+} from "@/mastra/tools/booking";
+import { getAvailableRoomsTool, getRoomByIdTool } from "@/mastra/tools/rooms";
+import { bookingAgentPrompt } from "@/mastra/constants/prompts";
 
 export const bookingAgent = new Agent({
   id: AGENT_KEYS.BOOKING_ASSISTANT,

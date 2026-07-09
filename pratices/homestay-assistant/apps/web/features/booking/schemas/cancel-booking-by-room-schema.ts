@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { confirmDeleteBookingSchema } from "./confirm-delete-booking-schema";
+import { confirmDeleteBookingSchema } from "@/features/booking/schemas/confirm-delete-booking-schema";
 
 export const cancelBookingByRoomSchema = z.object({
   bookings: z

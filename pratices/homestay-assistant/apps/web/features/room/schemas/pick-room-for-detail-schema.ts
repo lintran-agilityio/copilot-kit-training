@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { roomObjectSchema } from "./room-schemas";
+import { roomObjectSchema } from "@/features/room/schemas/room-schemas";
 
 export const pickRoomForDetailSchema = z.object({
   rooms: z

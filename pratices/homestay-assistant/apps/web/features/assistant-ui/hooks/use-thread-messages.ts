@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import type { Message } from "@ag-ui/client";
 
-import type { ChatMessage } from "../types";
-import { normalizeMessages } from "../utils";
+import type { ChatMessage } from "@/features/assistant-ui/types";
+import { normalizeMessages } from "@/features/assistant-ui/utils";
 
 type UseThreadMessagesProps = {
   agent: {

@@ -10,21 +10,21 @@ import {
 } from "@copilotkit/react-core/v2";
 
 import { cn } from "@repo/utils";
-import { WELCOME_MESSAGE } from "../constants";
+import { WELCOME_MESSAGE } from "@/features/assistant-ui/constants";
 import {
   useChatSuggestions,
   useChatScroll,
   useChatScopeKey,
   useThreadMessages,
-} from "../hooks";
+} from "@/features/assistant-ui/hooks";
 import {
   HeaderChat,
   ChatUserMessage,
   ChatWelcomeScreen,
   ChatAssistantMessage,
-} from "./";
-import { useChatStore } from "../stores/chat-store";
-import { ChatSidebarProps } from "./ChatSidebar";
+} from "@/features/assistant-ui/components";
+import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
+import { ChatSidebarProps } from "@/features/assistant-ui/components/ChatSidebar";
 import { SuggestionBar } from "@/components/suggestions";
 
 export const ChatSidebarContent = ({

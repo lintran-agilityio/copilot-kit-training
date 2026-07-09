@@ -1,7 +1,7 @@
 "use client";
 
-import type { ChatThread } from "../types";
-import { ThreadItem } from "./ThreadItem";
+import type { ChatThread } from "@/features/assistant-ui/types";
+import { ThreadItem } from "@/features/assistant-ui/components/ThreadItem";
 
 type ChatThreadListProps = {
   threads: ChatThread[];

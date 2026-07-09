@@ -1,6 +1,6 @@
 import { usePathname } from "next/navigation";
 import { useBooking } from "@/features/booking/hooks";
-import { ChatSuggestionState } from "../types";
+import { ChatSuggestionState } from "@/features/assistant-ui/types";
 
 export const useChatSuggestionState = (): ChatSuggestionState => {
   const pathname = usePathname();

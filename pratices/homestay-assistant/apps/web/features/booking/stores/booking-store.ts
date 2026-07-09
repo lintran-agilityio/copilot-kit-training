@@ -8,7 +8,7 @@ import type {
   SelectedRoom,
   UpdateBookingFormInput,
 } from "@/features/booking/types/booking";
-import type { BookingResponse } from "../types";
+import type { BookingResponse } from "@/features/booking/types";
 
 export interface BookingStore extends BookingDraft {
   isFormReady: boolean;

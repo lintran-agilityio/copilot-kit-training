@@ -4,9 +4,9 @@ import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import {
   findBookingByNameInputSchema,
   findBookingByNameOutputSchema,
-} from "../../schemas/booking";
-import { resolveAgentUserId } from "../../utils/resolve-agent-user-id";
-import { findBookingByRoomName } from "../../services";
+} from "@/mastra/schemas/booking";
+import { resolveAgentUserId } from "@/mastra/utils/resolve-agent-user-id";
+import { findBookingByRoomName } from "@/mastra/services";
 
 export const findBookingByRoomTool = createTool({
   id: TOOL_KEYS.BOOKING.FIND_BY_ROOM,

@@ -3,14 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { addDays, isEmptyDateValue, resolveDateOrToday } from '../../../utils';
+import { addDays, isEmptyDateValue, resolveDateOrToday } from '@/utils';
 import {
   GetRoomByIdQueryDto,
   GetAvailableRoomsQueryDto,
   RoomResponseDto,
-} from '../dto';
-import { toRoomResponseDto } from '../mappers/room.mapper';
-import { RoomsRepository } from '../repositories/rooms.repository';
+} from '@/modules/rooms/dto';
+import { toRoomResponseDto } from '@/modules/rooms/mappers/room.mapper';
+import { RoomsRepository } from '@/modules/rooms/repositories/rooms.repository';
 
 @Injectable()
 export class RoomsService {

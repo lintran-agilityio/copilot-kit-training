@@ -7,9 +7,9 @@ import {
   createBookingSchema,
   bookingSchema,
   type CreateBookingSchema,
-} from "../../schemas/booking";
-import { resolveAgentUserId } from "../../utils/resolve-agent-user-id";
-import { createBooking } from "../../services";
+} from "@/mastra/schemas/booking";
+import { resolveAgentUserId } from "@/mastra/utils/resolve-agent-user-id";
+import { createBooking } from "@/mastra/services";
 
 const resolveCreateBookingUserId = (
   params: CreateBookingSchema,

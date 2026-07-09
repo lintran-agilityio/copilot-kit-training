@@ -1,6 +1,6 @@
 import { getRooms } from "@/features/room/services";
 
-import { HomePageClient } from "./home-page-client";
+import { HomePageClient } from "@/app/home/home-page-client";
 
 const HomePage = async () => {
   const rooms = await getRooms();

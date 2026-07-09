@@ -1,5 +1,5 @@
 import { getBaseUrl } from "@/utils";
-import type { BookingResponse } from "../types/booking";
+import type { BookingResponse } from "@/features/booking/types/booking";
 import { PREFIX_URL } from "@repo/types";
 import { ROUTES } from "@repo/constants";
 

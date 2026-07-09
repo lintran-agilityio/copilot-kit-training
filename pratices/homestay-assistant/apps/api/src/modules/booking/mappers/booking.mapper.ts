@@ -1,6 +1,6 @@
-import { toRoomResponseDto } from '../../rooms/mappers/room.mapper';
-import { BookingEntity } from '../entities/booking.entity';
-import { BookingResponseDto } from '../dto/booking-response.dto';
+import { toRoomResponseDto } from '@/modules/rooms/mappers/room.mapper';
+import { BookingEntity } from '@/modules/booking/entities/booking.entity';
+import { BookingResponseDto } from '@/modules/booking/dto/booking-response.dto';
 
 export const toBookingResponseDto = (
   booking: BookingEntity,

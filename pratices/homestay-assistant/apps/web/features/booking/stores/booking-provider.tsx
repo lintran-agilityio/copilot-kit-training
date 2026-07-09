@@ -3,7 +3,7 @@
 // Libs
 import { createContext, useEffect, useRef } from "react";
 
-import { createBookingStore } from "./booking-store";
+import { createBookingStore } from "@/features/booking/stores/booking-store";
 
 type BookingStoreApi = ReturnType<typeof createBookingStore>;
 

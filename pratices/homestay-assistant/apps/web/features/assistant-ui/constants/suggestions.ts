@@ -1,4 +1,4 @@
-import { ChatSuggestion, ChatSuggestionState } from "../types";
+import { ChatSuggestion, ChatSuggestionState } from "@/features/assistant-ui/types";
 
 export const CHAT_SUGGESTIONS = [
   { title: "Room for 4 people", message: "Find a room for 4 people today" },

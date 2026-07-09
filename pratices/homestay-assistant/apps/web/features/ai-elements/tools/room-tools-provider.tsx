@@ -9,7 +9,7 @@ import {
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { useBooking } from "@/features/booking/hooks";
-import { PickRoomForDetailModal } from "../components";
+import { PickRoomForDetailModal } from "@/features/ai-elements/components";
 import {
   openRoomDetailDrawerSchema,
   pickRoomForDetailSchema,
@@ -26,9 +26,9 @@ import {
   syncRoomListToStore,
   formatOpenRoomDetailResult,
   openRoomDetailDrawerUi,
-} from "../../room/utils";
+} from "@/features/room/utils";
 import { navigateToHomeIfNeeded } from "@/utils";
-import { ListRoomPreview } from "../components";
+import { ListRoomPreview } from "@/features/ai-elements/components";
 
 const ROOM_RESULTS_PREVIEW_LIMIT = 5;
 

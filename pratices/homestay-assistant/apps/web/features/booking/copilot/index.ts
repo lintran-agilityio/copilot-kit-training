@@ -1,1 +1,1 @@
-export * from "./booking-tools-provider";
+export * from "../../ai-elements/tools/booking-tools-provider";

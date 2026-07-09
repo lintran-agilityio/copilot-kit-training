@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import type { ChatThread } from "../types";
+import type { ChatThread } from "@/features/assistant-ui/types";
 
 type UseChatThreadsProps = {
   agentId: string;

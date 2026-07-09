@@ -5,8 +5,8 @@ import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import {
   checkRoomAvailabilityInputSchema,
   checkRoomAvailabilityOutputSchema,
-} from "../../schemas/booking";
-import { checkRoomAvailability } from "../../services";
+} from "@/mastra/schemas/booking";
+import { checkRoomAvailability } from "@/mastra/services";
 
 export const checkRoomAvailabilityTool = createTool({
   id: TOOL_KEYS.BOOKING.CHECK_AVAILABILITY,

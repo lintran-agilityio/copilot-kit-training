@@ -9,9 +9,9 @@ import {
   type Booking,
   type CheckRoomAvailabilityInput,
   type CreateBookingPayload,
-} from "../schemas/booking";
+} from "@/mastra/schemas/booking";
 import { ROUTES } from "@repo/constants";
-import { get, post, del } from "./common";
+import { get, post, del } from "@/mastra/services/common";
 
 export type GetBookingsParams = {
   userId?: string;

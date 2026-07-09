@@ -10,7 +10,7 @@ import {
   CancelBookingByRoomModal,
   ConfirmDeleteBookingModal,
   ConfirmDeleteSuccessModal,
-} from "../components";
+} from "@/features/ai-elements/components";
 import {
   showCancellationSuccessUi,
   syncBookingResultToStore,

@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { Room } from "../../room/types";
-import { useRoomStore } from "../../room/stores/room-store";
-import { ListRoom } from "../../room/components";
+import { Room } from "@/features/room/types";
+import { useRoomStore } from "@/features/room/stores/room-store";
+import { ListRoom } from "@/features/room/components";
 
 type ListRoomPreviewProps = {
   rooms?: Room[];

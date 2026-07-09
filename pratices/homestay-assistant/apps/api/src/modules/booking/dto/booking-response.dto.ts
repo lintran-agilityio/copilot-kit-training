@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { BookingStatus } from '../../../types/enum';
-import { RoomResponseDto } from '../../rooms/dto/room-response.dto';
+import { BookingStatus } from '@/types/enum';
+import { RoomResponseDto } from '@/modules/rooms/dto/room-response.dto';
 import {
   IsDate,
   IsDateString,
