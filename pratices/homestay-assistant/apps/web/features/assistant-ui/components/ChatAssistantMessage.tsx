@@ -5,13 +5,13 @@ import {
   type CopilotChatToolCallsViewProps,
 } from "@copilotkit/react-core/v2";
 
-import { ChatAgentAvatar } from "./ChatAvatars";
+import { ChatAgentAvatar } from "@/features/assistant-ui/components/ChatAvatars";
 import {
   getChatVisibleToolCalls,
   getMessageTextContent,
   isHiddenAgentPrompt,
-} from "../../ai-elements/constants";
-import { getMessageTopSpacing } from "../utils";
+} from "@/features/ai-elements/constants";
+import { getMessageTopSpacing } from "@/features/assistant-ui/utils";
 import { cn } from "@repo/utils";
 
 const isResponseToHiddenPrompt = (

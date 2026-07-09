@@ -4,8 +4,8 @@ import { useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { ConfirmDeleteDialog } from "@/components/confirm-modal";
-import type { ConfirmDeleteBookingResult } from "../../booking/schemas";
-import type { BookingDetails } from "../../booking/types";
+import type { ConfirmDeleteBookingResult } from "@/features/booking/schemas";
+import type { BookingDetails } from "@/features/booking/types";
 
 type ConfirmDeleteBookingModalProps = {
   status: ToolCallStatus;

@@ -1,5 +1,5 @@
-import { RoomResponseDto } from '../dto/room-response.dto';
-import { RoomEntity } from '../entities/room.entity';
+import { RoomResponseDto } from '@/modules/rooms/dto/room-response.dto';
+import { RoomEntity } from '@/modules/rooms/entities/room.entity';
 
 export const toRoomResponseDto = (room: RoomEntity): RoomResponseDto => ({
   id: room.id,

@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-import { CancellationBookingSummaryDto } from './cancellation-booking-summary.dto';
+import { CancellationBookingSummaryDto } from '@/modules/booking/dto/cancellation-booking-summary.dto';
 
 export class FindBookingsByRoomResponseDto {
   @ApiProperty({ type: CancellationBookingSummaryDto, isArray: true })

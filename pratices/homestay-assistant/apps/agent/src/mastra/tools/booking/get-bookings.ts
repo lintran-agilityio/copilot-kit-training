@@ -5,11 +5,11 @@ import { BookingStatus } from "@repo/types";
 import { parseAgentResourceId } from "@repo/utils";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
-import { bookingSchema } from "../../schemas/booking";
+import { bookingSchema } from "@/mastra/schemas/booking";
 import {
   getBookings,
   type GetBookingsParams,
-} from "../../services";
+} from "@/mastra/services";
 
 const getBookingsInputSchema = z.object({
   userId: z

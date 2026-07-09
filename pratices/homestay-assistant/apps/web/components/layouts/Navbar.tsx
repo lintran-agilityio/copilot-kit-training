@@ -6,7 +6,7 @@ import Link from "next/link";
 import { cn } from "@repo/utils";
 import { NavbarTab } from "@repo/types";
 import { ROUTES } from "@/constants";
-import { Logo } from "../common";
+import { Logo } from "@/components/common";
 import { Loading } from "@repo/components";
 
 type NavbarProps = {

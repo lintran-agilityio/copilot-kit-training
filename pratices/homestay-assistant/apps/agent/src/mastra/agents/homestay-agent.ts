@@ -2,14 +2,14 @@ import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { homeStayAgentPrompt } from "../constants/prompts";
+import { homeStayAgentPrompt } from "@/mastra/constants/prompts";
 
 import {
   getRoomsTool,
   getAvailableRoomsTool,
   getRoomByIdTool,
   getRoomByNameTool,
-} from "../tools/rooms";
+} from "@/mastra/tools/rooms";
 
 export const homestayAgent = new Agent({
   id: AGENT_KEYS.HOMESTAY_ASSISTANT,

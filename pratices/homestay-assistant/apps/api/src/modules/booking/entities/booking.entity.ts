@@ -7,10 +7,10 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 
-import { BookingStatus } from '../../../types/enum';
-import { BaseEntity } from '../../../common/base/entity';
-import { UserEntity } from '../../../database/entities/user.entity';
-import { RoomEntity } from '../../rooms/entities/room.entity';
+import { BookingStatus } from '@/types/enum';
+import { BaseEntity } from '@/common/base/entity';
+import { UserEntity } from '@/database/entities/user.entity';
+import { RoomEntity } from '@/modules/rooms/entities/room.entity';
 
 @Entity('bookings')
 @Index(['roomId', 'checkInDate', 'checkOutDate'])

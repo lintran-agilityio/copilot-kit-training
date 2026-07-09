@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { ROUTES } from "@/constants";
 import { getMyBookings } from "@/features/booking/services";
 
-import { BookingsPageClient } from "./bookings-page-client";
+import { BookingsPageClient } from "@/app/bookings/bookings-page-client";
 
 const BookingsPage = async () => {
   const { userId } = await auth();

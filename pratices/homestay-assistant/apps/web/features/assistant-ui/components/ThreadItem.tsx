@@ -4,9 +4,9 @@ import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 
 import { cn } from "@repo/utils";
-import { DeleteThreadDialog } from "./DeleteThreadDialog";
-import { RenameThreadDialog } from "./RenameThreadDialog";
-import type { ChatThread } from "../types";
+import { DeleteThreadDialog } from "@/features/assistant-ui/components/DeleteThreadDialog";
+import { RenameThreadDialog } from "@/features/assistant-ui/components/RenameThreadDialog";
+import type { ChatThread } from "@/features/assistant-ui/types";
 import { OptionsModal } from "@/components/common";
 
 type ThreadItemProps = {

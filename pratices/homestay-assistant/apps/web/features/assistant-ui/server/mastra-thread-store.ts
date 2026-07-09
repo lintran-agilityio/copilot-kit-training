@@ -2,7 +2,7 @@ import path from "node:path";
 import Database from "better-sqlite3";
 
 import { getAgentResourceId, parseAgentResourceId } from "@repo/utils";
-import type { ChatMessage, ChatThread } from "../types";
+import type { ChatMessage, ChatThread } from "@/features/assistant-ui/types";
 
 type MastraThreadRow = {
   id: string;

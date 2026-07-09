@@ -7,10 +7,10 @@ import {
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
 
-import { ChatUserAvatar } from "./ChatAvatars";
-import { getMessageTopSpacing } from "../utils";
+import { ChatUserAvatar } from "@/features/assistant-ui/components/ChatAvatars";
+import { getMessageTopSpacing } from "@/features/assistant-ui/utils";
 import { cn } from "@repo/utils";
-import { isHiddenAgentPrompt, getMessageTextContent } from "../../ai-elements/constants";
+import { isHiddenAgentPrompt, getMessageTextContent } from "@/features/ai-elements/constants";
 
 export const ChatUserMessage = ({
   className,

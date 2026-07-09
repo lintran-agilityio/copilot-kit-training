@@ -4,9 +4,9 @@ import { Repository } from 'typeorm';
 import {
   ACTIVE_BOOKING_STATUSES,
   BOOKING_OVERLAP_JOIN_CONDITION,
-} from '../../../utils';
-import { BookingEntity } from '../../booking/entities/booking.entity';
-import { RoomEntity } from '../entities/room.entity';
+} from '@/utils';
+import { BookingEntity } from '@/modules/booking/entities/booking.entity';
+import { RoomEntity } from '@/modules/rooms/entities/room.entity';
 
 @Injectable()
 export class RoomsRepository {

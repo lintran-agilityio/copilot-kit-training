@@ -1,6 +1,6 @@
 import { Users } from "lucide-react";
 
-import { AmenitiesRoom } from "./AmenitiesRoom";
+import { AmenitiesRoom } from "@/features/room/components/AmenitiesRoom";
 import type { Amenity } from "@/features/room/types/room";
 import { cn } from "@repo/utils";
 

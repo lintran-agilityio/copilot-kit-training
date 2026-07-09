@@ -1,6 +1,6 @@
 "use client";
 
-import { ChatSidebarContent } from "./ChatSidebarContent";
+import { ChatSidebarContent } from "@/features/assistant-ui/components/ChatSidebarContent";
 
 export type ChatSidebarProps = {
   className?: string;

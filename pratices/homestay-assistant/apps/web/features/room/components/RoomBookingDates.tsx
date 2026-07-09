@@ -6,7 +6,7 @@ import {
   parseDateKey,
   toDateKey,
 } from "@repo/utils";
-import { DateSelected } from "./DateSelected";
+import { DateSelected } from "@/features/room/components/DateSelected";
 
 type RoomBookingDatesProps = {
   checkInDate: string | null;

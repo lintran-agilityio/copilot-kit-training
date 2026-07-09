@@ -15,9 +15,9 @@ import {
 import type {
   CancelBookingByRoomArgs,
   CancelBookingByRoomResult,
-} from "../../booking/schemas";
-import type { BookingDetails } from "../../booking/types";
-import { ConfirmDeleteBookingModal } from "./ConfirmDeleteBookingModal";
+} from "@/features/booking/schemas";
+import type { BookingDetails } from "@/features/booking/types";
+import { ConfirmDeleteBookingModal } from "@/features/ai-elements/components/ConfirmDeleteBookingModal";
 
 type CancelBookingByRoomModalProps = {
   status: ToolCallStatus;

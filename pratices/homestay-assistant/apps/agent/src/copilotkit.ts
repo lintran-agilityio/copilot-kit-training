@@ -2,9 +2,9 @@ import { MastraAgent } from "@ag-ui/mastra";
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
-import { runtimeMastra } from "./mastra/runtime";
+import { runtimeMastra } from "@/mastra/runtime";
 
-export { runtimeMastra as mastra } from "./mastra/runtime";
+export { runtimeMastra as mastra } from "@/mastra/runtime";
 
 export const getCopilotkitAgents = (userId: string) =>
   MastraAgent.getLocalAgents({

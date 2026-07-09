@@ -15,7 +15,7 @@ import {
 import type {
   PickRoomForDetailArgs,
   PickRoomForDetailResult,
-} from "../../room/schemas";
+} from "@/features/room/schemas";
 
 type PickRoomForDetailModalProps = {
   status: ToolCallStatus;

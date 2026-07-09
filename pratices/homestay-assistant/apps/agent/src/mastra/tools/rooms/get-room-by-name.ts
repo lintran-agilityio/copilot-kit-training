@@ -1,11 +1,11 @@
 import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
-import { findRoomByName } from "../../services";
+import { findRoomByName } from "@/mastra/services";
 import {
   getRoomByNameInputSchema,
   getRoomByNameOutputSchema,
-} from "../../schemas/rooms";
+} from "@/mastra/schemas/rooms";
 
 export const getRoomByNameTool = createTool({
   id: TOOL_KEYS.GET.ROOM_BY_NAME,

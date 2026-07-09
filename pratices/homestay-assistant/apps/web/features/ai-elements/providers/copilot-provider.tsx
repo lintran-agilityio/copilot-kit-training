@@ -1,9 +1,9 @@
 "use client";
 
-import { CopilotContexts } from "./copilot-context";
-import { BookingToolsProvider, RoomToolsProvider } from "../tools";
-import { RoomDetailDrawer } from "../components";
-import { AgentMessagesSanitizer } from "../components";
+import { CopilotContexts } from "@/features/ai-elements/providers/copilot-context";
+import { BookingToolsProvider, RoomToolsProvider } from "@/features/ai-elements/tools";
+import { RoomDetailDrawer } from "@/features/ai-elements/components";
+import { AgentMessagesSanitizer } from "@/features/ai-elements/components";
 
 type CopilotProviderProps = {
   children: React.ReactNode;

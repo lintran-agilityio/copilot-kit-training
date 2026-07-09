@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { scrollChatToEnd } from "../utils";
+import { scrollChatToEnd } from "@/features/assistant-ui/utils";
 
 export const useChatScroll = (messageCount: number) => {
   useEffect(() => {

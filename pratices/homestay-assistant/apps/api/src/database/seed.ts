@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import 'dotenv/config';
-import { RoomEntity } from '../modules/rooms/entities/room.entity';
-import dataSource from './data-source';
-import { Amenity } from './entities/enums';
-import { UserEntity } from './entities/user.entity';
+import { RoomEntity } from '@/modules/rooms/entities/room.entity';
+import dataSource from '@/database/data-source';
+import { Amenity } from '@/database/entities/enums';
+import { UserEntity } from '@/database/entities/user.entity';
 
 const guestUser = {
   id: 'guest-user',

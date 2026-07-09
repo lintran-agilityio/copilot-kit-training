@@ -15,15 +15,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { AvailabilityResponseDto } from '../dto/availability-response.dto';
-import { BookingResponseDto } from '../dto/booking-response.dto';
-import { CheckAvailabilityQueryDto } from '../dto/check-availability-query.dto';
-import { CreateBookingDto } from '../dto/create-booking.dto';
-import { FindBookingsByRoomQueryDto } from '../dto/find-bookings-by-room-query.dto';
-import { FindBookingsByRoomResponseDto } from '../dto/find-bookings-by-room-response.dto';
-import { ListBookingsQueryDto } from '../dto/list-bookings-query.dto';
-import { UpdateBookingDto } from '../dto/update-booking.dto';
-import { BookingService } from '../services/booking.service';
+import { AvailabilityResponseDto } from '@/modules/booking/dto/availability-response.dto';
+import { BookingResponseDto } from '@/modules/booking/dto/booking-response.dto';
+import { CheckAvailabilityQueryDto } from '@/modules/booking/dto/check-availability-query.dto';
+import { CreateBookingDto } from '@/modules/booking/dto/create-booking.dto';
+import { FindBookingsByRoomQueryDto } from '@/modules/booking/dto/find-bookings-by-room-query.dto';
+import { FindBookingsByRoomResponseDto } from '@/modules/booking/dto/find-bookings-by-room-response.dto';
+import { ListBookingsQueryDto } from '@/modules/booking/dto/list-bookings-query.dto';
+import { UpdateBookingDto } from '@/modules/booking/dto/update-booking.dto';
+import { BookingService } from '@/modules/booking/services/booking.service';
 
 @ApiTags('bookings')
 @Controller('bookings')

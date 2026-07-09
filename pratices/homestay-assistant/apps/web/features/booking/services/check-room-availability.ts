@@ -6,7 +6,7 @@ import { getBaseUrl } from "@/utils";
 import type {
   CheckRoomAvailabilityInput,
   CheckRoomAvailabilityResult,
-} from "../types/availability";
+} from "@/features/booking/types/availability";
 
 type CheckRoomAvailabilityProps = CheckRoomAvailabilityInput & {
   via?: PREFIX_URL;

@@ -2,20 +2,20 @@ import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { manageAgentPrompt } from "../constants/prompts";
+import { manageAgentPrompt } from "@/mastra/constants/prompts";
 import {
   cancelBookingTool,
   checkRoomAvailabilityTool,
   createBookingTool,
   findBookingByRoomTool,
   getBookingsTool,
-} from "../tools/booking";
+} from "@/mastra/tools/booking";
 import {
   getAvailableRoomsTool,
   getRoomByIdTool,
   getRoomByNameTool,
   getRoomsTool,
-} from "../tools/rooms";
+} from "@/mastra/tools/rooms";
 
 export const manageAgent = new Agent({
   id: AGENT_KEYS.MANAGE_ASSISTANT,

@@ -6,7 +6,7 @@ import {
   IsEnum,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { BookingStatus } from '../../../types/enum';
+import { BookingStatus } from '@/types/enum';
 
 export class ListBookingsQueryDto {
   @ApiProperty({
