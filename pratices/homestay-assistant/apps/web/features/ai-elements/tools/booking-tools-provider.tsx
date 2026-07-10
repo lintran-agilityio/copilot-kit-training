@@ -7,11 +7,13 @@ import { useEffect, useState } from "react";
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { ROUTES } from "@/constants";
 import {
+  BookingUnavailableModal,
   CancelBookingByRoomModal,
   ConfirmDeleteBookingModal,
   ConfirmDeleteSuccessModal,
 } from "@/features/ai-elements/components";
 import {
+  showBookingUnavailableUi,
   showCancellationSuccessUi,
   syncBookingResultToStore,
   syncBookingsListToStore,
@@ -19,10 +21,12 @@ import {
 import {
   cancelBookingByRoomSchema,
   confirmDeleteBookingSchema,
+  showBookingUnavailableSchema,
   showCancellationSuccessSchema,
   syncBookingResultSchema,
   updateBookingsListSchema,
   type CancelBookingByRoomResult,
+  type ShowBookingUnavailableArgs,
 } from "@/features/booking/schemas";
 import type { BookingDetails, BookingResponse } from "@/features/booking/types";
 import { useBookingsStore } from "@/features/booking/stores/booking-store";
@@ -57,6 +61,37 @@ const BookingCancellationNotice = () => {
   );
 };
 
+const BookingUnavailableNotice = () => {
+  const unavailableNotice = useBookingsStore((state) => state.unavailableNotice);
+  const setUnavailableNotice = useBookingsStore(
+    (state) => state.setUnavailableNotice,
+  );
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (unavailableNotice) {
+      setOpen(true);
+    }
+  }, [unavailableNotice]);
+
+  if (!unavailableNotice) {
+    return null;
+  }
+
+  return (
+    <BookingUnavailableModal
+      open={open}
+      notice={unavailableNotice as ShowBookingUnavailableArgs}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+          setUnavailableNotice(null);
+        }
+      }}
+    />
+  );
+};
+
 export const BookingToolsProvider = () => {
   const router = useRouter();
 
@@ -77,7 +112,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.UPDATE_BOOKINGS_LIST,
       description:
-        "Update the My Bookings page list. Pass bookings from getBookings as-is.",
+        "Update the My Bookings page list. Pass bookings from getBookings as-is. After this succeeds, always send one short guest-facing chat sentence — list sync alone is not a complete reply.",
       parameters: updateBookingsListSchema,
       handler: async ({ bookings }) =>
         syncBookingsListToStore(bookings as BookingResponse[]),
@@ -89,7 +124,8 @@ export const BookingToolsProvider = () => {
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.NAVIGATE_TO_BOOKINGS_PAGE,
-      description: "Navigate to the My Bookings page. No parameters needed.",
+      description:
+        "Navigate to the My Bookings page. No parameters needed. Navigation alone is not a complete reply — always also send one short guest-facing chat sentence (e.g. bookings are open).",
       handler: async () => {
         router.push(ROUTES.BOOKINGS);
         return "Navigated to My Bookings page.";
@@ -103,9 +139,21 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.SHOW_CANCELLATION_SUCCESS,
       description:
-        "Show a brief cancellation success notice after cancelBooking succeeds.",
+        "Show a brief cancellation success notice after cancel-booking succeeds. Always also send one short guest-facing chat confirmation.",
       parameters: showCancellationSuccessSchema,
       handler: async ({ roomName }) => showCancellationSuccessUi(roomName),
+    },
+    [],
+  );
+
+  useFrontendTool(
+    {
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      name: TOOL_KEYS.ACTION.SHOW_BOOKING_UNAVAILABLE,
+      description:
+        "Show a friendly dialog when checkRoomAvailability fails. Call instead of open_confirm_booking when available is false or guestsWithinCapacity is false. Pass room name, dates, guests, and reason (dates_unavailable or capacity_exceeded). Always also send a short guest-facing chat reply.",
+      parameters: showBookingUnavailableSchema,
+      handler: async (args) => showBookingUnavailableUi(args),
     },
     [],
   );
@@ -113,9 +161,9 @@ export const BookingToolsProvider = () => {
   useHumanInTheLoop(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.BOOKING.CANCEL_BY_ROOM,
+      name: TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
       description:
-        "Show a cancellation dialog after findBookingByRoom. Pass bookings and queryName from findBookingByRoom. On confirm, agent must call cancelBooking, getBookings, update_bookings_list, then show_cancellation_success.",
+        "Open the cancel-booking confirm dialog ONLY after findBookingByName returns bookings.length > 0. Pass bookings and queryName as-is. In the SAME turn, also send one short guest-facing chat sentence that the dialog is ready. Do NOT call this when bookings is empty — the agent must reply in chat instead. Do NOT call cancelBooking yet. After confirmed: true, call cancelBooking → getBookings → update_bookings_list → show_cancellation_success, then a short chat confirmation.",
       parameters: cancelBookingByRoomSchema,
       render: ({ status, args, respond, result }) => {
         const cancelResult = result as CancelBookingByRoomResult | undefined;
@@ -138,7 +186,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.BOOKING.DELETE,
       description:
-        "Ask the user to confirm cancelling a booking when you already have full booking details. On confirm, agent must call cancelBooking, getBookings, update_bookings_list, then show_cancellation_success.",
+        "Ask the guest to confirm cancelling when you already have full booking details. In the SAME turn, also send one short guest-facing chat sentence. Do NOT call cancelBooking yet. After confirmed: true, call cancelBooking → getBookings → update_bookings_list → show_cancellation_success, then a short chat confirmation.",
       parameters: confirmDeleteBookingSchema,
       render: ({ status, args, respond }) => (
         <ConfirmDeleteBookingModal
@@ -151,5 +199,10 @@ export const BookingToolsProvider = () => {
     [],
   );
 
-  return <BookingCancellationNotice />;
+  return (
+    <>
+      <BookingCancellationNotice />
+      <BookingUnavailableNotice />
+    </>
+  );
 };

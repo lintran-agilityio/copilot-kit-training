@@ -7,7 +7,7 @@ import { checkRoomAvailabilityTool } from "@/mastra/tools/booking/check-room-ava
 import {
   createBookingTool,
   cancelBookingTool,
-  findBookingByRoomTool,
+  findBookingByNameTool,
   getBookingsTool,
 } from "@/mastra/tools/booking";
 import { getAvailableRoomsTool, getRoomByIdTool } from "@/mastra/tools/rooms";
@@ -26,7 +26,7 @@ export const bookingAgent = new Agent({
     getBookings: getBookingsTool,
     checkRoomAvailability: checkRoomAvailabilityTool,
     cancelBooking: cancelBookingTool,
-    findBookingByRoom: findBookingByRoomTool,
+    findBookingByName: findBookingByNameTool,
     getAvailableRooms: getAvailableRoomsTool,
     getRoomById: getRoomByIdTool,
   },

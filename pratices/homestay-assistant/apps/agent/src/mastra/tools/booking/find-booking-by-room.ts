@@ -6,12 +6,12 @@ import {
   findBookingByNameOutputSchema,
 } from "@/mastra/schemas/booking";
 import { resolveAgentUserId } from "@/mastra/utils/resolve-agent-user-id";
-import { findBookingByRoomName } from "@/mastra/services";
+import { findBookingByName } from "@/mastra/services";
 
-export const findBookingByRoomTool = createTool({
-  id: TOOL_KEYS.BOOKING.FIND_BY_ROOM,
+export const findBookingByNameTool = createTool({
+  id: TOOL_KEYS.BOOKING.FIND_BY_NAME,
   description:
-    "Find active user bookings by room name. Returns bookings array and queryName. Use bookings.length before cancel-booking-by-room.",
+    "Find the signed-in user's active bookings by room name. Pass the room display name (e.g. The Meridian); filler words like cancel/booking/room are OK — the API normalizes them. If bookings.length > 0 → call show_cancel_dialog_confirm with bookings + queryName as-is, then one short guest-facing chat sentence. If bookings.length === 0 → do NOT call show_cancel_dialog_confirm; reply in chat that no active booking matched and suggest the exact room name or viewing bookings. Never call cancelBooking until a dialog returns confirmed: true.",
   inputSchema: findBookingByNameInputSchema,
   outputSchema: findBookingByNameOutputSchema,
   execute: async ({ roomName }, context) => {
@@ -20,6 +20,6 @@ export const findBookingByRoomTool = createTool({
       "Authentication required to find bookings for cancellation",
     );
 
-    return findBookingByRoomName(userId, roomName);
+    return findBookingByName(userId, roomName);
   },
 });

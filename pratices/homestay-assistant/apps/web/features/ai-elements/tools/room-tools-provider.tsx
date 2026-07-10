@@ -141,7 +141,7 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.OPEN_CONFIRM_BOOKING,
       description:
-        "After checkRoomAvailability succeeds (available true and guestsWithinCapacity true), open the confirm booking drawer with the staged draft so the guest can press Confirm booking. Pass result.room from checkRoomAvailability plus check-in, check-out, and guests from that same check. Do not call getRoomById or open_room_detail_drawer in a book turn. Do not call createBooking in the same turn — stop and wait for [booking-confirm].",
+        "After checkRoomAvailability succeeds (available true and guestsWithinCapacity true), open the confirm booking drawer with the staged draft so the guest can press Confirm booking. Pass result.room from checkRoomAvailability plus check-in, check-out, and guests from that same check. Do not call getRoomById or open_room_detail_drawer in a book turn. Do not call createBooking in the same turn — stop and wait for [booking-confirm]. Never call this when available is false — use show_booking_unavailable instead.",
       parameters: openConfirmBookingSchema,
       handler: async ({ room, checkInDate, checkOutDate, guests }) => {
         updateBookingForm({
@@ -169,7 +169,7 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.PICK_ROOM_FOR_DETAIL,
       description:
-        "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Returns the user's chosen room — then for detail intent open_room_detail_drawer (navigate_to_home_page only if on bookings page); for book intent use the chosen room id with checkRoomAvailability (include latest guests) → open_confirm_booking only if available (do not open_room_detail_drawer).",
+        "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Returns the user's chosen room — then for detail intent open_room_detail_drawer (navigate_to_home_page only if on bookings page); for book intent use the chosen room id with checkRoomAvailability (include latest guests) → open_confirm_booking only if available, else show_booking_unavailable + chat reply (do not open_room_detail_drawer).",
       parameters: pickRoomForDetailSchema,
       render: ({ status, args, respond }) => (
         <PickRoomForDetailModal

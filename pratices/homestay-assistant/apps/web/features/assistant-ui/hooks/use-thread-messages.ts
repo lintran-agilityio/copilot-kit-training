@@ -4,7 +4,10 @@ import { useEffect, useRef } from "react";
 import type { Message } from "@ag-ui/client";
 
 import type { ChatMessage } from "@/features/assistant-ui/types";
-import { mergeHydratedMessages, normalizeMessages } from "@/features/assistant-ui/utils";
+import {
+  mergeHydratedMessages,
+  normalizeMessages,
+} from "@/features/assistant-ui/utils";
 
 type UseThreadMessagesProps = {
   agent: {
@@ -28,7 +31,7 @@ export const useThreadMessages = ({
   agentRef.current = agent;
 
   useEffect(() => {
-    if (!threadId || typeof agent.setMessages !== "function") {
+    if (!threadId || typeof agentRef.current.setMessages !== "function") {
       return;
     }
 
@@ -74,5 +77,5 @@ export const useThreadMessages = ({
     return () => {
       abortController.abort();
     };
-  }, [agent, agentId, threadId]);
+  }, [agentId, threadId]);
 };

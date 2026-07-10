@@ -4,4 +4,5 @@ export * from "./RoomDetailDrawer";
 export * from "./ConfirmDeleteBookingModal";
 export * from "./CancelBookingByRoomModal";
 export * from "./ConfirmDeleteSuccessModal";
+export * from "./BookingUnavailableModal";
 export * from "./AgentMessagesSanitizer";

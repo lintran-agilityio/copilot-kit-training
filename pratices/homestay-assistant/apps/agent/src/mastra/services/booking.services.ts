@@ -47,7 +47,7 @@ export const cancelBooking = async (bookingId: string): Promise<Booking> =>
     "Failed to cancel booking"
   );
 
-  export const findBookingByRoomName = async (
+  export const findBookingByName = async (
     userId: string,
     roomName: string,
   ): Promise<BookingByRoomLookup> => {
@@ -65,4 +65,4 @@ export const cancelBooking = async (bookingId: string): Promise<Booking> =>
         errorMessage: "Failed to find bookings by room name",
       },
     );
-  }
+  };

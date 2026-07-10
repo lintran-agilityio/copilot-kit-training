@@ -7,6 +7,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { extractRoomNameQuery } from '@repo/utils';
+
 import { BookingStatus } from '@/types/enum';
 import { UserEntity } from '@/database/entities/user.entity';
 import { parseDateRange, toDateKey } from '@/utils';
@@ -90,15 +92,17 @@ export class BookingService {
   async findByRoomName(
     query: FindBookingsByRoomQueryDto,
   ): Promise<FindBookingsByRoomResponseDto> {
-    const queryName = query.roomName.trim();
+    const rawName = query.roomName.trim();
 
-    if (!queryName) {
+    if (!rawName) {
       return { bookings: [], queryName: '' };
     }
 
-    const bookings = await this.bookingRepository.findBookingByRoomName(
+    const queryName = extractRoomNameQuery(rawName) || rawName;
+
+    const bookings = await this.bookingRepository.findBookingByName(
       query.userId,
-      queryName,
+      rawName,
     );
 
     return {

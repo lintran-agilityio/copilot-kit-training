@@ -9,6 +9,7 @@ import type {
   UpdateBookingFormInput,
 } from "@/features/booking/types/booking";
 import type { BookingResponse } from "@/features/booking/types";
+import type { ShowBookingUnavailableArgs } from "@/features/booking/schemas";
 
 export interface BookingStore extends BookingDraft {
   isFormReady: boolean;
@@ -31,8 +32,10 @@ export interface BookingStore extends BookingDraft {
 type BookingsStore = {
   bookings: BookingResponse[];
   cancellationNotice: { roomName: string } | null;
+  unavailableNotice: ShowBookingUnavailableArgs | null;
   setBookings: (bookings: BookingResponse[]) => void;
   setCancellationNotice: (notice: { roomName: string } | null) => void;
+  setUnavailableNotice: (notice: ShowBookingUnavailableArgs | null) => void;
   upsertBooking: (booking: BookingResponse) => void;
 };
 
@@ -107,10 +110,13 @@ export const createBookingStore = (initialState?: Partial<BookingDraft>) => {
 export const useBookingsStore = create<BookingsStore>()((set) => ({
   bookings: [],
   cancellationNotice: null,
+  unavailableNotice: null,
 
   setBookings: (bookings) => set({ bookings }),
 
   setCancellationNotice: (cancellationNotice) => set({ cancellationNotice }),
+
+  setUnavailableNotice: (unavailableNotice) => set({ unavailableNotice }),
 
   upsertBooking: (booking) =>
     set((state) => {
