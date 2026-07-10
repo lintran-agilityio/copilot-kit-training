@@ -167,6 +167,97 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
   } as TMessage;
 };
 
+const getMessageContent = (message: { content?: unknown }) => {
+  if (typeof message.content === "string") {
+    return message.content;
+  }
+
+  return "";
+};
+
+const mergeAssistantDuplicates = <TMessage extends { id: string; role?: string; content?: unknown; toolCalls?: unknown }>(
+  existing: TMessage,
+  incoming: TMessage,
+): TMessage => {
+  const existingContent = getMessageContent(existing).trim();
+  const incomingContent = getMessageContent(incoming).trim();
+  // Prefer non-empty text so hydration/live races do not wipe a finished reply.
+  const content = incomingContent || existingContent || getMessageContent(incoming) || getMessageContent(existing);
+
+  const existingToolCalls = Array.isArray(existing.toolCalls)
+    ? existing.toolCalls
+    : undefined;
+  const incomingToolCalls = Array.isArray(incoming.toolCalls)
+    ? incoming.toolCalls
+    : undefined;
+  const toolCalls =
+    (incomingToolCalls?.length ? incomingToolCalls : undefined) ??
+    (existingToolCalls?.length ? existingToolCalls : undefined);
+
+  return {
+    ...existing,
+    ...incoming,
+    content,
+    ...(toolCalls ? { toolCalls } : {}),
+  };
+};
+
+/**
+ * Merge live agent messages with hydrated thread history.
+ * Same-id assistant rows keep the richer content/toolCalls instead of
+ * letting an empty hydration payload overwrite a finished reply.
+ */
+export const mergeHydratedMessages = <
+  TMessage extends { id: string; role?: string; content?: unknown; toolCalls?: unknown },
+>(
+  liveMessages: TMessage[],
+  hydratedMessages: TMessage[],
+): TMessage[] => {
+  if (!liveMessages.length) {
+    return hydratedMessages;
+  }
+
+  if (!hydratedMessages.length) {
+    return liveMessages;
+  }
+
+  const byId = new Map<string, TMessage>();
+
+  for (const message of hydratedMessages) {
+    byId.set(message.id, message);
+  }
+
+  for (const message of liveMessages) {
+    const existing = byId.get(message.id);
+
+    if (!existing) {
+      byId.set(message.id, message);
+      continue;
+    }
+
+    if (message.role === "assistant" && existing.role === "assistant") {
+      byId.set(message.id, mergeAssistantDuplicates(existing, message));
+      continue;
+    }
+
+    byId.set(message.id, message);
+  }
+
+  const orderedIds: string[] = [];
+  const seen = new Set<string>();
+
+  for (const message of [...hydratedMessages, ...liveMessages]) {
+    if (seen.has(message.id)) {
+      continue;
+    }
+
+    seen.add(message.id);
+    orderedIds.push(message.id);
+  }
+
+  return orderedIds.map((id) => byId.get(id)!);
+};
+
 export const normalizeMessages = <TMessage>(
   messages: TMessage[],
 ): TMessage[] => messages.map(normalizeMessage);

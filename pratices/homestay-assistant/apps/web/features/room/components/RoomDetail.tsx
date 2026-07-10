@@ -218,6 +218,7 @@ export const RoomDetail = ({
           roomId: id,
           checkInDate,
           checkOutDate,
+          guests,
         });
 
         if (!cancelled) {
@@ -235,7 +236,7 @@ export const RoomDetail = ({
     return () => {
       cancelled = true;
     };
-  }, [checkInDate, checkOutDate, id, matchesExistingBooking]);
+  }, [checkInDate, checkOutDate, guests, id, matchesExistingBooking]);
 
   const formattedPrice = formatPrice(pricePerNight);
   const hasValidDateRange =

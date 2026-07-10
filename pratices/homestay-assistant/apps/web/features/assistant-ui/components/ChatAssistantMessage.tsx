@@ -67,8 +67,9 @@ export const ChatAssistantMessage = ({
   }
 
   const chatToolCalls = getChatVisibleToolCalls(message.toolCalls);
+  const textContent = message.content?.trim() ?? "";
   const hasVisibleContent =
-    Boolean(message.content?.trim()) || chatToolCalls.length > 0;
+    Boolean(textContent) || chatToolCalls.length > 0;
 
   if (!hasVisibleContent) {
     return null;
@@ -93,7 +94,7 @@ export const ChatAssistantMessage = ({
         >
           <ChatAgentAvatar />
           <div className="flex min-w-0 flex-1 flex-col gap-3">
-            {markdownRenderer ? (
+            {textContent && markdownRenderer ? (
               <div className="chat-assistant-bubble max-w-[85%] rounded-2xl bg-zinc-800/80 px-4 py-3 text-sm leading-relaxed text-zinc-100">
                 {markdownRenderer}
               </div>

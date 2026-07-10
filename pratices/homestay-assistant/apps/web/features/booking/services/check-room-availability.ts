@@ -17,12 +17,16 @@ export const checkRoomAvailability = async ({
   roomId,
   checkInDate,
   checkOutDate,
+  guests,
 }: CheckRoomAvailabilityProps): Promise<CheckRoomAvailabilityResult> => {
   const params = new URLSearchParams({
     roomId,
     checkInDate,
     checkOutDate,
   });
+  if (guests != null) {
+    params.set("guests", String(guests));
+  }
   const baseUrl = getBaseUrl(via);
   const response = await fetch(
     `${baseUrl}${ROUTES.BOOKING_AVAILABILITY}?${params}`,

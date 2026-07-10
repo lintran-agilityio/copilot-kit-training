@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDateString, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CheckAvailabilityQueryDto {
   @ApiProperty({
@@ -27,4 +27,13 @@ export class CheckAvailabilityQueryDto {
   @IsNotEmpty()
   @IsDateString()
   checkOutDate: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Guest count to validate against room.capacity (not availableSlots)',
+    example: 2,
+    minimum: 1,
+  })
+  @IsOptional()
+  guests?: number | string;
 }

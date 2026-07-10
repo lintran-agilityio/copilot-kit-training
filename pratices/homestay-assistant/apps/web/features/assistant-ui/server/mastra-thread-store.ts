@@ -25,13 +25,22 @@ type MastraThreadIdRow = {
   id: string;
 };
 
+type MastraMessagePart = {
+  type?: string;
+  text?: unknown;
+  toolInvocation?: {
+    toolCallId?: string;
+    toolName?: string;
+    args?: unknown;
+  };
+};
+
 type MastraMessageContent = {
   content?: unknown;
-  parts?: Array<{
-    type?: string;
-    text?: unknown;
-  }>;
+  parts?: MastraMessagePart[];
 };
+
+type ChatToolCall = NonNullable<ChatMessage["toolCalls"]>[number];
 
 const getDatabasePath = () =>
   process.env.MASTRA_DB_PATH ??
@@ -40,29 +49,103 @@ const getDatabasePath = () =>
 const getDatabase = (readonly = true) =>
   new Database(getDatabasePath(), { readonly });
 
-const readMessageContent = (content: string) => {
-  try {
-    const parsed = JSON.parse(content) as MastraMessageContent;
+const toToolCallArguments = (args: unknown) => {
+  if (typeof args === "string") {
+    return args;
+  }
 
-    if (typeof parsed.content === "string") {
-      return parsed.content;
+  if (args === undefined || args === null) {
+    return "{}";
+  }
+
+  try {
+    return JSON.stringify(args);
+  } catch {
+    return "{}";
+  }
+};
+
+const readMessageText = (parsed: MastraMessageContent, rawContent: string) => {
+  const partsText = parsed.parts
+    ?.filter((part) => part.type === "text" && typeof part.text === "string")
+    .map((part) => part.text as string)
+    .join("")
+    .trim();
+
+  if (partsText) {
+    return partsText;
+  }
+
+  if (typeof parsed.content === "string" && parsed.content.trim()) {
+    return parsed.content;
+  }
+
+  // Raw non-JSON strings are plain text; JSON blobs without text parts are empty.
+  if (rawContent.trim().startsWith("{")) {
+    return "";
+  }
+
+  return rawContent;
+};
+
+const readToolCalls = (parsed: MastraMessageContent): ChatToolCall[] => {
+  const seen = new Set<string>();
+  const toolCalls: ChatToolCall[] = [];
+
+  for (const part of parsed.parts ?? []) {
+    if (part.type !== "tool-invocation" || !part.toolInvocation) {
+      continue;
     }
 
-    const text = parsed.parts
-      ?.filter((part) => part.type === "text" && typeof part.text === "string")
-      .map((part) => part.text)
-      .join("");
+    const { toolCallId, toolName, args } = part.toolInvocation;
 
-    return text || "";
+    if (!toolCallId || !toolName || seen.has(toolCallId)) {
+      continue;
+    }
+
+    seen.add(toolCallId);
+    toolCalls.push({
+      id: toolCallId,
+      type: "function",
+      function: {
+        name: toolName,
+        arguments: toToolCallArguments(args),
+      },
+    });
+  }
+
+  return toolCalls;
+};
+
+const readStoredMessage = (row: MastraMessageRow): ChatMessage => {
+  try {
+    const parsed = JSON.parse(row.content) as MastraMessageContent;
+    const toolCalls = readToolCalls(parsed);
+    const content = readMessageText(parsed, row.content);
+
+    return {
+      id: row.id,
+      role: row.role as ChatMessage["role"],
+      content,
+      ...(toolCalls.length > 0 ? { toolCalls } : {}),
+    };
   } catch {
-    return content;
+    return {
+      id: row.id,
+      role: row.role as ChatMessage["role"],
+      content: row.content,
+    };
   }
 };
 
 const getThreadName = (row: MastraThreadRow) => {
   const title = row.title.trim();
   const fallbackTitle = row.firstUserContent
-    ? readMessageContent(row.firstUserContent).trim()
+    ? readStoredMessage({
+        id: "preview",
+        role: "user",
+        content: row.firstUserContent,
+      }).content.trim()
     : "";
 
   return title || fallbackTitle || "New chat";
@@ -278,11 +361,7 @@ export const listMastraThreadMessages = ({
       )
       .all(threadId, resourceId);
 
-    return rows.map((row) => ({
-      id: row.id,
-      role: row.role as ChatMessage["role"],
-      content: readMessageContent(row.content),
-    }));
+    return rows.map(readStoredMessage);
   } finally {
     database.close();
   }

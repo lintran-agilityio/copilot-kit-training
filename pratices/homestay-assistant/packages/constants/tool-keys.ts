@@ -18,7 +18,7 @@ export const TOOL_KEYS = {
     PICK_ROOM_FOR_DETAIL: "pick-room-for-detail",
     OPEN_ROOM_DETAIL_DRAWER: "open_room_detail_drawer",
     NAVIGATE_TO_HOME_PAGE: "navigate_to_home_page",
-    UPDATE_BOOKING_FORM: "update_booking_form",
+    OPEN_CONFIRM_BOOKING: "open_confirm_booking",
     UPDATE_ROOM_LIST: "update_room_list",
     SET_ROOM_LIST_LOADING: "set_room_list_loading",
     RENDER_ROOM_RESULTS_PREVIEW: "render_room_results_preview",

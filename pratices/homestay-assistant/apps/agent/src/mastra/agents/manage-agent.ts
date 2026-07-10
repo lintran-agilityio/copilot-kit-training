@@ -3,6 +3,7 @@ import { Memory } from "@mastra/memory";
 
 import { AGENT_KEYS } from "@repo/constants";
 import { manageAgentPrompt } from "@/mastra/constants/prompts";
+import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants/working-memory";
 import {
   cancelBookingTool,
   checkRoomAvailabilityTool,
@@ -40,6 +41,7 @@ export const manageAgent = new Agent({
       workingMemory: {
         enabled: true,
         scope: "thread",
+        template: BOOKING_WORKING_MEMORY_TEMPLATE,
       },
     },
   }),

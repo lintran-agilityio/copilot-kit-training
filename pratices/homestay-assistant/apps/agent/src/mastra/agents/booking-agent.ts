@@ -12,6 +12,7 @@ import {
 } from "@/mastra/tools/booking";
 import { getAvailableRoomsTool, getRoomByIdTool } from "@/mastra/tools/rooms";
 import { bookingAgentPrompt } from "@/mastra/constants/prompts";
+import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants/working-memory";
 
 export const bookingAgent = new Agent({
   id: AGENT_KEYS.BOOKING_ASSISTANT,
@@ -33,7 +34,8 @@ export const bookingAgent = new Agent({
     options: {
       workingMemory: {
         enabled: true,
-        scope: 'thread',
+        scope: "thread",
+        template: BOOKING_WORKING_MEMORY_TEMPLATE,
       },
     },
   }),

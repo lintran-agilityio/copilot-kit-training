@@ -15,7 +15,7 @@ import {
   pickRoomForDetailSchema,
   setRoomListLoadingSchema,
   selectRoomForBookingSchema,
-  updateBookingFormSchema,
+  openConfirmBookingSchema,
   updateRoomListSchema,
 } from "@/features/room/schemas";
 import type { Room } from "@/features/room/types/room";
@@ -80,7 +80,7 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
       description:
-        "Update the room grid on the home page. Pass rooms from getRooms or getAvailableRooms as-is.",
+        "Update the room grid on the home page. Pass rooms from getRooms or getAvailableRooms as-is. After this succeeds, always send one short guest-facing chat reply summarizing that rooms are ready.",
       parameters: updateRoomListSchema,
       handler: async ({ rooms, title }) => {
         syncRoomListToStore(rooms, title);
@@ -95,10 +95,12 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.NAVIGATE_TO_HOME_PAGE,
       description:
-        "Navigate to the home page so the room grid is visible. No parameters needed.",
+        "Navigate to the home page so the room grid is visible. Call ONLY when the guest is on the bookings page (page context isBookingsPage=true). Skip when already on the home page — update_room_list is enough.",
       handler: async () => {
-        navigateToHomeIfNeeded(pathname, router);
-        return "Navigated to home page.";
+        const navigated = navigateToHomeIfNeeded(pathname, router);
+        return navigated
+          ? "Navigated to home page."
+          : "Already on home page; no navigation needed.";
       },
     },
     [pathname, router],
@@ -137,10 +139,10 @@ export const RoomToolsProvider = () => {
   useFrontendTool(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.ACTION.UPDATE_BOOKING_FORM,
+      name: TOOL_KEYS.ACTION.OPEN_CONFIRM_BOOKING,
       description:
-        "Update the booking form in the room detail drawer after availability is confirmed. Opens the drawer for user review.",
-      parameters: updateBookingFormSchema,
+        "After checkRoomAvailability succeeds (available true and guestsWithinCapacity true), open the confirm booking drawer with the staged draft so the guest can press Confirm booking. Pass result.room from checkRoomAvailability plus check-in, check-out, and guests from that same check. Do not call getRoomById or open_room_detail_drawer in a book turn. Do not call createBooking in the same turn — stop and wait for [booking-confirm].",
+      parameters: openConfirmBookingSchema,
       handler: async ({ room, checkInDate, checkOutDate, guests }) => {
         updateBookingForm({
           room: {
@@ -155,7 +157,7 @@ export const RoomToolsProvider = () => {
         });
         openRoomDetailDrawerUi(room as Room);
 
-        return `Updated booking form for ${room.name}. The room detail drawer is open for review.`;
+        return `Opened confirm booking for ${room.name}. Waiting for the guest to confirm in the drawer.`;
       },
       followUp: false,
     },
@@ -167,7 +169,7 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.PICK_ROOM_FOR_DETAIL,
       description:
-        "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Returns the user's chosen room — then call navigate_to_home_page and open_room_detail_drawer.",
+        "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Returns the user's chosen room — then for detail intent open_room_detail_drawer (navigate_to_home_page only if on bookings page); for book intent use the chosen room id with checkRoomAvailability (include latest guests) → open_confirm_booking only if available (do not open_room_detail_drawer).",
       parameters: pickRoomForDetailSchema,
       render: ({ status, args, respond }) => (
         <PickRoomForDetailModal

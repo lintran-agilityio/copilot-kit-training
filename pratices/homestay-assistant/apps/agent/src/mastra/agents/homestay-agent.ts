@@ -3,6 +3,7 @@ import { Memory } from "@mastra/memory";
 
 import { AGENT_KEYS } from "@repo/constants";
 import { homeStayAgentPrompt } from "@/mastra/constants/prompts";
+import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants/working-memory";
 
 import {
   getRoomsTool,
@@ -33,7 +34,8 @@ export const homestayAgent = new Agent({
     options: {
       workingMemory: {
         enabled: true,
-        scope: 'thread',
+        scope: "thread",
+        template: BOOKING_WORKING_MEMORY_TEMPLATE,
       },
     },
   }),
