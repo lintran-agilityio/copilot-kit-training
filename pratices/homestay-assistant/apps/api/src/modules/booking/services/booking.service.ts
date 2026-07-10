@@ -26,6 +26,7 @@ import { FindBookingsByRoomResponseDto } from '@/modules/booking/dto/find-bookin
 import { BookingEntity } from '@/modules/booking/entities/booking.entity';
 import { toBookingResponseDto } from '@/modules/booking/mappers/booking.mapper';
 import { BookingRepository } from '@/modules/booking/repositories/booking.repository';
+import { toRoomResponseDto } from '@/modules/rooms/mappers/room.mapper';
 
 @Injectable()
 export class BookingService {
@@ -127,17 +128,27 @@ export class BookingService {
       query.checkOutDate,
     );
 
-    const available = await this.isRoomAvailable(
+    const datesAvailable = await this.isRoomAvailable(
       room,
       checkInDate,
       checkOutDate,
     );
 
+    const guests = this.parseOptionalGuests(query.guests);
+
+    let guestsWithinCapacity = true;
+    if (guests != null) {
+      this.assertPositiveGuests(guests);
+      guestsWithinCapacity = guests <= room.capacity;
+    }
+
     return {
-      available,
-      roomId: query.roomId,
+      available: datesAvailable && guestsWithinCapacity,
+      guestsWithinCapacity,
+      room: toRoomResponseDto(room),
       checkInDate: query.checkInDate,
       checkOutDate: query.checkOutDate,
+      ...(guests != null ? { guests } : {}),
     };
   }
 
@@ -287,6 +298,19 @@ export class BookingService {
         `Room "${roomId}" is not available for the selected dates`,
       );
     }
+  }
+
+  private parseOptionalGuests(guests?: number | string): number | undefined {
+    if (guests == null || guests === '') {
+      return undefined;
+    }
+
+    const parsed = typeof guests === 'number' ? guests : Number(guests);
+    if (!Number.isFinite(parsed)) {
+      throw new BadRequestException('guests must be a positive integer');
+    }
+
+    return parsed;
   }
 
   private assertGuestCapacity(room: RoomEntity, guests: number): void {

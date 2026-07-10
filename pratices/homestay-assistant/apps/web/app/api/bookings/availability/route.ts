@@ -14,10 +14,25 @@ export async function GET(request: Request) {
   const roomId = searchParams.get("roomId");
   const checkInDate = searchParams.get("checkInDate");
   const checkOutDate = searchParams.get("checkOutDate");
+  const guestsParam = searchParams.get("guests");
+  const guests =
+    guestsParam != null && guestsParam !== ""
+      ? Number(guestsParam)
+      : undefined;
 
   if (!roomId || !checkInDate || !checkOutDate) {
     return Response.json(
       { error: "roomId, checkInDate, and checkOutDate are required" },
+      { status: 400 },
+    );
+  }
+
+  if (
+    guests != null &&
+    (!Number.isInteger(guests) || guests < 1)
+  ) {
+    return Response.json(
+      { error: "guests must be a positive integer when provided" },
       { status: 400 },
     );
   }
@@ -27,6 +42,7 @@ export async function GET(request: Request) {
     roomId,
     checkInDate,
     checkOutDate,
+    guests,
   });
 
   return Response.json(result);

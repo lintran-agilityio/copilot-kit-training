@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Message } from "@ag-ui/client";
 
 import type { ChatMessage } from "@/features/assistant-ui/types";
-import { normalizeMessages } from "@/features/assistant-ui/utils";
+import { mergeHydratedMessages, normalizeMessages } from "@/features/assistant-ui/utils";
 
 type UseThreadMessagesProps = {
   agent: {
+    messages?: Message[];
     setMessages?: (messages: Message[]) => void;
   };
   agentId: string;
@@ -23,6 +24,9 @@ export const useThreadMessages = ({
   agentId,
   threadId,
 }: UseThreadMessagesProps) => {
+  const agentRef = useRef(agent);
+  agentRef.current = agent;
+
   useEffect(() => {
     if (!threadId || typeof agent.setMessages !== "function") {
       return;
@@ -42,13 +46,22 @@ export const useThreadMessages = ({
         }
 
         const data = (await response.json()) as ThreadMessagesResponse;
-        const messages = (data.messages ?? []).map((message) => ({
+        const hydrated = (data.messages ?? []).map((message) => ({
           id: message.id,
           role: message.role,
           content: message.content,
+          ...(message.toolCalls?.length
+            ? { toolCalls: message.toolCalls }
+            : {}),
         })) as Message[];
 
-        agent.setMessages?.(normalizeMessages(messages) as Message[]);
+        const currentAgent = agentRef.current;
+        const merged = mergeHydratedMessages(
+          currentAgent.messages ?? [],
+          normalizeMessages(hydrated) as Message[],
+        );
+
+        currentAgent.setMessages?.(merged);
       } catch (error) {
         if (!abortController.signal.aborted) {
           console.error("Failed to load thread messages", error);

@@ -1,13 +1,17 @@
 "use client";
 
-import { UserReadable } from "@/features/ai-elements/readable";
-import { BookingReadable } from "@/features/ai-elements/readable";
+import {
+  BookingReadable,
+  PageReadable,
+  UserReadable,
+} from "@/features/ai-elements/readable";
 
 export const CopilotContexts = () => {
   return (
     <>
       <UserReadable />
       <BookingReadable />
+      <PageReadable />
     </>
   );
 };

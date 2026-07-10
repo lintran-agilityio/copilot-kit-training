@@ -1,15 +1,22 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsDateString,
-  IsNotEmpty,
-  IsString,
-  IsUUID,
   IsBoolean,
+  IsDateString,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsPositive,
+  IsString,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+import { RoomResponseDto } from '@/modules/rooms/dto/room-response.dto';
 
 export class AvailabilityResponseDto {
   @ApiProperty({
-    description: 'Whether the room is available for the requested dates',
+    description:
+      'Whether the room is free for the dates and fits the guest count when guests were provided',
     example: true,
   })
   @IsBoolean()
@@ -17,13 +24,21 @@ export class AvailabilityResponseDto {
   available: boolean;
 
   @ApiProperty({
-    description: 'Room ID that was checked',
-    example: 'lotus-garden',
+    description:
+      'Whether the guest count fits room.capacity. True when guests were omitted.',
+    example: true,
   })
-  @IsString()
+  @IsBoolean()
   @IsNotEmpty()
-  @IsUUID()
-  roomId: string;
+  guestsWithinCapacity: boolean;
+
+  @ApiProperty({
+    description: 'Full room object that was checked',
+    type: RoomResponseDto,
+  })
+  @ValidateNested()
+  @Type(() => RoomResponseDto)
+  room: RoomResponseDto;
 
   @ApiProperty({
     description: 'Requested check-in date',
@@ -42,4 +57,14 @@ export class AvailabilityResponseDto {
   @IsNotEmpty()
   @IsDateString()
   checkOutDate: string;
+
+  @ApiPropertyOptional({
+    description: 'Guest count that was validated, when provided',
+    example: 2,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  guests?: number;
 }
