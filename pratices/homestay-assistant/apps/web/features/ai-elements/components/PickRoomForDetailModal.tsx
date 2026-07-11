@@ -55,7 +55,7 @@ export const PickRoomForDetailModal = ({
               Open {selectedRoom.name}?
             </DialogTitle>
             <DialogDescription className="text-zinc-400">
-              View room details in the drawer.
+              View room details in the modal.
             </DialogDescription>
           </DialogHeader>
 

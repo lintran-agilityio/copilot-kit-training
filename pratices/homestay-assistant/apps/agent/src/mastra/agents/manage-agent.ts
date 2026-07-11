@@ -8,7 +8,7 @@ import {
   cancelBookingTool,
   checkRoomAvailabilityTool,
   createBookingTool,
-  findBookingByRoomTool,
+  findBookingByNameTool,
   getBookingsTool,
 } from "@/mastra/tools/booking";
 import {
@@ -33,7 +33,7 @@ export const manageAgent = new Agent({
     checkRoomAvailability: checkRoomAvailabilityTool,
     createBooking: createBookingTool,
     getBookings: getBookingsTool,
-    findBookingByRoom: findBookingByRoomTool,
+    findBookingByName: findBookingByNameTool,
     cancelBooking: cancelBookingTool,
   },
   memory: new Memory({

@@ -17,7 +17,7 @@ export const selectRoomForBookingSchema = z.object({
 
 export const openConfirmBookingSchema = z.object({
   room: bookingRoomSchema.describe(
-    "Full room object from checkRoomAvailability.result.room — opens the confirm booking drawer",
+    "Full room object from checkRoomAvailability.result.room — opens the confirm booking modal",
   ),
   checkInDate: z.string().describe("Check-in date (YYYY-MM-DD)"),
   checkOutDate: z.string().describe("Check-out date (YYYY-MM-DD)"),

@@ -37,6 +37,19 @@ const toBookingDetails = (booking: BookingItem): BookingDetails => ({
   totalPrice: booking.totalPrice,
 });
 
+const PreparingCancellationDialog = ({ open }: { open: boolean }) => (
+  <Dialog open={open}>
+    <DialogContent className="border-white/10 bg-[#111111] text-zinc-100 sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle className="text-white">Preparing cancellation…</DialogTitle>
+        <DialogDescription className="text-zinc-400">
+          Waiting for booking details from the assistant.
+        </DialogDescription>
+      </DialogHeader>
+    </DialogContent>
+  </Dialog>
+);
+
 export const CancelBookingByRoomModal = ({
   status,
   args,
@@ -48,10 +61,11 @@ export const CancelBookingByRoomModal = ({
   );
   const canRespond = status === "executing" && respond != null;
   const open = status === "executing" || status === "inProgress";
+  const bookingsReady = Array.isArray(args.bookings);
   const bookings = args.bookings ?? [];
 
   const handleClose = () => {
-    respond?.({ confirmed: false, reason: "not_found" })
+    respond?.({ confirmed: false, reason: "not_found" });
   };
 
   const handleOpenChangeNotFound = (nextOpen: boolean) => {
@@ -67,9 +81,8 @@ export const CancelBookingByRoomModal = ({
   };
 
   const handleKeepBookings = () => {
-    respond?.({ confirmed: false, reason: "declined" })
+    respond?.({ confirmed: false, reason: "declined" });
   };
-
 
   if (status === ToolCallStatus.Complete && result?.confirmed) {
     return null;
@@ -90,6 +103,11 @@ export const CancelBookingByRoomModal = ({
           await respond({ confirmed: false, reason: "declined" });
         }
       : undefined;
+
+  // Args still streaming — never flash "not found" on empty/undefined bookings.
+  if (!bookingsReady) {
+    return <PreparingCancellationDialog open={open} />;
+  }
 
   if (!bookings.length) {
     return (
@@ -194,16 +212,5 @@ export const CancelBookingByRoomModal = ({
     );
   }
 
-  return (
-    <Dialog open={open}>
-      <DialogContent className="border-white/10 bg-[#111111] text-zinc-100 sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-white">Preparing cancellation…</DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            Waiting for booking details from the assistant.
-          </DialogDescription>
-        </DialogHeader>
-      </DialogContent>
-    </Dialog>
-  );
+  return <PreparingCancellationDialog open={open} />;
 };

@@ -43,7 +43,7 @@ const resolveUserId = (
 export const getBookingsTool = createTool({
   id: TOOL_KEYS.BOOKING.GET,
   description:
-    "Get bookings from the backend. For personal bookings, omit userId — the signed-in user is resolved automatically from the server session. After calling, call navigate_to_bookings_page, then update_bookings_list with result.bookings.",
+    "Get bookings from the backend. For personal bookings, omit userId — the signed-in user is resolved automatically from the server session. After calling: navigate_to_bookings_page → update_bookings_list with result.bookings → always finish with one short guest-facing chat sentence. Navigation alone is not a complete reply.",
   inputSchema: getBookingsInputSchema,
   outputSchema: z.object({
     bookings: z.array(bookingSchema),

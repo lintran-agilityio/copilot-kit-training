@@ -137,7 +137,7 @@ export const ChatSidebarContent = ({
           agentId={agentId}
           threadId={currentThreadId}
           autoScroll="pin-to-bottom"
-          className="flex h-full min-h-0 flex-1 flex-col overflow-hidden pt-4"
+          className="flex h-full min-h-0 flex-1 flex-col overflow-hidden pt-4 px-0"
           scrollView={{
             className: "app-scrollbar min-h-0 flex-1",
           }}
@@ -147,7 +147,7 @@ export const ChatSidebarContent = ({
           }}
           welcomeScreen={ChatWelcomeScreen}
           messageView={{
-            className: "px-4",
+            className: "px-0 mx-0",
             assistantMessage:
               ChatAssistantMessage as typeof CopilotChatAssistantMessage,
             userMessage: ChatUserMessage as typeof CopilotChatUserMessage,

@@ -12,8 +12,8 @@ export const getRoomByNameTool = createTool({
   description:
     `Find rooms by display name. Use rooms.length and the guest intent to decide next step:
       - 0 = reply in chat;
-      - 1 + detail/browse intent = open_room_detail_drawer (call navigate_to_home_page first ONLY if on bookings page);
-      - 1 + book intent (dates/guests given) = use rooms[0].id with checkRoomAvailability (include guests from the latest message) → open_confirm_booking only if available/guestsWithinCapacity; do NOT call open_room_detail_drawer;
+      - 1 + detail/browse intent = show_room_detail with rooms[0] (renders RoomDetail in chat);
+      - 1 + book intent (dates/guests given) = use rooms[0].id with checkRoomAvailability (include guests from the latest message) → open_confirm_booking if available, else show_booking_unavailable then chat reply after modal close; do NOT call show_room_detail;
       - >1 = pick-room-for-detail then follow the same intent rules with the chosen room.
     Always finish with one short guest-facing chat reply.`,
   inputSchema: getRoomByNameInputSchema,

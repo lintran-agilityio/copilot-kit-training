@@ -5,7 +5,6 @@ import {
   type CopilotChatToolCallsViewProps,
 } from "@copilotkit/react-core/v2";
 
-import { ChatAgentAvatar } from "@/features/assistant-ui/components/ChatAvatars";
 import {
   getChatVisibleToolCalls,
   getMessageTextContent,
@@ -81,7 +80,7 @@ export const ChatAssistantMessage = ({
       message={message}
       messages={messages}
       toolbarVisible={toolbarVisible}
-      className={cn("!bg-transparent !p-0", className)}
+      className={cn("!bg-transparent p-0", className)}
       toolCallsView={ChatToolCallsView}
     >
       {({ markdownRenderer, toolCallsView }) => (
@@ -92,7 +91,6 @@ export const ChatAssistantMessage = ({
             getMessageTopSpacing(messages, message.id, "assistant"),
           )}
         >
-          <ChatAgentAvatar />
           <div className="flex min-w-0 flex-1 flex-col gap-3">
             {textContent && markdownRenderer ? (
               <div className="chat-assistant-bubble max-w-[85%] rounded-2xl bg-zinc-800/80 px-4 py-3 text-sm leading-relaxed text-zinc-100">

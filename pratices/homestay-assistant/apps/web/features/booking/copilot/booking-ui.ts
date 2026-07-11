@@ -18,14 +18,14 @@ export const refreshRoomsAfterCancellation = () => {
     roomListTitle,
     selectedRoom,
     updateRoomList,
-    openRoomDetailDrawer,
+    openRoomDetailModal,
   } = useRoomStore.getState();
 
   const refreshedRooms = rooms.map(stripRoomBookingOverlay);
   updateRoomList(refreshedRooms, roomListTitle);
 
   if (selectedRoom) {
-    openRoomDetailDrawer(stripRoomBookingOverlay(selectedRoom));
+    openRoomDetailModal(stripRoomBookingOverlay(selectedRoom));
   }
 };
 
