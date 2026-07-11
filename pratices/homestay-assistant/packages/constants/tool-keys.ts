@@ -20,7 +20,9 @@ export const TOOL_KEYS = {
   },
   ACTION: {
     PICK_ROOM_FOR_DETAIL: "pick-room-for-detail",
-    OPEN_ROOM_DETAIL_DRAWER: "open_room_detail_drawer",
+    OPEN_ROOM_DETAIL_MODAL: "open_room_detail_modal",
+    /** Generative UI — render RoomDetail inline in chat via useComponent. */
+    SHOW_ROOM_DETAIL: "show_room_detail",
     NAVIGATE_TO_HOME_PAGE: "navigate_to_home_page",
     OPEN_CONFIRM_BOOKING: "open_confirm_booking",
     UPDATE_ROOM_LIST: "update_room_list",

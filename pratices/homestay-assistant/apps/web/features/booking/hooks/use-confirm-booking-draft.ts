@@ -10,7 +10,7 @@ import { getAgentResourceId } from "@repo/utils";
 import { useBooking } from "@/features/booking/hooks";
 import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
 
-const BOOKING_CONFIRM_MESSAGE = `${BOOKING_CONFIRM_PROMPT_PREFIX} User confirmed the booking draft in the room detail drawer. Read Current draft booking and Signed-in user from context. Call createBooking, then sync_booking_result with the result.`;
+const BOOKING_CONFIRM_MESSAGE = `${BOOKING_CONFIRM_PROMPT_PREFIX} User confirmed the booking draft in the room detail modal. Read Current draft booking and Signed-in user from context. Call createBooking, then sync_booking_result with the result.`;
 
 export const useConfirmBookingDraft = () => {
   const { user, isLoaded } = useUser();

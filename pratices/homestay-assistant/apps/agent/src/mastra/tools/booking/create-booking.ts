@@ -28,7 +28,7 @@ const resolveCreateBookingUserId = (
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE,
   description:
-    "Create a confirmed room booking after the user approved the draft in the drawer. Then call sync_booking_result with the booking. The signed-in user is resolved automatically from the server session.",
+    "Create a confirmed room booking after the user approved the draft in the modal. Then call sync_booking_result with the booking. The signed-in user is resolved automatically from the server session.",
   inputSchema: createBookingSchema,
   outputSchema: bookingSchema,
   execute: async (params, context) => {

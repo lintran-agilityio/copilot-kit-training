@@ -1,9 +1,6 @@
 import { getBookingStoreState } from "@/features/booking/stores/booking-provider";
 import { useBookingsStore } from "@/features/booking/stores/booking-store";
-import type {
-  ShowBookingUnavailableArgs,
-  SyncBookingResultArgs,
-} from "@/features/booking/schemas";
+import type { SyncBookingResultArgs } from "@/features/booking/schemas";
 import type {
   BookingItem,
   BookingResponse,
@@ -21,14 +18,14 @@ export const refreshRoomsAfterCancellation = () => {
     roomListTitle,
     selectedRoom,
     updateRoomList,
-    openRoomDetailDrawer,
+    openRoomDetailModal,
   } = useRoomStore.getState();
 
   const refreshedRooms = rooms.map(stripRoomBookingOverlay);
   updateRoomList(refreshedRooms, roomListTitle);
 
   if (selectedRoom) {
-    openRoomDetailDrawer(stripRoomBookingOverlay(selectedRoom));
+    openRoomDetailModal(stripRoomBookingOverlay(selectedRoom));
   }
 };
 
@@ -76,9 +73,4 @@ export const showCancellationSuccessUi = (roomName?: string) => {
     roomName: roomName ?? "your room",
   });
   return "Showed cancellation success notice.";
-};
-
-export const showBookingUnavailableUi = (args: ShowBookingUnavailableArgs) => {
-  useBookingsStore.getState().setUnavailableNotice(args);
-  return `Showed unavailable notice for ${args.roomName}.`;
 };

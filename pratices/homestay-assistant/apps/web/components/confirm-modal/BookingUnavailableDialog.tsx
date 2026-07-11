@@ -33,7 +33,7 @@ const mappingReason = (
     const maxLabel =
       capacity != null ? `up to ${capacity} guest${capacity === 1 ? "" : "s"}` : "fewer guests";
     return {
-      title: "capacity_exceeded",
+      title: "Too many guests",
       description: (
         <>
           <span className="font-medium text-zinc-200">{roomName}</span> fits{" "}

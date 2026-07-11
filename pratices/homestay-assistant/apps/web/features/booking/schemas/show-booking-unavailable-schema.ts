@@ -26,3 +26,10 @@ export const showBookingUnavailableSchema = z.object({
 export type ShowBookingUnavailableArgs = z.infer<
   typeof showBookingUnavailableSchema
 >;
+
+/** Returned when the guest closes the unavailable dialog — agent then replies in chat. */
+export type ShowBookingUnavailableResult = {
+  acknowledged: true;
+  reason: BookingUnavailableReason;
+  roomName: string;
+};

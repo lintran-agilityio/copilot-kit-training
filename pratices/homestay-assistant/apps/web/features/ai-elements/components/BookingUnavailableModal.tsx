@@ -1,27 +1,64 @@
 "use client";
 
+import { ToolCallStatus } from "@copilotkit/react-core/v2";
+
 import { BookingUnavailableDialog } from "@/components/confirm-modal";
-import type { ShowBookingUnavailableArgs } from "@/features/booking/schemas";
+import type {
+  ShowBookingUnavailableArgs,
+  ShowBookingUnavailableResult,
+} from "@/features/booking/schemas";
 
 type BookingUnavailableModalProps = {
-  open: boolean;
-  notice: ShowBookingUnavailableArgs;
-  onOpenChange: (open: boolean) => void;
+  status: ToolCallStatus;
+  args: Partial<ShowBookingUnavailableArgs>;
+  respond?: (result: ShowBookingUnavailableResult) => Promise<void>;
 };
 
 export const BookingUnavailableModal = ({
-  open,
-  notice,
-  onOpenChange,
-}: BookingUnavailableModalProps) => (
-  <BookingUnavailableDialog
-    open={open}
-    roomName={notice.roomName}
-    checkInDate={notice.checkInDate}
-    checkOutDate={notice.checkOutDate}
-    guests={notice.guests}
-    reason={notice.reason}
-    capacity={notice.capacity}
-    onOpenChange={onOpenChange}
-  />
-);
+  status,
+  args,
+  respond,
+}: BookingUnavailableModalProps) => {
+  const canRespond = status === "executing" && respond != null;
+  const open = status === "executing" || status === "inProgress";
+
+  const roomName = args.roomName ?? "This room";
+  const checkInDate = args.checkInDate ?? "";
+  const checkOutDate = args.checkOutDate ?? "";
+  const guests = args.guests ?? 0;
+  const reason = args.reason ?? "dates_unavailable";
+  const capacity = args.capacity;
+
+  const acknowledge = () => {
+    if (!canRespond) {
+      return;
+    }
+
+    void respond({
+      acknowledged: true,
+      reason,
+      roomName,
+    });
+  };
+
+  if (status === ToolCallStatus.Complete) {
+    return null;
+  }
+
+  return (
+    <BookingUnavailableDialog
+      open={open}
+      roomName={roomName}
+      checkInDate={checkInDate}
+      checkOutDate={checkOutDate}
+      guests={guests}
+      reason={reason}
+      capacity={capacity}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          acknowledge();
+        }
+      }}
+    />
+  );
+};

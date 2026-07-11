@@ -11,10 +11,8 @@ import { useBooking } from "@/features/booking/hooks/use-booking";
 import { AmenitiesRoom } from "@/features/room/components";
 import { RoomBookingDates } from "@/features/room/components/RoomBookingDates";
 import { RoomImageGallery } from "@/features/room/components/RoomImageGallery";
-import { checkRoomAvailability } from "@/features/booking/services";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
-import { PREFIX_URL } from "@repo/types";
 import {
   addDays,
   startOfDay,
@@ -68,8 +66,8 @@ export const RoomDetail = ({
   const resetBooking = useBooking((state) => state.resetBooking);
   const requestRoomBooking = useRequestRoomBooking();
   const confirmBookingDraft = useConfirmBookingDraft();
-  const closeRoomDetailDrawer = useRoomStore(
-    (state) => state.closeRoomDetailDrawer,
+  const closeRoomDetailModal = useRoomStore(
+    (state) => state.closeRoomDetailModal,
   );
 
   const {
@@ -102,9 +100,6 @@ export const RoomDetail = ({
     return getDefaultDates().checkOut;
   });
   const [guests, setLocalGuests] = useState(storeGuests ?? 1);
-  const [isAvailable, setIsAvailable] = useState<boolean | undefined>(
-    room.available,
-  );
 
   useEffect(() => {
     if (roomCheckInDate && roomCheckOutDate && isCheckOutAfterCheckIn(roomCheckInDate, roomCheckOutDate)) {
@@ -198,46 +193,6 @@ export const RoomDetail = ({
     ],
   );
 
-  useEffect(() => {
-    if (
-      !checkInDate ||
-      !checkOutDate ||
-      !isCheckOutAfterCheckIn(checkInDate, checkOutDate) ||
-      matchesExistingBooking
-    ) {
-      setIsAvailable(undefined);
-      return;
-    }
-
-    let cancelled = false;
-
-    const fetchAvailability = async () => {
-      try {
-        const result = await checkRoomAvailability({
-          via: PREFIX_URL.WEB,
-          roomId: id,
-          checkInDate,
-          checkOutDate,
-          guests,
-        });
-
-        if (!cancelled) {
-          setIsAvailable(result.available);
-        }
-      } catch {
-        if (!cancelled) {
-          setIsAvailable(undefined);
-        }
-      }
-    };
-
-    fetchAvailability();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [checkInDate, checkOutDate, guests, id, matchesExistingBooking]);
-
   const formattedPrice = formatPrice(pricePerNight);
   const hasValidDateRange =
     checkInDate != null &&
@@ -250,8 +205,7 @@ export const RoomDetail = ({
     guests >= 1 &&
     guests <= capacity;
 
-  const isBookingDisabled =
-    matchesExistingBooking || isAvailable === false;
+  const isBookingDisabled = matchesExistingBooking;
 
   const estimatedTotal = useMemo(() => {
     if (!canProceed || !pricePerNight || !checkInDate || !checkOutDate) {
@@ -320,7 +274,7 @@ export const RoomDetail = ({
     requestRoomBooking(
       `Book ${name} from ${checkInDate} to ${checkOutDate} for ${guests} guest${guests === 1 ? "" : "s"}.`,
     );
-    closeRoomDetailDrawer();
+    closeRoomDetailModal();
   };
 
   const handleConfirm = async () => {
@@ -363,6 +317,14 @@ export const RoomDetail = ({
     : matchesAgentDraft
       ? "Review booking"
       : "Room detail";
+
+  if (!room) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-sm text-zinc-400">Room not found</p>
+      </div>
+    )
+  }
 
   return (
     <article
@@ -451,7 +413,7 @@ export const RoomDetail = ({
               className="w-full bg-emerald-500 text-black hover:bg-emerald-400"
               onClick={() => {
                 resetBooking();
-                closeRoomDetailDrawer();
+                closeRoomDetailModal();
               }}
             >
               Done
@@ -512,13 +474,6 @@ export const RoomDetail = ({
                 dates to book another stay.
               </p>
             ) : null}
-
-            {isAvailable === false ? (
-              <p className="text-sm text-red-400">
-                The room is not available for this date. Select another date range to book this room.
-              </p>
-            ) : null}
-
             {submitError ? (
               <p className="text-sm text-red-400">{submitError}</p>
             ) : null}

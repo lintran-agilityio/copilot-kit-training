@@ -203,7 +203,7 @@ export const MainLayout = ({
           <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
             {children}
           </main>
-          <div className="hidden h-full min-h-0 w-[min(100%,380px)] shrink-0 lg:block">
+          <div className="hidden h-full min-h-0 w-[min(100%,400px)] shrink-0 lg:block">
             <ChatSidebar
               className="h-full"
               agentId={agentId}

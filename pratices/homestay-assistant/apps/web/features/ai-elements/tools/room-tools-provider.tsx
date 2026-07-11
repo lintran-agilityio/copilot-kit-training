@@ -11,11 +11,12 @@ import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { useBooking } from "@/features/booking/hooks";
 import { PickRoomForDetailModal } from "@/features/ai-elements/components";
 import {
-  openRoomDetailDrawerSchema,
+  openRoomDetailModalSchema,
   pickRoomForDetailSchema,
   setRoomListLoadingSchema,
   selectRoomForBookingSchema,
   openConfirmBookingSchema,
+  showRoomDetailSchema,
   updateRoomListSchema,
 } from "@/features/room/schemas";
 import type { Room } from "@/features/room/types/room";
@@ -25,10 +26,13 @@ import {
   formatRoomListSyncResult,
   syncRoomListToStore,
   formatOpenRoomDetailResult,
-  openRoomDetailDrawerUi,
+  openRoomDetailModalUi,
 } from "@/features/room/utils";
 import { navigateToHomeIfNeeded } from "@/utils";
-import { ListRoomPreview } from "@/features/ai-elements/components";
+import {
+  ListRoomPreview,
+} from "@/features/ai-elements/components";
+import { RoomDetail } from "@/features/room/components";
 
 const ROOM_RESULTS_PREVIEW_LIMIT = 5;
 
@@ -52,6 +56,23 @@ export const RoomToolsProvider = () => {
         <ListRoomPreview
           rooms={rooms?.slice(0, ROOM_RESULTS_PREVIEW_LIMIT)}
           title={title}
+        />
+      ),
+    },
+    [],
+  );
+
+  useComponent(
+    {
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      name: TOOL_KEYS.ACTION.SHOW_ROOM_DETAIL,
+      description:
+        "Render full RoomDetail in chat after getRoomById or getRoomByName returns one room for a detail intent. Pass result.room as-is. Prefer this over open_room_detail_modal for browse/detail. Always finish with one short guest-facing chat reply.",
+      parameters: showRoomDetailSchema,
+      render: ({ room }) => (
+        <RoomDetail
+          {...room}
+          className="max-w-full border-white/10 bg-white/[0.02] shadow-none"
         />
       ),
     },
@@ -109,12 +130,12 @@ export const RoomToolsProvider = () => {
   useFrontendTool(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_DRAWER,
+      name: TOOL_KEYS.ACTION.OPEN_ROOM_DETAIL_MODAL,
       description:
-        "Open the room detail drawer. Pass the full room object from getRoomByName or getRoomById as-is.",
-      parameters: openRoomDetailDrawerSchema,
+        "Open the page room detail modal (not chat). Prefer show_room_detail for browse/detail intents. Keep this for legacy page-modal cases only. Pass the full room object from getRoomByName or getRoomById as-is.",
+      parameters: openRoomDetailModalSchema,
       handler: async ({ room }) => {
-        openRoomDetailDrawerUi(room);
+        openRoomDetailModalUi(room);
         return formatOpenRoomDetailResult(room);
       },
     },
@@ -141,7 +162,7 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.OPEN_CONFIRM_BOOKING,
       description:
-        "After checkRoomAvailability succeeds (available true and guestsWithinCapacity true), open the confirm booking drawer with the staged draft so the guest can press Confirm booking. Pass result.room from checkRoomAvailability plus check-in, check-out, and guests from that same check. Do not call getRoomById or open_room_detail_drawer in a book turn. Do not call createBooking in the same turn — stop and wait for [booking-confirm]. Never call this when available is false — use show_booking_unavailable instead.",
+        "After checkRoomAvailability succeeds (available true and guestsWithinCapacity true), open the confirm booking modal with the staged draft so the guest can press Confirm booking. Pass result.room from checkRoomAvailability plus check-in, check-out, and guests from that same check. Do not call getRoomById, show_room_detail, or open_room_detail_modal in a book turn. Do not call createBooking in the same turn — stop and wait for [booking-confirm]. Never call this when available is false — use show_booking_unavailable instead.",
       parameters: openConfirmBookingSchema,
       handler: async ({ room, checkInDate, checkOutDate, guests }) => {
         updateBookingForm({
@@ -155,9 +176,9 @@ export const RoomToolsProvider = () => {
           checkOutDate,
           guests,
         });
-        openRoomDetailDrawerUi(room as Room);
+        openRoomDetailModalUi(room as Room);
 
-        return `Opened confirm booking for ${room.name}. Waiting for the guest to confirm in the drawer.`;
+        return `Opened confirm booking for ${room.name}. Waiting for the guest to confirm in the modal.`;
       },
       followUp: false,
     },
@@ -169,7 +190,7 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.PICK_ROOM_FOR_DETAIL,
       description:
-        "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Returns the user's chosen room — then for detail intent open_room_detail_drawer (navigate_to_home_page only if on bookings page); for book intent use the chosen room id with checkRoomAvailability (include latest guests) → open_confirm_booking only if available, else show_booking_unavailable + chat reply (do not open_room_detail_drawer).",
+        "Show a room picker when getRoomByName returns multiple rooms. Pass rooms and queryName from getRoomByName. Returns the user's chosen room — then for detail intent call show_room_detail with the chosen room; for book intent use the chosen room id with checkRoomAvailability (include latest guests) → open_confirm_booking only if available, else show_booking_unavailable then chat reply after the guest closes that modal (do not show_room_detail).",
       parameters: pickRoomForDetailSchema,
       render: ({ status, args, respond }) => (
         <PickRoomForDetailModal

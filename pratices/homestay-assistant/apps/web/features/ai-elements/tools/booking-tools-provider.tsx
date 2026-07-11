@@ -13,7 +13,6 @@ import {
   ConfirmDeleteSuccessModal,
 } from "@/features/ai-elements/components";
 import {
-  showBookingUnavailableUi,
   showCancellationSuccessUi,
   syncBookingResultToStore,
   syncBookingsListToStore,
@@ -61,37 +60,6 @@ const BookingCancellationNotice = () => {
   );
 };
 
-const BookingUnavailableNotice = () => {
-  const unavailableNotice = useBookingsStore((state) => state.unavailableNotice);
-  const setUnavailableNotice = useBookingsStore(
-    (state) => state.setUnavailableNotice,
-  );
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (unavailableNotice) {
-      setOpen(true);
-    }
-  }, [unavailableNotice]);
-
-  if (!unavailableNotice) {
-    return null;
-  }
-
-  return (
-    <BookingUnavailableModal
-      open={open}
-      notice={unavailableNotice as ShowBookingUnavailableArgs}
-      onOpenChange={(nextOpen) => {
-        setOpen(nextOpen);
-        if (!nextOpen) {
-          setUnavailableNotice(null);
-        }
-      }}
-    />
-  );
-};
-
 export const BookingToolsProvider = () => {
   const router = useRouter();
 
@@ -100,7 +68,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.SYNC_BOOKING_RESULT,
       description:
-        "Sync createBooking result to the room detail drawer. Pass booking from createBooking on success.",
+        "Sync createBooking result to the room detail modal. Pass booking from createBooking on success.",
       parameters: syncBookingResultSchema,
       handler: async (args) => syncBookingResultToStore(args),
     },
@@ -146,14 +114,20 @@ export const BookingToolsProvider = () => {
     [],
   );
 
-  useFrontendTool(
+  useHumanInTheLoop(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.SHOW_BOOKING_UNAVAILABLE,
       description:
-        "Show a friendly dialog when checkRoomAvailability fails. Call instead of open_confirm_booking when available is false or guestsWithinCapacity is false. Pass room name, dates, guests, and reason (dates_unavailable or capacity_exceeded). Always also send a short guest-facing chat reply.",
+        "Show BookingUnavailableModal when checkRoomAvailability fails (available false or guestsWithinCapacity false). Pass room name, dates, guests, and reason (dates_unavailable or capacity_exceeded; include capacity for capacity_exceeded). Do NOT send the guest-facing chat explanation in the same step — wait until the guest closes the modal (acknowledged: true), THEN reply in chat explaining what happened and offering different dates, fewer guests, or another room.",
       parameters: showBookingUnavailableSchema,
-      handler: async (args) => showBookingUnavailableUi(args),
+      render: ({ status, args, respond }) => (
+        <BookingUnavailableModal
+          status={status}
+          args={args as Partial<ShowBookingUnavailableArgs>}
+          respond={respond}
+        />
+      ),
     },
     [],
   );
@@ -199,10 +173,5 @@ export const BookingToolsProvider = () => {
     [],
   );
 
-  return (
-    <>
-      <BookingCancellationNotice />
-      <BookingUnavailableNotice />
-    </>
-  );
+  return <BookingCancellationNotice />;
 };
