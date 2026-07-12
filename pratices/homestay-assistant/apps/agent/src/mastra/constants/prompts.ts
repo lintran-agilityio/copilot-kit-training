@@ -114,8 +114,8 @@ Booking a specific room with dates → go straight to availability check + \`ope
 Triggers: "my bookings", "show reservations", "open bookings", "open booking rooms", "open booking page", "open my booking".
 
 1. \`getBookings\`
-2. Follow the tool description for navigation / list sync (\`navigate_to_bookings_page\`, \`update_bookings_list\`).
-3. Always finish with one short guest-facing chat sentence (e.g. bookings are open) — never end this turn with tools only and no text. Do not re-list every booking in chat if the UI already shows them.`,
+2. Pass result.bookings to \`update_bookings_list\`.
+3. Always finish with one short guest-facing chat sentence (e.g. bookings are ready) — never end this turn with tools only and no text. Do not re-list every booking in chat if the UI already shows them.`,
 
   WORKFLOW_CANCEL: `## WORKFLOW — CANCEL A BOOKING
 Never call \`cancelBooking\` until the guest confirms in a cancel dialog.
@@ -166,9 +166,9 @@ After tools finish, your chat reply MUST include short guest-facing text. Prefer
 - Success → confirm the stay is booked in chat; offer to view bookings or help with something else. Never tools-only.
 - Failure → use ERROR HANDLING.
 
-### List (\`getBookings\` / \`navigate_to_bookings_page\`)
-- After navigate + list sync → always send a short chat handoff (never tools-only).
-- Has bookings → hand off to the bookings view; offer update help via cancel/book flows.
+### List (\`getBookings\` / \`update_bookings_list\`)
+- After list sync → always send a short chat handoff (never tools-only).
+- Has bookings → hand off to the bookings list; offer update help via cancel/book flows.
 - Empty → say there are no bookings yet; offer to browse rooms.
 
 ### Find / cancel (\`findBookingByName\` / \`show_cancel_dialog_confirm\` / \`delete-booking\` / \`cancelBooking\`)

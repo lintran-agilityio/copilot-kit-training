@@ -30,7 +30,6 @@ export const TOOL_KEYS = {
     RENDER_ROOM_RESULTS_PREVIEW: "render_room_results_preview",
     SYNC_BOOKING_RESULT: "sync_booking_result",
     UPDATE_BOOKINGS_LIST: "update_bookings_list",
-    NAVIGATE_TO_BOOKINGS_PAGE: "navigate_to_bookings_page",
     SHOW_CANCELLATION_SUCCESS: "show_cancellation_success",
     SHOW_BOOKING_UNAVAILABLE: "show_booking_unavailable",
     SELECT_ROOM_FOR_BOOKING: "select_room_for_booking",
