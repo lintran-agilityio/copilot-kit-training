@@ -1,11 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useFrontendTool, useHumanInTheLoop } from "@copilotkit/react-core/v2";
 import { useEffect, useState } from "react";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
-import { ROUTES } from "@/constants";
 import {
   BookingUnavailableModal,
   CancelBookingByRoomModal,
@@ -61,8 +59,6 @@ const BookingCancellationNotice = () => {
 };
 
 export const BookingToolsProvider = () => {
-  const router = useRouter();
-
   useFrontendTool(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
@@ -86,20 +82,6 @@ export const BookingToolsProvider = () => {
         syncBookingsListToStore(bookings as BookingResponse[]),
     },
     [],
-  );
-
-  useFrontendTool(
-    {
-      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.ACTION.NAVIGATE_TO_BOOKINGS_PAGE,
-      description:
-        "Navigate to the My Bookings page. No parameters needed. Navigation alone is not a complete reply — always also send one short guest-facing chat sentence (e.g. bookings are open).",
-      handler: async () => {
-        router.push(ROUTES.BOOKINGS);
-        return "Navigated to My Bookings page.";
-      },
-    },
-    [router],
   );
 
   useFrontendTool(
