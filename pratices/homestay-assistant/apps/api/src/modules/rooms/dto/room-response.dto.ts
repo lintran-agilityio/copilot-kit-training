@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Amenity } from '@/database/entities/enums';
-import { BookingStatus } from '@/types/enum';
+import { BookingStatus } from '../../../types/enum';
 import {
   IsString,
   IsNotEmpty,

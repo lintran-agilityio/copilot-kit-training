@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyMessages } from "@repo/components";
 import { Room } from "@/features/room/components/Room";
 import { useRequestRoomDetail } from "@/features/room/hooks";
 import type { Room as RoomType } from "@/features/room/types/room";
@@ -52,9 +53,7 @@ export const ListRoom = ({
           </div>
         </>
       ) : (
-        <div className="flex h-full items-center justify-center">
-          <p className="text-zinc-400">No rooms found</p>
-        </div>
+        <EmptyMessages emptyMessage="No rooms found" />
       )}
     </section>
   );

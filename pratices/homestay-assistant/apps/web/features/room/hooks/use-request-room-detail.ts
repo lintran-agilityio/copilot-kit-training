@@ -5,20 +5,14 @@ import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { useCallback } from "react";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { getAgentResourceId } from "@repo/utils";
-
+import { getAgentResourceId, buildActionPrompt } from "@repo/utils";
 import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
+
 
 type OpenRoomDetailArgs = {
   roomId: string;
   roomName: string;
 };
-
-export const buildOpenRoomDetailPrompt = ({
-  roomId,
-  roomName,
-}: OpenRoomDetailArgs) =>
-  `Show detail room for ${roomName}. Room id: ${roomId}.`;
 
 export const useRequestRoomDetail = () => {
   const { user, isLoaded } = useUser();
@@ -38,9 +32,12 @@ export const useRequestRoomDetail = () => {
 
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
       const threadId = currentThreadIds[scopeKey] ?? startNewThread(scopeKey);
-      const message = buildOpenRoomDetailPrompt({
-        roomId,
-        roomName: roomName || "this room",
+      const message = buildActionPrompt({
+        action: "Show detail room for",
+        targetName: roomName || "this room",
+        identifiers: {
+          roomId,
+        },
       });
 
       if (copilotkit.runtimeConnectionStatus === "connected") {
@@ -65,9 +62,9 @@ export const useRequestRoomDetail = () => {
       copilotkit,
       currentThreadIds,
       isLoaded,
+      user?.id,
       setPendingOutboundMessage,
       startNewThread,
-      user?.id,
     ],
   );
 };

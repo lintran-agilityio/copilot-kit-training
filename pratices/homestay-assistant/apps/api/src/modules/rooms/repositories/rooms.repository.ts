@@ -23,20 +23,6 @@ export class RoomsRepository {
     });
   }
 
-  async findByName(name: string): Promise<RoomEntity[]> {
-    const normalizedName = name.toLowerCase();
-
-    return this.roomRepository
-      .createQueryBuilder('room')
-      .where('LOWER(room.name) = :normalizedName', { normalizedName })
-      .orWhere('LOWER(room.name) LIKE :roomIncludesQuery', {
-        roomIncludesQuery: `%${normalizedName}%`,
-      })
-      .orWhere("LOWER(:normalizedName) LIKE ('%' || LOWER(room.name) || '%')")
-      .orderBy('room.name', 'ASC')
-      .getMany();
-  }
-
   async findById(id: string, userId?: string): Promise<RoomEntity | null> {
     if (!userId) {
       return this.roomRepository.findOne({ where: { id } });

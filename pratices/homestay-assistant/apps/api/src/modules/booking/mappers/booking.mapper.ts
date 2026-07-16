@@ -14,6 +14,7 @@ export const toBookingResponseDto = (
     guests: booking.guests,
     totalPrice: booking.totalPrice,
     status: booking.status,
+    cancelledAt: booking.cancelledAt,
     createdAt: booking.createdAt,
     updatedAt: booking.updatedAt,
   };

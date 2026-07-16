@@ -1,5 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
-import { BaseEntity } from '@/common/base/entity';
+import { BaseEntity } from '../../common/base/entity';
 import { BookingEntity } from '@/modules/booking/entities/booking.entity';
 
 @Entity('users')

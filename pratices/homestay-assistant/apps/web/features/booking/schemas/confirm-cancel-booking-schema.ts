@@ -1,7 +1,7 @@
 import type { CancellationBookingSummary } from "@repo/types";
 import { z } from "zod";
 
-export const confirmDeleteBookingSchema = z.object({
+export const confirmCancelBookingSchema = z.object({
   bookingId: z.string().describe("Booking ID to cancel"),
   roomName: z.string().describe("Room display name"),
   checkInDate: z.string().describe("Check-in date (YYYY-MM-DD)"),
@@ -10,8 +10,8 @@ export const confirmDeleteBookingSchema = z.object({
   totalPrice: z.number().describe("Total price in VND"),
 }) satisfies z.ZodType<CancellationBookingSummary>;
 
-export type ConfirmDeleteBookingArgs = z.infer<typeof confirmDeleteBookingSchema>;
+export type ConfirmCancelBookingArgs = z.infer<typeof confirmCancelBookingSchema>;
 
-export type ConfirmDeleteBookingResult =
+export type ConfirmCancelBookingResult =
   | { confirmed: false }
   | { confirmed: true; bookingId: string };

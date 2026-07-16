@@ -9,7 +9,11 @@ import {
 
 import { getMessageTopSpacing } from "@/features/assistant-ui/utils";
 import { cn } from "@repo/utils";
-import { isHiddenAgentPrompt, getMessageTextContent } from "@/features/ai-elements/constants";
+import {
+  getMessageTextContent,
+  getUserVisibleMessageContent,
+  isHiddenAgentPrompt,
+} from "@/features/ai-elements/constants";
 
 export const ChatUserMessage = ({
   className,
@@ -20,17 +24,21 @@ export const ChatUserMessage = ({
   const { agent } = useAgent({ agentId });
   const topSpacing = getMessageTopSpacing(agent.messages, message.id, "user");
 
-  if (isHiddenAgentPrompt(getMessageTextContent(message.content))) {
+  const rawContent = getMessageTextContent(message.content);
+
+  if (isHiddenAgentPrompt(rawContent)) {
     return null;
   }
+
+  const displayContent = getUserVisibleMessageContent(rawContent);
 
   return (
     <CopilotChatUserMessage
       {...props}
       message={message}
       className={cn("!bg-transparent !p-0", className)}
-      messageRenderer={({ content }) => (
-        <span className="whitespace-pre-wrap break-words">{content}</span>
+      messageRenderer={() => (
+        <span className="whitespace-pre-wrap break-words">{displayContent}</span>
       )}
     >
       {({ messageRenderer }) => (

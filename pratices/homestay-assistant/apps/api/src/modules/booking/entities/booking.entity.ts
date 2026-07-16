@@ -7,8 +7,8 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 
-import { BookingStatus } from '@/types/enum';
-import { BaseEntity } from '@/common/base/entity';
+import { BookingStatus } from '../../../types/enum';
+import { BaseEntity } from '../../../common/base/entity';
 import { UserEntity } from '@/database/entities/user.entity';
 import { RoomEntity } from '@/modules/rooms/entities/room.entity';
 
@@ -55,4 +55,7 @@ export class BookingEntity extends BaseEntity {
     default: BookingStatus.PENDING,
   })
   status: BookingStatus;
+
+  @Column({ name: 'cancelled_at', type: 'timestamp', nullable: true })
+  cancelledAt: Date | null;
 }

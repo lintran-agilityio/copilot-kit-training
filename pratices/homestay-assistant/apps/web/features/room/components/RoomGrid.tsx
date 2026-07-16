@@ -28,7 +28,11 @@ export const RoomGrid = ({ initialRooms, className }: RoomGridProps) => {
 
   return (
     <>
-      <ListRoom rooms={rooms} title={title} className={className} />
+      <ListRoom
+        rooms={rooms}
+        title={title}
+        className={className}
+      />
     </>
   );
 };

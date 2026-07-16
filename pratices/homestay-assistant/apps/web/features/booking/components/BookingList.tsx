@@ -1,6 +1,8 @@
+import { EmptyMessages } from "@repo/components";
 import { BookingCard } from "@/features/booking/components/BookingCard";
 import type { BookingResponse } from "@/features/booking/types/booking";
 import { cn } from "@repo/utils";
+import { useCancelBooking } from "@/features/booking/hooks/use-booking";
 
 type BookingListProps = {
   bookings: BookingResponse[];
@@ -13,11 +15,11 @@ export const BookingList = ({
   title,
   className,
 }: BookingListProps) => {
-  if (bookings.length === 0) {
+  const cancelBooking = useCancelBooking();
+
+  if (!bookings.length) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <p className="text-zinc-400">No bookings found</p>
-      </div>
+      <EmptyMessages emptyMessage="No bookings found" />
     );
   }
 
@@ -32,7 +34,11 @@ export const BookingList = ({
 
       <div className="app-scrollbar flex flex-wrap gap-4 overflow-x-auto pb-1">
         {bookings.map((booking) => (
-          <BookingCard key={booking.id} booking={booking} />
+          <BookingCard
+            key={booking.id}
+            booking={booking}
+            onCancelBooking={cancelBooking}
+          />
         ))}
       </div>
     </section>

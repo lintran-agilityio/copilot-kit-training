@@ -1,4 +1,4 @@
-import { BookingStatus } from '@/types/enum';
+import { BookingStatus } from '../types/enum';
 
 export const ACTIVE_BOOKING_STATUSES: BookingStatus[] = [
   BookingStatus.PENDING,

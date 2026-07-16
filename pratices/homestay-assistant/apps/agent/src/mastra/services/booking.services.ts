@@ -1,11 +1,10 @@
 import { z } from "zod";
 
-import { BookingStatus, BookingByRoomLookup } from "@repo/types";
+import { BookingStatus, BookingCancelLookup } from "@repo/types";
+import { sanitizeBookingId } from "@repo/utils";
 import {
   bookingSchema,
   checkRoomAvailabilityOutputSchema,
-  FindBookingByNameOutput,
-  findBookingByNameOutputSchema,
   type Booking,
   type CheckRoomAvailabilityInput,
   type CreateBookingPayload,
@@ -42,27 +41,69 @@ export const checkRoomAvailability = async (
 
 export const cancelBooking = async (bookingId: string): Promise<Booking> =>
   del(
-    `${ROUTES.BOOKINGS}/${encodeURIComponent(bookingId)}`,
+    `${ROUTES.BOOKINGS}/${encodeURIComponent(sanitizeBookingId(bookingId))}`,
     bookingSchema,
     "Failed to cancel booking"
   );
 
-  export const findBookingByName = async (
-    userId: string,
-    roomName: string,
-  ): Promise<BookingByRoomLookup> => {
-    const queryName = roomName.trim();
+const toCancellationSummary = (booking: Booking) => ({
+  bookingId: booking.id,
+  roomName: booking.room?.name ?? "",
+  checkInDate: booking.checkInDate,
+  checkOutDate: booking.checkOutDate,
+  guests: booking.guests,
+  totalPrice: booking.totalPrice,
+});
 
-    if (!queryName) {
-      return { bookings: [], queryName: "" };
-    }
+const isActiveBooking = (booking: Booking) => {
+  const status = booking.status.toUpperCase();
 
-    return get<FindBookingByNameOutput>(
-      ROUTES.BOOKINGS_BY_NAME,
-      findBookingByNameOutputSchema,
+  if (status === BookingStatus.CANCELLED) {
+    return false;
+  }
+
+  if (status !== BookingStatus.PENDING && status !== BookingStatus.CONFIRMED) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const checkout = new Date(`${booking.checkOutDate}T00:00:00`);
+  return checkout >= today;
+};
+
+export const findBookingById = async (
+  userId: string,
+  bookingId: string,
+): Promise<BookingCancelLookup> => {
+  const id = sanitizeBookingId(bookingId);
+
+  if (!id) {
+    return { bookings: [], bookingId: "", queryName: "" };
+  }
+
+  try {
+    const booking = await get<Booking>(
+      `${ROUTES.BOOKINGS}/${encodeURIComponent(id)}`,
+      bookingSchema,
       {
-        searchParams: { userId, roomName: queryName },
-        errorMessage: "Failed to find bookings by room name",
+        errorMessage: "Failed to find booking by id",
       },
     );
-  };
+
+    if (booking.userId !== userId || !isActiveBooking(booking)) {
+      return { bookings: [], bookingId: id, queryName: "" };
+    }
+
+    const summary = toCancellationSummary(booking);
+
+    return {
+      bookings: [summary],
+      bookingId: id,
+      queryName: summary.roomName,
+    };
+  } catch {
+    return { bookings: [], bookingId: id, queryName: "" };
+  }
+};

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { BookingStatus } from '@/types/enum';
+import { BookingStatus } from '../../../types/enum';
 import {
   IsDateString,
   IsEnum,

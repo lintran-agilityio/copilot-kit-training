@@ -8,13 +8,12 @@ import {
   cancelBookingTool,
   checkRoomAvailabilityTool,
   createBookingTool,
-  findBookingByNameTool,
+  findBookingByIdTool,
   getBookingsTool,
 } from "@/mastra/tools/booking";
 import {
   getAvailableRoomsTool,
   getRoomByIdTool,
-  getRoomByNameTool,
   getRoomsTool,
 } from "@/mastra/tools/rooms";
 
@@ -24,16 +23,18 @@ export const manageAgent = new Agent({
   description:
     "Public chat agent that coordinates room discovery and booking workflows.",
   instructions: manageAgentPrompt,
-  model: "openai/gpt-5-mini",
+  model: "openai/gpt-4o-mini",
+  defaultOptions: {
+    maxSteps: 10,
+  },
   tools: {
     getRooms: getRoomsTool,
     getAvailableRooms: getAvailableRoomsTool,
-    getRoomByName: getRoomByNameTool,
     getRoomById: getRoomByIdTool,
     checkRoomAvailability: checkRoomAvailabilityTool,
     createBooking: createBookingTool,
     getBookings: getBookingsTool,
-    findBookingByName: findBookingByNameTool,
+    findBookingById: findBookingByIdTool,
     cancelBooking: cancelBookingTool,
   },
   memory: new Memory({

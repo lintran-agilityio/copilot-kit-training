@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { BookingStatus } from '@/types/enum';
+import { BookingStatus } from '../../../types/enum';
 import { RoomResponseDto } from '@/modules/rooms/dto/room-response.dto';
 import {
   IsDate,
@@ -64,6 +64,15 @@ export class BookingResponseDto {
   @IsEnum(BookingStatus)
   @IsNotEmpty()
   status: BookingStatus;
+
+  @ApiProperty({
+    description: 'When the booking was cancelled',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsDate()
+  cancelledAt?: Date | null;
 
   @ApiProperty({ type: RoomResponseDto, required: false })
   @IsOptional()

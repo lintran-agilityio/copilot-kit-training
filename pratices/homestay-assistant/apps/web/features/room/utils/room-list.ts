@@ -9,10 +9,3 @@ export const formatRoomListSyncResult = (rooms: Room[], title?: string) =>
   title
     ? `Updated room grid with ${rooms.length} room(s) (${title}).`
     : `Updated room grid with ${rooms.length} room(s).`;
-
-export const openRoomDetailModalUi = (room: Room) => {
-  useRoomStore.getState().openRoomDetailModal(room);
-};
-
-export const formatOpenRoomDetailResult = (room: Room) =>
-  `Opened room detail modal for ${room.name}.`;

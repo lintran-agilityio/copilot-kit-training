@@ -9,6 +9,7 @@ import {
   getChatVisibleToolCalls,
   getMessageTextContent,
   isHiddenAgentPrompt,
+  isPageOnlyGenerativeTool,
 } from "@/features/ai-elements/constants";
 import { getMessageTopSpacing } from "@/features/assistant-ui/utils";
 import { cn } from "@repo/utils";
@@ -67,10 +68,14 @@ export const ChatAssistantMessage = ({
 
   const chatToolCalls = getChatVisibleToolCalls(message.toolCalls);
   const textContent = message.content?.trim() ?? "";
+  const hasHiddenToolCalls = message.toolCalls?.some((toolCall) => {
+    const toolName = toolCall.function?.name;
+    return toolName ? isPageOnlyGenerativeTool(toolName) : false;
+  });
   const hasVisibleContent =
     Boolean(textContent) || chatToolCalls.length > 0;
 
-  if (!hasVisibleContent) {
+  if (!hasVisibleContent && !hasHiddenToolCalls) {
     return null;
   }
 

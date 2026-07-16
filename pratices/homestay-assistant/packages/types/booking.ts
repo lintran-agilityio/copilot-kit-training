@@ -14,8 +14,9 @@ export type CancellationBookingSummary = {
   totalPrice: number;
 };
 
-/** Active bookings matching a room-name lookup (Mastra → CopilotKit cancel flow). */
-export type BookingByRoomLookup = {
+/** Active booking lookup by ID (Mastra → CopilotKit cancel flow). */
+export type BookingCancelLookup = {
   bookings: CancellationBookingSummary[];
+  bookingId: string;
   queryName: string;
 };
