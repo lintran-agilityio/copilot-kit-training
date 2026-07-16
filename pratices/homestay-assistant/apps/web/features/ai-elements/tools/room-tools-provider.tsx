@@ -1,6 +1,5 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
 import {
   useComponent,
@@ -15,7 +14,6 @@ import {
   showRoomDetailSchema,
   updateRoomListSchema,
 } from "@/features/room/schemas";
-import { getRoomById } from "@/features/room/services/get-room-by-id";
 import { useRoomStore } from "@/features/room/stores/room-store";
 
 import {
@@ -25,13 +23,11 @@ import {
 import { navigateToHomeIfNeeded } from "@/utils";
 import { ListRoomPreview } from "@/features/ai-elements/components";
 import { RoomDetail } from "@/features/room/components";
-import { parseShowRoomDetailResult } from "../utils";
 import { Loading } from "@repo/components";
 
 const ROOM_RESULTS_PREVIEW_LIMIT = 5;
 
 export const RoomToolsProvider = () => {
-  const { user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const setSelectedRoom = useBooking((state) => state.setSelectedRoom);
@@ -56,42 +52,20 @@ export const RoomToolsProvider = () => {
     [],
   );
 
-  useFrontendTool(
+  useComponent(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.SHOW_ROOM_DETAIL,
       description:
-        "Render full RoomDetail in chat for a detail/browse intent. When the message contains roomId:, call with { roomId } only — do NOT call getRoomById first and do NOT describe room fields in chat. After getRoomById in a name lookup, call with { room: result.room }. Always finish with one short guest-facing chat handoff sentence.",
+        "Render full RoomDetail in chat for a detail/browse intent. Always call getRoomById first, then pass { room: result.room }. Do NOT describe room fields in chat. Always finish with one short guest-facing chat handoff sentence.",
       parameters: showRoomDetailSchema,
-      handler: async ({ room, roomId }) => {
-        if (room) {
-          return JSON.stringify({ room });
-        }
-
-        if (!roomId) {
-          throw new Error("show_room_detail requires room or roomId");
-        }
-
-        const fetchedRoom = await getRoomById({
-          roomId,
-          userId: user?.id,
-        });
-
-        return JSON.stringify({ room: fetchedRoom });
-      },
-      render: ({ args, status, result }) => {
-        const room = args.room ?? parseShowRoomDetailResult(result);
-
+      render: ({ room }) => {
         if (!room) {
-          if (status === "inProgress" || status === "executing") {
-            return (
-              <div className="max-w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-6 text-sm text-zinc-400">
-                <Loading />
-              </div>
-            );
-          }
-
-          return null;
+          return (
+            <div className="max-w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-6 text-sm text-zinc-400">
+              <Loading />
+            </div>
+          );
         }
 
         return (
@@ -102,7 +76,7 @@ export const RoomToolsProvider = () => {
         );
       },
     },
-    [user?.id],
+    [],
   );
 
   useFrontendTool(

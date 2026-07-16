@@ -29,9 +29,7 @@ export interface BookingStore extends BookingDraft {
 
 type BookingsStore = {
   bookings: BookingResponse[];
-  cancellationNotice: { roomName: string } | null;
   setBookings: (bookings: BookingResponse[]) => void;
-  setCancellationNotice: (notice: { roomName: string } | null) => void;
   upsertBooking: (booking: BookingResponse) => void;
 };
 
@@ -109,10 +107,8 @@ export const createBookingStore = (initialState?: Partial<BookingDraft>) => {
 
 export const useBookingsStore = create<BookingsStore>()((set) => ({
   bookings: [],
-  cancellationNotice: null,
 
   setBookings: (bookings) => set({ bookings }),
-  setCancellationNotice: (cancellationNotice) => set({ cancellationNotice }),
 
   upsertBooking: (booking) =>
     set((state) => {

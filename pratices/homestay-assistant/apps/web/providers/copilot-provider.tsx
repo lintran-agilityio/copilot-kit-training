@@ -37,16 +37,12 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
         {
           name: "*",
           render: ({ name, args, status, result }) => {
+            console.log('status == ', status);
             if (status === ToolCallStatus.InProgress) {
               return (
                 <div className="text-gray-500 text-sm">
                   <Loading />
                 </div>
-              );
-            }
-            if (status === ToolCallStatus.Complete) {
-              return (
-                <div className="text-green-600 text-sm">{name} completed.</div>
               );
             }
             return null;

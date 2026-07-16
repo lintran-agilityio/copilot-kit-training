@@ -37,14 +37,14 @@ export const ConfirmSuccess = ({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogFooter className="mt-4">
+        {onOpenChange && <DialogFooter className="mt-4">
           <Button
             className="w-full"
             onClick={() => onOpenChange(false)}
           >
             Done
           </Button>
-        </DialogFooter>
+        </DialogFooter>}
       </DialogContent>
     </Dialog>
   );

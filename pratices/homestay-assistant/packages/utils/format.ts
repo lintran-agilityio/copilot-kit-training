@@ -40,3 +40,25 @@ export const buildActionPrompt = ({
 /** Strip trailing punctuation/whitespace LLMs may include when parsing action prompts. */
 export const sanitizeBookingId = (raw: string) =>
   raw.trim().replace(/[.,;\s]+$/g, "");
+
+export const parseToolResult = <T>(
+  result?: T | string | null,
+): T | null => {
+  if (result == null) {
+    return null;
+  }
+
+  if (typeof result === "object") {
+    return result;
+  }
+
+  try {
+    const parsed = JSON.parse(result as string);
+
+    return parsed && typeof parsed === "object"
+      ? (parsed as T)
+      : null;
+  } catch {
+    return null;
+  }
+};

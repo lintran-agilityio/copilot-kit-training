@@ -22,6 +22,7 @@
     "@repo/types": "workspace:*",
     "@repo/ui": "workspace:*",
     "@repo/utils": "workspace:*",
+    "@tanstack/react-query": "^5.101.2",
     "agent": "workspace:*",
     "better-sqlite3": "^12.11.1",
     "class-variance-authority": "^0.7.1",
