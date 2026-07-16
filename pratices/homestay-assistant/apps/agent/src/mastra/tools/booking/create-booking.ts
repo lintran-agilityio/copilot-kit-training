@@ -28,7 +28,7 @@ const resolveCreateBookingUserId = (
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE,
   description:
-    "Create a confirmed room booking after confirm_booking returns confirmed: true. Use roomId, checkInDate, checkOutDate, and guests from the confirm_booking result. Then call show_booking_success with checkInDate, checkOutDate, guests, and totalPrice from the booking. Wait for acknowledged: true on show_booking_success before sending final chat. The signed-in user is resolved automatically from the server session.",
+    "Create a confirmed room booking after confirm_booking returns confirmed: true. Use roomId, checkInDate, checkOutDate, and guests from the confirm_booking result. ConfirmSuccess renders automatically from this tool result (like cancelBooking) — do NOT call show_booking_success. After success, send one short guest-facing chat confirmation. The signed-in user is resolved automatically from the server session.",
   inputSchema: createBookingSchema,
   outputSchema: bookingSchema,
   execute: async (params, context) => {

@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
-import { BookingUnavailableDialog } from "@/components/confirm-modal";
+import { BookingUnavailable } from "@/components/confirm-modal";
 import {
   isHitlToolAwaitingUser,
   isHitlToolFinished,
@@ -33,48 +34,47 @@ export const BookingUnavailableModal = ({
   args,
   respond,
 }: BookingUnavailableModalProps) => {
-  if (isHitlToolFinished(status) || !isHitlToolAwaitingUser(status)) {
-    return null;
-  }
+  const acknowledged = useRef(false);
 
-  if (!hasRequiredArgs(args)) {
-    return null;
-  }
+  const ready = hasRequiredArgs(args);
+  const roomName = args.roomName?.trim() ?? "";
+  const reason = args.reason;
 
-  const canRespond = respond != null;
-  const roomName = args.roomName!;
-  const checkInDate = args.checkInDate!;
-  const checkOutDate = args.checkOutDate!;
-  const guests = args.guests!;
-  const reason = args.reason!;
-  const capacity = args.capacity;
-
-  const acknowledge = () => {
-    if (!canRespond) {
+  useEffect(() => {
+    if (
+      !ready ||
+      !reason ||
+      !respond ||
+      !isHitlToolAwaitingUser(status) ||
+      acknowledged.current
+    ) {
       return;
     }
 
+    acknowledged.current = true;
     void respond({
       acknowledged: true,
       reason,
       roomName,
     });
-  };
+  }, [ready, reason, respond, status, roomName]);
+
+  if (!ready || !reason) {
+    return null;
+  }
+
+  if (!isHitlToolAwaitingUser(status) && !isHitlToolFinished(status)) {
+    return null;
+  }
 
   return (
-    <BookingUnavailableDialog
-      open
+    <BookingUnavailable
       roomName={roomName}
-      checkInDate={checkInDate}
-      checkOutDate={checkOutDate}
-      guests={guests}
+      checkInDate={args.checkInDate!.trim()}
+      checkOutDate={args.checkOutDate!.trim()}
+      guests={args.guests!}
       reason={reason}
-      capacity={capacity}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          acknowledge();
-        }
-      }}
+      capacity={args.capacity}
     />
   );
 };

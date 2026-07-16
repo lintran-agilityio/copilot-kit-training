@@ -7,3 +7,6 @@ export * from "./ConfirmBookingModal";
 export * from "./AgentMessagesSanitizer";
 export * from "./CancelBookingToolRenderer";
 export * from "./CancelBookingRefreshEffect";
+export * from "./GetRoomByIdToolRenderer";
+export * from "./CheckRoomAvailabilityToolRenderer";
+export * from "./CreateBookingToolRenderer";
