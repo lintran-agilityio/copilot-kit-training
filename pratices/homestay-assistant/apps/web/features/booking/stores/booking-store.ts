@@ -1,4 +1,3 @@
-// Libs
 import { createStore, create } from "zustand";
 
 import type {
@@ -54,6 +53,7 @@ export const createBookingStore = (initialState?: Partial<BookingDraft>) => {
     setCheckInDate: (date: string) => set({ checkInDate: date }),
     setCheckOutDate: (date: string) => set({ checkOutDate: date }),
     setGuests: (guests: number) => set({ guests }),
+
     calculateTotalPrice: () => {
       const state = get();
       const { selectedRoom, checkInDate, checkOutDate } = state;
@@ -68,6 +68,7 @@ export const createBookingStore = (initialState?: Partial<BookingDraft>) => {
 
       set({ totalPrice: timeDiff * selectedRoom.pricePerNight });
     },
+
     updateBookingForm: ({ room, checkInDate, checkOutDate, guests }) => {
       set((state) => ({
         selectedRoom: {
@@ -86,10 +87,12 @@ export const createBookingStore = (initialState?: Partial<BookingDraft>) => {
       }));
       get().calculateTotalPrice();
     },
+
     setFormReady: (ready) => set({ isFormReady: ready }),
     setSubmitStatus: (status, error = null) =>
       set({ submitStatus: status, submitError: error }),
     setCreatedBooking: (booking) => set({ createdBooking: booking }),
+
     resetBooking: () =>
       set({
         selectedRoom: null,
@@ -109,7 +112,6 @@ export const useBookingsStore = create<BookingsStore>()((set) => ({
   cancellationNotice: null,
 
   setBookings: (bookings) => set({ bookings }),
-
   setCancellationNotice: (cancellationNotice) => set({ cancellationNotice }),
 
   upsertBooking: (booking) =>

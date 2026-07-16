@@ -13,20 +13,9 @@ export const clearBookingDraftAfterCancellation = () => {
 };
 
 export const refreshRoomsAfterCancellation = () => {
-  const {
-    rooms,
-    roomListTitle,
-    selectedRoom,
-    updateRoomList,
-    openRoomDetailModal,
-  } = useRoomStore.getState();
-
+  const { rooms, roomListTitle, updateRoomList } = useRoomStore.getState();
   const refreshedRooms = rooms.map(stripRoomBookingOverlay);
   updateRoomList(refreshedRooms, roomListTitle);
-
-  if (selectedRoom) {
-    openRoomDetailModal(stripRoomBookingOverlay(selectedRoom));
-  }
 };
 
 export const syncBookingResultToStore = ({
@@ -51,12 +40,12 @@ export const syncBookingResultToStore = ({
     bookingStore.setCreatedBooking(created);
     bookingStore.setSubmitStatus("success");
     useBookingsStore.getState().upsertBooking(created as BookingResponse);
-    return `Booking ${created.id} synced to the UI.`;
+    return `Booking ${created.id} synced to store. REQUIRED NEXT: call show_booking_success with checkInDate, checkOutDate, guests, and totalPrice from the booking. Do not send final chat until the guest dismisses the success modal (acknowledged: true).`;
   }
 
   bookingStore.setSubmitStatus(
     "error",
-    errorMessage ?? "Failed to create booking"
+    errorMessage ?? "Failed to create booking",
   );
   return errorMessage ?? "Booking failed.";
 };

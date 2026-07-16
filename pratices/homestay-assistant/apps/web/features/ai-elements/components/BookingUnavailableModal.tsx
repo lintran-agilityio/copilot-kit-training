@@ -3,6 +3,10 @@
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { BookingUnavailableDialog } from "@/components/confirm-modal";
+import {
+  isHitlToolAwaitingUser,
+  isHitlToolFinished,
+} from "@/features/ai-elements/utils/hitl-tool-status";
 import type {
   ShowBookingUnavailableArgs,
   ShowBookingUnavailableResult,
@@ -14,19 +18,35 @@ type BookingUnavailableModalProps = {
   respond?: (result: ShowBookingUnavailableResult) => Promise<void>;
 };
 
+const hasRequiredArgs = (args: Partial<ShowBookingUnavailableArgs>) =>
+  Boolean(
+    args.roomName?.trim() &&
+      args.checkInDate?.trim() &&
+      args.checkOutDate?.trim() &&
+      typeof args.guests === "number" &&
+      args.guests > 0 &&
+      args.reason,
+  );
+
 export const BookingUnavailableModal = ({
   status,
   args,
   respond,
 }: BookingUnavailableModalProps) => {
-  const canRespond = status === "executing" && respond != null;
-  const open = status === "executing" || status === "inProgress";
+  if (isHitlToolFinished(status) || !isHitlToolAwaitingUser(status)) {
+    return null;
+  }
 
-  const roomName = args.roomName ?? "This room";
-  const checkInDate = args.checkInDate ?? "";
-  const checkOutDate = args.checkOutDate ?? "";
-  const guests = args.guests ?? 0;
-  const reason = args.reason ?? "dates_unavailable";
+  if (!hasRequiredArgs(args)) {
+    return null;
+  }
+
+  const canRespond = respond != null;
+  const roomName = args.roomName!;
+  const checkInDate = args.checkInDate!;
+  const checkOutDate = args.checkOutDate!;
+  const guests = args.guests!;
+  const reason = args.reason!;
   const capacity = args.capacity;
 
   const acknowledge = () => {
@@ -41,13 +61,9 @@ export const BookingUnavailableModal = ({
     });
   };
 
-  if (status === ToolCallStatus.Complete) {
-    return null;
-  }
-
   return (
     <BookingUnavailableDialog
-      open={open}
+      open
       roomName={roomName}
       checkInDate={checkInDate}
       checkOutDate={checkOutDate}

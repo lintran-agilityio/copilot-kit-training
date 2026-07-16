@@ -9,8 +9,8 @@ export const roomSchema = z.object({
   description: z.string(),
   imageUrl: z.string(),
   availableSlots: z.number(),
-  pricePerNight: z.number(),
   amenities: z.array(z.string()),
+  pricePerNight: z.number(),
 });
 
 export type Room = z.infer<typeof roomSchema>;

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarRange, Users } from "lucide-react";
+import { CalendarCheck, CalendarRange, Users } from "lucide-react";
 import Image, { type StaticImageData } from "next/image";
 import { useState } from "react";
 
@@ -11,23 +11,34 @@ import {
   resolveRoomImage,
 } from "@/features/room/utils/room-image";
 import { cn, formatPrice, formatShortDateForDisplay } from "@repo/utils";
+import { Button } from "@/components/ui/button";
+import { isBookingCancellable } from "@/features/booking/utils";
 
 type BookingCardProps = {
   booking: BookingResponse;
   className?: string;
+  onCancelBooking?: (booking: BookingResponse) => void;
 };
 
-export const BookingCard = ({ booking, className }: BookingCardProps) => {
+export const BookingCard = ({ booking, className, onCancelBooking }: BookingCardProps) => {
   const room = booking.room;
   const imageUrl = room?.imageUrl ?? "";
   const [url, setUrl] = useState<string | StaticImageData>(
     resolveRoomImage(imageUrl),
   );
 
+  const canCancel = isBookingCancellable(booking.status, booking.checkOutDate);
+
+  const handleCancelBooking = () => {
+    if (!room || !canCancel) return;
+
+    onCancelBooking?.(booking);
+  };
+
   return (
     <article
       className={cn(
-        "group min-w-[280px] max-w-[340px] flex-1 overflow-hidden rounded-xl border border-white/8 bg-[#111111] transition-colors hover:border-white/15",
+        "group flex h-full flex-col min-w-[280px] max-w-[340px] flex-1 overflow-hidden rounded-xl border border-white/8 bg-[#111111] transition-colors hover:border-white/15",
         className,
       )}
     >
@@ -40,6 +51,7 @@ export const BookingCard = ({ booking, className }: BookingCardProps) => {
           onError={() => {
             setUrl(FALLBACK_ROOM_IMAGE);
           }}
+          loading="eager"
           className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
 
@@ -91,6 +103,17 @@ export const BookingCard = ({ booking, className }: BookingCardProps) => {
           </span>
         </div>
       </div>
+      {canCancel ? (
+        <Button
+          type="button"
+          size="lg"
+          className="m-4 h-11 w-auto gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
+          onClick={handleCancelBooking}
+        >
+          <CalendarCheck className="size-4" />
+          Cancel Booking
+        </Button>
+      ) : null}
     </article>
   );
 };

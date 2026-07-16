@@ -23,7 +23,7 @@ export const BookingsPageClient = ({ bookings }: BookingsPageClientProps) => {
     useBookingsStore.getState().setBookings(bookings);
     setHydrated(true);
   }, [bookings]);
-
+  
   const displayBookings = hydrated ? storeBookings : bookings;
 
   return (

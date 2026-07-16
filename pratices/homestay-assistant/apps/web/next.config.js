@@ -8,7 +8,7 @@ const nextConfig = {
   turbopack: {
     root: path.join(__dirname, "../.."),
   },
-  transpilePackages: ["@repo/constants", "@repo/shared", "agent"],
+  transpilePackages: ["@repo/constants", "agent"],
   images: {
     remotePatterns: [
       {

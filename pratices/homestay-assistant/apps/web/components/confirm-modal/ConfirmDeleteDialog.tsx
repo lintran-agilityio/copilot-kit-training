@@ -19,6 +19,7 @@ export type ConfirmDeleteDialogProps = {
   booking: BookingDetails;
   isDeleting?: boolean;
   canRespond?: boolean;
+  errorMessage?: string | null;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -28,6 +29,7 @@ export const ConfirmDeleteDialog = ({
   booking,
   isDeleting = false,
   canRespond = true,
+  errorMessage = null,
   onCancel,
   onConfirm,
 }: ConfirmDeleteDialogProps) => {
@@ -87,6 +89,10 @@ export const ConfirmDeleteDialog = ({
             </div>
           ) : null}
         </dl>
+
+        {errorMessage ? (
+          <p className="text-sm text-destructive">{errorMessage}</p>
+        ) : null}
 
         <DialogFooter className="border-white/8 bg-transparent">
           <Button

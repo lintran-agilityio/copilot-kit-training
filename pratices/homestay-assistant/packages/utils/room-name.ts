@@ -88,6 +88,5 @@ export const matchesRoomName = (roomName: string, query: string) => {
         queryToken.includes(roomToken),
     ),
   );
-console.log('roomNameMatches', roomNameMatches);
   return roomNameMatches;
 };

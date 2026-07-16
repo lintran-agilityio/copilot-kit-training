@@ -43,7 +43,7 @@ const HomePageContent = ({ initialRooms }: HomePageClientProps) => {
   );
 };
 
-export const HomePageClient = ({ initialRooms }: HomePageClientProps) => {
+const HomePageClient = ({ initialRooms }: HomePageClientProps) => {
   const { isLoaded, user } = useUser();
 
   if (!isLoaded || !user) {
@@ -52,3 +52,5 @@ export const HomePageClient = ({ initialRooms }: HomePageClientProps) => {
 
   return <HomePageContent initialRooms={initialRooms} />;
 };
+
+export default HomePageClient;

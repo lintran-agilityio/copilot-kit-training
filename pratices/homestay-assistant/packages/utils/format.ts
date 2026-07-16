@@ -19,3 +19,24 @@ export const countNightOfDates = (checkIn: string, checkOut: string) => {
   );
 };
 
+type BuildActionPromptArgs = {
+  action: string;
+  targetName: string;
+  identifiers: Record<string, string>;
+};
+
+export const buildActionPrompt = ({
+  action,
+  targetName,
+  identifiers,
+}: BuildActionPromptArgs) => {
+  const metadata = Object.entries(identifiers)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(". ");
+
+  return `${action} ${targetName}. ${metadata}`;
+};
+
+/** Strip trailing punctuation/whitespace LLMs may include when parsing action prompts. */
+export const sanitizeBookingId = (raw: string) =>
+  raw.trim().replace(/[.,;\s]+$/g, "");

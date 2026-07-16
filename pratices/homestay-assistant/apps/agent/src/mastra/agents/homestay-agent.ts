@@ -9,7 +9,6 @@ import {
   getRoomsTool,
   getAvailableRoomsTool,
   getRoomByIdTool,
-  getRoomByNameTool,
 } from "@/mastra/tools/rooms";
 
 export const homestayAgent = new Agent({
@@ -21,13 +20,12 @@ export const homestayAgent = new Agent({
 
   instructions: homeStayAgentPrompt,
 
-  model: "openai/gpt-5-mini",
+  model: "openai/gpt-4o-mini",
 
   tools: {
-    getRoomByName: getRoomByNameTool,
+    getRoomById: getRoomByIdTool,
     getRooms: getRoomsTool,
     getAvailableRooms: getAvailableRoomsTool,
-    getRoomById: getRoomByIdTool,
   },
 
   memory: new Memory({

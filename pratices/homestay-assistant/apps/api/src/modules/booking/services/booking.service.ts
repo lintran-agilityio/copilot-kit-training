@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 
 import { extractRoomNameQuery } from '@repo/utils';
 
-import { BookingStatus } from '@/types/enum';
+import { BookingStatus } from '../../../types/enum';
 import { UserEntity } from '@/database/entities/user.entity';
 import { parseDateRange, toDateKey } from '@/utils';
 import { RoomsRepository } from '@/modules/rooms/repositories/rooms.repository';
@@ -202,6 +202,7 @@ export class BookingService {
       }
     }
 
+    const now = new Date();
     const updated = await this.bookingRepository.save({
       ...booking,
       checkInDate: toDateKey(checkInDate),
@@ -209,7 +210,9 @@ export class BookingService {
       guests: nextGuests,
       totalPrice: nights * room.pricePerNight,
       status: nextStatus,
-      updatedAt: new Date(),
+      cancelledAt:
+        nextStatus === BookingStatus.CANCELLED ? now : booking.cancelledAt,
+      updatedAt: now,
     });
 
     const refreshed = await this.bookingRepository.findById(updated.id);

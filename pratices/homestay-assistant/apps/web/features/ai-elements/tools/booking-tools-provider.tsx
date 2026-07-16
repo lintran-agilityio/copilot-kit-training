@@ -6,8 +6,9 @@ import { useEffect, useState } from "react";
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import {
   BookingUnavailableModal,
+  BookingSuccessModal,
   CancelBookingByRoomModal,
-  ConfirmDeleteBookingModal,
+  ConfirmBookingModal,
   ConfirmDeleteSuccessModal,
 } from "@/features/ai-elements/components";
 import {
@@ -17,15 +18,18 @@ import {
 } from "@/features/booking/copilot/booking-ui";
 import {
   cancelBookingByRoomSchema,
-  confirmDeleteBookingSchema,
+  confirmBookingSchema,
   showBookingUnavailableSchema,
+  showBookingSuccessSchema,
   showCancellationSuccessSchema,
   syncBookingResultSchema,
   updateBookingsListSchema,
-  type CancelBookingByRoomResult,
+  type CancelBookingByRoomArgs,
+  type ConfirmBookingArgs,
   type ShowBookingUnavailableArgs,
+  type ShowBookingSuccessArgs,
 } from "@/features/booking/schemas";
-import type { BookingDetails, BookingResponse } from "@/features/booking/types";
+import type { BookingResponse } from "@/features/booking/types";
 import { useBookingsStore } from "@/features/booking/stores/booking-store";
 
 const BookingCancellationNotice = () => {
@@ -48,6 +52,7 @@ const BookingCancellationNotice = () => {
   return (
     <ConfirmDeleteSuccessModal
       open={open}
+      roomName={noticeCancellation.roomName}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
         if (!nextOpen) {
@@ -64,7 +69,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.SYNC_BOOKING_RESULT,
       description:
-        "Sync createBooking result to the room detail modal. Pass booking from createBooking on success.",
+        "Sync createBooking result to the booking store. On success pass { status: \"success\", booking: <createBooking result> } exactly. On failure pass { status: \"error\", errorMessage }. This does NOT show the success modal — you MUST call show_booking_success next with checkInDate, checkOutDate, guests, and totalPrice from the booking, then wait for acknowledged: true before sending final chat.",
       parameters: syncBookingResultSchema,
       handler: async (args) => syncBookingResultToStore(args),
     },
@@ -117,22 +122,17 @@ export const BookingToolsProvider = () => {
   useHumanInTheLoop(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
+      name: TOOL_KEYS.ACTION.CONFIRM_BOOKING,
       description:
-        "Open the cancel-booking confirm dialog ONLY after findBookingByName returns bookings.length > 0. Pass bookings and queryName as-is. In the SAME turn, also send one short guest-facing chat sentence that the dialog is ready. Do NOT call this when bookings is empty — the agent must reply in chat instead. Do NOT call cancelBooking yet. After confirmed: true, call cancelBooking → getBookings → update_bookings_list → show_cancellation_success, then a short chat confirmation.",
-      parameters: cancelBookingByRoomSchema,
-      render: ({ status, args, respond, result }) => {
-        const cancelResult = result as CancelBookingByRoomResult | undefined;
-
-        return (
-          <CancelBookingByRoomModal
-            status={status}
-            args={args}
-            respond={respond}
-            result={cancelResult}
-          />
-        );
-      },
+        "After checkRoomAvailability succeeds (available true and guestsWithinCapacity true), show the confirm booking modal so the guest can approve the draft. Pass result.room from checkRoomAvailability plus check-in, check-out, and guests from that same check. Do NOT call getRoomById or show_room_detail in a book turn. Do NOT call createBooking until confirm_booking returns confirmed: true. If confirmed: false, reply in chat that the booking was not confirmed. If confirmed: true, call createBooking with roomId, checkInDate, checkOutDate, and guests from the result, then sync_booking_result, then show_booking_success — wait for acknowledged: true before final chat.",
+      parameters: confirmBookingSchema,
+      render: ({ status, args, respond }) => (
+        <ConfirmBookingModal
+          status={status}
+          args={args as Partial<ConfirmBookingArgs>}
+          respond={respond}
+        />
+      ),
     },
     [],
   );
@@ -140,14 +140,32 @@ export const BookingToolsProvider = () => {
   useHumanInTheLoop(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.BOOKING.DELETE,
+      name: TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
       description:
-        "Ask the guest to confirm cancelling when you already have full booking details. In the SAME turn, also send one short guest-facing chat sentence. Do NOT call cancelBooking yet. After confirmed: true, call cancelBooking → getBookings → update_bookings_list → show_cancellation_success, then a short chat confirmation.",
-      parameters: confirmDeleteBookingSchema,
+        "After findBookingById returns bookings.length > 0, show the cancel confirmation dialog with bookings and queryName from the find result as-is. Do NOT call cancelBooking until show_cancel_dialog_confirm returns confirmed: true. If confirmed: true, call cancelBooking with bookingId from the result, then getBookings → update_bookings_list → show_cancellation_success with the room name. If confirmed: false, reply in chat that the booking was kept.",
+      parameters: cancelBookingByRoomSchema,
       render: ({ status, args, respond }) => (
-        <ConfirmDeleteBookingModal
+        <CancelBookingByRoomModal
           status={status}
-          bookingItem={args as BookingDetails}
+          args={args as Partial<CancelBookingByRoomArgs>}
+          respond={respond}
+        />
+      ),
+    },
+    [],
+  );
+
+  useHumanInTheLoop(
+    {
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      name: TOOL_KEYS.ACTION.SHOW_BOOKING_SUCCESS,
+      description:
+        "Show BookingSuccessModal in chat after sync_booking_result succeeds. Pass checkInDate, checkOutDate, guests, and totalPrice from the createBooking result. Do NOT send the guest-facing chat confirmation in the same step — wait until the guest closes the modal (acknowledged: true), THEN reply in chat confirming the stay is booked and offer to view bookings or help with something else.",
+      parameters: showBookingSuccessSchema,
+      render: ({ status, args, respond }) => (
+        <BookingSuccessModal
+          status={status}
+          args={args as Partial<ShowBookingSuccessArgs>}
           respond={respond}
         />
       ),

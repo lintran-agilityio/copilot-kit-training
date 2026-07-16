@@ -3,7 +3,6 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { GetAvailableRoomsQueryDto } from '@/modules/rooms/dto/get-available-rooms-query.dto';
 import { GetRoomByIdQueryDto } from '@/modules/rooms/dto/get-room-by-id-query.dto';
-import { GetRoomByNameQueryDto } from '@/modules/rooms/dto/get-room-by-name-query.dto';
 import { RoomResponseDto } from '@/modules/rooms/dto/room-response.dto';
 import { RoomsService } from '@/modules/rooms/services/rooms.service';
 
@@ -21,15 +20,6 @@ export class RoomsController {
     @Query() query: GetAvailableRoomsQueryDto,
   ): Promise<RoomResponseDto[]> {
     return this.roomsService.getRooms(query);
-  }
-
-  @Get('by-name')
-  @ApiOperation({ summary: 'Find rooms by display name' })
-  @ApiOkResponse({ type: RoomResponseDto, isArray: true })
-  getRoomsByName(
-    @Query() query: GetRoomByNameQueryDto,
-  ): Promise<RoomResponseDto[]> {
-    return this.roomsService.getRoomsByName(query.name);
   }
 
   @Get(':id')

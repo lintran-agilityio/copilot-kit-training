@@ -48,6 +48,7 @@ export class InitialSchema20260623161015 implements MigrationInterface {
         "guests" INTEGER NOT NULL,
         "total_price" INTEGER NOT NULL,
         "status" "BookingStatus" NOT NULL DEFAULT 'PENDING',
+        "cancelled_at" TIMESTAMP,
         "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updated_at" TIMESTAMP(3) NOT NULL,
         CONSTRAINT "bookings_pkey" PRIMARY KEY ("id")

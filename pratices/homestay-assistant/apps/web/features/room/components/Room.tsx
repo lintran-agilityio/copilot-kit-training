@@ -31,7 +31,7 @@ export const Room = ({
   return (
     <article
       className={cn(
-        "group overflow-hidden rounded-xl border border-white/8 bg-[#111111] transition-colors hover:border-white/15",
+        "group flex h-full flex-col overflow-hidden rounded-xl border border-white/8 bg-[#111111] transition-colors hover:border-white/15",
         compact ? "max-w-sm" : "min-w-[260px] max-w-[300px] flex-1",
         isInteractive &&
           "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60",
@@ -60,13 +60,15 @@ export const Room = ({
         availableSlots={room.availableSlots}
         compact={compact}
       />
-      <RoomInfo
-        name={room.name}
-        capacity={room.capacity}
-        description={room.description}
-        amenities={room.amenities}
-        compact={compact}
-      />
+      <div className="flex-1">
+        <RoomInfo
+          name={room.name}
+          capacity={room.capacity}
+          description={room.description}
+          amenities={room.amenities}
+          compact={compact}
+        />
+      </div>
       {isInteractive ? (
         <p className="border-t border-white/6 px-4 py-2.5 text-xs text-zinc-500 transition-colors group-hover:text-emerald-400/90">
           View details in chat

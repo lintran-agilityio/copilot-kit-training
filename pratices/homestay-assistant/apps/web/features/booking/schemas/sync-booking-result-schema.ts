@@ -12,10 +12,12 @@ const syncBookingItemSchema = z.object({
 });
 
 export const syncBookingResultSchema = z.object({
-  status: z.enum(["success", "error"]),
+  status: z
+    .enum(["success", "error"])
+    .describe('Use "success" when createBooking succeeds; "error" on failure'),
   booking: syncBookingItemSchema
     .optional()
-    .describe("Booking from createBooking — pass as-is on success"),
+    .describe("Booking from createBooking — pass as-is when status is success"),
   errorMessage: z
     .string()
     .optional()

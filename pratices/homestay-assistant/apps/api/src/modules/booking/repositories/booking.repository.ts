@@ -19,10 +19,9 @@ export class BookingRepository {
     const query = this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.room', 'room')
-      .where('booking.status IN (:...activeStatuses)', {
-        activeStatuses: ACTIVE_BOOKING_STATUSES,
-      })
-      .orderBy('booking.createdAt', 'DESC');
+      .where('booking.cancelledAt IS NULL')
+      .andWhere('booking.checkOutDate > :now', { now: new Date() })
+      .orderBy('booking.checkInDate', 'ASC');
 
     if (filters.userId) {
       query.andWhere('booking.userId = :userId', { userId: filters.userId });

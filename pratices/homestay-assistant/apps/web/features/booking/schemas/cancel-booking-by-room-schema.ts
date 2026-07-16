@@ -1,16 +1,16 @@
 import { z } from "zod";
 
-import { confirmDeleteBookingSchema } from "@/features/booking/schemas/confirm-delete-booking-schema";
+import { confirmCancelBookingSchema } from "@/features/booking/schemas/confirm-cancel-booking-schema";
 
 export const cancelBookingByRoomSchema = z.object({
   bookings: z
-    .array(confirmDeleteBookingSchema)
+    .array(confirmCancelBookingSchema)
     .describe(
-      "Matching bookings from findBookingByName — only call this tool when length > 0",
+      "Matching bookings from findBookingById — only call this tool when length > 0",
     ),
   queryName: z
     .string()
-    .describe("Room name query from findBookingByName — pass as-is"),
+    .describe("Room display name from findBookingById — pass as-is"),
 });
 
 export type CancelBookingByRoomArgs = z.infer<typeof cancelBookingByRoomSchema>;
