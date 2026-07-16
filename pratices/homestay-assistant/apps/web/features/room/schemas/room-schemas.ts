@@ -54,21 +54,8 @@ export const setRoomListLoadingSchema = z.object({
     .describe("Set true while room list data is loading, false when loading ends"),
 });
 
-
-export const showRoomDetailSchema = z
-  .object({
-    room: roomObjectSchema
-      .optional()
-      .describe(
-        "Full room object from getRoomById — pass as-is when already fetched",
-      ),
-    roomId: z
-      .string()
-      .optional()
-      .describe(
-        "Room id from the user message (roomId: …) — use when the full room object is not available yet",
-      ),
-  })
-  .refine((value) => Boolean(value.room ?? value.roomId), {
-    message: "Either room or roomId is required",
-  });
+export const showRoomDetailSchema = z.object({
+  room: roomObjectSchema.describe(
+    "Full room object from getRoomById — pass result.room as-is",
+  ),
+});

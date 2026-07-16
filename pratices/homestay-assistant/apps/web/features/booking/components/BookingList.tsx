@@ -3,19 +3,38 @@ import { BookingCard } from "@/features/booking/components/BookingCard";
 import type { BookingResponse } from "@/features/booking/types/booking";
 import { cn } from "@repo/utils";
 import { useCancelBooking } from "@/features/booking/hooks/use-booking";
+import { RoomListSkeleton } from "@/components/common";
 
 type BookingListProps = {
   bookings: BookingResponse[];
   title?: string;
   className?: string;
+  isLoading?: boolean;
+  error?: Error;
 };
 
 export const BookingList = ({
   bookings,
   title,
   className,
+  isLoading,
+  error,
 }: BookingListProps) => {
   const cancelBooking = useCancelBooking();
+
+  if (isLoading) {
+    return (
+       <RoomListSkeleton className={className} />
+    );
+  }
+  
+  if (error && !isLoading) {
+    return (
+      <div className="flex items-center justify-center">
+        <p className="text-red-500">{error.message}</p>
+      </div>
+    );
+  }
 
   if (!bookings.length) {
     return (

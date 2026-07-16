@@ -56,7 +56,7 @@ export const BOOKING_SUCCESS_SUGGESTIONS = [
 
 export const BOOKING_FORM_SUGGESTIONS = [
   {
-    id: "cancel-booking",
+    id: "cancel_booking",
     label: "Cancel this booking",
     prompt: "Cancel this booking",
   },
@@ -69,7 +69,7 @@ export const BOOKING_FORM_SUGGESTIONS = [
 
 export const BOOKINGS_PAGE_SUGGESTIONS = [
   {
-    id: "cancel-booking",
+    id: "cancel_booking",
     label: "Cancel a booking",
     prompt: "Cancel a booking",
   }

@@ -1,38 +1,38 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { NavbarTab } from "@repo/types";
+import { NavbarTab, PREFIX_URL } from "@repo/types";
 import { MainLayout } from "@/components/layouts";
 import { PageHeader } from "@/components/common";
 import { BookingList } from "@/features/booking/components";
-import { useBookingsStore } from "@/features/booking/stores/booking-store";
-import type { BookingResponse } from "@/features/booking/types";
+import { getMyBookings } from "@/features/booking/services";
 
 const MY_BOOKINGS_TITLE = "Your reservations";
 
 type BookingsPageClientProps = {
-  bookings: BookingResponse[];
+  userId: string;
 };
 
-export const BookingsPageClient = ({ bookings }: BookingsPageClientProps) => {
-  const [hydrated, setHydrated] = useState(false);
-  const storeBookings = useBookingsStore((state) => state.bookings);
-
-  useLayoutEffect(() => {
-    useBookingsStore.getState().setBookings(bookings);
-    setHydrated(true);
-  }, [bookings]);
-  
-  const displayBookings = hydrated ? storeBookings : bookings;
+export const BookingsPageClient = ({ userId }: BookingsPageClientProps) => {
+  const {
+    data: bookings = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["bookings", userId],
+    queryFn: () => getMyBookings({ via: PREFIX_URL.WEB, userId }),
+  });
 
   return (
     <MainLayout activeTab={NavbarTab.MY_BOOKINGS}>
       <PageHeader label="MY BOOKINGS" title="Your reservations" />
       <BookingList
-        bookings={displayBookings}
+        bookings={bookings}
         title={MY_BOOKINGS_TITLE}
         className="mt-8"
+        isLoading={isLoading}
+        error={error ?? undefined}
       />
     </MainLayout>
   );

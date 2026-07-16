@@ -19,16 +19,15 @@ const MASTRA_BACKEND_TOOL_NAMES = [
   "getRoomById",
 ] as const;
 
+/** Backend cancel — rendered via useRenderTool (null UI) so FE can refresh on Complete. */
+const CANCEL_BOOKING_RENDER_TOOLS = [BOOKING.CANCEL] as const;
+
 /** Room/data tools and page UI actions - hidden from chat; effects render on the page. */
 export const CHAT_HIDDEN_TOOLS = new Set([
   ACTION.UPDATE_ROOM_LIST,
   ACTION.NAVIGATE_TO_HOME_PAGE,
   ACTION.SET_ROOM_LIST_LOADING,
-  ACTION.SYNC_BOOKING_RESULT,
-  ACTION.UPDATE_BOOKINGS_LIST,
-  ACTION.SHOW_CANCELLATION_SUCCESS,
   ACTION.SELECT_ROOM_FOR_BOOKING,
-  BOOKING.CANCEL,
   BOOKING.CREATE,
   BOOKING.GET,
   BOOKING.FIND_BY_ID,
@@ -36,7 +35,10 @@ export const CHAT_HIDDEN_TOOLS = new Set([
   GET.ROOMS,
   GET.AVAILABLE_ROOMS,
   GET.ROOM,
-  ...MASTRA_BACKEND_TOOL_NAMES,
+  ...MASTRA_BACKEND_TOOL_NAMES.filter(
+    (name) =>
+      !(CANCEL_BOOKING_RENDER_TOOLS as readonly string[]).includes(name),
+  ),
 ]);
 
 export const PAGE_ONLY_GENERATIVE_TOOLS = CHAT_HIDDEN_TOOLS;
@@ -47,6 +49,7 @@ export const CHAT_VISIBLE_GENERATIVE_TOOLS = new Set([
   ACTION.SHOW_BOOKING_UNAVAILABLE,
   ACTION.SHOW_BOOKING_SUCCESS,
   BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
+  ...CANCEL_BOOKING_RENDER_TOOLS,
 ]);
 
 export const PAGE_ROOMS_PROMPT_PREFIX = "[page-rooms]";
