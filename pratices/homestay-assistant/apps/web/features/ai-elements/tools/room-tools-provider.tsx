@@ -10,11 +10,9 @@ import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { useBooking } from "@/features/booking/hooks";
 import {
   getRoomByIdInputSchema,
-  setRoomListLoadingSchema,
   selectRoomForBookingSchema,
   updateRoomListSchema,
 } from "@/features/room/schemas";
-import { useRoomStore } from "@/features/room/stores/room-store";
 
 import {
   formatRoomListSyncResult,
@@ -27,9 +25,6 @@ const ROOM_RESULTS_PREVIEW_LIMIT = 5;
 
 export const RoomToolsProvider = () => {
   const setSelectedRoom = useBooking((state) => state.setSelectedRoom);
-  const setRoomListLoading = useRoomStore(
-    (state) => state.setRoomListLoading,
-  );
 
   useComponent(
     {
@@ -61,23 +56,6 @@ export const RoomToolsProvider = () => {
       ),
     },
     [],
-  );
-
-  useFrontendTool(
-    {
-      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.ACTION.SET_ROOM_LIST_LOADING,
-      description:
-        "Show or hide the room grid loading skeleton while room list data is being fetched.",
-      parameters: setRoomListLoadingSchema,
-      handler: async ({ isLoading }) => {
-        setRoomListLoading(isLoading);
-        return isLoading
-          ? "Room list loading indicator is visible."
-          : "Room list loading indicator is hidden.";
-      },
-    },
-    [setRoomListLoading],
   );
 
   useFrontendTool(

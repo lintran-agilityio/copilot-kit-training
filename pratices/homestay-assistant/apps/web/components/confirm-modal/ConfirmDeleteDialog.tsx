@@ -98,7 +98,7 @@ export const ConfirmDeleteDialog = ({
           <Button
             type="button"
             variant="outline"
-            className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
+            className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white cursor-pointer"
             disabled={actionsDisabled}
             onClick={onCancel}
           >
@@ -109,6 +109,7 @@ export const ConfirmDeleteDialog = ({
             variant="destructive"
             disabled={actionsDisabled}
             onClick={onConfirm}
+            className="cursor-pointer"
           >
             {isDeleting ? "Cancelling…" : "Cancel booking"}
           </Button>

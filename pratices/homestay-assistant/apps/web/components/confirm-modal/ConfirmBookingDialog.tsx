@@ -105,7 +105,7 @@ export const ConfirmBookingDialog = ({
           <Button
             type="button"
             variant="outline"
-            className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
+            className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white cursor-pointer"
             disabled={actionsDisabled}
             onClick={onCancel}
           >
@@ -113,7 +113,7 @@ export const ConfirmBookingDialog = ({
           </Button>
           <Button
             type="button"
-            className="gap-2 bg-emerald-500 text-black hover:bg-emerald-400"
+            className="gap-2 bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
             disabled={actionsDisabled}
             onClick={onConfirm}
           >

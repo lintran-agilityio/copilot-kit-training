@@ -1,4 +1,4 @@
-import { ToolCallStatus } from "@copilotkit/react-core/v2";
+import { ToolRendererProps } from "./tool-render-props";
 
 export type CheckRoomAvailabilityResult = {
   available?: boolean;
@@ -12,7 +12,4 @@ export type CheckRoomAvailabilityResult = {
   guests?: number;
 };
 
-export type CheckRoomAvailabilityToolProps = {
-  status: ToolCallStatus | "inProgress" | "executing" | "complete";
-  result?: CheckRoomAvailabilityResult | string | null;
-};
+export type CheckRoomAvailabilityToolProps = ToolRendererProps<CheckRoomAvailabilityResult>;

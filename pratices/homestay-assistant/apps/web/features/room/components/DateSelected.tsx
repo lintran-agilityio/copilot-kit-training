@@ -37,7 +37,7 @@ export const DateSelected = ({
   });
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
           {label}

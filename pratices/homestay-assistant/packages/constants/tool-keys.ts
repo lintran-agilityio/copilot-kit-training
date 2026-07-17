@@ -27,7 +27,6 @@ export const TOOL_KEYS = {
     /** Frontend HITL — confirm booking draft after checkRoomAvailability succeeds. */
     CONFIRM_BOOKING: "confirm_booking",
     UPDATE_ROOM_LIST: "update_room_list",
-    SET_ROOM_LIST_LOADING: "set_room_list_loading",
     RENDER_ROOM_RESULTS_PREVIEW: "render_room_results_preview",
     /** @deprecated Booking success renders from createBooking via useRenderTool. */
     SHOW_BOOKING_SUCCESS: "show_booking_success",

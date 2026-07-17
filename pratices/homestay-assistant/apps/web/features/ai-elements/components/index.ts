@@ -2,7 +2,6 @@ export * from "./ListRoomPreview";
 export * from "./CancelBookingByRoomModal";
 export * from "./ConfirmCancelBookingModal";
 export * from "./BookingUnavailableModal";
-export * from "./BookingSuccessModal";
 export * from "./ConfirmBookingModal";
 export * from "./AgentMessagesSanitizer";
 export * from "./CancelBookingToolRenderer";
