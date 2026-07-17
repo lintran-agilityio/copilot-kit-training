@@ -2,7 +2,11 @@ export const TOOL_KEYS = {
   GET: {
     ROOM: "get-room",
     ROOMS: "get-rooms",
-    AVAILABLE_ROOMS: "get-available-rooms",
+    /**
+     * Mastra registration / createTool id / useRenderTool name.
+     * Underscore form — search/filter rooms by name, date, guests, level.
+     */
+    FIND_ROOM: "find_room",
     BOOKINGS: "get-bookings",
   },
   BOOKING: {
@@ -27,11 +31,9 @@ export const TOOL_KEYS = {
     /** Frontend HITL — confirm booking draft after checkRoomAvailability succeeds. */
     CONFIRM_BOOKING: "confirm_booking",
     UPDATE_ROOM_LIST: "update_room_list",
-    RENDER_ROOM_RESULTS_PREVIEW: "render_room_results_preview",
     /** @deprecated Booking success renders from createBooking via useRenderTool. */
     SHOW_BOOKING_SUCCESS: "show_booking_success",
     /** @deprecated Unavailable renders from checkRoomAvailability via useRenderTool. */
     SHOW_BOOKING_UNAVAILABLE: "show_booking_unavailable",
-    SELECT_ROOM_FOR_BOOKING: "select_room_for_booking",
   },
 };

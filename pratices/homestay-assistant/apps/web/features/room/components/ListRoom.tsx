@@ -36,7 +36,7 @@ export const ListRoom = ({
             className={cn(
               "app-scrollbar",
               compact
-                ? "flex max-h-[70vh] flex-col gap-3 overflow-y-auto pr-1"
+                ? "grid max-h-[70vh] grid-cols-2 gap-3 overflow-y-auto pr-1"
                 : "flex flex-wrap gap-4 overflow-x-auto pb-1",
             )}
           >

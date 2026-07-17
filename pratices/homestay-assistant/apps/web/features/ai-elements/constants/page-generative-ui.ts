@@ -7,7 +7,7 @@ import type { CopilotChatAssistantMessageProps } from "@copilotkit/react-core/v2
 
 const { ACTION, BOOKING, GET } = TOOL_KEYS;
 
-/** Mastra backend tools — LLM calls these camelCase registration keys, not createTool ids. */
+/** Mastra backend tools — LLM registration keys (not kebab createTool ids). */
 const MASTRA_BACKEND_TOOL_NAMES = [
   "findBookingById",
   "getBookings",
@@ -15,7 +15,7 @@ const MASTRA_BACKEND_TOOL_NAMES = [
   "createBooking",
   "checkRoomAvailability",
   "getRooms",
-  "getAvailableRooms",
+  GET.FIND_ROOM,
   "getRoomById",
 ] as const;
 
@@ -24,19 +24,17 @@ const RENDER_BACKEND_TOOLS = [
   BOOKING.CANCEL,
   BOOKING.CREATE_BOOKING,
   BOOKING.GET_ROOM_BY_ID,
+  GET.FIND_ROOM,
   BOOKING.CHECK_ROOM_AVAILABILITY,
 ] as const;
-
 /** Room/data tools and page UI actions - hidden from chat; effects render on the page. */
 export const CHAT_HIDDEN_TOOLS = new Set([
   ACTION.UPDATE_ROOM_LIST,
-  ACTION.SELECT_ROOM_FOR_BOOKING,
   BOOKING.CREATE,
   BOOKING.GET,
   BOOKING.FIND_BY_ID,
   BOOKING.CHECK_AVAILABILITY,
   GET.ROOMS,
-  GET.AVAILABLE_ROOMS,
   GET.ROOM,
   ...MASTRA_BACKEND_TOOL_NAMES.filter(
     (name) => !(RENDER_BACKEND_TOOLS as readonly string[]).includes(name),
@@ -45,7 +43,6 @@ export const CHAT_HIDDEN_TOOLS = new Set([
 
 export const PAGE_ONLY_GENERATIVE_TOOLS = CHAT_HIDDEN_TOOLS;
 export const CHAT_VISIBLE_GENERATIVE_TOOLS = new Set([
-  ACTION.RENDER_ROOM_RESULTS_PREVIEW,
   ACTION.CONFIRM_BOOKING,
   BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
   ...RENDER_BACKEND_TOOLS,

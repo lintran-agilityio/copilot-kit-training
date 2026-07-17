@@ -22,3 +22,12 @@ export type RoomByNameLookup = {
   rooms: RoomDetail[];
   queryName: string;
 };
+
+/** Rooms matching find_room search/filter criteria (API → Mastra → CopilotKit). */
+export type FindRoomResult = {
+  rooms: RoomDetail[];
+  name?: string;
+  date?: string;
+  guests?: number;
+  level?: number;
+};

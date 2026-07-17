@@ -2,12 +2,12 @@ import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { homeStayAgentPrompt } from "@/mastra/constants/prompts";
+import { homeStayAgentPrompt } from "@/mastra/utils";
 import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants/working-memory";
 
 import {
+  findRoomTool,
   getRoomsTool,
-  getAvailableRoomsTool,
   getRoomByIdTool,
 } from "@/mastra/tools/rooms";
 
@@ -16,7 +16,7 @@ export const homestayAgent = new Agent({
 
   name: "Homestay Agent",
   description:
-    "Room specialist for browsing rooms, checking available room lists, and opening room details.",
+    "Room specialist for browsing rooms, searching/filtering rooms, and opening room details.",
 
   instructions: homeStayAgentPrompt,
 
@@ -25,7 +25,7 @@ export const homestayAgent = new Agent({
   tools: {
     getRoomById: getRoomByIdTool,
     getRooms: getRoomsTool,
-    getAvailableRooms: getAvailableRoomsTool,
+    find_room: findRoomTool,
   },
 
   memory: new Memory({

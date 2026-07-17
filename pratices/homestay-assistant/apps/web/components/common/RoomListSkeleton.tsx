@@ -6,9 +6,7 @@ type RoomListSkeletonProps = {
 };
 
 const SkeletonItem = () => (
-  <div
-    className="w-[min(100%,21rem)] rounded-2xl border border-white/8 bg-white/[0.02] p-3"
-  >
+  <div className="w-full min-w-0 rounded-2xl border border-white/8 bg-white/[0.02] p-3">
     <div className="aspect-[4/3] animate-pulse rounded-xl bg-zinc-900" />
     <div className="mt-4 space-y-3">
       <div className="h-4 w-3/4 animate-pulse rounded-full bg-white/10" />
@@ -31,11 +29,9 @@ export const RoomListSkeleton = ({
       <div className="h-5 w-44 animate-pulse rounded-full bg-white/10" />
     </div>
 
-    <div className="flex flex-wrap gap-4 overflow-hidden pb-1">
+    <div className="grid grid-cols-2 gap-3 overflow-hidden pb-1">
       {Array.from({ length: itemCount }, (_, index) => (
-        <div key={`skeleton-item-${index}`}>
-          <SkeletonItem />
-        </div>
+        <SkeletonItem key={`skeleton-item-${index}`} />
       ))}
     </div>
   </section>

@@ -1,7 +1,5 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+
 import { addDays, isEmptyDateValue, resolveDateOrToday } from '@/utils';
 import {
   GetRoomByIdQueryDto,
@@ -10,29 +8,74 @@ import {
 } from '@/modules/rooms/dto';
 import { toRoomResponseDto } from '@/modules/rooms/mappers/room.mapper';
 import { RoomsRepository } from '@/modules/rooms/repositories/rooms.repository';
+import { toOptionalNumber } from '@/modules/rooms/utils/rooms';
 
 @Injectable()
 export class RoomsService {
   constructor(private readonly roomsRepository: RoomsRepository) {}
 
+  /**
+   * Lists rooms, optionally filtered by date availability, name, guests, and level.
+   *
+   * @param query - Optional filters; empty returns all rooms
+   * @returns Room response DTOs
+   */
   async getRooms(
     query: GetAvailableRoomsQueryDto = {},
   ): Promise<RoomResponseDto[]> {
-    if (isEmptyDateValue(query.date)) {
+    const name = query.name?.trim() || undefined;
+    const guests = toOptionalNumber(
+      query.guests as number | string | undefined,
+    );
+    const level = toOptionalNumber(query.level as number | string | undefined);
+    const hasDate = !isEmptyDateValue(query.date);
+    const hasAttributeFilters =
+      Boolean(name) || guests !== undefined || level !== undefined;
+
+    // Empty lists are a valid search/browse outcome — return [] (not 404)
+    // so agent tools can complete and chat UI can leave the loading state.
+    if (!hasDate && !hasAttributeFilters) {
       const rooms = await this.roomsRepository.findAll();
-      return rooms.map(toRoomResponseDto);
+      return (rooms ?? []).map(toRoomResponseDto);
     }
 
-    const checkInDate = resolveDateOrToday(query.date);
-    const checkOutDate = addDays(checkInDate, 1);
+    // Date-only browse keeps the dedicated availability path
+    if (hasDate && !hasAttributeFilters) {
+      const checkInDate = resolveDateOrToday(query.date);
+      const checkOutDate = addDays(checkInDate, 1);
+      const rooms = await this.roomsRepository.findAvailableBetween(
+        checkInDate,
+        checkOutDate,
+      );
+      return (rooms ?? []).map(toRoomResponseDto);
+    }
 
-    const rooms = await this.roomsRepository.findAvailableBetween(
+    let checkInDate: Date | undefined;
+    let checkOutDate: Date | undefined;
+    if (hasDate) {
+      checkInDate = resolveDateOrToday(query.date);
+      checkOutDate = addDays(checkInDate, 1);
+    }
+
+    const rooms = await this.roomsRepository.findByFilters({
+      name,
+      guests,
+      level,
       checkInDate,
       checkOutDate,
-    );
-    return rooms.map(toRoomResponseDto);
+    });
+
+    return (rooms ?? []).map(toRoomResponseDto);
   }
 
+  /**
+   * Returns a single room by id, optionally including the user's active booking.
+   *
+   * @param id - Room id
+   * @param query - Optional userId for booking context
+   * @returns Room response DTO
+   * @throws NotFoundException when the room does not exist
+   */
   async getRoomById(
     id: string,
     query: GetRoomByIdQueryDto = {},

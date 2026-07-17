@@ -13,7 +13,8 @@ export class RoomsController {
 
   @Get()
   @ApiOperation({
-    summary: 'List all rooms, or rooms available on a given date',
+    summary:
+      'List all rooms, or filter by date availability, name, guests, and/or level',
   })
   @ApiOkResponse({ type: RoomResponseDto, isArray: true })
   getRooms(
