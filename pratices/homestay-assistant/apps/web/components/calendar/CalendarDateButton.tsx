@@ -24,17 +24,17 @@ export const CalendarDateButton = ({
       type="button"
       onClick={() => onSelect(date)}
       className={cn(
-        "flex min-w-[52px] flex-col items-center rounded-xl px-1.5 py-1.5 transition-colors",
+        "flex min-w-[42px] flex-col items-center rounded-xl px-1 py-1 transition-colors text-xs",
         isSelected
           ? "bg-[#E6C547] text-black"
           : "text-zinc-400 hover:bg-white/5 hover:text-white",
         className,
       )}
     >
-      <span className="text-[11px] font-medium tracking-[0.12em]">
+      <span className="text-[10px] font-medium tracking-[0.12em]">
         {weekday}
       </span>
-      <span className="mt-1 text-sm font-medium">{date.getDate()}</span>
+      <span className="mt-1 text-xs font-medium">{date.getDate()}</span>
     </button>
   );
 };

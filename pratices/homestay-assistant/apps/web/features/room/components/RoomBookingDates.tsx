@@ -28,7 +28,7 @@ export const RoomBookingDates = ({
   const minCheckOut = checkIn ? addDays(checkIn, 1) : startOfDay(new Date());
 
   return (
-    <div className="space-y-4 rounded-xl border border-white/8 bg-white/[0.02] p-4">
+    <div className="space-y-4 rounded-xl border border-white/8 bg-white/[0.02] p-2">
       <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
         {disabled ? "Booking dates" : "Select dates"}
       </p>

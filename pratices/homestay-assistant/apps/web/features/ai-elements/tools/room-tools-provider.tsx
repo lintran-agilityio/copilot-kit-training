@@ -1,39 +1,30 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
 import {
   useComponent,
   useFrontendTool,
+  useRenderTool,
 } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import { useBooking } from "@/features/booking/hooks";
 import {
-  setRoomListLoadingSchema,
+  getRoomByIdInputSchema,
   selectRoomForBookingSchema,
-  showRoomDetailSchema,
   updateRoomListSchema,
 } from "@/features/room/schemas";
-import { useRoomStore } from "@/features/room/stores/room-store";
 
 import {
   formatRoomListSyncResult,
   syncRoomListToStore,
 } from "@/features/room/utils";
-import { navigateToHomeIfNeeded } from "@/utils";
-import { ListRoomPreview } from "@/features/ai-elements/components";
-import { RoomDetail } from "@/features/room/components";
-import { Loading } from "@repo/components";
+import { ListRoomPreview, GetRoomByIdToolRenderer } from "@/features/ai-elements/components";
+import type { GetRoomByIdResult } from "@/features/ai-elements/type";
 
 const ROOM_RESULTS_PREVIEW_LIMIT = 5;
 
 export const RoomToolsProvider = () => {
-  const router = useRouter();
-  const pathname = usePathname();
   const setSelectedRoom = useBooking((state) => state.setSelectedRoom);
-  const setRoomListLoading = useRoomStore(
-    (state) => state.setRoomListLoading,
-  );
 
   useComponent(
     {
@@ -52,48 +43,19 @@ export const RoomToolsProvider = () => {
     [],
   );
 
-  useComponent(
+  useRenderTool(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.ACTION.SHOW_ROOM_DETAIL,
-      description:
-        "Render full RoomDetail in chat for a detail/browse intent. Always call getRoomById first, then pass { room: result.room }. Do NOT describe room fields in chat. Always finish with one short guest-facing chat handoff sentence.",
-      parameters: showRoomDetailSchema,
-      render: ({ room }) => {
-        if (!room) {
-          return (
-            <div className="max-w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-6 text-sm text-zinc-400">
-              <Loading />
-            </div>
-          );
-        }
-
-        return (
-          <RoomDetail
-            {...room}
-            className="max-w-full border-white/10 bg-white/[0.02] shadow-none"
-          />
-        );
-      },
+      name: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID,
+      parameters: getRoomByIdInputSchema,
+      render: ({ status, result }) => (
+        <GetRoomByIdToolRenderer
+          status={status}
+          result={result as GetRoomByIdResult | string | null}
+        />
+      ),
     },
     [],
-  );
-
-  useFrontendTool(
-    {
-      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.ACTION.SET_ROOM_LIST_LOADING,
-      description:
-        "Show or hide the room grid loading skeleton while room list data is being fetched.",
-      parameters: setRoomListLoadingSchema,
-      handler: async ({ isLoading }) => {
-        setRoomListLoading(isLoading);
-        return isLoading
-          ? "Room list loading indicator is visible."
-          : "Room list loading indicator is hidden.";
-      },
-    },
-    [setRoomListLoading],
   );
 
   useFrontendTool(
@@ -109,22 +71,6 @@ export const RoomToolsProvider = () => {
       },
     },
     [],
-  );
-
-  useFrontendTool(
-    {
-      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: TOOL_KEYS.ACTION.NAVIGATE_TO_HOME_PAGE,
-      description:
-        "Navigate to the home page so the room grid is visible. Call ONLY when the guest is on the bookings page (page context isBookingsPage=true). Skip when already on the home page — update_room_list is enough.",
-      handler: async () => {
-        const navigated = navigateToHomeIfNeeded(pathname, router);
-        return navigated
-          ? "Navigated to home page."
-          : "Already on home page; no navigation needed.";
-      },
-    },
-    [pathname, router],
   );
 
   useFrontendTool(

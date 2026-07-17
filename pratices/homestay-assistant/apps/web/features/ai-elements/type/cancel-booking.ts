@@ -1,4 +1,4 @@
-import { ToolCallStatus } from "@copilotkit/react-core/v2";
+import { ToolRendererProps } from "./tool-render-props";
 
 export type CancelBookingResult = {
   id?: string;
@@ -8,7 +8,4 @@ export type CancelBookingResult = {
   status?: string;
 };
 
-export type CancelBookingToolProps = {
-  status: ToolCallStatus | "inProgress" | "executing" | "complete";
-  result?: CancelBookingResult | string | null;
-};
+export type CancelBookingToolProps = ToolRendererProps<CancelBookingResult>;

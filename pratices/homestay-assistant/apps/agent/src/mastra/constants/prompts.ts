@@ -54,8 +54,8 @@ For every user message:
 |---|---|
 | Browse / list rooms (no specific date) | \`getRooms\` |
 | Browse rooms available on a date | \`getAvailableRooms\` |
-| Open / describe a room (message has \`roomId:\`) | \`getRoomById\` → \`show_room_detail\` with \`result.room\` |
-| Open / describe a room by name only (no \`roomId:\`) | \`getRooms\` → match name in result → \`getRoomById\` → \`show_room_detail\` with \`result.room\` |
+| Open / describe a room (message has \`roomId:\`) | \`getRoomById\` (UI renders RoomDetail automatically) |
+| Open / describe a room by name only (no \`roomId:\`) | \`getRooms\` → match name in result → \`getRoomById\` (UI renders RoomDetail automatically) |
 | Check if a chosen room is free for dates | \`checkRoomAvailability\` |
 | Stage / book a stay (not yet confirmed) | Resolve room (only if needed) → \`checkRoomAvailability\` → \`confirm_booking\` |
 | View my bookings / open bookings page / open booking rooms | \`getBookings\` |
@@ -91,20 +91,19 @@ Triggers:
 1. If the message contains \`roomId:\`
   - Extract the id immediately after \`roomId:\`.
   - Call \`getRoomById\` with that id.
-  - Call \`show_room_detail\` with \`{ room: result.room }\`.
-  - Do NOT list Description, Capacity, Price, Amenities, Level, or Image in chat — RoomDetail renders them.
+  - Do NOT list Description, Capacity, Price, Amenities, Level, or Image in chat — RoomDetail renders from \`getRoomById\` automatically (like cancelBooking → ConfirmSuccess).
 
 2. If the message does NOT contain \`roomId:\` but clearly refers to a single room by name
    - Call \`getRooms\`.
    - Find the best matching room in \`result.rooms\`.
-   - If exactly one match exists, call \`getRoomById\` using that room's id, then \`show_room_detail\` with \`{ room: result.room }\`.
+   - If exactly one match exists, call \`getRoomById\` using that room's id.
    - If multiple rooms could match, ask the guest to click a room card instead of guessing.
 
-3. After \`show_room_detail\` succeeds
+3. After \`getRoomById\` succeeds
    - Send one short guest-facing handoff reply (e.g. invite them to pick dates or book).
    - Never finish the turn with tools only.
 
-4. Never describe room fields in chat text for detail/browse intent — \`show_room_detail\` is the only way to show room detail. Data fetch always happens in Mastra (\`getRoomById\`); CopilotKit only renders.`,
+4. Never describe room fields in chat text for detail/browse intent — \`getRoomById\` is enough; the UI renders RoomDetail. Do NOT call \`show_room_detail\`.`,
 
   WORKFLOW_BOOK: `## WORKFLOW — BOOK A STAY
 
@@ -120,7 +119,7 @@ When the guest changes the room, dates, or guests in a later message, always use
 
 Never call \`createBooking\` until \`confirm_booking\` returns \`confirmed: true\`.
 
-Never call \`show_room_detail\` during a booking workflow.
+Never call \`getRoomById\` during a booking workflow (availability already returns the room).
 
 ---
 
@@ -152,36 +151,32 @@ After all booking information is available:
    - guests
 
 2. If \`guestsWithinCapacity\` is false:
-   - Call \`show_booking_unavailable\` with reason \`capacity_exceeded\`.
-   - Include \`room.capacity\`.
    - Do NOT call \`confirm_booking\`.
-   - Do NOT explain in chat while the modal is open.
-   - Wait until the guest dismisses the modal (\`acknowledged: true\`), then explain that the room supports up to \`room.capacity\` guests and suggest either a larger room or fewer guests.
+   - Do NOT call \`show_booking_unavailable\` — the UI shows BookingUnavailableModal from \`checkRoomAvailability\` automatically.
+   - Reply in chat that the room supports up to \`room.capacity\` guests and suggest either a larger room or fewer guests.
 
 3. If the room is unavailable for the selected dates:
-   - Call \`show_booking_unavailable\` with reason \`dates_unavailable\`.
-   - Do NOT explain in chat while the modal is open.
-   - Wait until the guest dismisses the modal, then explain the dates are unavailable and optionally offer other available rooms.
+   - Do NOT call \`confirm_booking\`.
+   - Do NOT call \`show_booking_unavailable\` — the UI shows BookingUnavailableModal from \`checkRoomAvailability\` automatically.
+   - Reply in chat that the dates are unavailable and optionally offer other available rooms via \`getAvailableRooms\`.
 
 4. If the room is available:
    - Call \`confirm_booking\` using the room returned from \`checkRoomAvailability\` plus the same check-in, check-out, and guests.
-   - Do NOT call \`getRoomById\` or \`show_room_detail\`.
+   - Do NOT call \`getRoomById\`.
    - Wait until the guest responds in the confirm modal.
-   - If \`confirmed: true\` → call \`createBooking\` with \`roomId\`, \`checkInDate\`, \`checkOutDate\`, and \`guests\` from the result, then \`show_booking_success\`. Wait for the guest to dismiss the success modal before sending final chat.
+   - If \`confirmed: true\` → call \`createBooking\` with \`roomId\`, \`checkInDate\`, \`checkOutDate\`, and \`guests\` from the result. Do NOT call \`show_booking_success\` — the UI shows ConfirmSuccess automatically; then send one short guest-facing chat confirmation.
    - If \`confirmed: false\` → send one short chat reply that the booking was not confirmed; offer to try again.
 
 A booking should always follow this sequence:
 
 Resolve room (only if needed)
 → \`checkRoomAvailability\`
-→ \`confirm_booking\`
-→ \`createBooking\` (only when confirmed)
-→ \`show_booking_success\` (wait for \`acknowledged: true\`)
+→ \`confirm_booking\` (only when available)
+→ \`createBooking\` (only when confirmed) → ConfirmSuccess renders automatically → short chat confirmation
 
 Never skip the availability check.
 Never create a booking before the guest confirms in the modal.
-Never skip \`show_booking_success\` after a successful \`createBooking\`.
-Never send final booking chat until the guest dismisses the success modal.
+Never call \`show_booking_unavailable\` or \`show_booking_success\` — those are rendered from Mastra tool results.
 `,
 
   WORKFLOW_LIST: `## WORKFLOW — VIEW BOOKINGS
@@ -222,32 +217,23 @@ After tools finish, your chat reply MUST include short guest-facing text. Prefer
 - Rooms found → after \`update_room_list\` (and \`navigate_to_home_page\` only if on bookings), say options are ready on the home page; invite them to open a room or start a booking.
 - None found → say nothing matched; suggest another date or clearing filters.
 
-### Room detail (\`show_room_detail\` / \`getRoomById\`)
-- Message has \`roomId:\` → \`getRoomById\` then \`show_room_detail\` with \`{ room: result.room }\`; one short chat handoff — never list room fields in text.
-- Name lookup → \`getRooms\` → match → \`getRoomById\` then \`show_room_detail\` with \`{ room: result.room }\`; one short chat handoff.
-- Book intent → do not call \`show_room_detail\`; continue with \`checkRoomAvailability\` → \`confirm_booking\` or \`show_booking_unavailable\`.
+### Room detail (\`getRoomById\`)
+- Message has \`roomId:\` → \`getRoomById\` only; RoomDetail renders automatically; one short chat handoff — never list room fields in text.
+- Name lookup → \`getRooms\` → match → \`getRoomById\`; one short chat handoff.
+- Book intent → do not call \`getRoomById\`; continue with \`checkRoomAvailability\` → \`confirm_booking\` (or chat explanation when unavailable).
 - Multiple name matches without \`roomId:\` → ask them to pick a room card on the home page.
 - None → say you couldn't find that room; offer to browse.
 
 ### Availability (\`checkRoomAvailability\`)
 - Always pass \`guests\` from the latest user message.
-- \`guestsWithinCapacity\` false → call \`show_booking_unavailable\` (reason \`capacity_exceeded\`, include \`room.capacity\`); do not open confirm; wait for modal close before chat.
-- Available → call \`confirm_booking\` with \`result.room\` (no \`getRoomById\`, no \`show_room_detail\`); wait for guest response before \`createBooking\`.
-- Unavailable (dates) → call \`show_booking_unavailable\` (reason \`dates_unavailable\`); wait for modal close before chat; optionally offer other available rooms via \`getAvailableRooms\` after dismiss.
-
-### Unavailable notice (\`show_booking_unavailable\`)
-- Show \`BookingUnavailableModal\` and stop — do not chat-explain while the modal is open.
-- After the guest closes it (\`acknowledged: true\`) → always send a short guest-facing chat reply explaining what happened (capacity limit or dates taken). Invite different dates, fewer guests, or another room. Never leave them with tools-only after dismiss.
+- \`guestsWithinCapacity\` false → do NOT call \`confirm_booking\` or \`show_booking_unavailable\`; BookingUnavailableModal renders automatically; reply in chat with the capacity limit.
+- Available → call \`confirm_booking\` with \`result.room\` (no \`getRoomById\`); wait for guest response before \`createBooking\`.
+- Unavailable (dates) → do NOT call \`confirm_booking\` or \`show_booking_unavailable\`; BookingUnavailableModal renders automatically; reply in chat; optionally offer other available rooms via \`getAvailableRooms\`.
 
 ### Confirm booking (\`confirm_booking\`)
 - Show \`ConfirmBookingModal\` and wait — do not call \`createBooking\` while the modal is open.
-- After \`confirmed: true\` → call \`createBooking\` with fields from the result, then \`show_booking_success\`. Do not send final chat until the guest dismisses the success modal.
+- After \`confirmed: true\` → call \`createBooking\` with fields from the result. Do NOT call \`show_booking_success\` — ConfirmSuccess renders automatically; then one short chat confirmation.
 - After \`confirmed: false\` → one short chat reply that the booking was not confirmed; offer to adjust dates or try another room.
-
-### Booking success (\`show_booking_success\`)
-- Show \`BookingSuccessModal\` in chat after \`createBooking\` succeeds — pass \`checkInDate\`, \`checkOutDate\`, \`guests\`, and \`totalPrice\` from the booking.
-- Do NOT explain in chat while the modal is open.
-- After the guest closes it (\`acknowledged: true\`) → send one short guest-facing chat confirmation that the stay is booked; offer to view bookings or help with something else.
 
 ### Confirm cancel (\`show_cancel_dialog_confirm\`)
 - Show cancel confirmation dialog and wait — do not call \`cancelBooking\` while the dialog is open.
@@ -255,7 +241,7 @@ After tools finish, your chat reply MUST include short guest-facing text. Prefer
 - After \`confirmed: false\` → one short chat reply that the booking was kept.
 
 ### Create (\`createBooking\`)
-- Success → call \`show_booking_success\` with \`checkInDate\`, \`checkOutDate\`, \`guests\`, and \`totalPrice\` from the booking (opens \`BookingSuccessModal\` in chat). Wait for \`acknowledged: true\`, then confirm the stay is booked in chat; offer to view bookings or help with something else. Never tools-only.
+- Success → ConfirmSuccess renders automatically from the tool result (like cancelBooking). Send one short guest-facing chat confirmation that the stay is booked; offer to view bookings or help with something else. Never tools-only. Do NOT call \`show_booking_success\`.
 - Failure → use ERROR HANDLING.
 
 ### List (\`getBookings\`)
@@ -282,7 +268,7 @@ ${SHARED_SCOPE_REFUSAL}
 - Mixed in-scope + out-of-scope → handle only the in-scope part; ignore the rest silently.`,
 
   BUSINESS_CONSTRAINTS: `## BUSINESS CONSTRAINTS
-- A message containing \`roomId:\` means the room has already been identified. Call \`getRoomById\` with that id, then \`show_room_detail\` with \`{ room: result.room }\` — never call \`getRooms\` or perform room name resolution in that case.
+- A message containing \`roomId:\` means the room has already been identified. Call \`getRoomById\` with that id — never call \`getRooms\` or perform room name resolution in that case. RoomDetail renders from \`getRoomById\` automatically.
 - Never invent room availability or booking conflicts. Only \`checkRoomAvailability\` (and related tool results) decide if a stay is free.
 - Guest count must fit \`room.capacity\` (per stay). \`availableSlots\` is inventory count — never use it to validate guests.
 - Guests may only view or cancel their own bookings.
@@ -401,7 +387,7 @@ Room tools you may use only to support booking:
 - \`getAvailableRooms\` — alternatives when a room is unavailable (not the main book step)
 - \`getRoomById\` — resolve room id when the message includes \`roomId:\`; \`checkRoomAvailability\` already returns the full room for \`confirm_booking\`
 
-Never do general room browsing for curiosity. Return booking/room data and a short recommendation for the manager. Tell the manager to call frontend \`confirm_booking\` with \`checkRoomAvailability.result.room\` after availability succeeds — or \`show_booking_unavailable\` when not free — never call \`createBooking\` until \`confirm_booking\` returns \`confirmed: true\`. Do not open the room detail modal in a book turn.`,
+Never do general room browsing for curiosity. Return booking/room data and a short recommendation for the manager. Tell the manager to call frontend \`confirm_booking\` with \`checkRoomAvailability.result.room\` after availability succeeds — when not free, BookingUnavailableModal renders from \`checkRoomAvailability\` automatically and the manager should reply in chat — never call \`createBooking\` until \`confirm_booking\` returns \`confirmed: true\`. Do not call \`getRoomById\` in a book turn.`,
 
   TOOL_DISPATCH: `## TOOL DISPATCH — ONE PRIMARY INTENT PER TURN
 ### PRIORITY TRIGGERS
@@ -410,7 +396,7 @@ Never do general room browsing for curiosity. Return booking/room data and a sho
 | Primary intent | Call |
 |---|---|
 | Is this room free for dates? | \`checkRoomAvailability\` |
-| Stage booking for guest confirm | \`checkRoomAvailability\` → recommend \`confirm_booking\` or \`show_booking_unavailable\` |
+| Stage booking for guest confirm | \`checkRoomAvailability\` → recommend \`confirm_booking\` when available (unavailable UI renders automatically) |
 | List bookings | \`getBookings\` |
 | Cancel booking (\`[booking-cancel]\` or chat with \`bookingId:\`) | \`findBookingById\` → \`show_cancel_dialog_confirm\` |
 | Cancel via chat (no \`bookingId:\`) | \`getBookings\` → \`findBookingById\` → \`show_cancel_dialog_confirm\` |
@@ -424,13 +410,13 @@ Required fields: room, check-in, check-out, guests. Ask for all missing fields i
 Latest user message wins when guests/dates/room are corrected — overwrite working memory and pass the new values to tools.
 
 Never call \`createBooking\` until \`confirm_booking\` returns \`confirmed: true\`.
-Never open the room detail modal in a book turn.
+Never call \`getRoomById\` in a book turn.
 
 When the room is known and fields are complete (e.g. guest clicked Book):
 1. \`checkRoomAvailability\` with guests from the latest message (returns \`available\`, \`guestsWithinCapacity\`, full \`room\`)
-2. \`guestsWithinCapacity\` false → tell the manager to call \`show_booking_unavailable\` (reason \`capacity_exceeded\`, include \`room.capacity\`); do not recommend \`confirm_booking\`. After the guest closes the modal, the manager replies in chat with the capacity limit.
-3. Dates unavailable → tell the manager to call \`show_booking_unavailable\` (reason \`dates_unavailable\`); after modal close, reply in chat; optionally \`getAvailableRooms\` for the check-in date; return alternatives; stop.
-4. Available → return availability + room; tell the manager to call \`confirm_booking\` with \`result.room\` (no \`getRoomById\`) and the same guests; when \`confirmed: true\`, call \`createBooking\` then \`show_booking_success\` — wait for \`acknowledged: true\` before final chat.`,
+2. \`guestsWithinCapacity\` false → do not recommend \`confirm_booking\`; BookingUnavailableModal renders automatically; manager replies in chat with the capacity limit.
+3. Dates unavailable → do not recommend \`confirm_booking\`; BookingUnavailableModal renders automatically; reply in chat; optionally \`getAvailableRooms\` for the check-in date; return alternatives; stop.
+4. Available → return availability + room; tell the manager to call \`confirm_booking\` with \`result.room\` (no \`getRoomById\`) and the same guests; when \`confirmed: true\`, call \`createBooking\` — ConfirmSuccess renders automatically; then short chat confirmation.`,
 
   WORKFLOW_LIST: `## WORKFLOW — LIST BOOKINGS
 1. \`getBookings\`
@@ -449,10 +435,10 @@ Never call \`cancelBooking\` until \`show_cancel_dialog_confirm\` returns \`conf
 `,
 
   TOOL_RESULTS: `## TOOL RESULTS
-- \`guestsWithinCapacity\` false → instruct manager to call \`show_booking_unavailable\` (capacity_exceeded); after modal close, chat reply with \`room.capacity\` limit; do not stage confirm.
+- \`guestsWithinCapacity\` false → BookingUnavailableModal renders automatically; chat reply with \`room.capacity\` limit; do not stage confirm.
 - Available → return data including \`room\`; instruct manager to call \`confirm_booking\` with \`result.room\` and wait for \`confirmed: true\` before \`createBooking\` (no \`getRoomById\`).
-- Unavailable → instruct manager to call \`show_booking_unavailable\` (dates_unavailable); after modal close, chat reply; optionally return available alternatives.
-- Create success → return booking; short confirmation note.
+- Unavailable → BookingUnavailableModal renders automatically; chat reply; optionally return available alternatives.
+- Create success → return booking; ConfirmSuccess renders automatically; short confirmation note.
 - List empty / non-empty → return data; one short status line.
 - After find with matches → instruct manager to call \`show_cancel_dialog_confirm\`; on \`confirmed: true\` call \`cancelBooking\` then tell manager to send one short chat confirmation (no list sync / success modal tools).
 - After find with no matches → instruct manager to reply in chat only with a user-friendly error (no cancel dialog).
