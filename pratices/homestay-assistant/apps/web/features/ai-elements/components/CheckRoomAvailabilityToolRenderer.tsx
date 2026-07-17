@@ -11,7 +11,7 @@ import type {
 import {
   getAvailabilityFailureReason,
   isCheckRoomAvailabilityFailure,
-} from "@/features/ai-elements/utils/availability-failure";
+} from "@/features/ai-elements/utils";
 
 export const CheckRoomAvailabilityToolRenderer = ({
   status,

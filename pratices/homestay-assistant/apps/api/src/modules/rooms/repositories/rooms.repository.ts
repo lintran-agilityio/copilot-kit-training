@@ -58,6 +58,48 @@ export class RoomsRepository {
       .getMany();
   }
 
+  /**
+   * Finds rooms matching optional name, capacity, level, and availability filters.
+   *
+   * @param filters - Combined search/filter criteria; omit a field to skip it
+   * @returns Matching rooms ordered by name
+   */
+  async findByFilters(filters: {
+    name?: string;
+    guests?: number;
+    level?: number;
+    checkInDate?: Date;
+    checkOutDate?: Date;
+  }): Promise<RoomEntity[]> {
+    const qb = this.roomRepository.createQueryBuilder('room');
+
+    if (filters.checkInDate && filters.checkOutDate) {
+      qb.leftJoin('room.bookings', 'booking', BOOKING_OVERLAP_JOIN_CONDITION, {
+        activeStatuses: ACTIVE_BOOKING_STATUSES,
+        checkOutDate: filters.checkOutDate,
+        checkInDate: filters.checkInDate,
+      })
+        .andWhere('room.availableSlots > 0')
+        .andWhere('booking.id IS NULL');
+    }
+
+    if (filters.name?.trim()) {
+      qb.andWhere('LOWER(room.name) LIKE LOWER(:name)', {
+        name: `%${filters.name.trim()}%`,
+      });
+    }
+
+    if (filters.guests != null && !Number.isNaN(filters.guests)) {
+      qb.andWhere('room.capacity >= :guests', { guests: filters.guests });
+    }
+
+    if (filters.level != null && !Number.isNaN(filters.level)) {
+      qb.andWhere('room.level = :level', { level: filters.level });
+    }
+
+    return qb.orderBy('room.name', 'ASC').getMany();
+  }
+
   async findActiveBookingByRoomAndUser(
     roomId: string,
     userId: string,

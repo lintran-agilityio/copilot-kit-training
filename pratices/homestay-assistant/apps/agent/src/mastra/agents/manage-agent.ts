@@ -1,9 +1,9 @@
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
-import { AGENT_KEYS } from "@repo/constants";
-import { manageAgentPrompt } from "@/mastra/constants/prompts";
-import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants/working-memory";
+import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
+import { manageAgentPrompt } from "@/mastra/utils";
+import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants";
 import {
   cancelBookingTool,
   checkRoomAvailabilityTool,
@@ -12,7 +12,7 @@ import {
   getBookingsTool,
 } from "@/mastra/tools/booking";
 import {
-  getAvailableRoomsTool,
+  findRoomTool,
   getRoomByIdTool,
   getRoomsTool,
 } from "@/mastra/tools/rooms";
@@ -29,7 +29,7 @@ export const manageAgent = new Agent({
   },
   tools: {
     getRooms: getRoomsTool,
-    getAvailableRooms: getAvailableRoomsTool,
+    [TOOL_KEYS.GET.FIND_ROOM]: findRoomTool,
     getRoomById: getRoomByIdTool,
     checkRoomAvailability: checkRoomAvailabilityTool,
     createBooking: createBookingTool,

@@ -40,7 +40,7 @@ export const updateRoomListSchema = z.object({
   rooms: z
     .array(roomObjectSchema)
     .describe(
-      "Full room objects returned from getRooms or getAvailableRooms — pass the rooms array as-is",
+      "Full room objects returned from getRooms or find_room — pass the rooms array as-is",
     ),
   title: z
     .string()

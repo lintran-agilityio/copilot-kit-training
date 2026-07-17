@@ -12,8 +12,6 @@ export const cancelBookingTool = createTool({
   inputSchema: cancelBookingInputSchema,
   outputSchema: bookingSchema,
   execute: async ({ bookingId }) => {
-    const result = await cancelBooking(sanitizeBookingId(bookingId));
-    console.log("CANCEL BOOKING TOOL RESULT", result);
-    return result;
+    return await cancelBooking(sanitizeBookingId(bookingId));
   },
 });

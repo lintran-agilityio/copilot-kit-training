@@ -11,3 +11,6 @@ export const getRoomsOutputSchema = z.object({
 });
 
 export type GetRoomsOutput = z.infer<typeof getRoomsOutputSchema>;
+
+/** API list response for GET /rooms (with or without filters). */
+export const roomsListResponseSchema = z.array(roomSchema);
