@@ -6,7 +6,6 @@ export enum BookingStatus {
   CANCELLED = "cancelled",
 }
 
-export type BookingSubmitStatus = "idle" | "submitting" | "success" | "error";
 export interface BookingItem {
   id: string;
   userId: string;
@@ -16,37 +15,18 @@ export interface BookingItem {
   guests: number;
   totalPrice: number;
   status: BookingStatus;
-};
+}
 
 export interface BookingResponse extends BookingItem {
   room?: Room;
 }
-export interface SelectedRoom {
-  id: string;
-  name: string;
-  pricePerNight: number;
-  capacity: number;
-}
 
 export interface BookingDraft {
-  selectedRoom: SelectedRoom | null;
+  roomId: string | null;
   checkInDate: string | null;
   checkOutDate: string | null;
   guests: number;
-  totalPrice: number;
 }
-
-export type UpdateBookingFormInput = {
-  room: {
-    id: string;
-    name: string;
-    pricePerNight: number;
-    capacity: number;
-  };
-  checkInDate: string;
-  checkOutDate: string;
-  guests: number;
-};
 
 export type BookingDetails = {
   bookingId: string;

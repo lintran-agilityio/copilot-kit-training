@@ -88,9 +88,15 @@ export const getChatVisibleToolCalls = (toolCalls?: ToolCall[]) => {
   });
 };
 
+/** CopilotKit SuggestionEngine injects this as a user message on a cloned agent. */
+export const isSuggestionGenerationPrompt = (content: string) =>
+  content.includes("copilotkitSuggest") ||
+  content.startsWith("Suggest what the user could say next.");
+
 export const isHiddenAgentPrompt = (content: string) =>
   content.startsWith(PAGE_ROOMS_PROMPT_PREFIX) ||
   content.startsWith("Load all rooms.") ||
+  isSuggestionGenerationPrompt(content) ||
   /^Load rooms for \d{4}-\d{2}-\d{2}\./.test(content);
 
 export const getMessageTextContent = (

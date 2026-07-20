@@ -1,38 +1,56 @@
 import { useMemo } from "react";
+import { useSuggestions } from "@copilotkit/react-core/v2";
 
-import { buildActionPrompt } from "@repo/utils";
-import { useBooking } from "@/features/booking/hooks";
-import { SUGGESTIONS_BY_STATE } from "@/features/assistant-ui/constants";
-import {
-  ChatSuggestion,
-  ChatSuggestionState,
-} from "@/features/assistant-ui/types";
-import { useChatSuggestionState } from "@/features/assistant-ui/hooks/use-chat-suggestion-state";
+import { ChatSuggestion } from "@/features/assistant-ui/types";
+import { normalize } from "@/features/assistant-ui/utils";
 
-export const useChatSuggestions = (): ChatSuggestion[] => {
-  const state = useChatSuggestionState();
-  const selectedRoom = useBooking((s) => s.selectedRoom);
+type UseChatSuggestionsOptions = {
+  agentId: string;
+};
+
+export const useChatSuggestions = ({
+  agentId,
+}: UseChatSuggestionsOptions): ChatSuggestion[] => {
+  const { suggestions } = useSuggestions({ agentId });
 
   return useMemo(() => {
-    const baseSuggestions = SUGGESTIONS_BY_STATE[state as ChatSuggestionState];
+    const seen = new Set<string>();
 
-    if (state !== ChatSuggestionState.ROOM_DETAIL || !selectedRoom) {
-      return baseSuggestions;
-    }
+    console.table(
+      suggestions.map((suggestion) => ({
+        title: suggestion.title,
+        message: suggestion.message,
+        id: normalize(suggestion.title),
+      })),
+    );
+    return suggestions.reduce<ChatSuggestion[]>(
+      (result, suggestion) => {
+        const title = suggestion.title?.trim();
+        const message = suggestion.message?.trim();
 
-    return baseSuggestions.map((suggestion) => {
-      if (suggestion.id !== "book-room") {
-        return suggestion;
-      }
+        if (!title || !message) {
+          return result;
+        }
 
-      return {
-        ...suggestion,
-        prompt: buildActionPrompt({
-          action: "Book",
-          targetName: selectedRoom.name,
-          identifiers: { roomId: selectedRoom.id },
-        }),
-      };
-    });
-  }, [selectedRoom, state]);
+        // UI-level deduplication:
+        // same visible action = same suggestion.
+        const key = normalize(title);
+
+        if (seen.has(key)) {
+          return result;
+        }
+
+        seen.add(key);
+
+        result.push({
+          id: key,
+          label: title,
+          prompt: message,
+        });
+
+        return result;
+      },
+      [],
+    );
+  }, [suggestions]);
 };

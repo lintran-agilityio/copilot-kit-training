@@ -49,11 +49,7 @@ export const RoomDetail = ({
   imageUrls,
   ...room
 }: RoomDetailProps) => {
-  const setSelectedRoom = useBooking((state) => state.setSelectedRoom);
-  const setCheckInDate = useBooking((state) => state.setCheckInDate);
-  const setCheckOutDate = useBooking((state) => state.setCheckOutDate);
-  const setGuests = useBooking((state) => state.setGuests);
-  const calculateTotalPrice = useBooking((state) => state.calculateTotalPrice);
+  const updateBookingDraft = useBooking((state) => state.updateBookingDraft);
   const requestRoomBooking = useRequestRoomBooking();
   const {
     id,
@@ -114,8 +110,7 @@ export const RoomDetail = ({
 
     const adjustedCheckOut = toDateKey(addDays(parseDateKey(checkInDate), 1));
     setLocalCheckOut(adjustedCheckOut);
-    setCheckOutDate(adjustedCheckOut);
-  }, [checkInDate, checkOutDate, setCheckOutDate]);
+  }, [checkInDate, checkOutDate]);
 
   const matchesExistingBooking = useMemo(
     () =>
@@ -160,16 +155,12 @@ export const RoomDetail = ({
       return;
     }
 
-    setSelectedRoom({
-      id,
-      name,
-      pricePerNight,
-      capacity,
+    updateBookingDraft({
+      roomId: id,
+      checkInDate,
+      checkOutDate,
+      guests,
     });
-    setCheckInDate(checkInDate);
-    setCheckOutDate(checkOutDate);
-    setGuests(guests);
-    calculateTotalPrice();
   };
 
   const handleBook = () => {
@@ -200,25 +191,18 @@ export const RoomDetail = ({
         : toDateKey(addDays(parseDateKey(dateKey), 1));
 
     setLocalCheckIn(dateKey);
-    setCheckInDate(dateKey);
 
     if (nextCheckOut !== checkOutDate) {
       setLocalCheckOut(nextCheckOut);
-      setCheckOutDate(nextCheckOut);
     }
-
-    calculateTotalPrice();
   };
 
   const handleCheckOutChange = (dateKey: string) => {
     setLocalCheckOut(dateKey);
-    setCheckOutDate(dateKey);
-    calculateTotalPrice();
   };
 
   const handleGuestsChange = (count: number) => {
     setLocalGuests(count);
-    setGuests(count);
   };
 
   const headerLabel = matchesExistingBooking ? "Your booking" : "Room detail";
