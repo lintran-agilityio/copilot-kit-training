@@ -1,27 +1,18 @@
 "use client";
 
-import { useCallback, useContext } from "react";
-import { useStore } from "zustand";
+import { useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
-import { BookingStore } from "@/features/booking/stores/booking-store";
-import { BookingContext } from "@/features/booking/stores/booking-provider";
+import { useBookingStore } from "@/features/booking/stores/booking-store";
 import type { BookingResponse } from "@/features/booking/types/booking";
 import { buildBookingCancelMessage } from "@/features/booking/utils";
 import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
 
-export const useBooking = <T>(selector: (state: BookingStore) => T): T => {
-  const store = useContext(BookingContext);
-
-  if (!store) {
-    throw new Error("Booking context not found");
-  }
-
-  return useStore(store, selector);
-};
+/** Selector hook over the module booking store. */
+export const useBooking = useBookingStore;
 
 export const useCancelBooking = () => {
   const { user, isLoaded } = useUser();
@@ -72,5 +63,3 @@ export const useCancelBooking = () => {
     ],
   );
 };
-
-

@@ -7,7 +7,6 @@ type RoomStore = {
   roomListTitle: string | undefined;
   isRoomListLoading: boolean;
   updateRoomList: (rooms: Room[], title?: string) => void;
-  setRoomListLoading: (isLoading: boolean) => void;
 };
 
 export const useRoomStore = create<RoomStore>()((set) => ({
@@ -18,5 +17,4 @@ export const useRoomStore = create<RoomStore>()((set) => ({
   updateRoomList: (rooms, title) =>
     set({ rooms, roomListTitle: title, isRoomListLoading: false }),
 
-  setRoomListLoading: (isLoading) => set({ isRoomListLoading: isLoading }),
 }));

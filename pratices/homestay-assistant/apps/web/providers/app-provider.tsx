@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { BookingProvider } from "@/features/booking/stores/booking-provider";
 import { CopilotProvider } from "@/features/ai-elements/providers/copilot-provider";
+import {
+  DynamicSuggestionConfig,
+  HomestayAgentContext,
+} from "@/features/assistant-ui/components";
 
 type AppProviderProps = {
   children: React.ReactNode;
@@ -15,9 +18,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BookingProvider>
-        <CopilotProvider>{children}</CopilotProvider>
-      </BookingProvider>
+      <CopilotProvider>
+        <HomestayAgentContext />
+        <DynamicSuggestionConfig />
+        {children}
+      </CopilotProvider>
     </QueryClientProvider>
   );
 };

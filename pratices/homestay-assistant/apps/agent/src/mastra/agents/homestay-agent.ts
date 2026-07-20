@@ -2,7 +2,10 @@ import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { homeStayAgentPrompt } from "@/mastra/utils";
+import {
+  homeStayAgentPrompt,
+  withCurrentDateInstructions,
+} from "@/mastra/utils";
 import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants/working-memory";
 
 import {
@@ -18,7 +21,7 @@ export const homestayAgent = new Agent({
   description:
     "Room specialist for browsing rooms, searching/filtering rooms, and opening room details.",
 
-  instructions: homeStayAgentPrompt,
+  instructions: () => withCurrentDateInstructions(homeStayAgentPrompt),
 
   model: "openai/gpt-4o-mini",
 

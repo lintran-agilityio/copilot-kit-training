@@ -4,8 +4,16 @@ import { roomSchema } from "@/mastra/schemas/rooms/room.schema";
 
 export const checkRoomAvailabilityInputSchema = z.object({
   roomId: z.string().describe("Room ID to check"),
-  checkInDate: z.string().describe("Check-in date (YYYY-MM-DD)"),
-  checkOutDate: z.string().describe("Check-out date (YYYY-MM-DD)"),
+  checkInDate: z
+    .string()
+    .describe(
+      "Check-in date as absolute YYYY-MM-DD. Resolve relative phrases (today/tomorrow) from CURRENT DATE in instructions — never invent a year.",
+    ),
+  checkOutDate: z
+    .string()
+    .describe(
+      "Check-out date as absolute YYYY-MM-DD. Must be after checkInDate. Resolve relative phrases from CURRENT DATE.",
+    ),
   guests: z
     .number()
     .int()

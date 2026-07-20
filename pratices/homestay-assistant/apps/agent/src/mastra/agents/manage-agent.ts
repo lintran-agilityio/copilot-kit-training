@@ -2,7 +2,10 @@ import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
-import { manageAgentPrompt } from "@/mastra/utils";
+import {
+  manageAgentPrompt,
+  withCurrentDateInstructions,
+} from "@/mastra/utils";
 import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants";
 import {
   cancelBookingTool,
@@ -22,7 +25,7 @@ export const manageAgent = new Agent({
   name: "Homestay Manager Agent",
   description:
     "Public chat agent that coordinates room discovery and booking workflows.",
-  instructions: manageAgentPrompt,
+  instructions: () => withCurrentDateInstructions(manageAgentPrompt),
   model: "openai/gpt-4o-mini",
   defaultOptions: {
     maxSteps: 10,

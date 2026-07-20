@@ -12,14 +12,17 @@ import {
 } from "@/mastra/tools/booking";
 import { findRoomTool, getRoomByIdTool } from "@/mastra/tools/rooms";
 import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants";
-import { bookingAgentPrompt } from "@/mastra/utils";
+import {
+  bookingAgentPrompt,
+  withCurrentDateInstructions,
+} from "@/mastra/utils";
 
 export const bookingAgent = new Agent({
   id: AGENT_KEYS.BOOKING_ASSISTANT,
   name: "Booking Agent",
   description:
     "Booking specialist for creating bookings, confirming booking drafts, listing bookings, and cancellation flows.",
-  instructions: bookingAgentPrompt,
+  instructions: () => withCurrentDateInstructions(bookingAgentPrompt),
   model: "openai/gpt-4o-mini",
   tools: {
     createBooking: createBookingTool,

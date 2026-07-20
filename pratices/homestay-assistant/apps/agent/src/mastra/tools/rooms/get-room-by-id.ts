@@ -7,7 +7,7 @@ import { getRoomDetailInputSchema, getRoomDetailOutputSchema } from "@/mastra/sc
 export const getRoomByIdTool = createTool({
   id: TOOL_KEYS.GET.ROOM,
   description:
-    "Fetch a room by ID for detail/browse. Use when the message has roomId:, or after matching a room by name via find_room (exactly one match). RoomDetail renders automatically from this tool result — do NOT call show_room_detail. Always finish with one short guest-facing chat reply.",
+    "Fetch the complete room object by its unique roomId. Use only when the guest explicitly requests room details or when roomId is provided. Never use for search/filter requests.",
   inputSchema: getRoomDetailInputSchema,
   outputSchema: getRoomDetailOutputSchema,
   execute: async (inputData) => {
