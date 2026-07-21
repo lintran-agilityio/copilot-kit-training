@@ -3,8 +3,8 @@
 import { useCallback } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 
-import { useChatScopeKey } from "@/features/assistant-ui/hooks/use-chat-scope-key";
-import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
+import { useChatScopeKey } from "@/features/chat/hooks/use-chat-scope-key";
+import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 

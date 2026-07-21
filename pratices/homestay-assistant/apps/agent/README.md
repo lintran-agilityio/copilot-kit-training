@@ -1,30 +1,105 @@
-# agent
+# Agent (`apps/agent`)
 
-Welcome to your new [Mastra](https://mastra.ai/) project! We're excited to see what you'll build.
+Mastra agents for Homestay Assistant. Tools call the Nest API for rooms and bookings; CopilotKit consumes the exported agents from the web app.
 
-## Getting Started
+## Stack
 
-Start the development server:
+- Mastra (`@mastra/core`, memory, observability, LibSQL / DuckDB storage)
+- AG-UI Mastra adapter (`@ag-ui/mastra`)
+- OpenAI models (e.g. `openai/gpt-4o-mini`)
+- Shared packages: `@repo/constants`, `@repo/types`, `@repo/utils`
 
-```shell
-npm run dev
+Requires Node.js `>=22.13.0`.
+
+## Agents
+
+Registered in `src/mastra/index.ts` (Studio) and `src/mastra/runtime.ts` (CopilotKit runtime):
+
+| Agent | Key | Role |
+| --- | --- | --- |
+| Homestay Manager | manage assistant | Public chat agent: rooms + booking workflows |
+| Suggestion | suggestion assistant | Chat suggestions / tool-choice helpers |
+
+Additional specialist agents (e.g. homestay / booking) live under `src/mastra/agents/` and are composed into the manager flow via tools and prompts.
+
+## Tools
+
+| Domain | Tools |
+| --- | --- |
+| Rooms | `get_rooms`, `find_room`, `get_room_by_id` |
+| Bookings | `check_room_availability`, `create_booking`, `get_bookings`, `find_booking_by_id`, `cancel_booking` |
+
+Tool implementations call `API_URL` via services in `src/mastra/services/`.
+
+## Exports
+
+`package.json` exports used by `web`:
+
+| Export | Path | Use |
+| --- | --- | --- |
+| `agent` | `./src/mastra/index.ts` | Mastra instance / Studio agents |
+| `agent/copilotkit` | `./src/copilotkit.ts` | `getCopilotkitAgents(userId)` for the web runtime |
+| `agent/services` | `./src/services/index.ts` | Shared service helpers |
+
+## Environment
+
+```sh
+cp .env.example .env
 ```
 
-Open [http://localhost:4111](http://localhost:4111) in your browser to access [Mastra Studio](https://mastra.ai/docs/studio/overview). It provides an interactive UI for building and testing your agents, along with a REST API that exposes your Mastra application as a local service. This lets you start building without worrying about integration right away.
+| Variable | Description |
+| --- | --- |
+| `OPENAI_API_KEY` | Required for model calls |
+| `API_URL` | Nest API base URL (default `http://localhost:5001`) |
+| `MASTRA_PLATFORM_ACCESS_TOKEN` | Optional — Mastra Platform observability |
+| `MASTRA_PROJECT_ID` | Optional — Mastra Platform project |
+| `OPENAI_TRACING` | Optional — tracing flag |
 
-You can start editing files inside the `src/mastra` directory. The development server will automatically reload whenever you make changes.
+Ensure the **api** app is running before exercising tools that hit rooms/bookings.
 
-## Learn more
+## Run
 
-To learn more about Mastra, visit our [documentation](https://mastra.ai/docs/). Your bootstrapped project includes example code for [agents](https://mastra.ai/docs/agents/overview), [tools](https://mastra.ai/docs/agents/using-tools), [workflows](https://mastra.ai/docs/workflows/overview), [scorers](https://mastra.ai/docs/evals/overview), and [observability](https://mastra.ai/docs/observability/overview).
+From the monorepo root:
 
-If you're new to AI agents, check out our [course](https://mastra.ai/learn) and [YouTube videos](https://youtube.com/@mastra-ai). You can also join our [Discord](https://discord.gg/BTYqqHKUrf) community to get help and share your projects.
+```sh
+pnpm install
+pnpm agent
+```
 
-## Deploy to the Mastra platform
+Or from this directory:
 
-The [Mastra platform](https://projects.mastra.ai) provides two products for deploying and managing AI applications built with the Mastra framework:
+```sh
+pnpm dev
+```
 
-- **Studio**: A hosted visual environment for testing agents, running workflows, and inspecting traces
-- **Server**: A production deployment target that runs your Mastra application as an API server
+Mastra Studio: [http://localhost:4111](http://localhost:4111)
 
-Learn more in the [Mastra platform documentation](https://mastra.ai/docs/mastra-platform/overview).
+Other scripts:
+
+```sh
+pnpm build
+pnpm start
+```
+
+Use the `dev` / `build` / `start` scripts from `package.json` (do not invoke `mastra` CLI flags ad hoc unless you know you need them). See [`AGENTS.md`](./AGENTS.md).
+
+## Project layout
+
+```
+src/
+  mastra/
+    agents/        # manage, suggestion, specialists
+    tools/         # rooms + booking tools
+    schemas/       # Zod schemas for tool I/O
+    services/      # HTTP clients against the Nest API
+    constants/     # prompts, working-memory templates
+    index.ts       # Studio Mastra instance
+    runtime.ts     # CopilotKit runtime Mastra instance
+  copilotkit.ts    # AG-UI agent export for web
+```
+
+## Docs
+
+- [Mastra docs](https://mastra.ai/docs/)
+- [Mastra Studio](https://mastra.ai/docs/studio/overview)
+- Local agent rules: [`AGENTS.md`](./AGENTS.md)

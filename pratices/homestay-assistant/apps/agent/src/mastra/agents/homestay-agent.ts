@@ -1,7 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
-import { AGENT_KEYS } from "@repo/constants";
+import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import {
   homeStayAgentPrompt,
   withCurrentDateInstructions,
@@ -26,9 +26,9 @@ export const homestayAgent = new Agent({
   model: "openai/gpt-4o-mini",
 
   tools: {
-    getRoomById: getRoomByIdTool,
-    getRooms: getRoomsTool,
-    find_room: findRoomTool,
+    [TOOL_KEYS.BOOKING.GET_ROOM_BY_ID]: getRoomByIdTool,
+    [TOOL_KEYS.GET.ROOMS]: getRoomsTool,
+    [TOOL_KEYS.GET.FIND_ROOM]: findRoomTool,
   },
 
   memory: new Memory({

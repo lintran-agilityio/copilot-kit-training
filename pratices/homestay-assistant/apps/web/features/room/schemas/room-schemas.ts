@@ -40,7 +40,7 @@ export const updateRoomListSchema = z.object({
   rooms: z
     .array(roomObjectSchema)
     .describe(
-      "Full room objects returned from getRooms or find_room — pass the rooms array as-is",
+      "Full room objects returned from get_rooms or find_room — pass the rooms array as-is",
     ),
   title: z
     .string()
@@ -56,6 +56,6 @@ export const setRoomListLoadingSchema = z.object({
 
 export const showRoomDetailSchema = z.object({
   room: roomObjectSchema.describe(
-    "Full room object from getRoomById — pass result.room as-is",
+    "Full room object from get_room_by_id — pass result.room as-is",
   ),
 });

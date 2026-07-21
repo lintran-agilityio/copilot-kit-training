@@ -6,11 +6,11 @@ export const cancelBookingByRoomSchema = z.object({
   bookings: z
     .array(confirmCancelBookingSchema)
     .describe(
-      "Matching bookings from findBookingById — only call this tool when length > 0",
+      "Matching bookings from find_booking_by_id — only call this tool when length > 0",
     ),
   queryName: z
     .string()
-    .describe("Room display name from findBookingById — pass as-is"),
+    .describe("Room display name from find_booking_by_id — pass as-is"),
 });
 
 export type CancelBookingByRoomArgs = z.infer<typeof cancelBookingByRoomSchema>;

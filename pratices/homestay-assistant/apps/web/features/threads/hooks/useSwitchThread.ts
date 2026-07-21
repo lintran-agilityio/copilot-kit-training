@@ -6,7 +6,7 @@ import { useAgent } from "@copilotkit/react-core/v2";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useActiveThread } from "@/features/threads/hooks/useActiveThread";
 import { useThreadStore } from "@/features/threads/store/thread-store";
-import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
+import { useChatStore } from "@/features/chat/stores/chat-store";
 
 type UseSwitchThreadOptions = {
   agentId: string;

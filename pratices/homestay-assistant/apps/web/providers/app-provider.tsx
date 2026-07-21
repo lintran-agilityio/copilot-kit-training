@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { CopilotProvider } from "@/features/ai-elements/providers/copilot-provider";
+import { CopilotProvider } from "@/features/copilot/providers";
 import {
   DynamicSuggestionConfig,
   HomestayAgentContext,
-} from "@/features/assistant-ui/components";
+} from "@/features/chat/components";
 
 type AppProviderProps = {
   children: React.ReactNode;

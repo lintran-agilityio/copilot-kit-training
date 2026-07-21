@@ -36,7 +36,7 @@ const toFindRoomModelOutput = (output: FindRoomOutput) => {
 export const findRoomTool = createTool({
   id: TOOL_KEYS.GET.FIND_ROOM,
   description:
-    'REQUIRED for room search/filter and date availability. Call find_room when the guest searches by room name and/or filters by date, guests, or room level (any combination). Pass only the filters they gave. Do NOT use getRooms for name/date/filter queries. Results render as room cards in chat automatically — do NOT dump the full list in text. After calling: reply with ONE short confirmation of the search filters only (e.g. "Here are the available rooms matching your request …"). Do NOT restate any room fields (names, prices, descriptions, amenities, images) — ListRoomPreview already renders them. Never end the turn with tools only. For plain browse-all with no filters, prefer getRooms instead.',
+    'REQUIRED for room search/filter and date availability. Call find_room when the guest searches by room name and/or filters by date, guests, or room level (any combination). Pass only the filters they gave. Do NOT use get_rooms for name/date/filter queries. Results render as room cards in chat automatically — do NOT dump the full list in text. After calling: reply with ONE short confirmation of the search filters only (e.g. "Here are the available rooms matching your request …"). Do NOT restate any room fields (names, prices, descriptions, amenities, images) — ListRoomPreview already renders them. Never end the turn with tools only. For plain browse-all with no filters, prefer get_rooms instead.',
   inputSchema: findRoomInputSchema,
   outputSchema: findRoomOutputSchema,
   execute: async (inputData) => findRooms(inputData),

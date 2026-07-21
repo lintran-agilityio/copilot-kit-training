@@ -4,7 +4,7 @@ import { AGENT_KEYS } from "@repo/constants";
 import {
   deleteMastraThread,
   renameMastraThread,
-} from "@/features/assistant-ui/server/mastra-thread-store";
+} from "@/features/chat/server/mastra-thread-store";
 
 export const runtime = "nodejs";
 

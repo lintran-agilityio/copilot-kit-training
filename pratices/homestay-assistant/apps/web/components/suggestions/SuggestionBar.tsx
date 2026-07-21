@@ -1,7 +1,7 @@
 import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
-import { ChatSuggestion } from "@/features/assistant-ui/types";
-import { scheduleScrollChatToEnd } from "@/features/assistant-ui/utils";
+import { ChatSuggestion } from "@/features/chat/types";
+import { scheduleScrollChatToEnd } from "@/features/chat/utils";
 import { AGENT_KEYS } from "@repo/constants";
 import { CopilotSuggestion } from "@/components/suggestions/CopilotSuggestion";
 
