@@ -7,7 +7,7 @@ import { useCallback } from "react";
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId, buildActionPrompt } from "@repo/utils";
 import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
-
+import { useThreadStore } from "@/features/threads/store/thread-store";
 
 type OpenRoomDetailArgs = {
   roomId: string;
@@ -18,11 +18,11 @@ export const useRequestRoomDetail = () => {
   const { user, isLoaded } = useUser();
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
-  const currentThreadIds = useChatStore((state) => state.currentThreadIds);
+  const activeThreadIds = useThreadStore((state) => state.activeThreadIds);
+  const createDraftThread = useThreadStore((state) => state.createDraftThread);
   const setPendingOutboundMessage = useChatStore(
     (state) => state.setPendingOutboundMessage,
   );
-  const startNewThread = useChatStore((state) => state.startNewThread);
 
   return useCallback(
     ({ roomId, roomName }: OpenRoomDetailArgs) => {
@@ -31,7 +31,8 @@ export const useRequestRoomDetail = () => {
       }
 
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
-      const threadId = currentThreadIds[scopeKey] ?? startNewThread(scopeKey);
+      const threadId =
+        activeThreadIds[scopeKey] ?? createDraftThread(scopeKey);
       const message = buildActionPrompt({
         action: "Show detail room for",
         targetName: roomName || "this room",
@@ -59,12 +60,12 @@ export const useRequestRoomDetail = () => {
     },
     [
       agent,
+      activeThreadIds,
       copilotkit,
-      currentThreadIds,
+      createDraftThread,
       isLoaded,
       user?.id,
       setPendingOutboundMessage,
-      startNewThread,
     ],
   );
 };

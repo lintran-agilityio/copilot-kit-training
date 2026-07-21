@@ -21,8 +21,6 @@ import { findBookingById } from "@/mastra/services";
         "Authentication required to find bookings for cancellation",
       );
 
-      const result = await findBookingById(userId, sanitizeBookingId(bookingId));
-      console.log("FIND BOOKING BY ID TOOL RESULT", result);
-      return result;
+      return await findBookingById(userId, sanitizeBookingId(bookingId));
     },
   });

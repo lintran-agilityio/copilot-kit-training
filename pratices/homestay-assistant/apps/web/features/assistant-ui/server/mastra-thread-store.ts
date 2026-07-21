@@ -151,6 +151,28 @@ const getThreadName = (row: MastraThreadRow) => {
   return title || fallbackTitle || "New chat";
 };
 
+/**
+ * CopilotKit SuggestionEngine sets threadId to a fresh UUID per reload.
+ * When those runs used a memory-backed agent, they left ghost threads whose
+ * first user message is the injected suggest prompt — hide them from the UI.
+ */
+const isSuggestionGenerationThread = (firstUserContent: string | null) => {
+  if (!firstUserContent) {
+    return false;
+  }
+
+  const content = readStoredMessage({
+    id: "preview",
+    role: "user",
+    content: firstUserContent,
+  }).content;
+
+  return (
+    content.includes("copilotkitSuggest") ||
+    content.startsWith("Suggest what the user could say next.")
+  );
+};
+
 export const listMastraThreads = ({
   userId,
   agentId,
@@ -194,16 +216,23 @@ export const listMastraThreads = ({
       )
       .all(resourceId);
 
-    return rows.map((row) => ({
-      id: row.id,
-      agentId: parseAgentResourceId(row.resourceId).agentId || agentId,
-      name: getThreadName(row),
-      archived: false,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      ...(row.lastRunAt ? { lastRunAt: row.lastRunAt } : {}),
-      messageCount: row.messageCount,
-    }));
+    return rows
+      .filter((row) => !isSuggestionGenerationThread(row.firstUserContent))
+      .map((row) => ({
+        id: row.id,
+        agentId: parseAgentResourceId(row.resourceId).agentId || agentId,
+        name: getThreadName(row),
+        archived: false,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        ...(row.lastRunAt ? { lastRunAt: row.lastRunAt } : {}),
+        messageCount: row.messageCount,
+      }))
+      .filter(
+        (thread, index, allThreads) =>
+          allThreads.findIndex((candidate) => candidate.id === thread.id) ===
+          index,
+      );
   } finally {
     database.close();
   }

@@ -10,11 +10,13 @@ import { AGENT_KEYS } from '@repo/constants';
 import { studioDbPath } from './db-paths';
 
 import { manageAgent } from './agents/manage-agent';
+import { suggestionAgent } from './agents/suggestion-agent';
 
 export const mastra = new Mastra({
   workflows: {},
   agents: {
     [AGENT_KEYS.MANAGE_ASSISTANT]: manageAgent,
+    [AGENT_KEYS.SUGGESTION_ASSISTANT]: suggestionAgent,
   },
   storage: new MastraCompositeStore({
     id: 'composite-storage',

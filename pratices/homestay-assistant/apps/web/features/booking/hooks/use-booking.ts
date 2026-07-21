@@ -10,6 +10,7 @@ import { useBookingStore } from "@/features/booking/stores/booking-store";
 import type { BookingResponse } from "@/features/booking/types/booking";
 import { buildBookingCancelMessage } from "@/features/booking/utils";
 import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
+import { useThreadStore } from "@/features/threads/store/thread-store";
 
 /** Selector hook over the module booking store. */
 export const useBooking = useBookingStore;
@@ -19,9 +20,8 @@ export const useCancelBooking = () => {
   const { copilotkit } = useCopilotKit();
 
   const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
-  const currentThreadIds = useChatStore((state) => state.currentThreadIds);
-
-  const startNewThread = useChatStore((state) => state.startNewThread);
+  const activeThreadIds = useThreadStore((state) => state.activeThreadIds);
+  const createDraftThread = useThreadStore((state) => state.createDraftThread);
   const setPendingOutboundMessage = useChatStore(
     (state) => state.setPendingOutboundMessage,
   );
@@ -33,7 +33,8 @@ export const useCancelBooking = () => {
       if (!isLoaded || !user?.id || !booking.id || !room) return;
 
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
-      const threadId = currentThreadIds[scopeKey] ?? startNewThread(scopeKey);
+      const threadId =
+        activeThreadIds[scopeKey] ?? createDraftThread(scopeKey);
       const message = buildBookingCancelMessage(booking);
 
       if (copilotkit.runtimeConnectionStatus !== "connected") {
@@ -54,12 +55,12 @@ export const useCancelBooking = () => {
     },
     [
       agent,
+      activeThreadIds,
       copilotkit,
-      currentThreadIds,
+      createDraftThread,
       isLoaded,
       user?.id,
       setPendingOutboundMessage,
-      startNewThread,
     ],
   );
 };

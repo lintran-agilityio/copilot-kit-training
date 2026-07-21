@@ -14,7 +14,7 @@ import { WELCOME_MESSAGE } from "@/features/assistant-ui/constants";
 import {
   useChatSuggestions,
   useChatScroll,
-  useChatScopeKey,
+  useResetConversation,
   useThreadMessages,
 } from "@/features/assistant-ui/hooks";
 import {
@@ -26,22 +26,30 @@ import {
 import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
 import { ChatSidebarProps } from "@/features/assistant-ui/components/ChatSidebar";
 import { SuggestionBar } from "@/components/suggestions";
+import { ThreadLoadingStateView } from "@/features/threads/components";
+import { useChatSession } from "@/features/threads/hooks/useChatSession";
 
 export const ChatSidebarContent = ({
   className,
   agentId,
 }: ChatSidebarProps) => {
   const suggestions = useChatSuggestions({ agentId });
-  const { scopeKey } = useChatScopeKey(agentId);
-  const currentThreadId = useChatStore((state) =>
-    scopeKey ? state.currentThreadIds[scopeKey] : undefined,
-  );
+  const { resetConversation } = useResetConversation({ agentId });
+  const {
+    scopeKey,
+    activeThreadId,
+    loadingState,
+    error: loadError,
+    requestReload,
+  } = useChatSession({ agentId });
   const consumePendingOutboundMessage = useChatStore(
     (state) => state.consumePendingOutboundMessage,
   );
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId });
   const [hasHydrated, setHasHydrated] = useState(false);
+  const isThreadLoading = loadingState === "loading";
+  const isThreadError = loadingState === "error";
   const agentRef = useRef(agent);
   const copilotkitRef = useRef(copilotkit);
   const wasRuntimeConnectedRef = useRef(
@@ -80,17 +88,18 @@ export const ChatSidebarContent = ({
     isRunning: agent.isRunning,
     contentKey,
   });
-  useThreadMessages({ agent, agentId, threadId: currentThreadId });
+  useThreadMessages({ agent, agentId, threadId: activeThreadId });
 
   useEffect(() => {
     setHasHydrated(true);
   }, []);
 
+  // activeThreadId is the only id CopilotKit / AG-UI / Mastra should see.
   useEffect(() => {
-    if (currentThreadId) {
-      agent.threadId = currentThreadId;
+    if (activeThreadId) {
+      agent.threadId = activeThreadId;
     }
-  }, [agent, currentThreadId]);
+  }, [agent, activeThreadId]);
 
   const sendPendingMessageRef = useRef<(() => Promise<void>) | undefined>(
     undefined,
@@ -99,7 +108,7 @@ export const ChatSidebarContent = ({
   sendPendingMessageRef.current = async () => {
     if (
       !scopeKey ||
-      !currentThreadId ||
+      !activeThreadId ||
       copilotkitRef.current.runtimeConnectionStatus !== "connected"
     ) {
       return;
@@ -112,7 +121,7 @@ export const ChatSidebarContent = ({
 
     const currentAgent = agentRef.current;
     const currentCopilotkit = copilotkitRef.current;
-    currentAgent.threadId = currentThreadId;
+    currentAgent.threadId = activeThreadId;
 
     currentAgent.addMessage({
       id: crypto.randomUUID(),
@@ -142,7 +151,7 @@ export const ChatSidebarContent = ({
     <SuggestionBar
       suggestions={suggestions}
       agentId={agentId}
-      threadId={currentThreadId}
+      threadId={activeThreadId ?? undefined}
     />
   );
 
@@ -153,67 +162,80 @@ export const ChatSidebarContent = ({
         className,
       )}
     >
-      <HeaderChat online={displayedOnlineStatus} />
+      <HeaderChat online={displayedOnlineStatus} onReset={resetConversation} />
       <div
         data-sidebar-chat
         className={cn(
-          "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+          "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
           "[&_.copilotKitChat]:flex [&_.copilotKitChat]:h-full [&_.copilotKitChat]:min-h-0 [&_.copilotKitChat]:flex-col",
         )}
       >
-        <CopilotChat
-          agentId={agentId}
-          threadId={currentThreadId}
-          autoScroll="pin-to-bottom"
-          className="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-          // CopilotChat always injects autoSuggestions into scrollView when the
-          // chat has messages. Hide that built-in strip — we render SuggestionBar
-          // once in the footer (and on the welcome screen).
-          scrollView={{
-            className:
-              "app-scrollbar min-h-0 flex-1 [&_[data-testid=copilot-suggestions]]:hidden",
-          }}
-          labels={{
-            chatInputPlaceholder: "Ask me anything...",
-            welcomeMessageText: WELCOME_MESSAGE,
-          }}
-          welcomeScreen={(props) => (
-            <ChatWelcomeScreen {...props} suggestionView={suggestionBar} />
-          )}
-          messageView={{
-            className: "px-0 mx-0",
-            assistantMessage:
-              ChatAssistantMessage as typeof CopilotChatAssistantMessage,
-            userMessage: ChatUserMessage as typeof CopilotChatUserMessage,
-          }}
-          input={{
-            showDisclaimer: false,
-            bottomAnchored: true,
-            className: "pointer-events-auto m-4 mt-0",
-          }}
-        >
-          {({ scrollView, input }) => (
-            <div
-              data-testid="copilot-chat"
-              className="copilotKitChat flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-            >
+        {isThreadLoading || isThreadError ? (
+          <div className="absolute inset-0 z-10 bg-[#0a0a0a]">
+            <ThreadLoadingStateView
+              errorMessage={isThreadError ? loadError : null}
+              onRetry={isThreadError ? requestReload : undefined}
+            />
+          </div>
+        ) : null}
+        {!activeThreadId ? (
+          <ThreadLoadingStateView />
+        ) : (
+          <CopilotChat
+            key={activeThreadId}
+            agentId={agentId}
+            threadId={activeThreadId}
+            autoScroll="pin-to-bottom"
+            className="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+            // CopilotChat always injects autoSuggestions into scrollView when the
+            // chat has messages. Hide that built-in strip — we render SuggestionBar
+            // once in the footer (and on the welcome screen).
+            scrollView={{
+              className:
+                "app-scrollbar min-h-0 flex-1 [&_[data-testid=copilot-suggestions]]:hidden",
+            }}
+            labels={{
+              chatInputPlaceholder: "Ask me anything...",
+              welcomeMessageText: WELCOME_MESSAGE,
+            }}
+            welcomeScreen={(props) => (
+              <ChatWelcomeScreen {...props} suggestionView={suggestionBar} />
+            )}
+            messageView={{
+              className: "px-0 mx-0",
+              assistantMessage:
+                ChatAssistantMessage as typeof CopilotChatAssistantMessage,
+              userMessage: ChatUserMessage as typeof CopilotChatUserMessage,
+            }}
+            input={{
+              showDisclaimer: false,
+              bottomAnchored: true,
+              className: "pointer-events-auto m-4 mt-0",
+            }}
+          >
+            {({ scrollView, input }) => (
               <div
-                data-chat-messages
-                className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                data-testid="copilot-chat"
+                className="copilotKitChat flex h-full min-h-0 flex-1 flex-col overflow-hidden"
               >
-                {scrollView}
-                <div data-chat-bottom aria-hidden="true" className="hidden" />
+                <div
+                  data-chat-messages
+                  className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                >
+                  {scrollView}
+                  <div data-chat-bottom aria-hidden="true" className="hidden" />
+                </div>
+                <div
+                  data-chat-footer
+                  className="shrink-0 border-t border-white/5 bg-[#0a0a0a]"
+                >
+                  {suggestionBar}
+                  {input}
+                </div>
               </div>
-              <div
-                data-chat-footer
-                className="shrink-0 border-t border-white/5 bg-[#0a0a0a]"
-              >
-                {suggestionBar}
-                {input}
-              </div>
-            </div>
-          )}
-        </CopilotChat>
+            )}
+          </CopilotChat>
+        )}
       </div>
     </aside>
   );
