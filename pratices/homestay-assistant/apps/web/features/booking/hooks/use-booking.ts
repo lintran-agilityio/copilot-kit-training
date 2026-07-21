@@ -9,7 +9,7 @@ import { getAgentResourceId } from "@repo/utils";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import type { BookingResponse } from "@/features/booking/types/booking";
 import { buildBookingCancelMessage } from "@/features/booking/utils";
-import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
+import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 /** Selector hook over the module booking store. */

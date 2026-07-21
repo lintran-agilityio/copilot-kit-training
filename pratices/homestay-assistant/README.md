@@ -1,159 +1,111 @@
-# Turborepo starter
+# Homestay Assistant
 
-This Turborepo starter is maintained by the Turborepo core team.
+AI-assisted homestay booking monorepo. Guests chat with a CopilotKit-powered assistant to browse rooms, check availability, and manage bookings.
 
-## Using this example
+## Stack
 
-Run the following command:
+| Layer | Tech |
+| --- | --- |
+| Web | Next.js 16, CopilotKit, Clerk, TanStack Query, Zustand, Tailwind |
+| Agent | Mastra (OpenAI), AG-UI |
+| API | NestJS, TypeORM, PostgreSQL, Swagger |
+| Monorepo | pnpm workspaces + Turborepo |
 
-```sh
-npx create-turbo@latest
-```
+## Apps
 
-## What's inside?
+| App | Path | Port | Role |
+| --- | --- | --- | --- |
+| `web` | [`apps/web`](./apps/web) | `3000` | Chat UI, generative UI, BFF routes to the API |
+| `api` | [`apps/api`](./apps/api) | `5001` | Rooms & bookings REST API |
+| `agent` | [`apps/agent`](./apps/agent) | `4111` | Mastra agents, tools, and Studio |
 
-This Turborepo includes the following packages/apps:
+## Packages
 
-### Apps and Packages
+| Package | Purpose |
+| --- | --- |
+| `@repo/constants` | Shared agent keys, tool keys, routes |
+| `@repo/types` | Shared TypeScript types |
+| `@repo/utils` | Shared helpers (e.g. dates, agent resource IDs) |
+| `@repo/components` | Shared React components |
+| `@repo/ui` | Shared UI primitives |
+| `@repo/eslint-config` | ESLint presets |
+| `@repo/typescript-config` | Shared `tsconfig` bases |
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## Prerequisites
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+- Node.js `>=18` (agent requires `>=22.13.0`)
+- [pnpm](https://pnpm.io/) `11.9.0` (see `packageManager` in root `package.json`)
+- PostgreSQL (for `api`)
+- OpenAI API key (for `agent` / CopilotKit)
+- Clerk application keys (for `web` auth)
 
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
-```
-
-Without global `turbo`, use your package manager:
+## Setup
 
 ```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+pnpm install
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Configure env files per app (see each app README):
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+- [`apps/api/.env.example`](./apps/api/.env.example) → `apps/api/.env`
+- [`apps/agent/.env.example`](./apps/agent/.env.example) → `apps/agent/.env`
+- `apps/web/.env` — Clerk + OpenAI keys (see [`apps/web/README.md`](./apps/web/README.md))
+
+Then prepare the API database:
 
 ```sh
-turbo build --filter=docs
+pnpm --filter api db:migrate
+pnpm --filter api db:seed
 ```
 
-Without global `turbo`:
+## Develop
+
+Run everything:
 
 ```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+pnpm dev
 ```
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Or start apps individually from the repo root:
 
 ```sh
-cd my-turborepo
-turbo dev
+pnpm web    # Next.js → http://localhost:3000
+pnpm api    # NestJS  → http://localhost:5001
+pnpm agent  # Mastra  → http://localhost:4111
 ```
 
-Without global `turbo`, use your package manager:
+Typical local order: start **api**, then **agent**, then **web**.
+
+## Scripts
+
+| Script | Description |
+| --- | --- |
+| `pnpm build` | Build all apps/packages |
+| `pnpm dev` | Start all `dev` tasks |
+| `pnpm lint` | Lint across the workspace |
+| `pnpm check-types` | Typecheck across the workspace |
+| `pnpm format` | Format with Prettier |
+
+Filter a single package:
 
 ```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
+pnpm exec turbo build --filter=web
+pnpm exec turbo dev --filter=agent
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Architecture (high level)
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
+```
+Browser (web)
+  → CopilotKit runtime (/api/copilotkit)
+  → Mastra agents (agent package / Studio)
+  → Homestay REST API (NestJS + Postgres)
 ```
 
-Without global `turbo`:
+Web also proxies room/booking HTTP calls to the API via Next.js route handlers under `apps/web/app/api/`.
 
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+## Docs
 
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- [Web](./apps/web/README.md)
+- [API](./apps/api/README.md)
+- [Agent](./apps/agent/README.md)

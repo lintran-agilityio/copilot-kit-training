@@ -1,4 +1,4 @@
-import type { ChatThread } from "@/features/assistant-ui/types";
+import type { ChatThread } from "@/features/chat/types";
 import type { Thread } from "@/features/threads/types";
 
 const toDate = (value: string | undefined): Date | undefined => {

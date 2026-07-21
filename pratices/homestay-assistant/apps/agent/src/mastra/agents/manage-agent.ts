@@ -31,14 +31,14 @@ export const manageAgent = new Agent({
     maxSteps: 10,
   },
   tools: {
-    getRooms: getRoomsTool,
+    [TOOL_KEYS.GET.ROOMS]: getRoomsTool,
     [TOOL_KEYS.GET.FIND_ROOM]: findRoomTool,
-    getRoomById: getRoomByIdTool,
-    checkRoomAvailability: checkRoomAvailabilityTool,
-    createBooking: createBookingTool,
-    getBookings: getBookingsTool,
-    findBookingById: findBookingByIdTool,
-    cancelBooking: cancelBookingTool,
+    [TOOL_KEYS.BOOKING.GET_ROOM_BY_ID]: getRoomByIdTool,
+    [TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY]: checkRoomAvailabilityTool,
+    [TOOL_KEYS.BOOKING.CREATE_BOOKING]: createBookingTool,
+    [TOOL_KEYS.BOOKING.GET]: getBookingsTool,
+    [TOOL_KEYS.BOOKING.FIND_BY_ID]: findBookingByIdTool,
+    [TOOL_KEYS.BOOKING.CANCEL]: cancelBookingTool,
   },
   memory: new Memory({
     options: {

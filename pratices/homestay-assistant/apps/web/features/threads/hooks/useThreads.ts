@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo } from "react";
 
-import type { ChatThread } from "@/features/assistant-ui/types";
+import type { ChatThread } from "@/features/chat/types";
 import type { Thread } from "@/features/threads/types";
 import {
   groupThreadsByDate,

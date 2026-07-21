@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# Web (`apps/web`)
 
-## Getting Started
+Next.js frontend for Homestay Assistant. Guests sign in with Clerk, chat with the CopilotKit assistant, and interact with generative UI for rooms and bookings.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js 16 (App Router)
+- CopilotKit (`@copilotkit/react-core`, `@copilotkit/react-ui`, `@copilotkit/runtime`)
+- Clerk (`@clerk/nextjs`)
+- TanStack Query, Zustand
+- Tailwind CSS 4, Radix / shadcn-style UI
+- Shared packages: `@repo/components`, `@repo/constants`, `@repo/types`, `@repo/ui`, `@repo/utils`
+- Workspace dependency: `agent` (Mastra runtime wired into CopilotKit)
+
+## Features
+
+| Area | Location | Role |
+| --- | --- | --- |
+| Assistant UI | `features/assistant-ui` | Chat shell, suggestions, agent context |
+| Threads | `features/threads` | Thread list, create/switch/rename/delete |
+| Rooms | `features/room` | Room list/detail UI + stores |
+| Bookings | `features/booking` | Booking flows + stores |
+| Generative UI | `features/ai-elements` | Tool renderers (rooms, availability, etc.) |
+| BFF routes | `app/api/*` | Proxy to Nest API + CopilotKit runtime + threads |
+
+App routes include `/` (home/chat), `/login`, `/home`, and `/bookings`.
+
+## Prerequisites
+
+- Node.js `>=18`
+- Running **api** (default `http://localhost:5001`) for room/booking data
+- OpenAI API key (CopilotKit / agent)
+- Clerk app (publishable + secret keys)
+
+## Environment
+
+Create `apps/web/.env` (there is no checked-in `.env.example` yet):
+
+```env
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+OPENAI_API_KEY=sk-...
+API_URL=http://localhost:5001
+# optional — Mastra thread DB path override
+# MASTRA_DB_PATH=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Variable | Description |
+| --- | --- |
+| `NEXT_PUBLIC_CLERK_*` / `CLERK_SECRET_KEY` | Clerk auth |
+| `OPENAI_API_KEY` | Model access for the assistant runtime |
+| `API_URL` | Nest API base URL (defaults to `http://localhost:5001`) |
+| `MASTRA_DB_PATH` | Optional override for Mastra/SQLite thread storage |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Inter, a custom Google Font.
+From the monorepo root:
 
-## Learn More
+```sh
+pnpm install
+pnpm web
+```
 
-To learn more about Next.js, take a look at the following resources:
+Or from this directory:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```sh
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000).
 
-## Deploy on Vercel
+Other scripts:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sh
+pnpm build
+pnpm start
+pnpm lint
+pnpm check-types
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API routes (BFF)
+
+| Route | Purpose |
+| --- | --- |
+| `/api/copilotkit/[[...slug]]` | CopilotKit runtime → Mastra agents |
+| `/api/rooms` | Proxy room listing/detail to Nest API |
+| `/api/bookings` | Proxy bookings |
+| `/api/bookings/availability` | Availability checks |
+| `/api/bookings/[id]` | Booking by id |
+| `/api/threads` | Thread list/create |
+| `/api/threads/[threadId]` | Thread update/delete |
+| `/api/threads/[threadId]/messages` | Thread messages |
+
+## Project layout
+
+```
+app/                 # Next.js App Router pages + API routes
+components/          # App-level UI (layouts, suggestions, etc.)
+features/            # Domain features (assistant, threads, room, booking, ai-elements)
+providers/           # CopilotKit + app providers
+utils/               # Helpers (e.g. API URL)
+```

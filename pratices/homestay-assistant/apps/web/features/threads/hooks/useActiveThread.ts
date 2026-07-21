@@ -1,6 +1,6 @@
 "use client";
 
-import { useChatScopeKey } from "@/features/assistant-ui/hooks/use-chat-scope-key";
+import { useChatScopeKey } from "@/features/chat/hooks/use-chat-scope-key";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 type UseActiveThreadOptions = {

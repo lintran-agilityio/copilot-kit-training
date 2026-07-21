@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { AGENT_KEYS } from "@repo/constants";
 
-import { listMastraThreads } from "@/features/assistant-ui/server/mastra-thread-store";
+import { listMastraThreads } from "@/features/chat/server/mastra-thread-store";
 
 export const runtime = "nodejs";
 

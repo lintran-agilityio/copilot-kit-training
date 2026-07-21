@@ -21,7 +21,7 @@ import {
 
 const ChatSidebar = dynamic(
   () =>
-    import("@/features/assistant-ui/components/ChatSidebar").then(
+    import("@/features/chat/components/ChatSidebar").then(
       (mod) => mod.ChatSidebar,
     ),
   {
