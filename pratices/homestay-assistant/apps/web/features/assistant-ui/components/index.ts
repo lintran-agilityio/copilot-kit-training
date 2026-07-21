@@ -5,7 +5,5 @@ export * from "./ChatAvatars";
 export * from "./ChatWelcomeScreen";
 export * from "./ChatAssistantMessage";
 export * from "./ChatUserMessage";
-export * from "./ChatThreadList";
-export * from "./ThreadItem";
 export * from "./HomestayAgentContext";
 export * from "./DynamicSuggestionConfig";

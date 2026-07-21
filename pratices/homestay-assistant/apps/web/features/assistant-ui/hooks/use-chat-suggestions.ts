@@ -15,14 +15,6 @@ export const useChatSuggestions = ({
 
   return useMemo(() => {
     const seen = new Set<string>();
-
-    console.table(
-      suggestions.map((suggestion) => ({
-        title: suggestion.title,
-        message: suggestion.message,
-        id: normalize(suggestion.title),
-      })),
-    );
     return suggestions.reduce<ChatSuggestion[]>(
       (result, suggestion) => {
         const title = suggestion.title?.trim();

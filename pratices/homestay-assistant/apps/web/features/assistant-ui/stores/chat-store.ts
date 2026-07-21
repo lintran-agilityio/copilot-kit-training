@@ -1,36 +1,18 @@
 import { create } from "zustand";
 
+/**
+ * Outbound message queue only.
+ * activeThreadId lives in features/threads/store/thread-store.
+ */
 interface ChatStore {
-  currentThreadIds: Record<string, string | undefined>;
   pendingOutboundMessages: Record<string, string | undefined>;
-  setCurrentThreadId: (scopeKey: string, threadId: string) => void;
-  startNewThread: (scopeKey: string) => string;
   setPendingOutboundMessage: (scopeKey: string, message: string) => void;
+  clearPendingOutboundMessage: (scopeKey: string) => void;
   consumePendingOutboundMessage: (scopeKey: string) => string | undefined;
 }
 
 export const useChatStore = create<ChatStore>()((set, get) => ({
-  currentThreadIds: {},
   pendingOutboundMessages: {},
-  setCurrentThreadId: (scopeKey, threadId) =>
-    set((state) => ({
-      currentThreadIds: {
-        ...state.currentThreadIds,
-        [scopeKey]: threadId,
-      },
-    })),
-  startNewThread: (scopeKey) => {
-    const threadId = crypto.randomUUID();
-
-    set((state) => ({
-      currentThreadIds: {
-        ...state.currentThreadIds,
-        [scopeKey]: threadId,
-      },
-    }));
-
-    return threadId;
-  },
   setPendingOutboundMessage: (scopeKey, message) =>
     set((state) => ({
       pendingOutboundMessages: {
@@ -38,6 +20,17 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
         [scopeKey]: message,
       },
     })),
+  clearPendingOutboundMessage: (scopeKey) =>
+    set((state) => {
+      if (!(scopeKey in state.pendingOutboundMessages)) {
+        return state;
+      }
+
+      const pendingOutboundMessages = { ...state.pendingOutboundMessages };
+      delete pendingOutboundMessages[scopeKey];
+
+      return { pendingOutboundMessages };
+    }),
   consumePendingOutboundMessage: (scopeKey) => {
     const message = get().pendingOutboundMessages[scopeKey];
     if (!message) {

@@ -10,11 +10,12 @@ export const TOOL_KEYS = {
     BOOKINGS: "get-bookings",
   },
   BOOKING: {
+    /** @deprecated Legacy kebab id — kept only so CHAT_HIDDEN_TOOLS can filter old streams. Prefer CREATE_BOOKING. */
     CREATE: "create-booking",
     GET: "get-bookings",
     /** Mastra registration key (LLM tool name) — cancels after show_cancel_dialog_confirm returns confirmed: true. */
     CANCEL: "cancelBooking",
-    /** Mastra registration key — create booking after confirm_booking returns confirmed: true. */
+    /** Mastra createTool id + registration / useRenderTool name — create booking after confirm_booking returns confirmed: true. */
     CREATE_BOOKING: "createBooking",
     /** Mastra registration key — fetch room for detail; FE renders via useRenderTool. */
     GET_ROOM_BY_ID: "getRoomById",

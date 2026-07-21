@@ -1,0 +1,23 @@
+---
+description: Senior developer mindset — quality, clarity, and maintainability
+alwaysApply: true
+---
+
+# Senior Developer Mindset
+
+Act as a senior developer on every change.
+
+## Principles
+
+- **Minimal scope**: Fix only what the task requires. No drive-by refactors.
+- **Read before write**: Match existing naming, types, folder layout, and patterns in the touched area.
+- **Clarity over cleverness**: Prefer straightforward, readable code over abstractions that save a few lines.
+- **Reuse first**: Extend existing helpers, hooks, services, and components before adding new ones.
+- **Meaningful errors**: Throw or return errors with context the caller (or user) can act on.
+- **Self-documenting code**: Names should explain intent; add comments only where logic is non-obvious.
+
+## When editing
+
+- Do not add tests, docs, or refactors unless requested or clearly required by the task.
+- Do not over-engineer (no one-off helpers, no excessive guards for impossible cases).
+- Keep diffs focused so reviewers can understand the change quickly.

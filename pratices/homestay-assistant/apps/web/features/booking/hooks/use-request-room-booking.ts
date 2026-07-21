@@ -8,16 +8,17 @@ import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
 import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
+import { useThreadStore } from "@/features/threads/store/thread-store";
 
 export const useRequestRoomBooking = () => {
   const { user, isLoaded } = useUser();
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
-  const currentThreadIds = useChatStore((state) => state.currentThreadIds);
+  const activeThreadIds = useThreadStore((state) => state.activeThreadIds);
+  const createDraftThread = useThreadStore((state) => state.createDraftThread);
   const setPendingOutboundMessage = useChatStore(
     (state) => state.setPendingOutboundMessage,
   );
-  const startNewThread = useChatStore((state) => state.startNewThread);
 
   return useCallback(
     (message = "Book this room") => {
@@ -26,7 +27,8 @@ export const useRequestRoomBooking = () => {
       }
 
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
-      const threadId = currentThreadIds[scopeKey] ?? startNewThread(scopeKey);
+      const threadId =
+        activeThreadIds[scopeKey] ?? createDraftThread(scopeKey);
 
       if (copilotkit.runtimeConnectionStatus === "connected") {
         agent.threadId = threadId;
@@ -47,11 +49,11 @@ export const useRequestRoomBooking = () => {
     },
     [
       agent,
+      activeThreadIds,
       copilotkit,
-      currentThreadIds,
+      createDraftThread,
       isLoaded,
       setPendingOutboundMessage,
-      startNewThread,
       user?.id,
     ],
   );

@@ -26,7 +26,7 @@ const resolveCreateBookingUserId = (
 };
 
 export const createBookingTool = createTool({
-  id: TOOL_KEYS.BOOKING.CREATE,
+  id: TOOL_KEYS.BOOKING.CREATE_BOOKING,
   description:
     "Create a confirmed room booking after confirm_booking returns confirmed: true. Use roomId, checkInDate, checkOutDate, and guests from the confirm_booking result. ConfirmSuccess renders automatically from this tool result (like cancelBooking) — do NOT call show_booking_success. After success, send one short guest-facing chat confirmation. The signed-in user is resolved automatically from the server session.",
   inputSchema: createBookingSchema,

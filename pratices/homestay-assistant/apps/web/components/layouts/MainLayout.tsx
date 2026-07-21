@@ -10,8 +10,14 @@ import { AGENT_KEYS } from "@repo/constants";
 // Components
 import { Navbar } from "@/components/layouts";
 import { NavbarTab } from "@repo/types";
-import { useChatScopeKey, useChatThreads } from "@/features/assistant-ui/hooks";
-import { useChatStore } from "@/features/assistant-ui/stores/chat-store";
+import {
+  useActiveThread,
+  useCreateThread,
+  useDeleteThread,
+  useSwitchThread,
+  useThreads,
+  useThreadStore,
+} from "@/features/threads";
 
 const ChatSidebar = dynamic(
   () =>
@@ -26,15 +32,15 @@ const ChatSidebar = dynamic(
   },
 );
 
-const ChatThreadList = dynamic(
+const ThreadSidebar = dynamic(
   () =>
-    import("@/features/assistant-ui/components/ChatThreadList").then(
-      (mod) => mod.ChatThreadList,
+    import("@/features/threads/components/ThreadSidebar").then(
+      (mod) => mod.ThreadSidebar,
     ),
   {
     ssr: false,
     loading: () => (
-      <div className="h-full w-48 border-r border-white/10 px-3 py-3 text-xs text-zinc-500">
+      <div className="h-full w-56 border-r border-white/10 px-3 py-3 text-xs text-zinc-500">
         Loading threads...
       </div>
     ),
@@ -53,54 +59,73 @@ export const MainLayout = ({
   activeTab = NavbarTab.HOME,
 }: MainLayoutProps) => {
   const agentId = AGENT_KEYS.MANAGE_ASSISTANT;
-  const { scopeKey } = useChatScopeKey(agentId);
-  const currentThreadId = useChatStore((state) =>
-    scopeKey ? state.currentThreadIds[scopeKey] : undefined,
-  );
-  const setCurrentThreadId = useChatStore((state) => state.setCurrentThreadId);
-  const startNewThread = useChatStore((state) => state.startNewThread);
+  const { scopeKey, activeThreadId, setActiveThread } = useActiveThread({
+    agentId,
+  });
   const { agent } = useAgent({ agentId });
+  const { createThread } = useCreateThread({ agentId });
+  const { switchThread } = useSwitchThread({ agentId });
+  const loadingState = useThreadStore((state) => state.loadingState);
   const {
     threads,
+    threadGroups,
     isLoading: isLoadingThreads,
+    error: threadsError,
     refetchThreads,
     renameThread,
-    deleteThread,
-  } = useChatThreads({
+    deleteThread: deleteThreadRemote,
+  } = useThreads({
     agentId,
     enabled: Boolean(scopeKey),
   });
 
+  const handleCreateThread = useCallback(() => {
+    createThread();
+  }, [createThread]);
+
+  const { deleteThread } = useDeleteThread({
+    agentId,
+    threads,
+    deleteThreadRemote,
+    onCreateThread: handleCreateThread,
+  });
+
+  // Bootstrap: activate latest persisted thread, or create a draft.
   useEffect(() => {
-    if (!scopeKey || currentThreadId) {
+    if (!scopeKey || activeThreadId) {
       return;
     }
 
     const latestThread = threads[0];
 
     if (latestThread) {
-      setCurrentThreadId(scopeKey, latestThread.id);
+      agent.setMessages?.([]);
+      agent.threadId = latestThread.id;
+      setActiveThread(latestThread.id);
       return;
     }
 
     if (!isLoadingThreads) {
-      startNewThread(scopeKey);
+      handleCreateThread();
     }
   }, [
-    currentThreadId,
+    activeThreadId,
+    agent,
+    handleCreateThread,
     isLoadingThreads,
     scopeKey,
-    setCurrentThreadId,
-    startNewThread,
+    setActiveThread,
     threads,
   ]);
 
+  // Keep AG-UI agent.threadId === activeThreadId at all times.
   useEffect(() => {
-    if (currentThreadId) {
-      agent.threadId = currentThreadId;
+    if (activeThreadId) {
+      agent.threadId = activeThreadId;
     }
-  }, [agent, currentThreadId]);
+  }, [activeThreadId, agent]);
 
+  // After messages change, refresh persisted list (draft → sidebar row).
   useEffect(() => {
     if (!scopeKey || agent.messages.length === 0) {
       return;
@@ -113,29 +138,6 @@ export const MainLayout = ({
     return () => window.clearTimeout(refreshTimeout);
   }, [agent.messages.length, refetchThreads, scopeKey]);
 
-  const handleSelectThread = useCallback(
-    (threadId: string) => {
-      if (!scopeKey) {
-        return;
-      }
-
-      agent.threadId = threadId;
-      agent.setMessages?.([]);
-      setCurrentThreadId(scopeKey, threadId);
-    },
-    [agent, scopeKey, setCurrentThreadId],
-  );
-
-  const handleStartNewThread = useCallback(() => {
-    if (!scopeKey) {
-      return;
-    }
-
-    const threadId = startNewThread(scopeKey);
-    agent.threadId = threadId;
-    agent.setMessages?.([]);
-  }, [agent, scopeKey, startNewThread]);
-
   const handleRenameThread = useCallback(
     async (threadId: string, name: string) => {
       await renameThread(threadId, name);
@@ -143,71 +145,35 @@ export const MainLayout = ({
     [renameThread],
   );
 
-  const handleDeleteThread = useCallback(
-    async (threadId: string) => {
-      if (!scopeKey) {
-        return;
-      }
-
-      await deleteThread(threadId);
-
-      if (currentThreadId !== threadId) {
-        return;
-      }
-
-      const nextThread = threads.find((thread) => thread.id !== threadId);
-
-      if (nextThread) {
-        agent.threadId = nextThread.id;
-        agent.setMessages?.([]);
-        setCurrentThreadId(scopeKey, nextThread.id);
-        return;
-      }
-
-      const nextThreadId = startNewThread(scopeKey);
-      agent.threadId = nextThreadId;
-      agent.setMessages?.([]);
-    },
-    [
-      agent,
-      currentThreadId,
-      deleteThread,
-      scopeKey,
-      setCurrentThreadId,
-      startNewThread,
-      threads,
-    ],
-  );
-
   return (
     <div className="flex h-screen w-full justify-center mx-2 bg-[#010507]">
       <div
         className={cn(
           "flex flex-col h-full w-full max-w-[1920px] overflow-hidden  bg-[#010507] font-sans",
-          className
+          className,
         )}
       >
         <Navbar activeTab={activeTab} />
         <div className="flex min-h-0 min-w-0 flex-1">
           <div className="hidden h-full min-h-0 shrink-0 lg:block">
-            <ChatThreadList
+            <ThreadSidebar
               threads={threads}
-              currentThreadId={currentThreadId}
+              threadGroups={threadGroups}
+              activeThreadId={activeThreadId}
               isLoading={isLoadingThreads}
-              onSelectThread={handleSelectThread}
-              onStartNewThread={handleStartNewThread}
+              isSwitching={loadingState === "loading"}
+              error={threadsError}
+              onSelectThread={switchThread}
+              onCreateThread={handleCreateThread}
               onRenameThread={handleRenameThread}
-              onDeleteThread={handleDeleteThread}
+              onDeleteThread={deleteThread}
             />
           </div>
           <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
             {children}
           </main>
           <div className="hidden h-full min-h-0 w-[min(100%,400px)] shrink-0 lg:block">
-            <ChatSidebar
-              className="h-full"
-              agentId={agentId}
-            />
+            <ChatSidebar className="h-full" agentId={agentId} />
           </div>
         </div>
       </div>

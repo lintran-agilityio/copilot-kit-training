@@ -39,7 +39,9 @@ export const DynamicSuggestionConfig = ({
       minSuggestions: 1,
       maxSuggestions: 3,
       available: "always" as const,
-      providerAgentId: agentId,
+      // Memory-less provider: CopilotKit mints a new threadId per suggestion
+      // reload; using manage-assistant here persisted ghost sidebar threads.
+      providerAgentId: AGENT_KEYS.SUGGESTION_ASSISTANT,
       consumerAgentId: agentId,
     }),
     [agentId, instructions],

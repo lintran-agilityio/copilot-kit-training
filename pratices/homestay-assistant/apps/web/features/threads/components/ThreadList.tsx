@@ -1,0 +1,105 @@
+"use client";
+
+import type { Thread, ThreadDateGroup } from "@/features/threads/types";
+import { ThreadListItem } from "@/features/threads/components/ThreadListItem";
+
+type ThreadGroupProps = {
+  group: ThreadDateGroup;
+  activeThreadId?: string | null;
+  isSwitching?: boolean;
+  onSelect: (threadId: string) => void;
+  onRename: (threadId: string, name: string) => Promise<void>;
+  onDelete: (threadId: string) => Promise<void>;
+};
+
+const ThreadGroup = ({
+  group,
+  activeThreadId,
+  isSwitching = false,
+  onSelect,
+  onRename,
+  onDelete,
+}: ThreadGroupProps) => {
+  return (
+    <div className="space-y-1">
+      <p className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+        {group.label}
+      </p>
+      {group.threads.map((thread) => (
+        <ThreadListItem
+          key={thread.id}
+          thread={thread}
+          isActive={activeThreadId === thread.id}
+          isLoading={isSwitching && activeThreadId === thread.id}
+          onSelect={onSelect}
+          onRename={onRename}
+          onDelete={onDelete}
+        />
+      ))}
+    </div>
+  );
+};
+
+type ThreadListProps = {
+  groups: ThreadDateGroup[];
+  threads: Thread[];
+  activeThreadId?: string | null;
+  isLoading?: boolean;
+  isSwitching?: boolean;
+  error?: Error | null;
+  onSelect: (threadId: string) => void;
+  onRename: (threadId: string, name: string) => Promise<void>;
+  onDelete: (threadId: string) => Promise<void>;
+};
+
+export const ThreadList = ({
+  groups,
+  threads,
+  activeThreadId,
+  isLoading = false,
+  isSwitching = false,
+  error = null,
+  onSelect,
+  onRename,
+  onDelete,
+}: ThreadListProps) => {
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-white/5 px-3 py-2 text-xs text-zinc-500">
+        Loading threads...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+        Failed to load threads.
+      </div>
+    );
+  }
+
+  if (threads.length === 0) {
+    return (
+      <div className="rounded-xl border border-white/5 px-3 py-2 text-xs text-zinc-500">
+        No saved threads yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {groups.map((group) => (
+        <ThreadGroup
+          key={group.key}
+          group={group}
+          activeThreadId={activeThreadId}
+          isSwitching={isSwitching}
+          onSelect={onSelect}
+          onRename={onRename}
+          onDelete={onDelete}
+        />
+      ))}
+    </div>
+  );
+};

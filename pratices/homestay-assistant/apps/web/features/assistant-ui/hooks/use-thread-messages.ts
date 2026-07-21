@@ -8,20 +8,26 @@ import {
   mergeHydratedMessages,
   normalizeMessages,
 } from "@/features/assistant-ui/utils";
+import { useThreadStore } from "@/features/threads/store/thread-store";
 
 type UseThreadMessagesProps = {
   agent: {
+    threadId?: string;
     messages?: Message[];
     setMessages?: (messages: Message[]) => void;
   };
   agentId: string;
-  threadId?: string;
+  threadId?: string | null;
 };
 
 type ThreadMessagesResponse = {
   messages?: ChatMessage[];
 };
 
+/**
+ * Hydrates messages for activeThreadId from Mastra.
+ * Draft threads skip fetch (empty chat until first message persists).
+ */
 export const useThreadMessages = ({
   agent,
   agentId,
@@ -29,13 +35,28 @@ export const useThreadMessages = ({
 }: UseThreadMessagesProps) => {
   const agentRef = useRef(agent);
   agentRef.current = agent;
+  const setLoadingState = useThreadStore((state) => state.setLoadingState);
+  const setLoadError = useThreadStore((state) => state.setLoadError);
+  const reloadToken = useThreadStore((state) => state.reloadToken);
+  const isDraftThread = useThreadStore((state) => state.isDraftThread);
 
   useEffect(() => {
     if (!threadId || typeof agentRef.current.setMessages !== "function") {
       return;
     }
 
+    // Keep agent.threadId aligned with activeThreadId before any run.
+    agentRef.current.threadId = threadId;
+
+    if (isDraftThread(threadId)) {
+      setLoadError(null);
+      setLoadingState("loaded");
+      return;
+    }
+
     const abortController = new AbortController();
+    setLoadError(null);
+    setLoadingState("loading");
 
     const loadThreadMessages = async () => {
       try {
@@ -58,17 +79,28 @@ export const useThreadMessages = ({
             : {}),
         })) as Message[];
 
+        if (abortController.signal.aborted) {
+          return;
+        }
+
         const currentAgent = agentRef.current;
+        currentAgent.threadId = threadId;
         const merged = mergeHydratedMessages(
           currentAgent.messages ?? [],
           normalizeMessages(hydrated) as Message[],
         );
 
         currentAgent.setMessages?.(merged);
+        setLoadingState("loaded");
       } catch (error) {
-        if (!abortController.signal.aborted) {
-          console.error("Failed to load thread messages", error);
+        if (abortController.signal.aborted) {
+          return;
         }
+
+        const message =
+          error instanceof Error ? error.message : "Message loading failed";
+        console.error("Failed to load thread messages", error);
+        setLoadError(message);
       }
     };
 
@@ -77,5 +109,12 @@ export const useThreadMessages = ({
     return () => {
       abortController.abort();
     };
-  }, [agentId, threadId]);
+  }, [
+    agentId,
+    isDraftThread,
+    reloadToken,
+    setLoadError,
+    setLoadingState,
+    threadId,
+  ]);
 };
