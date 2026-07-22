@@ -18,6 +18,14 @@ export class CancellationBookingSummaryDto {
   @IsUUID()
   bookingId: string;
 
+  @ApiProperty({
+    description: 'Room ID associated with the booking',
+    example: 'lotus-garden',
+  })
+  @IsString()
+  @IsNotEmpty()
+  roomId: string;
+
   @ApiProperty({ example: 'Bamboo Family Suite' })
   @IsString()
   @IsNotEmpty()

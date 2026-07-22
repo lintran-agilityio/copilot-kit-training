@@ -11,18 +11,36 @@ import {
 
 type AppProviderProps = {
   children: React.ReactNode;
+  /** Copilot hooks require CopilotKit; keep false on login / pre-auth shells. */
+  withCopilot?: boolean;
 };
 
-export const AppProvider = ({ children }: AppProviderProps) => {
-  const [queryClient] = useState(() => new QueryClient());
+export const AppProvider = ({
+  children,
+  withCopilot = true,
+}: AppProviderProps) => {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000,
+          },
+        },
+      }),
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CopilotProvider>
-        <HomestayAgentContext />
-        <DynamicSuggestionConfig />
-        {children}
-      </CopilotProvider>
+      {withCopilot ? (
+        <CopilotProvider>
+          <HomestayAgentContext />
+          <DynamicSuggestionConfig />
+          {children}
+        </CopilotProvider>
+      ) : (
+        children
+      )}
     </QueryClientProvider>
   );
 };

@@ -7,6 +7,7 @@ export const cancelBookingInputSchema = z.object({
 
 export const cancellationBookingSchema = z.object({
   bookingId: z.string(),
+  roomId: z.string(),
   roomName: z.string(),
   checkInDate: z.string(),
   checkOutDate: z.string(),

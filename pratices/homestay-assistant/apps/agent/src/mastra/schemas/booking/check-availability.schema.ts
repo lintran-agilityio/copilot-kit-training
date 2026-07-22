@@ -21,6 +21,12 @@ export const checkRoomAvailabilityInputSchema = z.object({
     .describe(
       "Guest count from the LATEST user message. Validated against room.capacity (not availableSlots).",
     ),
+  excludeBookingId: z
+    .string()
+    .optional()
+    .describe(
+      "When modifying an existing booking, pass that booking's id so it is excluded from overlap detection (a room can have multiple bookings; the current one must not conflict with itself).",
+    ),
 });
 
 export const checkRoomAvailabilityOutputSchema = z.object({

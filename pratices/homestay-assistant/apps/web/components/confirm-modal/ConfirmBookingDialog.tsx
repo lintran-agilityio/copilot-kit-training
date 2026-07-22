@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { CalendarCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { countNightOfDates, formatPrice } from "@repo/utils";
+import {
+  countNightOfDates,
+  formatPrice,
+  formatShortDateForDisplay,
+} from "@repo/utils";
 
 export type ConfirmBookingDialogProps = {
   open: boolean;
@@ -20,6 +25,10 @@ export type ConfirmBookingDialogProps = {
   checkOutDate: string;
   guests: number;
   pricePerNight: number;
+  title?: string;
+  description?: ReactNode;
+  confirmLabel?: string;
+  submittingLabel?: string;
   isSubmitting?: boolean;
   canRespond?: boolean;
   errorMessage?: string | null;
@@ -34,6 +43,10 @@ export const ConfirmBookingDialog = ({
   checkOutDate,
   guests,
   pricePerNight,
+  title = "Confirm your booking?",
+  description,
+  confirmLabel = "Confirm booking",
+  submittingLabel = "Confirming…",
   isSubmitting = false,
   canRespond = true,
   errorMessage = null,
@@ -64,11 +77,15 @@ export const ConfirmBookingDialog = ({
             </div>
             <div className="space-y-1.5">
               <DialogTitle className="text-lg font-medium text-white">
-                Confirm your booking?
+                {title}
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
-                Review the details below before confirming your stay at{" "}
-                <span className="font-medium text-zinc-200">{roomName}</span>.
+                {description ?? (
+                  <>
+                    Review the details below before confirming your stay at{" "}
+                    <span className="font-medium text-zinc-200">{roomName}</span>.
+                  </>
+                )}
               </DialogDescription>
             </div>
           </div>
@@ -82,7 +99,8 @@ export const ConfirmBookingDialog = ({
           <div className="flex justify-between gap-4">
             <dt className="text-zinc-500">Dates</dt>
             <dd className="text-right text-zinc-100">
-              {checkInDate} → {checkOutDate}
+              {formatShortDateForDisplay(checkInDate)} →{" "}
+              {formatShortDateForDisplay(checkOutDate)}
             </dd>
           </div>
           <div className="flex justify-between gap-4">
@@ -118,7 +136,7 @@ export const ConfirmBookingDialog = ({
             onClick={onConfirm}
           >
             <CalendarCheck className="size-4" />
-            {isSubmitting ? "Confirming…" : "Confirm booking"}
+            {isSubmitting ? submittingLabel : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

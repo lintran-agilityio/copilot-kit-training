@@ -27,7 +27,18 @@ export const resolveDateOrToday = (value?: string | null): Date => {
 };
 
 export const parseRequiredDate = (value: string, fieldName = 'date'): Date => {
-  const parsed = new Date(value);
+  const trimmed = value.trim();
+  const ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+
+  // Parse calendar dates as UTC midnight so YYYY-MM-DD never shifts by timezone.
+  if (ymd) {
+    const year = Number(ymd[1]);
+    const month = Number(ymd[2]);
+    const day = Number(ymd[3]);
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  const parsed = new Date(trimmed);
 
   if (Number.isNaN(parsed.getTime())) {
     throw new BadRequestException(
@@ -39,7 +50,10 @@ export const parseRequiredDate = (value: string, fieldName = 'date'): Date => {
 };
 
 export const toDateKey = (date: Date): string => {
-  return date.toISOString().slice(0, 10);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 export const countNights = (checkIn: string, checkOut: string): number => {
