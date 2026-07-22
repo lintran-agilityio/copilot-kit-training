@@ -16,7 +16,8 @@ import { ConfirmCancelBookingModal } from "./ConfirmCancelBookingModal";
 import {
   isHitlToolAwaitingUser,
   isHitlToolFinished,
-} from "@/features/booking/copilot/utils/hitl-tool-status";
+  useHitlRespondOnce,
+} from "@/features/booking/copilot/utils";
 import type {
   CancelBookingByRoomArgs,
   CancelBookingByRoomResult,
@@ -58,6 +59,8 @@ export const CancelBookingByRoomModal = ({
   const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(
     null,
   );
+  const { respondOnce, canRespond } =
+    useHitlRespondOnce<CancelBookingByRoomResult>(respond);
 
   if (isHitlToolFinished(status)) {
     return null;
@@ -67,7 +70,6 @@ export const CancelBookingByRoomModal = ({
     return null;
   }
 
-  const canRespond = respond != null;
   const bookings = (args.bookings ?? []).filter(hasValidBooking);
 
   if (!bookings.length) {
@@ -76,19 +78,19 @@ export const CancelBookingByRoomModal = ({
 
   const handleOpenDialogCancelBooking = (nextOpen: boolean) => {
     if (!nextOpen && canRespond) {
-      void respond?.({ confirmed: false, reason: "declined" });
+      respondOnce({ confirmed: false, reason: "declined" });
     }
   };
 
   const handleKeepBookings = () => {
-    void respond?.({ confirmed: false, reason: "declined" });
+    respondOnce({ confirmed: false, reason: "declined" });
   };
 
   const confirmRespond = (bookingItem: BookingDetails) =>
-    respond
+    canRespond
       ? async (cancelResult: { confirmed: boolean; bookingId?: string }) => {
           if (cancelResult.confirmed && cancelResult.bookingId) {
-            await respond({
+            await respondOnce({
               confirmed: true,
               bookingId: cancelResult.bookingId,
               roomName: bookingItem.roomName,
@@ -96,7 +98,7 @@ export const CancelBookingByRoomModal = ({
             return;
           }
 
-          await respond({ confirmed: false, reason: "declined" });
+          await respondOnce({ confirmed: false, reason: "declined" });
         }
       : undefined;
 

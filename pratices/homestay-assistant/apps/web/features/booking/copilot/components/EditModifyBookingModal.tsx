@@ -17,6 +17,7 @@ import {
 import {
   isHitlToolAwaitingUser,
   isHitlToolFinished,
+  useHitlRespondOnce,
 } from "@/features/booking/copilot/utils";
 import type {
   EditModifyBookingArgs,
@@ -60,6 +61,9 @@ export const EditModifyBookingModal = ({
   args,
   respond,
 }: EditModifyBookingModalProps) => {
+  const { respondOnce, canRespond: canRespondHitl } =
+    useHitlRespondOnce<EditModifyBookingResult>(respond);
+
   const ready =
     isHitlToolAwaitingUser(status) &&
     !isHitlToolFinished(status) &&
@@ -100,7 +104,7 @@ export const EditModifyBookingModal = ({
     setDatesSeed(nextSeed);
   }, [ready, initialCheckIn, initialCheckOut, initialGuests, room]);
 
-  const canRespond = respond != null && ready && room != null;
+  const canRespond = canRespondHitl && ready && room != null;
 
   const hasValidDateRange =
     checkInDate != null &&
@@ -132,7 +136,7 @@ export const EditModifyBookingModal = ({
       return;
     }
 
-    respond({ confirmed: false });
+    void respondOnce({ confirmed: false });
   };
 
   const handleCheckInChange = (dateKey: string) => {
@@ -156,7 +160,7 @@ export const EditModifyBookingModal = ({
     setErrorMessage(null);
 
     try {
-      await respond!({
+      await respondOnce({
         confirmed: true,
         bookingId,
         roomId: room.id,
