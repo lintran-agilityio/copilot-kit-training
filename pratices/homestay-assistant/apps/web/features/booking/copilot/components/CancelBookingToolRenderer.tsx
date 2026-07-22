@@ -9,7 +9,7 @@ import type {
 } from "@/features/booking/copilot/types";
 import { Loading } from "@repo/components";
 import { parseToolResult } from "@repo/utils";
-import { ConfirmSuccess } from "@/components/common";
+import { ConfirmSuccess } from "@/components/confirm-modal";
 
 export const CancelBookingToolRenderer = ({
   status,

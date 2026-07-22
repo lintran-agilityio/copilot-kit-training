@@ -5,4 +5,3 @@ export * from "./check-room-availability-input-schema";
 export * from "./create-booking-input-schema";
 export * from "./show-booking-unavailable-schema";
 export * from "./confirm-booking-schema";
-export * from "./show-booking-success-schema";

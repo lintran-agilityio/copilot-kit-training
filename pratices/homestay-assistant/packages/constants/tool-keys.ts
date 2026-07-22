@@ -8,8 +8,6 @@ export const TOOL_KEYS = {
     FIND_ROOM: "find_room",
   },
   BOOKING: {
-    /** @deprecated Alias of CREATE_BOOKING — kept so CHAT_HIDDEN_TOOLS can filter old streams. Prefer CREATE_BOOKING. */
-    CREATE: "create_booking",
     GET: "get_bookings",
     /** Mastra registration key (LLM tool name) — cancels after show_cancel_dialog_confirm returns confirmed: true. */
     CANCEL: "cancel_booking",
@@ -22,12 +20,8 @@ export const TOOL_KEYS = {
     /** Frontend HITL — open cancel confirm dialog (only after find_booking_by_id returns bookings). */
     SHOW_CANCEL_DIALOG_CONFIRM: "show_cancel_dialog_confirm",
     FIND_BY_ID: "find_booking_by_id",
-    /** @deprecated Alias of CHECK_ROOM_AVAILABILITY — prefer CHECK_ROOM_AVAILABILITY. */
-    CHECK_AVAILABILITY: "check_room_availability",
   },
   ACTION: {
-    /** @deprecated Room detail renders from get_room_by_id via useRenderTool. */
-    SHOW_ROOM_DETAIL: "show_room_detail",
     /** Frontend HITL — confirm booking draft after check_room_availability succeeds. */
     CONFIRM_BOOKING: "confirm_booking",
     UPDATE_ROOM_LIST: "update_room_list",
