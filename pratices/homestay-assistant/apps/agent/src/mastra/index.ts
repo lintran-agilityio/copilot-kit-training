@@ -47,8 +47,3 @@ export const mastra = new Mastra({
     },
   }),
 });
-
-export const copilotkitAgents = MastraAgent.getLocalAgents({
-  mastra,
-  resourceId: 'default',
-});

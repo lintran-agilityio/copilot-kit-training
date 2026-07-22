@@ -164,6 +164,3 @@ export const useThreadStore = create<ThreadStoreState>()((set, get) => ({
     return get().activeThreadIds[scopeKey] ?? null;
   },
 }));
-
-/** @deprecated Use useThreadStore — kept as alias during migration. */
-export const useThreadSessionStore = useThreadStore;

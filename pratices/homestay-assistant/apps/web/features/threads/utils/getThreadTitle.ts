@@ -36,14 +36,3 @@ export const getThreadTitle = (
 
   return "New chat";
 };
-
-/** Client-side static title from the first user message (Option A). */
-export const titleFromFirstMessage = (message: string): string => {
-  const trimmed = message.trim().replace(/\s+/g, " ");
-
-  if (!trimmed) {
-    return "New chat";
-  }
-
-  return trimmed.length > 48 ? `${trimmed.slice(0, 45)}...` : trimmed;
-};

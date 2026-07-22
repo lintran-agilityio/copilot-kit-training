@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { addDays, startOfDay, cn } from "@repo/utils";
-import { CalendarDateButton } from "@/components/calendar/CalendarDateButton";
+import { CalendarDateButton } from "@/components/calendar";
 
 type DateStripProps = {
   label: string;

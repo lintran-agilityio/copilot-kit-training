@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
-import { ConfirmSuccess } from "@/components/common";
+import { ConfirmSuccess } from "@/components/confirm-modal";
 import { Loading } from "@repo/components";
 import { parseToolResult } from "@repo/utils";
 import { useBooking } from "@/features/booking/hooks";
