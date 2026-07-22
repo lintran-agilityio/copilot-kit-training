@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { BookingStatus, BookingCancelLookup } from "@repo/types";
+import { BookingStatus } from "@repo/types";
 import { sanitizeBookingId } from "@repo/utils";
 import {
   bookingSchema,
@@ -8,9 +8,12 @@ import {
   type Booking,
   type CheckRoomAvailabilityInput,
   type CreateBookingPayload,
+  type FindBookingByIdOutput,
+  type UpdateBookingSchema,
 } from "@/mastra/schemas/booking";
 import { ROUTES } from "@repo/constants";
-import { get, post, del } from "@/mastra/services/common";
+import { get, post, del, update } from "@/mastra/services/common";
+import { getRoom } from "@/mastra/services/rooms.service";
 
 export type GetBookingsParams = {
   userId?: string;
@@ -39,6 +42,23 @@ export const checkRoomAvailability = async (
     errorMessage: "Failed to check room availability",
   });
 
+export const updateBooking = async (
+  input: UpdateBookingSchema,
+): Promise<Booking> => {
+  const bookingId = sanitizeBookingId(input.bookingId);
+
+  return update(
+    `${ROUTES.BOOKINGS}/${encodeURIComponent(bookingId)}`,
+    {
+      checkInDate: input.checkInDate,
+      checkOutDate: input.checkOutDate,
+      guests: input.guests,
+    },
+    bookingSchema,
+    "Failed to update booking",
+  );
+};
+
 export const cancelBooking = async (bookingId: string): Promise<Booking> =>
   del(
     `${ROUTES.BOOKINGS}/${encodeURIComponent(sanitizeBookingId(bookingId))}`,
@@ -48,6 +68,7 @@ export const cancelBooking = async (bookingId: string): Promise<Booking> =>
 
 const toCancellationSummary = (booking: Booking) => ({
   bookingId: booking.id,
+  roomId: booking.roomId,
   roomName: booking.room?.name ?? "",
   checkInDate: booking.checkInDate,
   checkOutDate: booking.checkOutDate,
@@ -76,7 +97,7 @@ const isActiveBooking = (booking: Booking) => {
 export const findBookingById = async (
   userId: string,
   bookingId: string,
-): Promise<BookingCancelLookup> => {
+): Promise<FindBookingByIdOutput> => {
   const id = sanitizeBookingId(bookingId);
 
   if (!id) {
@@ -97,11 +118,13 @@ export const findBookingById = async (
     }
 
     const summary = toCancellationSummary(booking);
+    const room = await getRoom(booking.roomId);
 
     return {
       bookings: [summary],
       bookingId: id,
       queryName: summary.roomName,
+      room,
     };
   } catch {
     return { bookings: [], bookingId: id, queryName: "" };

@@ -1,6 +1,8 @@
 import {
   getBookingCancelDisplayText,
+  getBookingModifyDisplayText,
   isBookingCancelPrompt,
+  isBookingModifyPrompt,
   TOOL_KEYS,
 } from "@repo/constants";
 import type { CopilotChatAssistantMessageProps } from "@copilotkit/react-core/v2";
@@ -13,6 +15,7 @@ const MASTRA_BACKEND_TOOL_NAMES = [
   BOOKING.GET,
   BOOKING.CANCEL,
   BOOKING.CREATE_BOOKING,
+  BOOKING.UPDATE_BOOKING,
   BOOKING.CHECK_ROOM_AVAILABILITY,
   GET.ROOMS,
   GET.FIND_ROOM,
@@ -23,6 +26,7 @@ const MASTRA_BACKEND_TOOL_NAMES = [
 const RENDER_BACKEND_TOOLS = [
   BOOKING.CANCEL,
   BOOKING.CREATE_BOOKING,
+  BOOKING.UPDATE_BOOKING,
   BOOKING.GET_ROOM_BY_ID,
   GET.FIND_ROOM,
   BOOKING.CHECK_ROOM_AVAILABILITY,
@@ -59,6 +63,8 @@ export const CHAT_HIDDEN_TOOLS = new Set([
 export const PAGE_ONLY_GENERATIVE_TOOLS = CHAT_HIDDEN_TOOLS;
 export const CHAT_VISIBLE_GENERATIVE_TOOLS = new Set([
   ACTION.CONFIRM_BOOKING,
+  ACTION.EDIT_MODIFY_BOOKING,
+  ACTION.CONFIRM_MODIFY_BOOKING,
   BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
   ...RENDER_BACKEND_TOOLS,
 ]);
@@ -130,6 +136,10 @@ export const getMessageTextContent = (
 export const getUserVisibleMessageContent = (content: string) => {
   if (isBookingCancelPrompt(content)) {
     return getBookingCancelDisplayText(content);
+  }
+
+  if (isBookingModifyPrompt(content)) {
+    return getBookingModifyDisplayText(content);
   }
 
   return content;

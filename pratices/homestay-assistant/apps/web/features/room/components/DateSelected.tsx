@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { addDays, startOfDay, cn } from "@repo/utils";
+import { addDays, startOfDay, toDateKey, cn } from "@repo/utils";
 import { CalendarDateButton } from "@/components/calendar";
 
 type DateStripProps = {
@@ -11,6 +11,8 @@ type DateStripProps = {
   disabled?: boolean;
   onSelect: (date: Date) => void;
 };
+
+const windowStartFor = (anchor: Date) => startOfDay(addDays(anchor, -2));
 
 export const DateSelected = ({
   label,
@@ -23,8 +25,23 @@ export const DateSelected = ({
   const initialWindow = selectedDate ?? minDate ?? today;
 
   const [windowStart, setWindowStart] = useState(() =>
-    startOfDay(addDays(initialWindow, -2)),
+    windowStartFor(initialWindow),
   );
+
+  // When the parent sets/changes the selected date (e.g. modify modal prefills
+  // a booking), keep that date visible in the 7-day strip.
+  useEffect(() => {
+    if (!selectedDate) {
+      return;
+    }
+
+    const selected = startOfDay(selectedDate);
+    const windowEnd = addDays(windowStart, 6);
+
+    if (selected < windowStart || selected > windowEnd) {
+      setWindowStart(windowStartFor(selected));
+    }
+  }, [selectedDate, windowStart]);
 
   const dates = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(windowStart, index)),
@@ -60,14 +77,15 @@ export const DateSelected = ({
           {dates.map((date) => {
             const isDisabled =
               disabled || (minDate ? date < minDate : date < today);
+            const isSelected =
+              selectedDate != null &&
+              toDateKey(selectedDate) === toDateKey(date);
 
             return (
               <CalendarDateButton
-                key={date.toISOString()}
+                key={toDateKey(date)}
                 date={date}
-                isSelected={
-                  selectedDate?.toDateString() === date.toDateString()
-                }
+                isSelected={isSelected}
                 onSelect={(nextDate) => {
                   if (!isDisabled) {
                     onSelect(nextDate);

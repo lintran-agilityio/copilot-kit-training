@@ -15,6 +15,7 @@ export async function GET(request: Request) {
   const checkInDate = searchParams.get("checkInDate");
   const checkOutDate = searchParams.get("checkOutDate");
   const guestsParam = searchParams.get("guests");
+  const excludeBookingId = searchParams.get("excludeBookingId") ?? undefined;
   const guests =
     guestsParam != null && guestsParam !== ""
       ? Number(guestsParam)
@@ -43,6 +44,7 @@ export async function GET(request: Request) {
     checkInDate,
     checkOutDate,
     guests,
+    excludeBookingId,
   });
 
   return Response.json(result);

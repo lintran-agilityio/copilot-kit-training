@@ -2,7 +2,10 @@ import { EmptyMessages } from "@repo/components";
 import { BookingCard } from "@/features/booking/components/BookingCard";
 import type { BookingResponse } from "@/features/booking/types/booking";
 import { cn } from "@repo/utils";
-import { useCancelBooking } from "@/features/booking/hooks/use-booking";
+import {
+  useCancelBooking,
+  useModifyBooking,
+} from "@/features/booking/hooks/use-booking";
 import { RoomListSkeleton } from "@/components/common";
 
 type BookingListProps = {
@@ -21,6 +24,7 @@ export const BookingList = ({
   error,
 }: BookingListProps) => {
   const cancelBooking = useCancelBooking();
+  const modifyBooking = useModifyBooking();
 
   if (isLoading) {
     return (
@@ -57,6 +61,7 @@ export const BookingList = ({
             key={booking.id}
             booking={booking}
             onCancelBooking={cancelBooking}
+            onModifyBooking={modifyBooking}
           />
         ))}
       </div>

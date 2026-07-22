@@ -18,6 +18,7 @@ export const checkRoomAvailability = async ({
   checkInDate,
   checkOutDate,
   guests,
+  excludeBookingId,
 }: CheckRoomAvailabilityProps): Promise<CheckRoomAvailabilityResult> => {
   const params = new URLSearchParams({
     roomId,
@@ -26,6 +27,9 @@ export const checkRoomAvailability = async ({
   });
   if (guests != null) {
     params.set("guests", String(guests));
+  }
+  if (excludeBookingId) {
+    params.set("excludeBookingId", excludeBookingId);
   }
   const baseUrl = getBaseUrl(via);
   const response = await fetch(

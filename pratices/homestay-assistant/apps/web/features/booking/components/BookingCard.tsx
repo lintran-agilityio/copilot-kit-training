@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, CalendarRange, Users } from "lucide-react";
+import { CalendarCheck, CalendarRange, Pencil, Users } from "lucide-react";
 import Image, { type StaticImageData } from "next/image";
 import { useState } from "react";
 
@@ -18,21 +18,35 @@ type BookingCardProps = {
   booking: BookingResponse;
   className?: string;
   onCancelBooking?: (booking: BookingResponse) => void;
+  onModifyBooking?: (booking: BookingResponse) => void;
 };
 
-export const BookingCard = ({ booking, className, onCancelBooking }: BookingCardProps) => {
+export const BookingCard = ({
+  booking,
+  className,
+  onCancelBooking,
+  onModifyBooking,
+}: BookingCardProps) => {
+  const { checkInDate, checkOutDate, guests, totalPrice, status } = booking;
   const room = booking.room;
   const imageUrl = room?.imageUrl ?? "";
   const [url, setUrl] = useState<string | StaticImageData>(
     resolveRoomImage(imageUrl),
   );
 
-  const canCancel = isBookingCancellable(booking.status, booking.checkOutDate);
+  const canModify = isBookingCancellable(status, checkOutDate);
+  const canCancel = canModify;
 
   const handleCancelBooking = () => {
     if (!room || !canCancel) return;
 
     onCancelBooking?.(booking);
+  };
+
+  const handleModifyBooking = () => {
+    if (!room || !canModify) return;
+
+    onModifyBooking?.(booking);
   };
 
   return (
@@ -70,7 +84,7 @@ export const BookingCard = ({ booking, className, onCancelBooking }: BookingCard
             <span />
           )}
 
-          <BookingStatusBadge status={booking.status} />
+          <BookingStatusBadge status={status} />
         </div>
       </div>
 
@@ -82,15 +96,15 @@ export const BookingCard = ({ booking, className, onCancelBooking }: BookingCard
 
           <div className="flex shrink-0 items-center gap-1.5 text-zinc-400">
             <Users className="size-3.5" />
-            <span className="text-xs">{booking.guests}</span>
+            <span className="text-xs">{guests}</span>
           </div>
         </div>
 
         <div className="flex items-start gap-2 text-sm text-zinc-400">
           <CalendarRange className="mt-0.5 size-4 shrink-0 text-zinc-500" />
           <p>
-            {formatShortDateForDisplay(booking.checkInDate)} →{" "}
-            {formatShortDateForDisplay(booking.checkOutDate)}
+            {formatShortDateForDisplay(checkInDate)} →{" "}
+            {formatShortDateForDisplay(checkOutDate)}
           </p>
         </div>
 
@@ -99,20 +113,36 @@ export const BookingCard = ({ booking, className, onCancelBooking }: BookingCard
             Total
           </span>
           <span className="font-medium text-emerald-300">
-            {formatPrice(booking.totalPrice)}
+            {formatPrice(totalPrice)}
           </span>
         </div>
       </div>
-      {canCancel ? (
-        <Button
-          type="button"
-          size="lg"
-          className="m-4 h-11 w-auto gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
-          onClick={handleCancelBooking}
-        >
-          <CalendarCheck className="size-4" />
-          Cancel Booking
-        </Button>
+      {canModify || canCancel ? (
+        <div className="m-4 mt-0 flex gap-2">
+          {canModify ? (
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              className="h-11 min-w-10 flex-1 gap-2 border-white/10 bg-transparent text-base font-medium text-zinc-100 hover:bg-white/5 hover:text-white cursor-pointer"
+              onClick={handleModifyBooking}
+            >
+              <Pencil className="size-4" />
+              Modify
+            </Button>
+          ) : null}
+          {canCancel ? (
+            <Button
+              type="button"
+              size="lg"
+              className="h-11 min-w-10 flex-1 gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
+              onClick={handleCancelBooking}
+            >
+              <CalendarCheck className="size-4" />
+              Cancel
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </article>
   );

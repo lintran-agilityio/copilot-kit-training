@@ -136,6 +136,7 @@ export class BookingService {
       room,
       checkInDate,
       checkOutDate,
+      query.excludeBookingId,
     );
 
     const guests = this.parseOptionalGuests(query.guests);
@@ -230,6 +231,7 @@ export class BookingService {
 
     return {
       bookingId: booking.id,
+      roomId: booking.roomId,
       roomName,
       checkInDate: booking.checkInDate,
       checkOutDate: booking.checkOutDate,
@@ -270,6 +272,7 @@ export class BookingService {
     room: RoomEntity,
     checkInDate: Date,
     checkOutDate: Date,
+    excludeBookingId?: string,
   ): Promise<boolean> {
     if (room.availableSlots <= 0) {
       return false;
@@ -279,6 +282,7 @@ export class BookingService {
       room.id,
       checkInDate,
       checkOutDate,
+      excludeBookingId,
     );
 
     return !hasOverlap;

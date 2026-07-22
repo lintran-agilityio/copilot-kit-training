@@ -13,6 +13,7 @@ import {
   createBookingTool,
   findBookingByIdTool,
   getBookingsTool,
+  updateBookingTool,
 } from "@/mastra/tools/booking";
 import {
   findRoomTool,
@@ -36,6 +37,7 @@ export const manageAgent = new Agent({
     [TOOL_KEYS.BOOKING.GET_ROOM_BY_ID]: getRoomByIdTool,
     [TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY]: checkRoomAvailabilityTool,
     [TOOL_KEYS.BOOKING.CREATE_BOOKING]: createBookingTool,
+    [TOOL_KEYS.BOOKING.UPDATE_BOOKING]: updateBookingTool,
     [TOOL_KEYS.BOOKING.GET]: getBookingsTool,
     [TOOL_KEYS.BOOKING.FIND_BY_ID]: findBookingByIdTool,
     [TOOL_KEYS.BOOKING.CANCEL]: cancelBookingTool,

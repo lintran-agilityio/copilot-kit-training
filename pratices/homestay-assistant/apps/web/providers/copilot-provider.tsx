@@ -62,13 +62,22 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
   const pathname = usePathname();
   const { isLoaded, userId } = useAuth();
 
-  if (isLoginRoute(pathname) || !userId) {
-    return children;
+  // Always provide QueryClient — pages like /bookings use useQuery even before
+  // CopilotKit mounts (Clerk hydration can briefly report !userId).
+  if (isLoginRoute(pathname)) {
+    return <AppProvider withCopilot={false}>{children}</AppProvider>;
   }
 
-  // Clerk is still initializing
   if (!isLoaded) {
-    return <AuthLoadingFallback />;
+    return (
+      <AppProvider withCopilot={false}>
+        <AuthLoadingFallback />
+      </AppProvider>
+    );
+  }
+
+  if (!userId) {
+    return <AppProvider withCopilot={false}>{children}</AppProvider>;
   }
 
   return (

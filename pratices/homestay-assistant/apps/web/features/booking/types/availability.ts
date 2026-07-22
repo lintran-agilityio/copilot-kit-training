@@ -5,6 +5,7 @@ export type CheckRoomAvailabilityInput = {
   checkInDate: string;
   checkOutDate: string;
   guests?: number;
+  excludeBookingId?: string;
 };
 
 export type CheckRoomAvailabilityResult = {
