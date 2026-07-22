@@ -7,7 +7,8 @@ import { ConfirmDeleteDialog } from "@/components/confirm-modal";
 import {
   isHitlToolAwaitingUser,
   isHitlToolFinished,
-} from "@/features/booking/copilot/utils/hitl-tool-status";
+  useHitlRespondOnce,
+} from "@/features/booking/copilot/utils";
 import type { ConfirmCancelBookingResult } from "@/features/booking/schemas";
 import type { BookingDetails } from "@/features/booking/types";
 
@@ -32,6 +33,8 @@ export const ConfirmCancelBookingModal = ({
 }: ConfirmCancelBookingModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { respondOnce, canRespond } =
+    useHitlRespondOnce<ConfirmCancelBookingResult>(respond);
 
   if (isHitlToolFinished(status) || !isHitlToolAwaitingUser(status)) {
     return null;
@@ -41,14 +44,12 @@ export const ConfirmCancelBookingModal = ({
     return null;
   }
 
-  const canRespond = respond != null;
-
   const handleCancel = () => {
     if (!canRespond) {
       return;
     }
 
-    void respond({ confirmed: false });
+    respondOnce({ confirmed: false });
   };
 
   const handleConfirm = async () => {
@@ -60,7 +61,7 @@ export const ConfirmCancelBookingModal = ({
     setErrorMessage(null);
 
     try {
-      await respond({
+      await respondOnce({
         confirmed: true,
         bookingId: bookingItem.bookingId,
       });

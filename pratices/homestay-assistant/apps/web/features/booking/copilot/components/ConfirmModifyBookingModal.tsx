@@ -7,7 +7,8 @@ import { ConfirmBookingDialog } from "@/components/confirm-modal";
 import {
   isHitlToolAwaitingUser,
   isHitlToolFinished,
-} from "@/features/booking/copilot/utils/hitl-tool-status";
+  useHitlRespondOnce,
+} from "@/features/booking/copilot/utils";
 import type {
   ConfirmModifyBookingArgs,
   ConfirmModifyBookingResult,
@@ -38,6 +39,8 @@ export const ConfirmModifyBookingModal = ({
 }: ConfirmModifyBookingModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { respondOnce, canRespond } =
+    useHitlRespondOnce<ConfirmModifyBookingResult>(respond);
 
   if (isHitlToolFinished(status) || !isHitlToolAwaitingUser(status)) {
     return null;
@@ -47,7 +50,6 @@ export const ConfirmModifyBookingModal = ({
     return null;
   }
 
-  const canRespond = respond != null;
   const { bookingId, room, checkInDate, checkOutDate, guests } =
     args as ConfirmModifyBookingArgs;
 
@@ -56,7 +58,7 @@ export const ConfirmModifyBookingModal = ({
       return;
     }
 
-    void respond({ confirmed: false });
+    respondOnce({ confirmed: false });
   };
 
   const handleConfirm = async () => {
@@ -68,7 +70,7 @@ export const ConfirmModifyBookingModal = ({
     setErrorMessage(null);
 
     try {
-      await respond({
+      await respondOnce({
         confirmed: true,
         bookingId,
         checkInDate,
