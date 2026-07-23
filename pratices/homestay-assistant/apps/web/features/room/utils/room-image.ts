@@ -1,13 +1,13 @@
 import type { StaticImageData } from "next/image";
 
-import { DEFAULT_ROOM_GALLERY_IMAGES } from "@/mocking/room";
+import { DEFAULT_ROOM_GALLERY_IMAGES } from "@/mocks/room";
 
 export const FALLBACK_ROOM_IMAGE = DEFAULT_ROOM_GALLERY_IMAGES[0]!;
 
 const ALLOWED_REMOTE_IMAGE_HOSTS = new Set(["images.unsplash.com"]);
 
 export const resolveRoomImage = (
-  src: string | StaticImageData | null | undefined,
+  src: string | StaticImageData | null | undefined
 ): string | StaticImageData => {
   if (!src) {
     return FALLBACK_ROOM_IMAGE;
