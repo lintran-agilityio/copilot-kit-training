@@ -1,0 +1,40 @@
+"use client";
+
+import { cn } from "@repo/utils";;
+
+type CalendarDateButtonProps = {
+  date: Date;
+  isSelected: boolean;
+  onSelect: (date: Date) => void;
+  className?: string;
+};
+
+export const CalendarDateButton = ({
+  date,
+  isSelected,
+  onSelect,
+  className,
+}: CalendarDateButtonProps) => {
+  const weekday = date
+    .toLocaleDateString("en-US", { weekday: "short" })
+    .toUpperCase();
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(date)}
+      className={cn(
+        "flex min-w-[42px] flex-col items-center rounded-xl px-1 py-1 transition-colors text-xs",
+        isSelected
+          ? "bg-[#E6C547] text-black"
+          : "text-zinc-400 hover:bg-white/5 hover:text-white",
+        className,
+      )}
+    >
+      <span className="text-[10px] font-medium tracking-[0.12em]">
+        {weekday}
+      </span>
+      <span className="mt-1 text-xs font-medium">{date.getDate()}</span>
+    </button>
+  );
+};
