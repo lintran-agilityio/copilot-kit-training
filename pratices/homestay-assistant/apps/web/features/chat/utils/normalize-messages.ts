@@ -285,7 +285,7 @@ const stripSuggestionGenerationTurns = <
     const message = messages[index];
 
     if (
-      message.role === "user" &&
+      message?.role === "user" &&
       isSuggestionGenerationContent(message.content)
     ) {
       const next = messages[index + 1];
@@ -295,7 +295,9 @@ const stripSuggestionGenerationTurns = <
       continue;
     }
 
-    result.push(message);
+    if (message) {
+      result.push(message);
+    }
   }
 
   return result;
