@@ -7,9 +7,3 @@ export enum Amenity {
   WHITEBOARD = 'whiteboard',
   PHONE = 'phone',
 }
-
-export enum BookingStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  CANCELLED = 'CANCELLED',
-}

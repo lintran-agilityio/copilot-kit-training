@@ -27,7 +27,6 @@ AI-assisted homestay booking monorepo. Guests chat with a CopilotKit-powered ass
 | `@repo/types` | Shared TypeScript types |
 | `@repo/utils` | Shared helpers (e.g. dates, agent resource IDs) |
 | `@repo/components` | Shared React components |
-| `@repo/ui` | Shared UI primitives |
 | `@repo/eslint-config` | ESLint presets |
 | `@repo/typescript-config` | Shared `tsconfig` bases |
 

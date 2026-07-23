@@ -1,4 +1,4 @@
-import { BOOKING_AGENT_INSTRUCTION_SECTIONS, HOMESTAY_AGENT_INSTRUCTION_SECTIONS, MANAGE_AGENT_INSTRUCTION_SECTIONS } from "../constants/prompts";
+import { MANAGE_AGENT_INSTRUCTION_SECTIONS } from "../constants/prompts";
 
 const joinSections = (...parts: string[]) => parts.join("\n\n");
 

@@ -7,8 +7,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { extractRoomNameQuery } from '@repo/utils';
-
 import { BookingStatus } from '../../../types/enum';
 import { UserEntity } from '@/database/entities/user.entity';
 import { parseDateRange, toDateKey } from '@/utils';
@@ -22,10 +20,6 @@ import {
   ListBookingsQueryDto,
   UpdateBookingDto,
 } from '@/modules/booking/dto';
-import { CancellationBookingSummaryDto } from '@/modules/booking/dto/cancellation-booking-summary.dto';
-import { FindBookingsByRoomQueryDto } from '@/modules/booking/dto/find-bookings-by-room-query.dto';
-import { FindBookingsByRoomResponseDto } from '@/modules/booking/dto/find-bookings-by-room-response.dto';
-import { BookingEntity } from '@/modules/booking/entities/booking.entity';
 import { toBookingResponseDto } from '@/modules/booking/mappers/booking.mapper';
 import { BookingRepository } from '@/modules/booking/repositories/booking.repository';
 import { toRoomResponseDto } from '@/modules/rooms/mappers/room.mapper';
@@ -87,28 +81,6 @@ export class BookingService {
   ): Promise<BookingResponseDto[]> {
     const bookings = await this.bookingRepository.findAll(query);
     return bookings.map(toBookingResponseDto);
-  }
-
-  async findByRoomName(
-    query: FindBookingsByRoomQueryDto,
-  ): Promise<FindBookingsByRoomResponseDto> {
-    const rawName = query.roomName.trim();
-
-    if (!rawName) {
-      return { bookings: [], queryName: '' };
-    }
-
-    const queryName = extractRoomNameQuery(rawName) || rawName;
-
-    const bookings = await this.bookingRepository.findBookingByName(
-      query.userId,
-      rawName,
-    );
-
-    return {
-      bookings: bookings.map((booking) => this.toCancellationSummary(booking)),
-      queryName,
-    };
   }
 
   async findById(id: string): Promise<BookingResponseDto> {
@@ -222,22 +194,6 @@ export class BookingService {
 
   async cancel(id: string): Promise<BookingResponseDto> {
     return this.update(id, { status: BookingStatus.CANCELLED });
-  }
-
-  private toCancellationSummary(
-    booking: BookingEntity,
-  ): CancellationBookingSummaryDto {
-    const roomName = booking.room?.name ?? '';
-
-    return {
-      bookingId: booking.id,
-      roomId: booking.roomId,
-      roomName,
-      checkInDate: booking.checkInDate,
-      checkOutDate: booking.checkOutDate,
-      guests: booking.guests,
-      totalPrice: booking.totalPrice,
-    };
   }
 
   private async findOrCreateUser(userId: string): Promise<UserEntity> {
