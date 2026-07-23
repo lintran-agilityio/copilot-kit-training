@@ -5,15 +5,6 @@ export const BOOKING_MODIFY_PROMPT_PREFIX = "[booking-modify]";
 /** Separates guest-facing copy from agent-only booking metadata in cancel prompts. */
 export const BOOKING_CANCEL_METADATA_SEPARATOR = " || ";
 
-export type BookingCancelMetadata = {
-  bookingId: string;
-  roomName: string;
-  checkInDate: string;
-  checkOutDate: string;
-  guests: number;
-  totalPrice: number;
-};
-
 export const isBookingCancelPrompt = (content: string) =>
   content.startsWith(BOOKING_CANCEL_PROMPT_PREFIX) &&
   !content.startsWith(BOOKING_CANCEL_CONFIRM_PROMPT_PREFIX);

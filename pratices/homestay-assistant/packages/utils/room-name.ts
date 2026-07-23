@@ -1,4 +1,4 @@
-export const normalizeRoomName = (name: string) => name.trim().toLowerCase();
+const normalizeRoomName = (name: string) => name.trim().toLowerCase();
 
 /** Filler words guests type around a room name in cancel/book chat. */
 const ROOM_NAME_STOP_WORDS = new Set([

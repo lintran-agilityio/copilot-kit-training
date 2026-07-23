@@ -9,7 +9,7 @@ Next.js frontend for Homestay Assistant. Guests sign in with Clerk, chat with th
 - Clerk (`@clerk/nextjs`)
 - TanStack Query, Zustand
 - Tailwind CSS 4, Radix / shadcn-style UI
-- Shared packages: `@repo/components`, `@repo/constants`, `@repo/types`, `@repo/ui`, `@repo/utils`
+- Shared packages: `@repo/components`, `@repo/constants`, `@repo/types`, `@repo/utils`
 - Workspace dependency: `agent` (Mastra runtime wired into CopilotKit)
 
 ## Features

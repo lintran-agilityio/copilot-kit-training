@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { matchesRoomName } from '@repo/utils';
-
 import { toDateKey, ACTIVE_BOOKING_STATUSES } from '@/utils';
 import { ListBookingsQueryDto } from '@/modules/booking/dto/list-bookings-query.dto';
 import { BookingEntity } from '@/modules/booking/entities/booking.entity';
@@ -36,17 +34,6 @@ export class BookingRepository {
     }
 
     return query.getMany();
-  }
-
-  async findBookingByName(
-    userId: string,
-    roomName: string,
-  ): Promise<BookingEntity[]> {
-    const bookings = await this.findAll({ userId });
-
-    return bookings.filter((booking) =>
-      matchesRoomName(booking.room?.name ?? '', roomName),
-    );
   }
 
   async findById(id: string): Promise<BookingEntity | null> {

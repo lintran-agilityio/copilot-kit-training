@@ -39,7 +39,6 @@ Tool implementations call `API_URL` via services in `src/mastra/services/`.
 | --- | --- | --- |
 | `agent` | `./src/mastra/index.ts` | Mastra instance / Studio agents |
 | `agent/copilotkit` | `./src/copilotkit.ts` | `getCopilotkitAgents(userId)` for the web runtime |
-| `agent/services` | `./src/services/index.ts` | Shared service helpers |
 
 ## Environment
 
