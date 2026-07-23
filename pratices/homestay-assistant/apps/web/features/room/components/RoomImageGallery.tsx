@@ -8,10 +8,7 @@ import {
   FALLBACK_ROOM_IMAGE,
   resolveRoomImage,
 } from "@/features/room/utils/room-image";
-import {
-  DEFAULT_ROOM_GALLERY_IMAGES,
-  ROOM_GALLERY_IMAGES,
-} from "@/mocking/room";
+import { DEFAULT_ROOM_GALLERY_IMAGES, ROOM_GALLERY_IMAGES } from "@/mocks/room";
 
 type RoomImageGalleryProps = {
   roomId: string;
@@ -41,7 +38,9 @@ export const RoomImageGallery = ({
   }, [imageUrl, imageUrls, roomId]);
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
+  const [failedImages, setFailedImages] = useState<Set<string>>(
+    () => new Set()
+  );
   const activeImage = images[activeIndex] ?? imageUrl;
   const resolveImage = (src: string) =>
     failedImages.has(src) ? FALLBACK_ROOM_IMAGE : resolveRoomImage(src);
@@ -102,7 +101,7 @@ export const RoomImageGallery = ({
                 "relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-colors",
                 index === activeIndex
                   ? "border-emerald-400"
-                  : "border-transparent opacity-70 hover:opacity-100",
+                  : "border-transparent opacity-70 hover:opacity-100"
               )}
             >
               <Image
