@@ -285,13 +285,17 @@ const stripSuggestionGenerationTurns = <
     const message = messages[index];
 
     if (
-      message.role === "user" &&
-      isSuggestionGenerationContent(message.content)
+      message?.role === "user" &&
+      isSuggestionGenerationContent(message?.content)
     ) {
       const next = messages[index + 1];
       if (next?.role === "assistant") {
         index += 1;
       }
+      continue;
+    }
+
+    if (!message) {
       continue;
     }
 
