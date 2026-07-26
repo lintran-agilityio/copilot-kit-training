@@ -39,7 +39,7 @@ Ensure `render.yaml` is on the branch you will deploy (usually `main`).
 
 1. Confirm `homestay-db` is available.
 2. Confirm `homestay-api` build succeeds.
-3. Confirm **pre-deploy** migrate ran (`pnpm --filter api db:migrate`).
+3. Confirm the API start log ran migrate (`pnpm --filter api db:migrate` before `start:prod`). Free tier does not support Render pre-deploy commands.
 4. Open `https://<homestay-api>.onrender.com/` — health JSON should respond.
 5. Open `https://<homestay-api>.onrender.com/api` — Swagger UI.
 
@@ -101,20 +101,14 @@ Use this if you prefer creating services in the dashboard without Blueprint.
    pnpm install --frozen-lockfile && pnpm exec turbo build --filter=api
    ```
 
-4. Pre-deploy command:
+4. Start command (migrate inline — free tier cannot use pre-deploy commands):
 
    ```sh
-   pnpm --filter api db:migrate
+   pnpm --filter api db:migrate && pnpm --filter api start:prod
    ```
 
-5. Start command:
-
-   ```sh
-   pnpm --filter api start:prod
-   ```
-
-6. Health check path: `/`
-7. Environment:
+5. Health check path: `/`
+6. Environment:
 
    | Key | Value |
    | --- | --- |
@@ -122,9 +116,9 @@ Use this if you prefer creating services in the dashboard without Blueprint.
    | `NODE_ENV` | `production` |
    | `DATABASE_URL` | From Postgres (link the DB or paste connection string) |
 
-8. Deploy → wait until live.
-9. Shell: `pnpm --filter api db:seed`
-10. Note the public URL, e.g. `https://homestay-api.onrender.com`.
+7. Deploy → wait until live.
+8. Shell: `pnpm --filter api db:seed`
+9. Note the public URL, e.g. `https://homestay-api.onrender.com`.
 
 ---
 

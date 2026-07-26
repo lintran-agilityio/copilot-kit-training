@@ -19,8 +19,8 @@ services:
     region: singapore
     rootDir: .
     buildCommand: pnpm install --frozen-lockfile && pnpm exec turbo build --filter=api
-    preDeployCommand: pnpm --filter api db:migrate
-    startCommand: pnpm --filter api start:prod
+    # Free tier does not support preDeployCommand — run migrate before start instead.
+    startCommand: pnpm --filter api db:migrate && pnpm --filter api start:prod
     healthCheckPath: /
     buildFilter:
       paths:
