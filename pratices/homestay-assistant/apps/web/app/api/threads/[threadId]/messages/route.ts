@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ threadId: string }> }
+  { params }: { params: Promise<{ threadId: string }> },
 ) {
   const { userId } = await auth();
 
@@ -18,7 +18,20 @@ export async function GET(
   const { threadId } = await params;
   const { searchParams } = new URL(request.url);
   const agentId = searchParams.get("agentId") ?? AGENT_KEYS.MANAGE_ASSISTANT;
-  const messages = listMastraThreadMessages({ userId, agentId, threadId });
 
-  return Response.json({ messages });
+  try {
+    const messages = await listMastraThreadMessages({
+      userId,
+      agentId,
+      threadId,
+    });
+
+    return Response.json({ messages });
+  } catch (error) {
+    console.error("Failed to list Mastra thread messages", error);
+    return Response.json(
+      { error: "Failed to list thread messages" },
+      { status: 502 },
+    );
+  }
 }

@@ -6,7 +6,7 @@ const agentRoot = path.resolve(
   "../..",
 );
 
-/** Shared LibSQL file for `mastra dev` / `mastra start` and web thread reads. */
+/** LibSQL file used by `mastra dev` / `mastra start` (agent owns thread storage). */
 export const runtimeDbPath = path.join(agentRoot, "mastra.db");
 
 /** Legacy Studio-only path (unused when agent is the sole Mastra process). */

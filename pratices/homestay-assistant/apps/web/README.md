@@ -10,7 +10,7 @@ Next.js frontend for Homestay Assistant. Guests sign in with Clerk, chat with th
 - TanStack Query, Zustand
 - Tailwind CSS 4, Radix / shadcn-style UI
 - Shared packages: `@repo/components`, `@repo/constants`, `@repo/types`, `@repo/utils`
-- Workspace dependency: `agent` (Mastra runtime wired into CopilotKit)
+- Remote Mastra agent via `MASTRA_URL` (CopilotKit + Memory threads)
 
 ## Features
 
@@ -43,8 +43,7 @@ NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
 OPENAI_API_KEY=sk-...
 API_URL=http://localhost:5001
-# optional — Mastra thread DB path override
-# MASTRA_DB_PATH=
+MASTRA_URL=http://localhost:4111
 ```
 
 | Variable | Description |
@@ -52,7 +51,7 @@ API_URL=http://localhost:5001
 | `NEXT_PUBLIC_CLERK_*` / `CLERK_SECRET_KEY` | Clerk auth |
 | `OPENAI_API_KEY` | Model access for the assistant runtime |
 | `API_URL` | Nest API base URL (defaults to `http://localhost:5001`) |
-| `MASTRA_DB_PATH` | Optional override for Mastra/SQLite thread storage |
+| `MASTRA_URL` | Mastra agent base URL for CopilotKit + thread Memory API |
 
 ## Run
 

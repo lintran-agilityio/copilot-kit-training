@@ -26,7 +26,6 @@ const nextConfig = {
     optimizePackageImports: ["radix-ui"],
   },
   serverExternalPackages: [
-    "better-sqlite3",
     "@ag-ui/client",
     "@ag-ui/mastra",
     "@mastra/client-js",
