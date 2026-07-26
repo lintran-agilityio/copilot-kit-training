@@ -81,14 +81,20 @@ pnpm check-types
 
 ## Deploy on Render (manual)
 
-Full steps: [`docs/deploy-render.md`](../../docs/deploy-render.md).
-
 | Setting | Value |
 | --- | --- |
-| **Root Directory** | Leave **empty** (repo root). Do **not** set `apps/web` — `agent` / `@repo/*` will break |
-| **Build Command** | `pnpm install --frozen-lockfile --filter=web... && NODE_OPTIONS=--max-old-space-size=450 pnpm exec turbo build --filter=web --concurrency=1` |
+| **Root Directory** | `pratices/homestay-assistant` (this app folder in the parent repo). Do **not** set `apps/web` — workspace packages will break |
+| **Build Command** | see below |
 | **Start Command** | `pnpm --filter web start` |
-| **`NODE_OPTIONS`** | Only in the **Build Command** above — do **not** set it as a Render Environment variable |
+| **`NODE_OPTIONS`** | Only inside the **Build Command** — do **not** set it as a Render Environment variable |
+
+**Build Command** (forces a real `next build` so `.next` exists for `next start`):
+
+```sh
+pnpm install --frozen-lockfile --filter=web... && NODE_OPTIONS=--max-old-space-size=384 pnpm --filter @repo/utils build && NODE_OPTIONS=--max-old-space-size=384 pnpm --filter web build
+```
+
+If build still OOMs on Free/Starter (512Mi), upgrade the service RAM — Next 16 + CopilotKit often needs ≥1GB for webpack.
 
 ## API routes (BFF)
 

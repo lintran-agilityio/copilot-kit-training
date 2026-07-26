@@ -10,12 +10,9 @@ const nextConfig = {
   },
   transpilePackages: ["@repo/constants"],
   productionBrowserSourceMaps: false,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
-    // Optional: skip typecheck during `next build` to cut peak RAM on Render.
-    // Run `pnpm --filter web check-types` in CI locally instead.
+    // Skip typecheck during `next build` to cut peak RAM on Render.
+    // Run `pnpm --filter web check-types` locally / in CI instead.
     ignoreBuildErrors: true,
   },
   experimental: {
