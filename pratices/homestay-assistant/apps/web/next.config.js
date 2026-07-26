@@ -8,7 +8,29 @@ const nextConfig = {
   turbopack: {
     root: path.join(__dirname, "../.."),
   },
-  transpilePackages: ["@repo/constants", "agent"],
+  transpilePackages: ["@repo/constants"],
+  productionBrowserSourceMaps: false,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // Optional: skip typecheck during `next build` to cut peak RAM on Render.
+    // Run `pnpm --filter web check-types` in CI locally instead.
+    ignoreBuildErrors: true,
+  },
+  experimental: {
+    webpackMemoryOptimizations: true,
+    cpus: 1,
+    memoryBasedWorkersCount: true,
+  },
+  serverExternalPackages: [
+    "better-sqlite3",
+    "@ag-ui/client",
+    "@ag-ui/mastra",
+    "@mastra/client-js",
+    "@copilotkit/runtime",
+    "@copilotkit/sqlite-runner",
+  ],
   images: {
     remotePatterns: [
       {

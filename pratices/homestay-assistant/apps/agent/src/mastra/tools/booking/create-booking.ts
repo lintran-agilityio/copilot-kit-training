@@ -6,24 +6,9 @@ import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import {
   createBookingSchema,
   bookingSchema,
-  type CreateBookingSchema,
 } from "@/mastra/schemas/booking";
 import { resolveAgentUserId } from "@/mastra/utils/resolve-agent-user-id";
 import { createBooking } from "@/mastra/services";
-
-const resolveCreateBookingUserId = (
-  params: CreateBookingSchema,
-  resourceId?: string,
-) => {
-  if (params.userId) {
-    return params.userId;
-  }
-
-  return resolveAgentUserId(
-    resourceId,
-    "Authentication required to create a booking",
-  );
-};
 
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE_BOOKING,
@@ -32,10 +17,11 @@ export const createBookingTool = createTool({
   inputSchema: createBookingSchema,
   outputSchema: bookingSchema,
   execute: async (params, context) => {
-    const userId = resolveCreateBookingUserId(
-      params,
-      context.agent?.resourceId,
-    );
+    const userId = resolveAgentUserId({
+      requestContext: context.requestContext,
+      resourceId: context.agent?.resourceId,
+      errorMessage: "Authentication required to create a booking",
+    });
 
     const booking = await createBooking({
       roomId: params.roomId,

@@ -6,7 +6,7 @@ import { MastraCompositeStore } from '@mastra/core/storage';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
 
 import { AGENT_KEYS } from '@repo/constants';
-import { studioDbPath } from './db-paths';
+import { runtimeDbPath } from './db-paths';
 
 import { manageAgent } from './agents/manage-agent';
 import { suggestionAgent } from './agents/suggestion-agent';
@@ -21,7 +21,7 @@ export const mastra = new Mastra({
     id: 'composite-storage',
     default: new LibSQLStore({
       id: "mastra-storage",
-      url: `file:${studioDbPath}`,
+      url: `file:${runtimeDbPath}`,
     }),
     domains: {
       observability: await new DuckDBStore().getStore('observability'),

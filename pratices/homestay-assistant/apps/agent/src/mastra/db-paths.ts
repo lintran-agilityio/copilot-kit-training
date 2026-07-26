@@ -6,8 +6,8 @@ const agentRoot = path.resolve(
   "../..",
 );
 
-/** Used by the Next.js app (embedded CopilotKit runtime). */
+/** Shared LibSQL file for `mastra dev` / `mastra start` and web thread reads. */
 export const runtimeDbPath = path.join(agentRoot, "mastra.db");
 
-/** Used by `mastra dev` / Studio — separate file avoids SQLite lock contention with the web app. */
+/** Legacy Studio-only path (unused when agent is the sole Mastra process). */
 export const studioDbPath = path.join(agentRoot, "mastra-studio.db");

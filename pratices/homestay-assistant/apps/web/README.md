@@ -80,6 +80,17 @@ pnpm lint
 pnpm check-types
 ```
 
+## Deploy on Render (manual)
+
+Full steps: [`docs/deploy-render.md`](../../docs/deploy-render.md).
+
+| Setting | Value |
+| --- | --- |
+| **Root Directory** | Leave **empty** (repo root). Do **not** set `apps/web` — `agent` / `@repo/*` will break |
+| **Build Command** | `pnpm install --frozen-lockfile --filter=web... && NODE_OPTIONS=--max-old-space-size=384 pnpm exec turbo build --filter=web --concurrency=1` |
+| **Start Command** | `pnpm --filter web start` |
+| **`NODE_OPTIONS`** | Only in the **Build Command** above — do **not** set it as a Render Environment variable |
+
 ## API routes (BFF)
 
 | Route | Purpose |
