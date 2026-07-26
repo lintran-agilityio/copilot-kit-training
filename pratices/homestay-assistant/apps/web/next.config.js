@@ -22,6 +22,8 @@ const nextConfig = {
     webpackMemoryOptimizations: true,
     cpus: 1,
     memoryBasedWorkersCount: true,
+    // lucide-react is optimized by default; radix-ui umbrella is not.
+    optimizePackageImports: ["radix-ui"],
   },
   serverExternalPackages: [
     "better-sqlite3",
@@ -29,7 +31,6 @@ const nextConfig = {
     "@ag-ui/mastra",
     "@mastra/client-js",
     "@copilotkit/runtime",
-    "@copilotkit/sqlite-runner",
   ],
   images: {
     remotePatterns: [

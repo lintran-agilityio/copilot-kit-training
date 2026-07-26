@@ -14,19 +14,35 @@ import { getMastraUrl } from "@/utils/urls";
 export const runtime = "nodejs";
 
 const basePath = "/api/copilotkit";
+const MAX_CACHED_USERS = 32;
 
 const unauthorized = () =>
   Response.json({ error: "Unauthorized" }, { status: 401 });
 
+const sharedRunner = new InMemoryAgentRunner();
+
 const optionsHandler = createCopilotRuntimeHandler({
   runtime: new CopilotRuntime({
     agents: async () => ({}),
-    runner: new InMemoryAgentRunner(),
+    runner: sharedRunner,
   }),
   basePath,
 });
 
-const createRuntimeHandlers = (userId: string) => {
+type RuntimeHandlers = {
+  multiRouteHandler: (req: Request) => Promise<Response> | Response;
+  singleRouteHandler: (req: Request) => Promise<Response> | Response;
+};
+
+const runtimeHandlersByUser = new Map<string, RuntimeHandlers>();
+
+const getRuntimeHandlers = (userId: string): RuntimeHandlers => {
+  const cached = runtimeHandlersByUser.get(userId);
+
+  if (cached) {
+    return cached;
+  }
+
   const resourceId = getAgentResourceId(userId, AGENT_KEYS.MANAGE_ASSISTANT);
   const mastraClient = new MastraClient({ baseUrl: getMastraUrl() });
 
@@ -36,21 +52,32 @@ const createRuntimeHandlers = (userId: string) => {
         mastraClient,
         resourceId,
       }),
-    runner: new InMemoryAgentRunner(),
+    runner: sharedRunner,
   });
 
-  const multiRouteHandler = createCopilotRuntimeHandler({
-    runtime: copilotRuntime,
-    basePath,
-  });
+  const handlers: RuntimeHandlers = {
+    multiRouteHandler: createCopilotRuntimeHandler({
+      runtime: copilotRuntime,
+      basePath,
+    }),
+    singleRouteHandler: createCopilotRuntimeHandler({
+      runtime: copilotRuntime,
+      basePath,
+      mode: "single-route",
+    }),
+  };
 
-  const singleRouteHandler = createCopilotRuntimeHandler({
-    runtime: copilotRuntime,
-    basePath,
-    mode: "single-route",
-  });
+  if (runtimeHandlersByUser.size >= MAX_CACHED_USERS) {
+    const oldestKey = runtimeHandlersByUser.keys().next().value;
 
-  return { multiRouteHandler, singleRouteHandler };
+    if (oldestKey) {
+      runtimeHandlersByUser.delete(oldestKey);
+    }
+  }
+
+  runtimeHandlersByUser.set(userId, handlers);
+
+  return handlers;
 };
 
 const handler = async (req: Request) => {
@@ -64,8 +91,7 @@ const handler = async (req: Request) => {
     return unauthorized();
   }
 
-  const { multiRouteHandler, singleRouteHandler } =
-    createRuntimeHandlers(userId);
+  const { multiRouteHandler, singleRouteHandler } = getRuntimeHandlers(userId);
 
   const pathname = new URL(req.url).pathname.replace(/\/$/, "") || "/";
 

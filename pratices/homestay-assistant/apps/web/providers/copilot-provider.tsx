@@ -1,10 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { CopilotKit } from "@copilotkit/react-core/v2";
 
-import { AGENT_KEYS, AGENT_URLS } from "@repo/constants";
 import { ROUTES } from "@/constants";
 import { AppProvider } from "@/providers/app-provider";
 import { AuthLoadingFallback } from "@/components/fallback";
@@ -12,6 +11,21 @@ import { AuthLoadingFallback } from "@/components/fallback";
 type CopilotKitProvidersProps = {
   children: React.ReactNode;
 };
+
+const AuthenticatedCopilotShell = dynamic(
+  () =>
+    import("@/providers/authenticated-copilot-shell").then(
+      (mod) => mod.AuthenticatedCopilotShell,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <AppProvider withCopilot={false}>
+        <AuthLoadingFallback />
+      </AppProvider>
+    ),
+  },
+);
 
 const isLoginRoute = (pathname: string) =>
   pathname === ROUTES.LOGIN || pathname.startsWith(`${ROUTES.LOGIN}/`);
@@ -38,15 +52,7 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
     return <AppProvider withCopilot={false}>{children}</AppProvider>;
   }
 
-  return (
-    <CopilotKit
-      agent={AGENT_KEYS.MANAGE_ASSISTANT}
-      credentials="include"
-      runtimeUrl={AGENT_URLS.MANAGE_ASSISTANT}
-    >
-      <AppProvider>{children}</AppProvider>
-    </CopilotKit>
-  );
+  return <AuthenticatedCopilotShell>{children}</AuthenticatedCopilotShell>;
 };
 
 export default CopilotKitProviders;

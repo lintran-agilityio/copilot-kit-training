@@ -1,5 +1,5 @@
 import { Room } from "@/features/room/types";
-import { ListRoom } from "@/features/room/components";
+import { ListRoom } from "@/features/room/components/ListRoom";
 
 type ListRoomPreviewProps = {
   rooms?: Room[];

@@ -4,7 +4,7 @@ import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { Loading } from "@repo/components";
 import { parseToolResult } from "@repo/utils";
-import { RoomDetail } from "@/features/room/components";
+import { RoomDetail } from "@/features/room/components/RoomDetail";
 import type {
   GetRoomByIdResult,
   GetRoomByIdToolProps,

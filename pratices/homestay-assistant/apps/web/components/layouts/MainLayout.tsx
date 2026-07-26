@@ -10,14 +10,12 @@ import { AGENT_KEYS } from "@repo/constants";
 // Components
 import { Navbar } from "@/components/layouts";
 import { NavbarTab } from "@repo/types";
-import {
-  useActiveThread,
-  useCreateThread,
-  useDeleteThread,
-  useSwitchThread,
-  useThreads,
-  useThreadStore,
-} from "@/features/threads";
+import { useActiveThread } from "@/features/threads/hooks/useActiveThread";
+import { useCreateThread } from "@/features/threads/hooks/useCreateThread";
+import { useDeleteThread } from "@/features/threads/hooks/useDeleteThread";
+import { useSwitchThread } from "@/features/threads/hooks/useSwitchThread";
+import { useThreads } from "@/features/threads/hooks/useThreads";
+import { useThreadStore } from "@/features/threads/store/thread-store";
 
 const ChatSidebar = dynamic(
   () =>

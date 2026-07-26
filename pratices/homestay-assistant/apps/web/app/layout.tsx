@@ -11,10 +11,6 @@ const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
 });
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-});
 
 export const metadata: Metadata = {
   title: "HOMESTAY — Room Booking",
@@ -29,11 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={cn(
-          "font-sans antialiased",
-          geistSans.variable,
-          geistMono.variable,
-        )}
+        className={cn("font-sans antialiased", geistSans.variable)}
         suppressHydrationWarning
       >
         <AppErrorBoundary>

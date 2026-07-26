@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 
 import { MainLayout } from "@/components/layouts";
 import { PageHeader } from "@/components/common";
-import { RoomGrid } from "@/features/room/components";
+import { RoomGrid } from "@/features/room/components/RoomGrid";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
 

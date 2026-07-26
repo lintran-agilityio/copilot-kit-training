@@ -17,16 +17,14 @@ import {
   useResetConversation,
   useThreadMessages,
 } from "@/features/chat/hooks";
-import {
-  HeaderChat,
-  ChatUserMessage,
-  ChatWelcomeScreen,
-  ChatAssistantMessage,
-} from "@/features/chat/components";
+import { HeaderChat } from "@/features/chat/components/HeaderChat";
+import { ChatUserMessage } from "@/features/chat/components/ChatUserMessage";
+import { ChatWelcomeScreen } from "@/features/chat/components/ChatWelcomeScreen";
+import { ChatAssistantMessage } from "@/features/chat/components/ChatAssistantMessage";
 import { useChatStore } from "@/features/chat/stores/chat-store";
-import { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
+import type { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
 import { SuggestionBar } from "@/components/suggestions";
-import { ThreadLoadingStateView } from "@/features/threads/components";
+import { ThreadLoadingStateView } from "@/features/threads/components/ThreadLoadingStateView";
 import { useChatSession } from "@/features/threads/hooks/useChatSession";
 
 export const ChatSidebarContent = ({

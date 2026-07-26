@@ -12,10 +12,8 @@ import {
   formatRoomListSyncResult,
   syncRoomListToStore,
 } from "@/features/room/utils";
-import {
-  FindRoomToolRenderer,
-  GetRoomByIdToolRenderer,
-} from "@/features/room/components";
+import { FindRoomToolRenderer } from "@/features/room/components/FindRoomToolRenderer";
+import { GetRoomByIdToolRenderer } from "@/features/room/components/GetRoomByIdToolRenderer";
 import type {
   FindRoomResult,
   GetRoomByIdResult,

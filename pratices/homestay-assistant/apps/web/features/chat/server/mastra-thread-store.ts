@@ -46,8 +46,17 @@ const getDatabasePath = () =>
   process.env.MASTRA_DB_PATH ??
   path.resolve(process.cwd(), "../agent/mastra.db");
 
-const getDatabase = (readonly = true) =>
-  new Database(getDatabasePath(), { readonly });
+/** One connection per process — open/close per request spikes native RAM on Render. */
+let sharedDatabase: Database.Database | null = null;
+
+const getDatabase = () => {
+  if (!sharedDatabase) {
+    sharedDatabase = new Database(getDatabasePath());
+    sharedDatabase.pragma("journal_mode = WAL");
+  }
+
+  return sharedDatabase;
+};
 
 const toToolCallArguments = (args: unknown) => {
   if (typeof args === "string") {
@@ -173,6 +182,17 @@ const isSuggestionGenerationThread = (firstUserContent: string | null) => {
   );
 };
 
+const mapThreadRow = (row: MastraThreadRow, agentId: string): ChatThread => ({
+  id: row.id,
+  agentId: parseAgentResourceId(row.resourceId).agentId || agentId,
+  name: getThreadName(row),
+  archived: false,
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
+  ...(row.lastRunAt ? { lastRunAt: row.lastRunAt } : {}),
+  messageCount: row.messageCount,
+});
+
 export const listMastraThreads = ({
   userId,
   agentId,
@@ -183,59 +203,43 @@ export const listMastraThreads = ({
   const resourceId = getAgentResourceId(userId, agentId);
   const database = getDatabase();
 
-  try {
-    const rows = database
-      .prepare<
-        [string],
-        MastraThreadRow
-      >(
-        `
-          SELECT
-            threads.id,
-            threads.resourceId,
-            threads.title,
-            threads.createdAt,
-            threads.updatedAt,
-            COUNT(messages.id) AS messageCount,
-            MAX(messages.createdAt) AS lastRunAt,
-            (
-              SELECT firstUserMessage.content
-              FROM mastra_messages firstUserMessage
-              WHERE firstUserMessage.thread_id = threads.id
-                AND firstUserMessage.role = 'user'
-              ORDER BY firstUserMessage.createdAt ASC
-              LIMIT 1
-            ) AS firstUserContent
-          FROM mastra_threads threads
-          LEFT JOIN mastra_messages messages
-            ON messages.thread_id = threads.id
-          WHERE threads.resourceId = ?
-          GROUP BY threads.id
-          ORDER BY COALESCE(lastRunAt, threads.updatedAt, threads.createdAt) DESC
-        `,
-      )
-      .all(resourceId);
+  const rows = database
+    .prepare<[string], MastraThreadRow>(
+      `
+        SELECT
+          threads.id,
+          threads.resourceId,
+          threads.title,
+          threads.createdAt,
+          threads.updatedAt,
+          COUNT(messages.id) AS messageCount,
+          MAX(messages.createdAt) AS lastRunAt,
+          (
+            SELECT firstUserMessage.content
+            FROM mastra_messages firstUserMessage
+            WHERE firstUserMessage.thread_id = threads.id
+              AND firstUserMessage.role = 'user'
+            ORDER BY firstUserMessage.createdAt ASC
+            LIMIT 1
+          ) AS firstUserContent
+        FROM mastra_threads threads
+        LEFT JOIN mastra_messages messages
+          ON messages.thread_id = threads.id
+        WHERE threads.resourceId = ?
+        GROUP BY threads.id
+        ORDER BY COALESCE(lastRunAt, threads.updatedAt, threads.createdAt) DESC
+      `,
+    )
+    .all(resourceId);
 
-    return rows
-      .filter((row) => !isSuggestionGenerationThread(row.firstUserContent))
-      .map((row) => ({
-        id: row.id,
-        agentId: parseAgentResourceId(row.resourceId).agentId || agentId,
-        name: getThreadName(row),
-        archived: false,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-        ...(row.lastRunAt ? { lastRunAt: row.lastRunAt } : {}),
-        messageCount: row.messageCount,
-      }))
-      .filter(
-        (thread, index, allThreads) =>
-          allThreads.findIndex((candidate) => candidate.id === thread.id) ===
-          index,
-      );
-  } finally {
-    database.close();
-  }
+  return rows
+    .filter((row) => !isSuggestionGenerationThread(row.firstUserContent))
+    .map((row) => mapThreadRow(row, agentId))
+    .filter(
+      (thread, index, allThreads) =>
+        allThreads.findIndex((candidate) => candidate.id === thread.id) ===
+        index,
+    );
 };
 
 export const renameMastraThread = ({
@@ -250,45 +254,60 @@ export const renameMastraThread = ({
   name: string;
 }): ChatThread | null => {
   const resourceId = getAgentResourceId(userId, agentId);
-  const database = getDatabase(false);
+  const database = getDatabase();
   const trimmedName = name.trim();
+  const updatedAt = new Date().toISOString();
 
-  try {
-    const existingThread = database
-      .prepare<[string, string], MastraThreadIdRow>(
-        `
-          SELECT id
-          FROM mastra_threads
-          WHERE id = ?
-            AND resourceId = ?
-        `,
-      )
-      .get(threadId, resourceId);
+  const existingThread = database
+    .prepare<[string, string], MastraThreadIdRow>(
+      `
+        SELECT id
+        FROM mastra_threads
+        WHERE id = ?
+          AND resourceId = ?
+      `,
+    )
+    .get(threadId, resourceId);
 
-    if (!existingThread) {
-      return null;
-    }
-
-    database
-      .prepare<[string, string, string, string]>(
-        `
-          UPDATE mastra_threads
-          SET title = ?,
-              updatedAt = ?
-          WHERE id = ?
-            AND resourceId = ?
-        `,
-      )
-      .run(trimmedName, new Date().toISOString(), threadId, resourceId);
-
-    const thread = listMastraThreads({ userId, agentId }).find(
-      (currentThread) => currentThread.id === threadId,
-    );
-
-    return thread ?? null;
-  } finally {
-    database.close();
+  if (!existingThread) {
+    return null;
   }
+
+  database
+    .prepare<[string, string, string, string]>(
+      `
+        UPDATE mastra_threads
+        SET title = ?,
+            updatedAt = ?
+        WHERE id = ?
+          AND resourceId = ?
+      `,
+    )
+    .run(trimmedName, updatedAt, threadId, resourceId);
+
+  const row = database
+    .prepare<[string, string], MastraThreadRow>(
+      `
+        SELECT
+          threads.id,
+          threads.resourceId,
+          threads.title,
+          threads.createdAt,
+          threads.updatedAt,
+          COUNT(messages.id) AS messageCount,
+          MAX(messages.createdAt) AS lastRunAt,
+          NULL AS firstUserContent
+        FROM mastra_threads threads
+        LEFT JOIN mastra_messages messages
+          ON messages.thread_id = threads.id
+        WHERE threads.id = ?
+          AND threads.resourceId = ?
+        GROUP BY threads.id
+      `,
+    )
+    .get(threadId, resourceId);
+
+  return row ? mapThreadRow(row, agentId) : null;
 };
 
 export const deleteMastraThread = ({
@@ -301,52 +320,48 @@ export const deleteMastraThread = ({
   threadId: string;
 }): boolean => {
   const resourceId = getAgentResourceId(userId, agentId);
-  const database = getDatabase(false);
+  const database = getDatabase();
 
-  try {
-    const deleteThread = database.transaction(() => {
-      const existingThread = database
-        .prepare<[string, string], MastraThreadIdRow>(
-          `
-            SELECT id
-            FROM mastra_threads
-            WHERE id = ?
-              AND resourceId = ?
-          `,
-        )
-        .get(threadId, resourceId);
+  const deleteThread = database.transaction(() => {
+    const existingThread = database
+      .prepare<[string, string], MastraThreadIdRow>(
+        `
+          SELECT id
+          FROM mastra_threads
+          WHERE id = ?
+            AND resourceId = ?
+        `,
+      )
+      .get(threadId, resourceId);
 
-      if (!existingThread) {
-        return false;
-      }
+    if (!existingThread) {
+      return false;
+    }
 
-      database
-        .prepare<[string, string]>(
-          `
-            DELETE FROM mastra_messages
-            WHERE thread_id = ?
-              AND resourceId = ?
-          `,
-        )
-        .run(threadId, resourceId);
+    database
+      .prepare<[string, string]>(
+        `
+          DELETE FROM mastra_messages
+          WHERE thread_id = ?
+            AND resourceId = ?
+        `,
+      )
+      .run(threadId, resourceId);
 
-      database
-        .prepare<[string, string]>(
-          `
-            DELETE FROM mastra_threads
-            WHERE id = ?
-              AND resourceId = ?
-          `,
-        )
-        .run(threadId, resourceId);
+    database
+      .prepare<[string, string]>(
+        `
+          DELETE FROM mastra_threads
+          WHERE id = ?
+            AND resourceId = ?
+        `,
+      )
+      .run(threadId, resourceId);
 
-      return true;
-    });
+    return true;
+  });
 
-    return deleteThread();
-  } finally {
-    database.close();
-  }
+  return deleteThread();
 };
 
 export const listMastraThreadMessages = ({
@@ -361,37 +376,33 @@ export const listMastraThreadMessages = ({
   const resourceId = getAgentResourceId(userId, agentId);
   const database = getDatabase();
 
-  try {
-    const thread = database
-      .prepare<[string, string], { id: string }>(
-        `
-          SELECT id
-          FROM mastra_threads
-          WHERE id = ?
-            AND resourceId = ?
-        `,
-      )
-      .get(threadId, resourceId);
+  const thread = database
+    .prepare<[string, string], { id: string }>(
+      `
+        SELECT id
+        FROM mastra_threads
+        WHERE id = ?
+          AND resourceId = ?
+      `,
+    )
+    .get(threadId, resourceId);
 
-    if (!thread) {
-      return [];
-    }
-
-    const rows = database
-      .prepare<[string, string], MastraMessageRow>(
-        `
-          SELECT id, role, content
-          FROM mastra_messages
-          WHERE thread_id = ?
-            AND resourceId = ?
-            AND role IN ('assistant', 'system', 'tool', 'user')
-          ORDER BY createdAt ASC
-        `,
-      )
-      .all(threadId, resourceId);
-
-    return rows.map(readStoredMessage);
-  } finally {
-    database.close();
+  if (!thread) {
+    return [];
   }
+
+  const rows = database
+    .prepare<[string, string], MastraMessageRow>(
+      `
+        SELECT id, role, content
+        FROM mastra_messages
+        WHERE thread_id = ?
+          AND resourceId = ?
+          AND role IN ('assistant', 'system', 'tool', 'user')
+        ORDER BY createdAt ASC
+      `,
+    )
+    .all(threadId, resourceId);
+
+  return rows.map(readStoredMessage);
 };

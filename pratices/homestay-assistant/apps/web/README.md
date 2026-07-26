@@ -5,7 +5,7 @@ Next.js frontend for Homestay Assistant. Guests sign in with Clerk, chat with th
 ## Stack
 
 - Next.js 16 (App Router)
-- CopilotKit (`@copilotkit/react-core`, `@copilotkit/react-ui`, `@copilotkit/runtime`)
+- CopilotKit (`@copilotkit/react-core`, `@copilotkit/runtime`)
 - Clerk (`@clerk/nextjs`)
 - TanStack Query, Zustand
 - Tailwind CSS 4, Radix / shadcn-style UI
@@ -87,7 +87,7 @@ Full steps: [`docs/deploy-render.md`](../../docs/deploy-render.md).
 | Setting | Value |
 | --- | --- |
 | **Root Directory** | Leave **empty** (repo root). Do **not** set `apps/web` — `agent` / `@repo/*` will break |
-| **Build Command** | `pnpm install --frozen-lockfile && pnpm --filter web build` |
+| **Build Command** | `pnpm install --frozen-lockfile --filter=web... && NODE_OPTIONS=--max-old-space-size=450 pnpm exec turbo build --filter=web --concurrency=1` |
 | **Start Command** | `pnpm --filter web start` |
 | **`NODE_OPTIONS`** | Only in the **Build Command** above — do **not** set it as a Render Environment variable |
 

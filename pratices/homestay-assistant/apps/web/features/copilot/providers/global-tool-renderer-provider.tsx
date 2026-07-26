@@ -3,7 +3,7 @@
 import { useRenderTool } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { UnknownToolRenderer } from "@/features/copilot/components";
+import { UnknownToolRenderer } from "@/features/copilot/components/UnknownToolRenderer";
 
 export const GlobalToolRendererProvider = () => {
   useRenderTool(
