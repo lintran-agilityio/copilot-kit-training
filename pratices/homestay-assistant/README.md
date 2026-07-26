@@ -108,3 +108,4 @@ Web also proxies room/booking HTTP calls to the API via Next.js route handlers u
 - [Web](./apps/web/README.md)
 - [API](./apps/api/README.md)
 - [Agent](./apps/agent/README.md)
+- [Deploy on Render](./docs/deploy-render.md) (`render.yaml` Blueprint + per-service steps)
