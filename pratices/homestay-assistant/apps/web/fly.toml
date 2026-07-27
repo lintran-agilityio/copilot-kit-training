@@ -2,7 +2,7 @@ app = "homestay-web"
 primary_region = "sin"
 
 [build]
-  dockerfile = "apps/web/Dockerfile"
+  dockerfile = "Dockerfile"
 
 [env]
   PORT = "3000"
