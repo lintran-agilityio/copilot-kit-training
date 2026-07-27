@@ -4,14 +4,8 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./date": {
-      "types": "./dist/date.d.ts",
-      "default": "./dist/date.js"
-    }
+    ".": "./index.ts",
+    "./date": "./date.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit -p tsconfig.json",

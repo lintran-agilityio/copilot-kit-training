@@ -8,7 +8,12 @@ const nextConfig = {
   turbopack: {
     root: path.join(__dirname, "../.."),
   },
-  transpilePackages: ["@repo/constants"],
+  transpilePackages: [
+    "@repo/constants",
+    "@repo/utils",
+    "@repo/types",
+    "@repo/components",
+  ],
   productionBrowserSourceMaps: false,
   typescript: {
     // Skip typecheck during `next build` to cut peak RAM on Render.
