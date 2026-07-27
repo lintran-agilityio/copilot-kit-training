@@ -10,7 +10,6 @@ const nextConfig = {
   },
   transpilePackages: [
     "@repo/constants",
-    "@repo/utils",
     "@repo/types",
     "@repo/components",
   ],
