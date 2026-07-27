@@ -9,10 +9,15 @@ COPY pnpm-lock.yaml .
 COPY pnpm-workspace.yaml .
 COPY turbo.json .
 
+COPY apps ./apps
 COPY packages ./packages
 COPY apps/web ./apps/web
 
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter web build
+RUN pnpm --filter @repo/utils build
+RUN ls -la packages/utils/dist
+RUN pnpm turbo run build --filter=web
+
+EXPOSE 3000
 
 CMD ["pnpm", "--filter", "web", "start"]
