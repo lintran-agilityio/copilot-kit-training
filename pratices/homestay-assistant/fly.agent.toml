@@ -1,0 +1,16 @@
+app = "homestay-agent"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile.agent"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "4111"
+
+[http_service]
+  internal_port = 4111
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "stop"
+  min_machines_running = 0
