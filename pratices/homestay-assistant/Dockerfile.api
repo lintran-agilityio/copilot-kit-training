@@ -16,6 +16,8 @@ RUN pnpm install --frozen-lockfile
 
 RUN pnpm turbo run build --filter=api
 
+RUN pnpm prune --prod
+
 WORKDIR /repo/apps/api
 
 EXPOSE 5001
