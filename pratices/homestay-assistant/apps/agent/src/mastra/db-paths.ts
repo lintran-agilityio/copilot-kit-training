@@ -3,9 +3,7 @@ import fs from "node:fs";
 
 const dataDir =
   process.env.MASTRA_DATA_DIR ??
-  (process.env.NODE_ENV === "production"
-    ? "/data"
-    : path.join(process.cwd(), ".mastra"));
+  path.join(process.cwd(), "src/mastra/public");
 
 fs.mkdirSync(dataDir, { recursive: true });
 
