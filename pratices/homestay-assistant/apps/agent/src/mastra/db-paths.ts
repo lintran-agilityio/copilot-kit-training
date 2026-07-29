@@ -1,13 +1,11 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from "node:fs";
 
-const agentRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
+const dataDir =
+  process.env.MASTRA_DATA_DIR ??
+  path.join(process.cwd(), "src/mastra/public");
 
-/** Used by the Next.js app (embedded CopilotKit runtime). */
-export const runtimeDbPath = path.join(agentRoot, "mastra.db");
+fs.mkdirSync(dataDir, { recursive: true });
 
-/** Used by `mastra dev` / Studio — separate file avoids SQLite lock contention with the web app. */
-export const studioDbPath = path.join(agentRoot, "mastra-studio.db");
+export const studioDbPath = path.join(dataDir, "mastra.db");
+export const duckDbPath = path.join(dataDir, "mastra.duckdb");
