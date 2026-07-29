@@ -4,7 +4,7 @@ import { AGENT_KEYS } from "@repo/constants";
 
 import { manageAgent } from "@/mastra/agents/manage-agent";
 import { suggestionAgent } from "@/mastra/agents/suggestion-agent";
-import { runtimeDbPath } from "@/mastra/db-paths";
+import { studioDbPath } from "@/mastra/db-paths";
 
 export const runtimeMastra = new Mastra({
   agents: {
@@ -13,7 +13,7 @@ export const runtimeMastra = new Mastra({
   },
   storage: new LibSQLStore({
     id: "mastra-runtime-storage",
-    url: `file:${runtimeDbPath}`,
+    url: `file:${studioDbPath}`,
   }),
 });
 

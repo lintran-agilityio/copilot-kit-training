@@ -6,7 +6,7 @@ import { MastraCompositeStore } from '@mastra/core/storage';
 import { Observability, MastraStorageExporter, MastraPlatformExporter, SensitiveDataFilter } from '@mastra/observability';
 
 import { AGENT_KEYS } from '@repo/constants';
-import { runtimeDbPath } from './db-paths';
+import { duckDbPath, studioDbPath } from './db-paths';
 
 import { manageAgent } from './agents/manage-agent';
 import { suggestionAgent } from './agents/suggestion-agent';
@@ -24,7 +24,9 @@ export const mastra = new Mastra({
       url: `file:${runtimeDbPath}`,
     }),
     domains: {
-      observability: await new DuckDBStore().getStore('observability'),
+      observability: await new DuckDBStore({
+        path: duckDbPath,
+      }).getStore("observability"),
     }
   }),
   logger: new PinoLogger({
