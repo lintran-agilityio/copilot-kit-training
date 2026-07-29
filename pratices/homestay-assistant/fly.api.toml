@@ -2,18 +2,18 @@ app = "homestay-api"
 primary_region = "sin"
 
 [build]
-  dockerfile = "Dockerfile.api"
+dockerfile = "Dockerfile.api"
 
 [env]
-  NODE_ENV = "production"
-  PORT = "5001"
+NODE_ENV = "production"
+PORT = "5001"
 
 [deploy]
-  release_command = "sh -c 'cd /repo/apps/api && pnpm db:migrate:prod && pnpm db:seed:prod'"
+release_command = "sh -c 'cd /repo/apps/api && pnpm db:migrate && pnpm db:seed'"
 
 [http_service]
-  internal_port = 5001
-  force_https = true
-  auto_start_machines = true
-  auto_stop_machines = "stop"
-  min_machines_running = 0
+internal_port = 5001
+force_https = true
+auto_start_machines = true
+auto_stop_machines = "stop"
+min_machines_running = 0
