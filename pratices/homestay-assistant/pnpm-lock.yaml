@@ -39,6 +39,9 @@ importers:
       '@ag-ui/mastra':
         specifier: ^1.1.1
         version: 1.1.1(@ag-ui/client@0.0.57)(@ag-ui/core@0.0.57)(@copilotkit/runtime@1.62.2(@cfworker/json-schema@4.1.1)(@langchain/core@1.2.0(@opentelemetry/api@1.9.1)(ws@8.21.0))(@langchain/langgraph-sdk@1.9.23(@langchain/core@1.2.0(@opentelemetry/api@1.9.1)(ws@8.21.0))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@opentelemetry/api@1.9.1)(langchain@1.4.6(@langchain/core@1.2.0(@opentelemetry/api@1.9.1)(ws@8.21.0))(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(ws@8.21.0)(zod-to-json-schema@3.25.2(zod@3.25.76)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod-to-json-schema@3.25.2(zod@3.25.76)))(@mastra/client-js@1.26.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.208(zod@3.25.76))(express@5.2.1)(rxjs@7.8.1)(zod@3.25.76))(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.208(zod@3.25.76))(express@5.2.1)(rxjs@7.8.1)(zod@3.25.76))
+      '@clerk/backend':
+        specifier: ^3.8.1
+        version: 3.8.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@mastra/core':
         specifier: ^1.43.0
         version: 1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.208(zod@3.25.76))(express@5.2.1)(rxjs@7.8.1)(zod@3.25.76)
@@ -3387,9 +3390,6 @@ packages:
   '@tanstack/pacer@0.20.1':
     resolution: {integrity: sha512-ZNQ1bIL6eUXVKdic0tiImvBVkWrg/IoSK6VIacTrO3d3HAGnd70qFJNJagR/YOJIOw4EKGWnodwpYZkN1pWuVQ==}
     engines: {node: '>=18'}
-
-  '@tanstack/query-core@5.101.0':
-    resolution: {integrity: sha512-cQetA74EB+seWySv1TTKr828TnP0u39m6LykwDXIo84SNortpDkp30TMEjkqtYCNP9c40uT/iwl6MLiufEt0Ow==}
 
   '@tanstack/query-core@5.101.2':
     resolution: {integrity: sha512-hH5MLoJhF7KaIGd7q3xTXGXvslI+GYlM1Z/35aSHHWaCJWB7XvTSHYuV3eM7tw+aE0mT/xMro4M4Q9rCGHT0lw==}
@@ -9834,7 +9834,7 @@ snapshots:
 
   '@clerk/shared@4.19.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
-      '@tanstack/query-core': 5.101.0
+      '@tanstack/query-core': 5.101.2
       dequal: 2.0.3
       glob-to-regexp: 0.4.1
       js-cookie: 3.0.7
@@ -12588,8 +12588,6 @@ snapshots:
     dependencies:
       '@tanstack/devtools-event-client': 0.4.3
       '@tanstack/store': 0.9.3
-
-  '@tanstack/query-core@5.101.0': {}
 
   '@tanstack/query-core@5.101.2': {}
 

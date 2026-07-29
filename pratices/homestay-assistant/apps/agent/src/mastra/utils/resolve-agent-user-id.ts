@@ -1,12 +1,8 @@
-import { parseAgentResourceId } from "@repo/utils";
+import type { ToolExecutionContext } from "@mastra/core/tools";
+
+import { getAuthUserId } from "@/mastra/middleware/get-auth-user-id";
 
 export const resolveAgentUserId = (
-  resourceId: string | undefined,
+  context: Pick<ToolExecutionContext, "requestContext" | "agent">,
   errorMessage = "Authentication required",
-): string => {
-  if (!resourceId) {
-    throw new Error(errorMessage);
-  }
-
-  return parseAgentResourceId(resourceId).userId;
-};
+): string => getAuthUserId(context, errorMessage);

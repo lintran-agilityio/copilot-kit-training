@@ -8,19 +8,19 @@ import {
   bookingSchema,
   type CreateBookingSchema,
 } from "@/mastra/schemas/booking";
-import { resolveAgentUserId } from "@/mastra/utils/resolve-agent-user-id";
 import { createBooking } from "@/mastra/services";
+import { getAuthUserId } from "@/mastra/middleware/get-auth-user-id";
 
 const resolveCreateBookingUserId = (
   params: CreateBookingSchema,
-  resourceId?: string,
+  context: Parameters<typeof getAuthUserId>[0],
 ) => {
   if (params.userId) {
     return params.userId;
   }
 
-  return resolveAgentUserId(
-    resourceId,
+  return getAuthUserId(
+    context,
     "Authentication required to create a booking",
   );
 };
@@ -32,19 +32,19 @@ export const createBookingTool = createTool({
   inputSchema: createBookingSchema,
   outputSchema: bookingSchema,
   execute: async (params, context) => {
-    const userId = resolveCreateBookingUserId(
-      params,
-      context.agent?.resourceId,
-    );
+    const userId = resolveCreateBookingUserId(params, context);
 
-    const booking = await createBooking({
-      roomId: params.roomId,
-      userId,
-      checkInDate: params.checkInDate,
-      checkOutDate: params.checkOutDate,
-      guests: params.guests,
-      status: params.status ?? BookingStatus.CONFIRMED,
-    });
+    const booking = await createBooking(
+      {
+        roomId: params.roomId,
+        userId,
+        checkInDate: params.checkInDate,
+        checkOutDate: params.checkOutDate,
+        guests: params.guests,
+        status: params.status ?? BookingStatus.CONFIRMED,
+      },
+      { requestContext: context.requestContext },
+    );
     return booking;
   },
 });

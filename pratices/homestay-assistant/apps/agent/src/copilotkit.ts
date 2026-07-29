@@ -1,4 +1,5 @@
 import { MastraAgent } from "@ag-ui/mastra";
+import type { RequestContext } from "@mastra/core/request-context";
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
@@ -7,10 +8,21 @@ import { runtimeMastra } from "@/mastra/runtime";
 
 export { runtimeMastra as mastra } from "@/mastra/runtime";
 
-export const getCopilotkitAgents = (userId: string) =>
+type GetCopilotkitAgentsInput = {
+  userId: string;
+  agentId?: string;
+  requestContext?: RequestContext;
+};
+
+export const getCopilotkitAgents = ({
+  userId,
+  agentId = AGENT_KEYS.MANAGE_ASSISTANT,
+  requestContext,
+}: GetCopilotkitAgentsInput) =>
   enableSuggestionToolChoice(
     MastraAgent.getLocalAgents({
       mastra: runtimeMastra,
-      resourceId: getAgentResourceId(userId, AGENT_KEYS.MANAGE_ASSISTANT),
-    })
+      resourceId: getAgentResourceId(userId, agentId),
+      requestContext,
+    }),
   );

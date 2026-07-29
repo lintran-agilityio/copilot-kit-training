@@ -13,7 +13,12 @@ import {
 } from "@/mastra/schemas/booking";
 import { ROUTES } from "@repo/constants";
 import { get, post, del, update } from "@/mastra/services/common";
+import type { RequestContext } from "@mastra/core/request-context";
 import { getRoom } from "@/mastra/services/rooms.service";
+
+type ServiceContext = {
+  requestContext?: RequestContext;
+};
 
 export type GetBookingsParams = {
   userId?: string;
@@ -23,15 +28,24 @@ export type GetBookingsParams = {
 
 export const createBooking = async (
   booking: CreateBookingPayload,
+  serviceContext?: ServiceContext,
 ): Promise<Booking> =>
-  post(ROUTES.BOOKINGS, booking, bookingSchema, "Failed to create booking");
+  post(
+    ROUTES.BOOKINGS,
+    booking,
+    bookingSchema,
+    "Failed to create booking",
+    serviceContext,
+  );
 
 export const getBookings = async (
-  params?: GetBookingsParams
+  params?: GetBookingsParams,
+  serviceContext?: ServiceContext,
 ): Promise<Booking[]> =>
   get(ROUTES.BOOKINGS, z.array(bookingSchema), {
     searchParams: params,
     errorMessage: "Failed to fetch bookings",
+    requestContext: serviceContext?.requestContext,
   });
 
 export const checkRoomAvailability = async (
@@ -97,6 +111,7 @@ const isActiveBooking = (booking: Booking) => {
 export const findBookingById = async (
   userId: string,
   bookingId: string,
+  serviceContext?: ServiceContext,
 ): Promise<FindBookingByIdOutput> => {
   const id = sanitizeBookingId(bookingId);
 
@@ -110,6 +125,7 @@ export const findBookingById = async (
       bookingSchema,
       {
         errorMessage: "Failed to find booking by id",
+        requestContext: serviceContext?.requestContext,
       },
     );
 

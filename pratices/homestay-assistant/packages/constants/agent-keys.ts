@@ -6,4 +6,5 @@ export const AGENT_KEYS = {
 
 export const AGENT_URLS = {
   MANAGE_ASSISTANT: "/api/copilotkit",
+  SUGGESTION_ASSISTANT: "/api/copilotkit",
 };

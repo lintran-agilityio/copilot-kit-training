@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { createTool } from "@mastra/core/tools";
 import { BookingStatus } from "@repo/types";
-import { parseAgentResourceId } from "@repo/utils";
+import { getAuthUserId } from "@/mastra/middleware/get-auth-user-id";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { bookingSchema } from "@/mastra/schemas/booking";
@@ -27,17 +27,13 @@ const getBookingsInputSchema = z.object({
 
 const resolveUserId = (
   params: z.infer<typeof getBookingsInputSchema>,
-  resourceId?: string,
+  context: Parameters<typeof getAuthUserId>[0],
 ) => {
   if (params.userId) {
     return params.userId;
   }
 
-  if (resourceId) {
-    return parseAgentResourceId(resourceId).userId;
-  }
-
-  return undefined;
+  return getAuthUserId(context, "Authentication required to fetch bookings");
 };
 
 export const getBookingsTool = createTool({
@@ -49,17 +45,16 @@ export const getBookingsTool = createTool({
     bookings: z.array(bookingSchema),
   }),
   execute: async (params, context) => {
-    const userId = resolveUserId(params, context.agent?.resourceId);
+    const userId = resolveUserId(params, context);
 
-    if (!userId) {
-      throw new Error("Authentication required to fetch bookings");
-    }
-
-    const bookings = await getBookings({
-      userId,
-      roomId: params.roomId,
-      status: params.status as GetBookingsParams["status"],
-    });
+    const bookings = await getBookings(
+      {
+        userId,
+        roomId: params.roomId,
+        status: params.status as GetBookingsParams["status"],
+      },
+      { requestContext: context.requestContext },
+    );
 
     return { bookings };
   },

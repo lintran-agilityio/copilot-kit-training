@@ -5,6 +5,10 @@ import { AGENT_KEYS } from "@repo/constants";
 import { manageAgent } from "@/mastra/agents/manage-agent";
 import { suggestionAgent } from "@/mastra/agents/suggestion-agent";
 import { studioDbPath } from "@/mastra/db-paths";
+import {
+  createMastraServerAuthConfig,
+  createMastraServerMiddleware,
+} from "@/mastra/middleware";
 
 export const runtimeMastra = new Mastra({
   agents: {
@@ -15,6 +19,10 @@ export const runtimeMastra = new Mastra({
     id: "mastra-runtime-storage",
     url: `file:${studioDbPath}`,
   }),
+  server: {
+    middleware: createMastraServerMiddleware(),
+    auth: createMastraServerAuthConfig(),
+  },
 });
 
 export { runtimeMastra as mastra };

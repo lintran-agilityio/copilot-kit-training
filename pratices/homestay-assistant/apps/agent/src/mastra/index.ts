@@ -10,6 +10,10 @@ import { duckDbPath, studioDbPath } from './db-paths';
 
 import { manageAgent } from './agents/manage-agent';
 import { suggestionAgent } from './agents/suggestion-agent';
+import {
+  createMastraServerAuthConfig,
+  createMastraServerMiddleware,
+} from './middleware';
 
 export const mastra = new Mastra({
   workflows: {},
@@ -47,4 +51,8 @@ export const mastra = new Mastra({
       },
     },
   }),
+  server: {
+    middleware: createMastraServerMiddleware(),
+    auth: createMastraServerAuthConfig(),
+  },
 });

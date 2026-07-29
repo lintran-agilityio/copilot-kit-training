@@ -17,10 +17,12 @@ export const findBookingByIdTool = createTool({
   outputSchema: findBookingByIdOutputSchema,
   execute: async ({ bookingId }, context) => {
     const userId = resolveAgentUserId(
-      context.agent?.resourceId,
+      context,
       "Authentication required to find bookings",
     );
 
-    return await findBookingById(userId, sanitizeBookingId(bookingId));
+    return await findBookingById(userId, sanitizeBookingId(bookingId), {
+      requestContext: context.requestContext,
+    });
   },
 });
