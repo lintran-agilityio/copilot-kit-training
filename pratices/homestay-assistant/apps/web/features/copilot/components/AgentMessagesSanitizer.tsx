@@ -16,10 +16,11 @@ export const AgentMessagesSanitizer = () => {
     }
 
     const sanitized = normalizeMessages(agent.messages);
-    const before = JSON.stringify(agent.messages);
-    const after = JSON.stringify(sanitized);
 
-    if (before === after) {
+    if (
+      sanitized.length === agent.messages.length &&
+      sanitized.every((message, index) => message === agent.messages[index])
+    ) {
       return;
     }
 

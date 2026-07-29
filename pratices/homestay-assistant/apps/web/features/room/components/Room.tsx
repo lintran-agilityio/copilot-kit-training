@@ -1,4 +1,5 @@
-import { RoomInfo, RoomImage } from "@/features/room/components";
+import { RoomInfo } from "@/features/room/components/RoomInfo";
+import { RoomImage } from "@/features/room/components/RoomImage";
 import type { Room as RoomType } from "@/features/room/types/room";
 import { cn } from "@repo/utils";
 
@@ -10,12 +11,14 @@ export type RoomSelectPayload = {
 export type Room = RoomType & {
   compact?: boolean;
   className?: string;
+  priority?: boolean;
   onSelect?: (payload: RoomSelectPayload) => void;
 };
 
 export const Room = ({
   compact = false,
   className,
+  priority = false,
   onSelect,
   ...room
 }: Room) => {
@@ -59,6 +62,7 @@ export const Room = ({
         levelColor={room.levelColor}
         availableSlots={room.availableSlots}
         compact={compact}
+        priority={priority}
       />
       <div className="flex-1">
         <RoomInfo

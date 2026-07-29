@@ -22,6 +22,7 @@ export const getRooms = async ({
   });
 
   if (!response.ok) {
+    console.error("Fetch rooms error:", response.statusText);
     throw new Error("Failed to fetch rooms");
   }
 

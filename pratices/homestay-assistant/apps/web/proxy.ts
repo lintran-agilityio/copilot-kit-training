@@ -1,6 +1,22 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-export default clerkMiddleware();
+const isCopilotKitRoute = createRouteMatcher(["/api/copilotkit(.*)"]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // Keep OPTIONS open for preflight; route handler also allows OPTIONS.
+  if (req.method === "OPTIONS") {
+    return;
+  }
+
+  if (isCopilotKitRoute(req)) {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+});
 
 export const config = {
   matcher: [

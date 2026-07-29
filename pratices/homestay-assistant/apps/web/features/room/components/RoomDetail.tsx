@@ -7,11 +7,9 @@ import { useRequestRoomBooking } from "@/features/booking/hooks/use-request-room
 import { useBooking } from "@/features/booking/hooks/use-booking";
 import { Button } from "@/components/ui/button";
 import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
-import {
-  RoomBookingDates,
-  RoomImageGallery,
-  AmenitiesRoom,
-} from "@/features/room/components";
+import { RoomBookingDates } from "@/features/room/components/RoomBookingDates";
+import { RoomImageGallery } from "@/features/room/components/RoomImageGallery";
+import { AmenitiesRoom } from "@/features/room/components/AmenitiesRoom";
 import type { Room } from "@/features/room/types/room";
 import {
   addDays,

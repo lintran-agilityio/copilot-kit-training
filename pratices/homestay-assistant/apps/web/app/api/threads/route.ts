@@ -14,7 +14,15 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const agentId = searchParams.get("agentId") ?? AGENT_KEYS.MANAGE_ASSISTANT;
-  const threads = listMastraThreads({ userId, agentId });
 
-  return Response.json({ threads });
+  try {
+    const threads = await listMastraThreads({ userId, agentId });
+    return Response.json({ threads });
+  } catch (error) {
+    console.error("Failed to list Mastra threads", error);
+    return Response.json(
+      { error: "Failed to list threads" },
+      { status: 502 },
+    );
+  }
 }

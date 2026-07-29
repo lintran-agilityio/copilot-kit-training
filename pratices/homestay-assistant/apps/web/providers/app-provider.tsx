@@ -4,10 +4,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { CopilotProvider } from "@/features/copilot/providers";
-import {
-  DynamicSuggestionConfig,
-  HomestayAgentContext,
-} from "@/features/chat/components";
+import { HomestayAgentContext } from "@/features/chat/components/HomestayAgentContext";
 
 type AppProviderProps = {
   children: React.ReactNode;
@@ -35,7 +32,6 @@ export const AppProvider = ({
       {withCopilot ? (
         <CopilotProvider>
           <HomestayAgentContext />
-          <DynamicSuggestionConfig />
           {children}
         </CopilotProvider>
       ) : (

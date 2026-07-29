@@ -15,6 +15,8 @@ type RoomImageProps = {
   levelColor: string;
   availableSlots: number;
   compact?: boolean;
+  /** Only the LCP / first visible card should set this. */
+  priority?: boolean;
 };
 
 export function RoomImage({
@@ -24,6 +26,7 @@ export function RoomImage({
   levelColor,
   availableSlots,
   compact = false,
+  priority = false,
 }: RoomImageProps) {
   const [url, setUrl] = useState<string | StaticImageData>(
     resolveRoomImage(imageUrl),
@@ -44,7 +47,7 @@ export function RoomImage({
         onError={() => {
           setUrl(FALLBACK_ROOM_IMAGE);
         }}
-        priority
+        priority={priority}
         className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
 

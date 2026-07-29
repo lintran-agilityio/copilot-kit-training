@@ -5,12 +5,12 @@ Next.js frontend for Homestay Assistant. Guests sign in with Clerk, chat with th
 ## Stack
 
 - Next.js 16 (App Router)
-- CopilotKit (`@copilotkit/react-core`, `@copilotkit/react-ui`, `@copilotkit/runtime`)
+- CopilotKit (`@copilotkit/react-core`, `@copilotkit/runtime`)
 - Clerk (`@clerk/nextjs`)
 - TanStack Query, Zustand
 - Tailwind CSS 4, Radix / shadcn-style UI
 - Shared packages: `@repo/components`, `@repo/constants`, `@repo/types`, `@repo/utils`
-- Workspace dependency: `agent` (Mastra runtime wired into CopilotKit)
+- Remote Mastra agent via `MASTRA_URL` (CopilotKit + Memory threads)
 
 ## Features
 
@@ -43,8 +43,7 @@ NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
 OPENAI_API_KEY=sk-...
 API_URL=http://localhost:5001
-# optional — Mastra thread DB path override
-# MASTRA_DB_PATH=
+MASTRA_URL=http://localhost:4111
 ```
 
 | Variable | Description |
@@ -52,7 +51,7 @@ API_URL=http://localhost:5001
 | `NEXT_PUBLIC_CLERK_*` / `CLERK_SECRET_KEY` | Clerk auth |
 | `OPENAI_API_KEY` | Model access for the assistant runtime |
 | `API_URL` | Nest API base URL (defaults to `http://localhost:5001`) |
-| `MASTRA_DB_PATH` | Optional override for Mastra/SQLite thread storage |
+| `MASTRA_URL` | Mastra agent base URL for CopilotKit + thread Memory API |
 
 ## Run
 
@@ -79,6 +78,23 @@ pnpm start
 pnpm lint
 pnpm check-types
 ```
+
+## Deploy on Render (manual)
+
+| Setting | Value |
+| --- | --- |
+| **Root Directory** | `pratices/homestay-assistant` (this app folder in the parent repo). Do **not** set `apps/web` — workspace packages will break |
+| **Build Command** | see below |
+| **Start Command** | `pnpm --filter web start` |
+| **`NODE_OPTIONS`** | Only inside the **Build Command** — do **not** set it as a Render Environment variable |
+
+**Build Command** (forces a real `next build` so `.next` exists for `next start`):
+
+```sh
+pnpm install --frozen-lockfile --filter=web... && NODE_OPTIONS=--max-old-space-size=384 pnpm --filter @repo/utils build && NODE_OPTIONS=--max-old-space-size=384 pnpm --filter web build
+```
+
+If build still OOMs on Free/Starter (512Mi), upgrade the service RAM — Next 16 + CopilotKit often needs ≥1GB for webpack.
 
 ## API routes (BFF)
 

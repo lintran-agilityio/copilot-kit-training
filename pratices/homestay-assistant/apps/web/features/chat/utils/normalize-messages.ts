@@ -279,19 +279,41 @@ const stripSuggestionGenerationTurns = <
 >(
   messages: TMessage[],
 ): TMessage[] => {
+  let needsStrip = false;
+
+  for (let index = 0; index < messages.length; index += 1) {
+    const message = messages[index];
+
+    if (
+      message?.role === "user" &&
+      isSuggestionGenerationContent(message?.content)
+    ) {
+      needsStrip = true;
+      break;
+    }
+  }
+
+  if (!needsStrip) {
+    return messages;
+  }
+
   const result: TMessage[] = [];
 
   for (let index = 0; index < messages.length; index += 1) {
     const message = messages[index];
 
     if (
-      message.role === "user" &&
-      isSuggestionGenerationContent(message.content)
+      message?.role === "user" &&
+      isSuggestionGenerationContent(message?.content)
     ) {
       const next = messages[index + 1];
       if (next?.role === "assistant") {
         index += 1;
       }
+      continue;
+    }
+
+    if (!message) {
       continue;
     }
 
@@ -303,8 +325,26 @@ const stripSuggestionGenerationTurns = <
 
 export const normalizeMessages = <TMessage extends { role?: string; content?: unknown }>(
   messages: TMessage[],
-): TMessage[] =>
-  stripSuggestionGenerationTurns(messages.map(normalizeMessage));
+): TMessage[] => {
+  let changed = false;
+  const normalized = messages.map((message) => {
+    const next = normalizeMessage(message);
+
+    if (next !== message) {
+      changed = true;
+    }
+
+    return next;
+  });
+
+  const stripped = stripSuggestionGenerationTurns(normalized);
+
+  if (!changed && stripped === normalized) {
+    return messages;
+  }
+
+  return stripped;
+};
 
 export const normalize = (value: string) => {
   return value.trim().replace(/[^\w\s]/g, "").toLocaleLowerCase();

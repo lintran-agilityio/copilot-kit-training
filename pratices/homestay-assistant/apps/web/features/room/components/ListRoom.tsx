@@ -46,6 +46,7 @@ export const ListRoom = ({
                   key={room.id}
                   {...room}
                   compact={compact}
+                  priority={index === 0}
                   onSelect={requestRoomDetail}
                 />
               </div>

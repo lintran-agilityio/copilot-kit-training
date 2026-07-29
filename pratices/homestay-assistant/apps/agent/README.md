@@ -1,6 +1,6 @@
 # Agent (`apps/agent`)
 
-Mastra agents for Homestay Assistant. Tools call the Nest API for rooms and bookings; CopilotKit consumes the exported agents from the web app.
+Mastra agents for Homestay Assistant. Tools call the Nest API for rooms and bookings; the web app connects remotely via `MASTRA_URL` (Mastra Client / AG-UI).
 
 ## Stack
 
@@ -33,12 +33,10 @@ Tool implementations call `API_URL` via services in `src/mastra/services/`.
 
 ## Exports
 
-`package.json` exports used by `web`:
-
 | Export | Path | Use |
 | --- | --- | --- |
 | `agent` | `./src/mastra/index.ts` | Mastra instance / Studio agents |
-| `agent/copilotkit` | `./src/copilotkit.ts` | `getCopilotkitAgents(userId)` for the web runtime |
+| `agent/copilotkit` | `./src/copilotkit.ts` | Local AG-UI helpers (optional; web uses remote Mastra) |
 
 ## Environment
 

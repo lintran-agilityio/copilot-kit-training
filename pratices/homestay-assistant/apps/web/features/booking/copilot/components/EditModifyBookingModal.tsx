@@ -23,7 +23,7 @@ import type {
   EditModifyBookingArgs,
   EditModifyBookingResult,
 } from "@/features/booking/schemas";
-import { RoomBookingDates } from "@/features/room/components";
+import { RoomBookingDates } from "@/features/room/components/RoomBookingDates";
 import {
   FALLBACK_ROOM_IMAGE,
   resolveRoomImage,

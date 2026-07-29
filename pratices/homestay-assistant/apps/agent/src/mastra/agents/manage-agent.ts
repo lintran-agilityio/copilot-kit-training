@@ -8,6 +8,10 @@ import {
 } from "@/mastra/utils";
 import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants";
 import {
+  agentRequestLoggingProcessor,
+  agentToolLoggingHooks,
+} from "@/mastra/middleware/ai-logging";
+import {
   cancelBookingTool,
   checkRoomAvailabilityTool,
   createBookingTool,
@@ -26,11 +30,14 @@ export const manageAgent = new Agent({
   name: "Homestay Manager Agent",
   description:
     "Public chat agent that coordinates room discovery and booking workflows.",
+  // Shared AI context: business timezone + current date only (no booking preload).
   instructions: () => withCurrentDateInstructions(manageAgentPrompt),
   model: "openai/gpt-4o-mini",
   defaultOptions: {
     maxSteps: 10,
   },
+  inputProcessors: [agentRequestLoggingProcessor],
+  hooks: agentToolLoggingHooks,
   tools: {
     [TOOL_KEYS.GET.ROOMS]: getRoomsTool,
     [TOOL_KEYS.GET.FIND_ROOM]: findRoomTool,
