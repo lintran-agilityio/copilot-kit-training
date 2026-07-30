@@ -9,19 +9,22 @@ COPY pnpm-lock.yaml .
 COPY pnpm-workspace.yaml .
 COPY turbo.json .
 
-# Copy pnpm patches (required by patchedDependencies)
+# Required by pnpm patchedDependencies
 COPY patches ./patches
-
 
 COPY apps ./apps
 COPY packages ./packages
-COPY apps/web ./apps/web
 
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @repo/utils build
-RUN ls -la packages/utils/dist
+
 RUN pnpm turbo run build --filter=web
+
+WORKDIR /repo/apps/web
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
 EXPOSE 3000
 
-CMD ["pnpm", "--filter", "web", "start"]
+CMD ["pnpm", "--filter", "web", "start", "--", "-H", "0.0.0.0"]
