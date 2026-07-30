@@ -9,6 +9,10 @@ COPY pnpm-lock.yaml .
 COPY pnpm-workspace.yaml .
 COPY turbo.json .
 
+# Copy pnpm patches (required by patchedDependencies)
+COPY patches ./patches
+
+
 COPY apps ./apps
 COPY packages ./packages
 COPY apps/web ./apps/web
