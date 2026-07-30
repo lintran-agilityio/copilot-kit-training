@@ -8,8 +8,6 @@ COPY package.json .
 COPY pnpm-lock.yaml .
 COPY pnpm-workspace.yaml .
 COPY turbo.json .
-
-# Required by pnpm patchedDependencies
 COPY patches ./patches
 
 COPY apps ./apps
@@ -21,10 +19,6 @@ RUN pnpm turbo run build --filter=web
 
 WORKDIR /repo/apps/web
 
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
-
 EXPOSE 3000
 
-CMD ["pnpm", "--filter", "web", "start", "--", "-H", "0.0.0.0"]
+CMD ["pnpm", "start"]
