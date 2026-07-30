@@ -26,6 +26,7 @@
     "@ag-ui/core": "^0.0.57",
     "@ag-ui/mastra": "^1.1.1",
     "@clerk/backend": "^3.8.1",
+    "@copilotkit/runtime": "^1.62.2",
     "@mastra/core": "^1.43.0",
     "@mastra/duckdb": "^1.4.2",
     "@mastra/libsql": "^1.13.2",

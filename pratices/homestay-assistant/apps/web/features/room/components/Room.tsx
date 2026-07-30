@@ -32,7 +32,7 @@ export const Room = ({
     <article
       className={cn(
         "group flex h-full flex-col overflow-hidden rounded-xl border border-white/8 bg-[#111111] transition-colors hover:border-white/15",
-        compact ? "w-full min-w-0" : "min-w-[260px] max-w-[300px] flex-1",
+        compact ? "w-full min-w-0" : "min-w-[300px] max-w-[330px] flex-1",
         isInteractive &&
           "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60",
         className,

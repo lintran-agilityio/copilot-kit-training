@@ -48,9 +48,12 @@ export const authenticationMiddleware: MastraMiddlewareHandler = async (
 };
 
 export const createMastraServerAuthConfig = () => ({
-  authenticateToken: async (token: string) => {
-    const auth = await verifyClerkAuth({ clerkToken: token });
-    return auth;
+  authenticateToken: async (token: string, authRequest?: { raw?: Request }) => {
+    const clerkToken =
+      token?.trim() ||
+      (authRequest?.raw ? extractClerkToken(authRequest.raw) : null);
+
+    return verifyClerkAuth({ clerkToken });
   },
   mapUserToResourceId: (auth: MastraAuthContext) =>
     getAgentResourceId(auth.userId, AGENT_KEYS.MANAGE_ASSISTANT),

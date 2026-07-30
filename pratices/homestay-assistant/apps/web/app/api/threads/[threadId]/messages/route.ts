@@ -1,24 +1,42 @@
-import { auth } from "@clerk/nextjs/server";
 import { AGENT_KEYS } from "@repo/constants";
 
-import { listMastraThreadMessages } from "@/features/chat/server/mastra-thread-store";
+import { listMastraThreadMessages } from "@/features/chat/server/thread-service";
+import { requireThreadAuth } from "@/features/chat/server/thread-auth";
+import { MastraAgentError } from "@/features/chat/server/mastra-agent-client";
 
 export const runtime = "nodejs";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ threadId: string }> }
+  { params }: { params: Promise<{ threadId: string }> },
 ) {
-  const { userId } = await auth();
+  const authContext = await requireThreadAuth(request);
 
-  if (!userId) {
+  if (!authContext) {
     return Response.json({ error: "Authentication required" }, { status: 401 });
   }
 
   const { threadId } = await params;
   const { searchParams } = new URL(request.url);
   const agentId = searchParams.get("agentId") ?? AGENT_KEYS.MANAGE_ASSISTANT;
-  const messages = listMastraThreadMessages({ userId, agentId, threadId });
 
-  return Response.json({ messages });
+  try {
+    const messages = await listMastraThreadMessages({
+      userId: authContext.userId,
+      agentId,
+      threadId,
+      clerkToken: authContext.clerkToken,
+    });
+
+    return Response.json({ messages });
+  } catch (error) {
+    if (error instanceof MastraAgentError) {
+      return Response.json(
+        { error: "Failed to load thread messages" },
+        { status: error.status >= 500 ? 502 : error.status },
+      );
+    }
+
+    throw error;
+  }
 }

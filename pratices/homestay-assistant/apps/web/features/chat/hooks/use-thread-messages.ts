@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useAuth } from "@clerk/nextjs";
 import type { Message } from "@ag-ui/client";
 
 import type { ChatMessage } from "@/features/chat/types";
@@ -9,6 +10,7 @@ import {
   normalizeMessages,
 } from "@/features/chat/utils";
 import { useThreadStore } from "@/features/threads/store/thread-store";
+import { getClerkAuthHeaders } from "@/features/threads/utils/thread-auth-headers";
 
 type UseThreadMessagesProps = {
   agent: {
@@ -39,6 +41,7 @@ export const useThreadMessages = ({
   const setLoadError = useThreadStore((state) => state.setLoadError);
   const reloadToken = useThreadStore((state) => state.reloadToken);
   const isDraftThread = useThreadStore((state) => state.isDraftThread);
+  const { getToken } = useAuth();
 
   useEffect(() => {
     if (!threadId || typeof agentRef.current.setMessages !== "function") {
@@ -62,7 +65,10 @@ export const useThreadMessages = ({
       try {
         const response = await fetch(
           `/api/threads/${encodeURIComponent(threadId)}/messages?${new URLSearchParams({ agentId }).toString()}`,
-          { signal: abortController.signal },
+          {
+            signal: abortController.signal,
+            headers: await getClerkAuthHeaders(getToken),
+          },
         );
 
         if (!response.ok) {
@@ -111,6 +117,7 @@ export const useThreadMessages = ({
     };
   }, [
     agentId,
+    getToken,
     isDraftThread,
     reloadToken,
     setLoadError,

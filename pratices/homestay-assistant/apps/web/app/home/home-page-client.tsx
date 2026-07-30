@@ -23,7 +23,7 @@ const HomePageContent = ({ initialRooms }: HomePageClientProps) => {
   return (
     <MainLayout>
       <PageHeader />
-      <RoomGrid className="mt-8" initialRooms={initialRooms} />
+      <RoomGrid className="mt-8 justify-center" initialRooms={initialRooms} />
     </MainLayout>
   );
 };

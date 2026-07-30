@@ -14,6 +14,7 @@ import {
   createMastraServerAuthConfig,
   createMastraServerMiddleware,
 } from './middleware';
+import { copilotKitRoutes } from './routes/copilotkit-route';
 
 export const mastra = new Mastra({
   workflows: {},
@@ -54,5 +55,6 @@ export const mastra = new Mastra({
   server: {
     middleware: createMastraServerMiddleware(),
     auth: createMastraServerAuthConfig(),
+    apiRoutes: copilotKitRoutes,
   },
 });

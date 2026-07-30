@@ -1,9 +1,15 @@
 import path from "node:path";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 
-const dataDir =
-  process.env.MASTRA_DATA_DIR ??
-  path.join(process.cwd(), "src/mastra/public");
+const agentRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
+
+const dataDir = path.resolve(
+  process.env.MASTRA_DATA_DIR ?? path.join(agentRoot, "src/mastra/public"),
+);
 
 fs.mkdirSync(dataDir, { recursive: true });
 
@@ -16,3 +22,4 @@ console.log('MASTRA DB PATHS', {
 });
 
 console.log('MASTRA DATA DIR', process.env.MASTRA_DATA_DIR);
+

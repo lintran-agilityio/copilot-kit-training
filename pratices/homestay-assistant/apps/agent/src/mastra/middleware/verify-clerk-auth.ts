@@ -47,15 +47,19 @@ export const verifyClerkAuth = async ({
     throw new Error("CLERK_SECRET_KEY is required to verify Clerk JWT tokens");
   }
 
-  const payload = await verifyToken(clerkToken.trim(), { secretKey });
-  const userId = payload.sub;
+  try {
+    const payload = await verifyToken(clerkToken.trim(), { secretKey });
+    const userId = payload.sub;
 
-  if (!userId) {
+    if (!userId) {
+      return null;
+    }
+
+    return {
+      userId,
+      sessionId: typeof payload.sid === "string" ? payload.sid : undefined,
+    };
+  } catch {
     return null;
   }
-
-  return {
-    userId,
-    sessionId: typeof payload.sid === "string" ? payload.sid : undefined,
-  };
 };
