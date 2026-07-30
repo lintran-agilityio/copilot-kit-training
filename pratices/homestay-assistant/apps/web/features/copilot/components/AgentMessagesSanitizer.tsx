@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { normalizeMessages } from "@/features/chat/utils";
+import { normalizeMessages, applyBlockedMessageMetadata } from "@/features/chat/utils";
 
 export const AgentMessagesSanitizer = () => {
   const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
@@ -15,7 +15,9 @@ export const AgentMessagesSanitizer = () => {
       return;
     }
 
-    const sanitized = normalizeMessages(agent.messages);
+    const sanitized = applyBlockedMessageMetadata(
+      normalizeMessages(agent.messages),
+    );
     const before = JSON.stringify(agent.messages);
     const after = JSON.stringify(sanitized);
 

@@ -20,6 +20,7 @@ import {
   getRoomByIdTool,
   getRoomsTool,
 } from "@/mastra/tools/rooms";
+import { securityInputProcessor } from "@/mastra/processors/prompt-injection.processors";
 
 export const manageAgent = new Agent({
   id: AGENT_KEYS.MANAGE_ASSISTANT,
@@ -42,6 +43,7 @@ export const manageAgent = new Agent({
     [TOOL_KEYS.BOOKING.FIND_BY_ID]: findBookingByIdTool,
     [TOOL_KEYS.BOOKING.CANCEL]: cancelBookingTool,
   },
+  inputProcessors: [...securityInputProcessor],
   memory: new Memory({
     options: {
       workingMemory: {

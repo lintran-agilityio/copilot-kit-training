@@ -8,6 +8,7 @@ import {
 } from "@copilotkit/react-core/v2";
 
 import { getMessageTopSpacing } from "@/features/chat/utils";
+import { isBlockedMessageMetadata } from "@repo/constants";
 import { cn } from "@repo/utils";
 import {
   getMessageTextContent,
@@ -31,6 +32,9 @@ export const ChatUserMessage = ({
   }
 
   const displayContent = getUserVisibleMessageContent(rawContent);
+  const isBlocked = isBlockedMessageMetadata(
+    (message as { metadata?: unknown }).metadata,
+  );
 
   return (
     <CopilotChatUserMessage
@@ -46,19 +50,29 @@ export const ChatUserMessage = ({
           data-chat-message-row="user"
           className={cn("flex items-start justify-end gap-3", topSpacing)}
         >
-          <div className="
+          <div
+            className={cn(
+              `
             app-scrollbar
             max-w-[85%]
             max-h-[400px]
             overflow-y-auto
             rounded-2xl
-            bg-zinc-700/60
             px-4
             py-3
             text-sm
             leading-relaxed
-            text-zinc-100
-          ">
+          `,
+              isBlocked
+                ? "border border-amber-500/40 bg-amber-950/40 text-amber-50"
+                : "bg-zinc-700/60 text-zinc-100",
+            )}
+          >
+            {isBlocked ? (
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-300/90">
+                Blocked by security filter
+              </p>
+            ) : null}
             {messageRenderer}
           </div>
         </div>

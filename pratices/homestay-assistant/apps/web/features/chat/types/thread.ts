@@ -23,4 +23,7 @@ export type ChatMessage = {
   role: "assistant" | "system" | "tool" | "user";
   content: string;
   toolCalls?: ChatToolCall[];
+  metadata?: {
+    blocked?: boolean;
+  };
 };

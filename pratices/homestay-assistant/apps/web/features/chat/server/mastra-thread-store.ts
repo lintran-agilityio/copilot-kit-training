@@ -2,7 +2,9 @@ import path from "node:path";
 import Database from "better-sqlite3";
 
 import { getAgentResourceId, parseAgentResourceId } from "@repo/utils";
+import { THREAD_METADATA_BLOCKED_MESSAGE_IDS } from "@repo/constants";
 import type { ChatMessage, ChatThread } from "@/features/chat/types";
+import { applyBlockedMessageMetadata } from "@/features/chat/utils/blocked-messages";
 
 type MastraThreadRow = {
   id: string;
@@ -23,6 +25,30 @@ type MastraMessageRow = {
 
 type MastraThreadIdRow = {
   id: string;
+};
+
+type MastraThreadMetadataRow = {
+  id: string;
+  metadata: string | null;
+};
+
+const readBlockedMessageIds = (metadataRaw: string | null | undefined) => {
+  if (!metadataRaw?.trim()) {
+    return [] as string[];
+  }
+
+  try {
+    const metadata = JSON.parse(metadataRaw) as Record<string, unknown>;
+    const blocked = metadata[THREAD_METADATA_BLOCKED_MESSAGE_IDS];
+
+    if (!Array.isArray(blocked)) {
+      return [];
+    }
+
+    return blocked.filter((value): value is string => typeof value === "string");
+  } catch {
+    return [];
+  }
 };
 
 type MastraMessagePart = {
@@ -363,9 +389,9 @@ export const listMastraThreadMessages = ({
 
   try {
     const thread = database
-      .prepare<[string, string], { id: string }>(
+      .prepare<[string, string], MastraThreadMetadataRow>(
         `
-          SELECT id
+          SELECT id, metadata
           FROM mastra_threads
           WHERE id = ?
             AND resourceId = ?
@@ -376,6 +402,8 @@ export const listMastraThreadMessages = ({
     if (!thread) {
       return [];
     }
+
+    const blockedMessageIds = readBlockedMessageIds(thread.metadata);
 
     const rows = database
       .prepare<[string, string], MastraMessageRow>(
@@ -390,7 +418,10 @@ export const listMastraThreadMessages = ({
       )
       .all(threadId, resourceId);
 
-    return rows.map(readStoredMessage);
+    return applyBlockedMessageMetadata(
+      rows.map(readStoredMessage),
+      blockedMessageIds,
+    );
   } finally {
     database.close();
   }

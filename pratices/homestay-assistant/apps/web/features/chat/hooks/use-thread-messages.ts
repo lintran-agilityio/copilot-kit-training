@@ -74,6 +74,7 @@ export const useThreadMessages = ({
           id: message.id,
           role: message.role,
           content: message.content,
+          ...(message.metadata ? { metadata: message.metadata } : {}),
           ...(message.toolCalls?.length
             ? { toolCalls: message.toolCalls }
             : {}),
