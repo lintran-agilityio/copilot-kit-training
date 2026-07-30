@@ -4,13 +4,26 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./index.ts",
-    "./agent-keys": "./agent-keys.ts",
-    "./tool-keys": "./tool-keys.ts",
-    "./routes": "./routes.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./agent-keys": {
+      "types": "./dist/agent-keys.d.ts",
+      "default": "./dist/agent-keys.js"
+    },
+    "./tool-keys": {
+      "types": "./dist/tool-keys.d.ts",
+      "default": "./dist/tool-keys.js"
+    },
+    "./routes": {
+      "types": "./dist/routes.d.ts",
+      "default": "./dist/routes.js"
+    }
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
