@@ -4,20 +4,27 @@ WORKDIR /repo
 
 RUN corepack enable
 
+# Root workspace files
 COPY package.json .
 COPY pnpm-lock.yaml .
 COPY pnpm-workspace.yaml .
 COPY turbo.json .
 
+# Copy pnpm patches (required by patchedDependencies)
+COPY patches ./patches
+
+# Workspace packages
 COPY apps ./apps
 COPY packages ./packages
 
+# Install dependencies
 RUN pnpm install --frozen-lockfile
 
+# Build only the agent package
 RUN pnpm turbo run build --filter=agent
 
 WORKDIR /repo/apps/agent
 
 EXPOSE 4111
 
-CMD ["pnpm","start"]
+CMD ["pnpm", "start"]
