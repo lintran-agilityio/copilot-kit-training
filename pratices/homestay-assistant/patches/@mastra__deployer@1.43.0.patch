@@ -1,0 +1,50 @@
+diff --git a/dist/chunk-G2ZY3BL6.js b/dist/chunk-G2ZY3BL6.js
+index 7cb51f347fd3c49eed6de6affd117696ca0c3c67..8104cfb6b1f63b1e838a099d068b977517c99d4a 100644
+--- a/dist/chunk-G2ZY3BL6.js
++++ b/dist/chunk-G2ZY3BL6.js
+@@ -63,7 +63,7 @@ var Bundler = class extends MastraBundler {
+     );
+     await writeFile(
+       join(outputDirectory, "pnpm-workspace.yaml"),
+-      "packages:\n  - '.'\nallowBuilds:\n  bcrypt: true\n  esbuild: true\n  sharp: true\n  protobufjs: true\n  workerd: true\n  bufferutil: true\n  utf-8-validate: true\n"
++      "packages:\n  - '.'\nallowBuilds:\n  bcrypt: true\n  esbuild: true\n  sharp: true\n  protobufjs: true\n  workerd: true\n  bufferutil: true\n  utf-8-validate: true\n  '@scarf/scarf': true\n"
+     );
+   }
+   createBundler(inputOptions, outputOptions) {
+diff --git a/dist/chunk-UEH6D24P.cjs b/dist/chunk-UEH6D24P.cjs
+index 25c43923cc549f61d449b6582f0059888e7b27fc..4a664c9c9acdd568da06db81198a7cd76025ded8 100644
+--- a/dist/chunk-UEH6D24P.cjs
++++ b/dist/chunk-UEH6D24P.cjs
+@@ -160,6 +160,7 @@ var Deps = class extends base.MastraBase {
+       "  workerd: true",
+       "  bufferutil: true",
+       "  utf-8-validate: true",
++      "  '@scarf/scarf': true",
+       "minimumReleaseAge: 0"
+     ];
+     if (options.os?.length || options.cpu?.length || options.libc?.length) {
+diff --git a/dist/chunk-WE66TECO.cjs b/dist/chunk-WE66TECO.cjs
+index ec19b26afc1c50c6218909409f1dff017c5477cb..75299e09b577b489a0db7c0cd9cadabc8005fcc7 100644
+--- a/dist/chunk-WE66TECO.cjs
++++ b/dist/chunk-WE66TECO.cjs
+@@ -89,7 +89,7 @@ var Bundler = class extends bundler.MastraBundler {
+     );
+     await promises.writeFile(
+       path.join(outputDirectory, "pnpm-workspace.yaml"),
+-      "packages:\n  - '.'\nallowBuilds:\n  bcrypt: true\n  esbuild: true\n  sharp: true\n  protobufjs: true\n  workerd: true\n  bufferutil: true\n  utf-8-validate: true\n"
++      "packages:\n  - '.'\nallowBuilds:\n  bcrypt: true\n  esbuild: true\n  sharp: true\n  protobufjs: true\n  workerd: true\n  bufferutil: true\n  utf-8-validate: true\n  '@scarf/scarf': true\n"
+     );
+   }
+   createBundler(inputOptions, outputOptions) {
+diff --git a/dist/chunk-ZIES2RI2.js b/dist/chunk-ZIES2RI2.js
+index 1eae09f4f711fd4eae839e289c36e64458ddb950..7f3eae5b6fd00eadc9806251759c165ea65d3302 100644
+--- a/dist/chunk-ZIES2RI2.js
++++ b/dist/chunk-ZIES2RI2.js
+@@ -133,6 +133,7 @@ var Deps = class extends MastraBase {
+       "  workerd: true",
+       "  bufferutil: true",
+       "  utf-8-validate: true",
++      "  '@scarf/scarf': true",
+       "minimumReleaseAge: 0"
+     ];
+     if (options.os?.length || options.cpu?.length || options.libc?.length) {
