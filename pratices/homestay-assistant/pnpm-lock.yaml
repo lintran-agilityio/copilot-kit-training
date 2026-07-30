@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@mastra/deployer@1.43.0': c14d1042b611889fa230056394cab3659a05e7fbbb81ad98f4efe95e6e9e5e46
+
 importers:
 
   .:
@@ -11112,7 +11115,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/deployer@1.43.0(@hono/node-server@1.19.14(hono@4.12.26))(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.208(zod@3.25.76))(express@5.2.1)(rxjs@7.8.1)(zod@3.25.76))(typescript@5.9.2)(zod@3.25.76)':
+  '@mastra/deployer@1.43.0(patch_hash=c14d1042b611889fa230056394cab3659a05e7fbbb81ad98f4efe95e6e9e5e46)(@hono/node-server@1.19.14(hono@4.12.26))(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.208(zod@3.25.76))(express@5.2.1)(rxjs@7.8.1)(zod@3.25.76))(typescript@5.9.2)(zod@3.25.76)':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/preset-typescript': 7.29.7(@babel/core@7.29.7)
@@ -16355,7 +16358,7 @@ snapshots:
       '@clack/prompts': 1.5.1
       '@expo/devcert': 1.2.1
       '@mastra/core': 1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.208(zod@3.25.76))(express@5.2.1)(rxjs@7.8.1)(zod@3.25.76)
-      '@mastra/deployer': 1.43.0(@hono/node-server@1.19.14(hono@4.12.26))(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.208(zod@3.25.76))(express@5.2.1)(rxjs@7.8.1)(zod@3.25.76))(typescript@5.9.2)(zod@3.25.76)
+      '@mastra/deployer': 1.43.0(patch_hash=c14d1042b611889fa230056394cab3659a05e7fbbb81ad98f4efe95e6e9e5e46)(@hono/node-server@1.19.14(hono@4.12.26))(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.208(zod@3.25.76))(express@5.2.1)(rxjs@7.8.1)(zod@3.25.76))(typescript@5.9.2)(zod@3.25.76)
       '@mastra/loggers': 1.1.2(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.208(zod@3.25.76))(express@5.2.1)(rxjs@7.8.1)(zod@3.25.76))
       archiver: 8.0.0
       commander: 14.0.3
