@@ -2,7 +2,11 @@ import { MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
 import { getAgentResourceId } from "@repo/utils";
 import { AGENT_KEYS } from "@repo/constants";
 
-import type { ContextWithMastra } from "@mastra/core/server";
+import {
+  getWebRequest,
+  type ContextWithMastra,
+  type MastraAuthRequest,
+} from "@mastra/core/server";
 
 import { REQUEST_CONTEXT_KEYS } from "../constants";
 import { extractClerkToken, verifyClerkAuth } from "../verify-clerk-auth";
@@ -48,10 +52,10 @@ export const authenticationMiddleware: MastraMiddlewareHandler = async (
 };
 
 export const createMastraServerAuthConfig = () => ({
-  authenticateToken: async (token: string, authRequest?: { raw?: Request }) => {
+  authenticateToken: async (token: string, request: MastraAuthRequest) => {
+    const raw = getWebRequest(request);
     const clerkToken =
-      token?.trim() ||
-      (authRequest?.raw ? extractClerkToken(authRequest.raw) : null);
+      token?.trim() || (raw ? extractClerkToken(raw) : null);
 
     return verifyClerkAuth({ clerkToken });
   },
