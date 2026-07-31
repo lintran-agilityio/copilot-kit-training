@@ -16,7 +16,7 @@ export const suggestionAgent = new Agent({
     "Generates contextual chat suggestion pills. Does not own conversation memory.",
   instructions:
     "You only generate short follow-up suggestions via the copilotkitSuggest tool. Do not answer the guest as a chat assistant.",
-  model: "openai/gpt-4o-mini",
+  model: process.env.AI_MODEL || "openai/gpt-4o-mini",
   defaultOptions: {
     maxSteps: 3,
   },

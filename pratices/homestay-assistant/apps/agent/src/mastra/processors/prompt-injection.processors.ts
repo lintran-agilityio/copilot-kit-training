@@ -8,7 +8,7 @@ import { AGENT_INPUT_TOKEN_LIMIT } from "@repo/constants";
 import { ExcludeBlockedMessagesProcessor } from "./exclude-blocked-messages.processor";
 import { UserMessageTokenLimitProcessor } from "./user-message-token-limit.processor";
 const promptInjectionProcessor = new PromptInjectionDetector({
-  model: "openai/gpt-4o-mini",
+  model: process.env.AI_MODEL || "openai/gpt-4o-mini",
   threshold: 0.8,
   strategy: "block",
   lastMessageOnly: true,

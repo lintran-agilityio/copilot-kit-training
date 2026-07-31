@@ -29,7 +29,7 @@ export const manageAgent = new Agent({
   description:
     "Public chat agent that coordinates room discovery and booking workflows.",
   instructions: () => withCurrentDateInstructions(manageAgentPrompt),
-  model: "openai/gpt-4o-mini",
+  model: process.env.AI_MODEL || "openai/gpt-4o-mini",
   defaultOptions: {
     maxSteps: AGENT_STEP_LIMIT,
   },
