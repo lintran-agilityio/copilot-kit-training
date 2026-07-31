@@ -1,4 +1,5 @@
 import type { BookingStatus } from "@repo/types";
+import type { ToolRendererProps } from "@/features/copilot/types";
 
 export type Amenity =
   | "monitor"
@@ -26,3 +27,19 @@ export type Room = {
   checkOutDate?: string;
   available?: boolean;
 };
+
+export type FindRoomResult = {
+  rooms?: Room[];
+  name?: string;
+  date?: string;
+  guests?: number;
+  level?: number;
+};
+
+export type FindRoomToolProps = ToolRendererProps<FindRoomResult>;
+
+export type GetRoomByIdResult = {
+  room?: Room | null;
+};
+
+export type GetRoomByIdToolProps = ToolRendererProps<GetRoomByIdResult>;

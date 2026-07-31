@@ -1,6 +1,6 @@
 import { cn } from "@repo/utils";
 
-import { getBookingStatusMeta } from "@/features/booking/utils/booking-status";
+import { getBookingStatusMeta } from "@/features/booking/utils/booking";
 
 type BookingStatusBadgeProps = {
   status: string;

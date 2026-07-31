@@ -155,7 +155,8 @@ export const MainLayout = ({
       >
         <Navbar activeTab={activeTab} />
         <div className="flex min-h-0 min-w-0 flex-1">
-          <div className="hidden h-full min-h-0 shrink-0 lg:block">
+          {/*  */}
+          {/* <div className="hidden h-full min-h-0 shrink-0 lg:block">
             <ThreadSidebar
               threads={threads}
               threadGroups={threadGroups}
@@ -168,7 +169,7 @@ export const MainLayout = ({
               onRenameThread={handleRenameThread}
               onDeleteThread={deleteThread}
             />
-          </div>
+          </div> */}
           <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
             {children}
           </main>

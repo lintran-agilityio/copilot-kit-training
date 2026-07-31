@@ -1,9 +1,9 @@
 import { create } from "zustand";
 
 import type { BookingDraft } from "@/features/booking/types/booking";
+import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 
 export interface BookingStore extends BookingDraft {
-  setRoomId: (roomId: string | null) => void;
   updateBookingDraft: (input: Partial<BookingDraft>) => void;
   resetBooking: () => void;
 }
@@ -17,9 +17,6 @@ const DEFAULT_DRAFT: BookingDraft = {
 
 export const useBookingStore = create<BookingStore>()((set) => ({
   ...DEFAULT_DRAFT,
-
-  setRoomId: (roomId) =>
-    set((state) => (state.roomId === roomId ? state : { roomId })),
 
   updateBookingDraft: (input) =>
     set((state) => {
@@ -35,5 +32,8 @@ export const useBookingStore = create<BookingStore>()((set) => ({
       return input;
     }),
 
-  resetBooking: () => set({ ...DEFAULT_DRAFT }),
+  resetBooking: () => {
+    useHomestayAgentUiStore.getState().resetWorkflow();
+    set({ ...DEFAULT_DRAFT });
+  },
 }));

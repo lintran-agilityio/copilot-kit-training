@@ -1,24 +1,20 @@
 "use client";
 
-import { useRenderTool } from "@copilotkit/react-core/v2";
+import { useDefaultRenderTool } from "@copilotkit/react-core/v2";
 
-import { AGENT_KEYS } from "@repo/constants";
 import { UnknownToolRenderer } from "@/features/copilot/components";
 
+/**
+ * Wildcard fallback for backend tools without a dedicated `useRenderTool`.
+ * Mount after RoomToolsProvider / BookingToolsProvider so named renderers
+ * register first; CopilotKit resolves exact names before `"*"`.
+ */
 export const GlobalToolRendererProvider = () => {
-  useRenderTool(
-    {
-      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
-      name: "*",
-      render: ({ status, result }) => (
-        <UnknownToolRenderer
-          status={status}
-          result={result as unknown}
-        />
-      ),
-    },
-    [],
-  );
+  useDefaultRenderTool({
+    render: ({ name, status, result }) => (
+      <UnknownToolRenderer name={name} status={status} result={result} />
+    ),
+  });
 
   return null;
 };

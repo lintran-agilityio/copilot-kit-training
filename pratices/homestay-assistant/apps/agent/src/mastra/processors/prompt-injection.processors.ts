@@ -1,6 +1,12 @@
-import { PromptInjectionDetector, UnicodeNormalizer } from "@mastra/core/processors";
-import { ExcludeBlockedMessagesProcessor } from "./exclude-blocked-messages.processor";
+import {
+  PromptInjectionDetector,
+  TokenLimiterProcessor,
+  UnicodeNormalizer,
+} from "@mastra/core/processors";
 
+import { AGENT_INPUT_TOKEN_LIMIT } from "@repo/constants";
+import { ExcludeBlockedMessagesProcessor } from "./exclude-blocked-messages.processor";
+import { UserMessageTokenLimitProcessor } from "./user-message-token-limit.processor";
 const promptInjectionProcessor = new PromptInjectionDetector({
   model: "openai/gpt-4o-mini",
   threshold: 0.8,
@@ -9,6 +15,12 @@ const promptInjectionProcessor = new PromptInjectionDetector({
   detectionTypes: ["injection", "jailbreak", "system-override"],
 });
 
+const tokenLimitProcessor = new TokenLimiterProcessor({
+  limit: AGENT_INPUT_TOKEN_LIMIT,
+  trimMode: "contiguous",
+});
+
+/** Unicode → blocked-history filter → prompt injection → request size → context window */
 export const securityInputProcessor = [
   new UnicodeNormalizer({
     stripControlChars: true,
@@ -16,4 +28,6 @@ export const securityInputProcessor = [
   }),
   new ExcludeBlockedMessagesProcessor(),
   promptInjectionProcessor,
+  new UserMessageTokenLimitProcessor(),
+  tokenLimitProcessor,
 ];

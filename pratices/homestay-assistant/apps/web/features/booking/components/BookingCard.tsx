@@ -9,7 +9,7 @@ import type { BookingResponse } from "@/features/booking/types/booking";
 import {
   FALLBACK_ROOM_IMAGE,
   resolveRoomImage,
-} from "@/features/room/utils/room-image";
+} from "@/features/room/utils";
 import { cn, formatPrice, formatShortDateForDisplay } from "@repo/utils";
 import { Button } from "@/components/ui/button";
 import { isBookingCancellable } from "@/features/booking/utils";

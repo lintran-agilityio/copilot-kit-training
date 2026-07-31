@@ -5,22 +5,20 @@ import { useHumanInTheLoop, useRenderTool } from "@copilotkit/react-core/v2";
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import {
   CancelBookingByRoomModal,
-  CancelBookingToolRenderer,
-  CancelBookingRefreshEffect,
-  CheckRoomAvailabilityToolRenderer,
+  CancelBookingNotice,
+  BookingUnavailableNotice,
+  UpdateBookingNotice,
+  CreateBookingNotice,
   ConfirmBookingModal,
-  ConfirmModifyBookingModal,
-  CreateBookingToolRenderer,
   EditModifyBookingModal,
-  UpdateBookingRefreshEffect,
-  UpdateBookingToolRenderer,
-} from "@/features/booking/copilot/components";
-import type {
+  ConfirmModifyBookingModal,
+} from "@/features/booking/components";
+import {
   CancelBookingToolProps,
   CheckRoomAvailabilityResult,
   CreateBookingResult,
   UpdateBookingToolProps,
-} from "@/features/booking/copilot/types";
+} from "@/features/booking/types";
 import {
   cancelBookingByRoomSchema,
   confirmBookingSchema,
@@ -115,7 +113,7 @@ export const BookingToolsProvider = () => {
       name: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
       parameters: checkRoomAvailabilityInputSchema,
       render: ({ status, result }) => (
-        <CheckRoomAvailabilityToolRenderer
+        <BookingUnavailableNotice
           status={status}
           result={result as CheckRoomAvailabilityResult | string | null}
         />
@@ -130,7 +128,7 @@ export const BookingToolsProvider = () => {
       name: TOOL_KEYS.BOOKING.CREATE_BOOKING,
       parameters: createBookingInputSchema,
       render: ({ status, result }) => (
-        <CreateBookingToolRenderer
+        <CreateBookingNotice
           status={status}
           result={result as CreateBookingResult | string | null}
         />
@@ -145,16 +143,10 @@ export const BookingToolsProvider = () => {
       name: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
       parameters: updateBookingInputSchema,
       render: ({ status, result }) => (
-        <>
-          <UpdateBookingRefreshEffect
-            status={status}
-            result={result as UpdateBookingToolProps["result"]}
-          />
-          <UpdateBookingToolRenderer
-            status={status}
-            result={result as UpdateBookingToolProps["result"]}
-          />
-        </>
+        <UpdateBookingNotice
+          status={status}
+          result={result as UpdateBookingToolProps["result"]}
+        />
       ),
     },
     [],
@@ -166,16 +158,10 @@ export const BookingToolsProvider = () => {
       name: TOOL_KEYS.BOOKING.CANCEL,
       parameters: cancelBookingInputSchema,
       render: ({ status, result }) => (
-        <>
-          <CancelBookingRefreshEffect
-            status={status}
-            result={result as CancelBookingToolProps["result"]}
-          />
-          <CancelBookingToolRenderer
-            status={status}
-            result={result as CancelBookingToolProps["result"]}
-          />
-        </>
+        <CancelBookingNotice
+          status={status}
+          result={result as CancelBookingToolProps["result"]}
+        />
       ),
     },
     [],

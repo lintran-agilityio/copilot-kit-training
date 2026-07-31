@@ -1,8 +1,6 @@
-export type HomestayAgentScreenName =
-  | "home"
-  | "room-detail"
-  | "booking-form"
-  | "bookings";
+import type { HomestayAgentScreenName } from "@repo/constants";
+
+export type { HomestayAgentScreenName };
 
 export type HomestayAgentFocusType = "room" | "booking";
 

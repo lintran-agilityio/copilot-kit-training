@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 
 import { useBookingStore } from "@/features/booking/stores/booking-store";
+import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 import { useActiveThread } from "@/features/threads/hooks/useActiveThread";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
@@ -24,6 +25,7 @@ export const useSwitchThread = ({ agentId }: UseSwitchThreadOptions) => {
     (state) => state.clearPendingOutboundMessage,
   );
   const resetBooking = useBookingStore((state) => state.resetBooking);
+  const resetHomestayAgentUi = useHomestayAgentUiStore((state) => state.reset);
   const setLoadError = useThreadStore((state) => state.setLoadError);
 
   const switchThread = useCallback(
@@ -35,6 +37,7 @@ export const useSwitchThread = ({ agentId }: UseSwitchThreadOptions) => {
       setLoadError(null);
       clearPendingOutboundMessage(scopeKey);
       resetBooking();
+      resetHomestayAgentUi();
       agent.setMessages?.([]);
       agent.threadId = threadId;
       setActiveThread(threadId);
@@ -44,6 +47,7 @@ export const useSwitchThread = ({ agentId }: UseSwitchThreadOptions) => {
       agent,
       clearPendingOutboundMessage,
       resetBooking,
+      resetHomestayAgentUi,
       scopeKey,
       setActiveThread,
       setLoadError,

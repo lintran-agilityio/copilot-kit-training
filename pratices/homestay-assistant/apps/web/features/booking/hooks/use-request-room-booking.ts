@@ -7,8 +7,12 @@ import { useCallback } from "react";
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
+import { useBookingStore } from "@/features/booking/stores/booking-store";
+import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
+
+const BOOK_FLOW_KEY = "book-flow";
 
 export const useRequestRoomBooking = () => {
   const { user, isLoaded } = useUser();
@@ -29,6 +33,15 @@ export const useRequestRoomBooking = () => {
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
       const threadId =
         activeThreadIds[scopeKey] ?? createDraftThread(scopeKey);
+
+      const { roomId } = useBookingStore.getState();
+      if (roomId) {
+        useHomestayAgentUiStore.getState().pushWorkflow({
+          key: BOOK_FLOW_KEY,
+          task: { type: "book", status: "in-progress" },
+          focus: { type: "room", id: roomId },
+        });
+      }
 
       if (copilotkit.runtimeConnectionStatus === "connected") {
         agent.threadId = threadId;

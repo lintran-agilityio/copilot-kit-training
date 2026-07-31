@@ -19,18 +19,18 @@ const INSTRUCTIONS_BY_SCREEN: Record<
   HomestayAgentContext["screen"]["name"],
   string
 > = {
-  home: `Guest is on the home screen browsing rooms (task usually discover).
+  home: `HomestayAgentContext screen.name is "home" (task.type usually "discover").
 Prefer showing available rooms, luxury rooms, checking availability for dates, or viewing their bookings.`,
 
-  "room-detail": `Guest is viewing a room detail (focus.type "room").
+  "room-detail": `HomestayAgentContext screen.name is "room-detail" (focus.type usually "room").
 Prefer booking this room, checking availability for dates, or asking about amenities.
 If focus.id is set and suggesting a booking, the message MUST include that roomId and the room name when known.`,
 
-  "booking-form": `Guest has a booking form open (task.type "book").
+  "booking-form": `HomestayAgentContext screen.name is "booking-form" (task.type usually "book").
 If task.status is "awaiting-confirmation" or "in-progress", prefer adjusting dates/guests, canceling the draft, or browsing other rooms.
 If task.status is "completed", prefer viewing their bookings or browsing more rooms.`,
 
-  bookings: `Guest is on the bookings page (task usually manage).
+  bookings: `HomestayAgentContext screen.name is "bookings" (task.type usually "manage").
 Prefer canceling a booking or browsing rooms for a new stay.`,
 };
 
@@ -47,7 +47,8 @@ export const getSuggestionInstructions = (
     : "task: none";
 
   const roomLine =
-    context.screen.name === "room-detail" &&
+    (context.screen.name === "room-detail" ||
+      context.screen.name === "booking-form") &&
     context.focus?.type === "room" &&
     roomName
       ? `The guest is viewing "${roomName}" (roomId: ${context.focus.id}).

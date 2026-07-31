@@ -1,4 +1,5 @@
 import type { Room } from "@/features/room/types/room";
+import { ToolRendererProps } from "@/features/copilot/types";
 
 export enum BookingStatus {
   PENDING = "pending",
@@ -36,3 +37,40 @@ export type BookingDetails = {
   guests?: number;
   totalPrice?: number;
 };
+
+export type CancelBookingResult = {
+  id?: string;
+  room?: {
+    name?: string;
+  };
+  status?: string;
+};
+
+export type CancelBookingToolProps = ToolRendererProps<CancelBookingResult>;
+
+export type CreateBookingResult = {
+  id?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+  totalPrice?: number;
+  status?: string;
+  room?: {
+    name?: string;
+  };
+};
+
+export type CreateBookingToolProps = ToolRendererProps<CreateBookingResult>;
+
+export type UpdateBookingResult = {
+  id?: string;
+  room?: {
+    name?: string;
+  };
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+  status?: string;
+};
+
+export type UpdateBookingToolProps = ToolRendererProps<UpdateBookingResult>;

@@ -1,3 +1,3 @@
-export * from "./Loading";
-export * from "./ErrorMessages";
-export * from "./EmptyMessages";
+export * from "./loading";
+export * from "./error-messages";
+export * from "./empty-messages";

@@ -2,7 +2,7 @@
 
 import { ErrorMessages } from "@repo/components";
 
-import { ErrorBoundary } from "@/components/errors/ErrorBoundary";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 type AppErrorBoundaryProps = {
   children: React.ReactNode;

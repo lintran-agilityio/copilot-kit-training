@@ -7,7 +7,7 @@ import { cn } from "@repo/utils";
 import {
   FALLBACK_ROOM_IMAGE,
   resolveRoomImage,
-} from "@/features/room/utils/room-image";
+} from "@/features/room/utils";
 import { DEFAULT_ROOM_GALLERY_IMAGES, ROOM_GALLERY_IMAGES } from "@/mocks/room";
 
 type RoomImageGalleryProps = {

@@ -5,5 +5,4 @@ export * from "./ChatAvatars";
 export * from "./ChatWelcomeScreen";
 export * from "./ChatAssistantMessage";
 export * from "./ChatUserMessage";
-export * from "./HomestayAgentContext";
 export * from "./DynamicSuggestionConfig";

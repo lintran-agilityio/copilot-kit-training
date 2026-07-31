@@ -7,6 +7,7 @@ import { useCallback } from "react";
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId, buildActionPrompt } from "@repo/utils";
 import { useChatStore } from "@/features/chat/stores/chat-store";
+import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 type OpenRoomDetailArgs = {
@@ -29,6 +30,8 @@ export const useRequestRoomDetail = () => {
       if (!isLoaded || !user?.id || !roomId) {
         return;
       }
+
+      useHomestayAgentUiStore.getState().pushFocusedRoom(roomId);
 
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
       const threadId =

@@ -1,7 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
-import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
+import { AGENT_KEYS, AGENT_STEP_LIMIT, TOOL_KEYS } from "@repo/constants";
 import {
   manageAgentPrompt,
   withCurrentDateInstructions,
@@ -20,6 +20,7 @@ import {
   getRoomByIdTool,
   getRoomsTool,
 } from "@/mastra/tools/rooms";
+import { agentOutputProcessors } from "@/mastra/processors/agent-output-processors";
 import { securityInputProcessor } from "@/mastra/processors/prompt-injection.processors";
 
 export const manageAgent = new Agent({
@@ -30,7 +31,7 @@ export const manageAgent = new Agent({
   instructions: () => withCurrentDateInstructions(manageAgentPrompt),
   model: "openai/gpt-4o-mini",
   defaultOptions: {
-    maxSteps: 10,
+    maxSteps: AGENT_STEP_LIMIT,
   },
   tools: {
     [TOOL_KEYS.GET.ROOMS]: getRoomsTool,
@@ -44,6 +45,7 @@ export const manageAgent = new Agent({
     [TOOL_KEYS.BOOKING.CANCEL]: cancelBookingTool,
   },
   inputProcessors: [...securityInputProcessor],
+  outputProcessors: [...agentOutputProcessors],
   memory: new Memory({
     options: {
       workingMemory: {

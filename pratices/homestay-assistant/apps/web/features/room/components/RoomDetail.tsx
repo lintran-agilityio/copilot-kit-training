@@ -1,25 +1,30 @@
 "use client";
 
-import { CalendarCheck, Minus, Plus, Users } from "lucide-react";
+import { CalendarCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useRequestRoomBooking } from "@/features/booking/hooks/use-request-room-booking";
 import { useBooking } from "@/features/booking/hooks/use-booking";
+import { useReportHomestayFocusedRoom } from "@/features/chat/hooks/use-report-homestay-focused-room";
 import { Button } from "@/components/ui/button";
 import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
 import {
   RoomBookingDates,
+  RoomBookingEstimatedTotal,
+  RoomBookingGuests,
+  RoomBookingPricePerNight,
+  RoomBookingSummaryHeader,
   RoomImageGallery,
   AmenitiesRoom,
 } from "@/features/room/components";
+import { useRoomBookingEstimate } from "@/features/room/hooks";
+import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
 import type { Room } from "@/features/room/types/room";
 import {
   addDays,
   startOfDay,
   cn,
   toDateKey,
-  formatPrice,
-  countNightOfDates,
   isCheckOutAfterCheckIn,
   parseDateKey,
   buildActionPrompt,
@@ -65,6 +70,8 @@ export const RoomDetail = ({
     checkInDate: roomCheckInDate,
     checkOutDate: roomCheckOutDate,
   } = room;
+
+  useReportHomestayFocusedRoom(id);
 
   const [checkInDate, setLocalCheckIn] = useState<string | null>(() => {
     if (roomCheckInDate) {
@@ -126,29 +133,15 @@ export const RoomDetail = ({
     ]
   );
 
-  const formattedPrice = formatPrice(pricePerNight);
-  const hasValidDateRange =
-    checkInDate != null &&
-    checkOutDate != null &&
-    isCheckOutAfterCheckIn(checkInDate, checkOutDate);
-
-  const canProceed =
-    hasValidDateRange &&
-    pricePerNight != null &&
-    guests >= 1 &&
-    guests <= capacity;
+  const { canProceed, estimatedTotal } = useRoomBookingEstimate({
+    checkInDate,
+    checkOutDate,
+    pricePerNight,
+    guests,
+    capacity,
+  });
 
   const isBookingDisabled = matchesExistingBooking;
-
-  const estimatedTotal = useMemo(() => {
-    if (!canProceed || !pricePerNight || !checkInDate || !checkOutDate) {
-      return null;
-    }
-
-    return formatPrice(
-      countNightOfDates(checkInDate, checkOutDate) * pricePerNight
-    );
-  }, [canProceed, checkInDate, checkOutDate, pricePerNight]);
 
   const syncDraft = () => {
     if (!checkInDate || !checkOutDate || pricePerNight == null) {
@@ -185,24 +178,11 @@ export const RoomDetail = ({
   };
 
   const handleCheckInChange = (dateKey: string) => {
-    const nextCheckOut =
-      checkOutDate && isCheckOutAfterCheckIn(dateKey, checkOutDate)
-        ? checkOutDate
-        : toDateKey(addDays(parseDateKey(dateKey), 1));
-
-    setLocalCheckIn(dateKey);
-
-    if (nextCheckOut !== checkOutDate) {
-      setLocalCheckOut(nextCheckOut);
+    const next = resolveCheckOutAfterCheckInChange(dateKey, checkOutDate);
+    setLocalCheckIn(next.checkInDate);
+    if (next.checkOutDate !== checkOutDate) {
+      setLocalCheckOut(next.checkOutDate);
     }
-  };
-
-  const handleCheckOutChange = (dateKey: string) => {
-    setLocalCheckOut(dateKey);
-  };
-
-  const handleGuestsChange = (count: number) => {
-    setLocalGuests(count);
   };
 
   const headerLabel = matchesExistingBooking ? "Your booking" : "Room detail";
@@ -233,31 +213,21 @@ export const RoomDetail = ({
       />
 
       <div className="flex flex-col gap-5 p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
-              {headerLabel}
-            </p>
-            <h2 className="text-xl font-semibold text-white">{name}</h2>
-          </div>
-
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            {bookingStatus ? (
+        <RoomBookingSummaryHeader
+          label={headerLabel}
+          name={name}
+          capacityText={`${capacity} guests`}
+          labelClassName="tracking-[0.2em]"
+          nameClassName="text-xl font-semibold"
+          aside={
+            bookingStatus ? (
               <BookingStatusBadge status={bookingStatus} />
-            ) : null}
+            ) : undefined
+          }
+        />
 
-            <div className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-zinc-300">
-              <Users className="size-4" />
-              <span className="text-sm">{capacity} guests</span>
-            </div>
-          </div>
-        </div>
-
-        {formattedPrice ? (
-          <p className="text-lg font-medium text-emerald-300">
-            {formattedPrice}
-            <span className="text-sm font-normal text-zinc-500"> / night</span>
-          </p>
+        {pricePerNight != null ? (
+          <RoomBookingPricePerNight pricePerNight={pricePerNight} />
         ) : null}
 
         <p className="text-sm leading-relaxed text-zinc-400">{description}</p>
@@ -274,48 +244,14 @@ export const RoomDetail = ({
             checkInDate={checkInDate}
             checkOutDate={checkOutDate}
             onCheckInChange={handleCheckInChange}
-            onCheckOutChange={handleCheckOutChange}
+            onCheckOutChange={setLocalCheckOut}
           />
 
-          <div className="space-y-3 rounded-xl border border-white/8 bg-white/[0.02] p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
-              Guests
-            </p>
-
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm text-zinc-400">
-                Up to {capacity} guest{capacity === 1 ? "" : "s"}
-              </p>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  aria-label="Decrease guests"
-                  disabled={guests <= 1}
-                  onClick={() => handleGuestsChange(Math.max(1, guests - 1))}
-                  className="flex size-8 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none cursor-pointer"
-                >
-                  <Minus className="size-4" />
-                </button>
-
-                <span className="min-w-6 text-center text-sm font-medium text-white">
-                  {guests}
-                </span>
-
-                <button
-                  type="button"
-                  aria-label="Increase guests"
-                  disabled={guests >= capacity}
-                  onClick={() =>
-                    handleGuestsChange(Math.min(capacity, guests + 1))
-                  }
-                  className="flex size-8 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none cursor-pointer"
-                >
-                  <Plus className="size-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <RoomBookingGuests
+            guests={guests}
+            capacity={capacity}
+            onGuestsChange={setLocalGuests}
+          />
 
           {matchesExistingBooking ? (
             <p className="text-sm text-zinc-400">
@@ -325,14 +261,7 @@ export const RoomDetail = ({
           ) : null}
 
           <div className="space-y-3 border-t border-white/8 pt-4">
-            {estimatedTotal ? (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500">Estimated total</span>
-                <span className="font-medium text-emerald-300">
-                  {estimatedTotal}
-                </span>
-              </div>
-            ) : null}
+            <RoomBookingEstimatedTotal estimatedTotal={estimatedTotal} />
 
             <Button
               type="button"

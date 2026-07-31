@@ -1,4 +1,4 @@
-import type { Room } from "@/features/room/types/room";
+import { ToolRendererProps } from "@/features/copilot/types";
 
 export type CheckRoomAvailabilityInput = {
   roomId: string;
@@ -9,10 +9,16 @@ export type CheckRoomAvailabilityInput = {
 };
 
 export type CheckRoomAvailabilityResult = {
-  available: boolean;
-  guestsWithinCapacity: boolean;
-  room: Room;
-  checkInDate: string;
-  checkOutDate: string;
+  available?: boolean;
+  guestsWithinCapacity?: boolean;
+  room?: {
+    name?: string;
+    capacity?: number;
+  };
+  checkInDate?: string;
+  checkOutDate?: string;
   guests?: number;
 };
+
+export type CheckRoomAvailabilityToolProps = ToolRendererProps<CheckRoomAvailabilityResult>;
+

@@ -13,13 +13,13 @@ import {
   syncRoomListToStore,
 } from "@/features/room/utils";
 import {
-  FindRoomToolRenderer,
-  GetRoomByIdToolRenderer,
+  FindRoomNotice,
+  GetRoomByIdNotice,
 } from "@/features/room/components";
 import type {
   FindRoomResult,
   GetRoomByIdResult,
-} from "@/features/room/copilot/types";
+} from "@/features/room/types";
 
 export const RoomToolsProvider = () => {
   useRenderTool(
@@ -28,7 +28,7 @@ export const RoomToolsProvider = () => {
       name: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID,
       parameters: getRoomByIdInputSchema,
       render: ({ status, result }) => (
-        <GetRoomByIdToolRenderer
+        <GetRoomByIdNotice
           status={status}
           result={result as GetRoomByIdResult | string | null}
         />
@@ -43,7 +43,7 @@ export const RoomToolsProvider = () => {
       name: TOOL_KEYS.GET.FIND_ROOM,
       parameters: findRoomInputSchema,
       render: ({ status, result }) => (
-        <FindRoomToolRenderer
+        <FindRoomNotice
           status={status}
           result={result as FindRoomResult | string | null}
         />
@@ -57,7 +57,7 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
       description:
-        "Update the room grid on the home page. Pass rooms from get_rooms or find_room as-is. After this succeeds, always send one short guest-facing chat reply summarizing that rooms are ready.",
+        "Update the room grid when HomestayAgentContext screen.name is home. Pass rooms from get_rooms or find_room as-is. After this succeeds, always send one short guest-facing chat reply summarizing that rooms are ready.",
       parameters: updateRoomListSchema,
       handler: async ({ rooms, title }) => {
         syncRoomListToStore(rooms, title);

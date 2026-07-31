@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
   FALLBACK_ROOM_IMAGE,
   resolveRoomImage,
-} from "@/features/room/utils/room-image";
+} from "@/features/room/utils";
 
 type RoomImageProps = {
   imageUrl: string;

@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import type { RequestContext } from "@mastra/core/request-context";
 import {
+  AGENT_STEP_LIMIT_PROCESSOR_ID,
   THREAD_METADATA_BLOCKED_MESSAGE_IDS,
   formatProcessorBlockAssistantContent,
   isBlockedMessageMetadata,
@@ -55,6 +56,7 @@ type MastraStreamChunk = {
   type?: string;
   payload?: {
     reason?: string;
+    processorId?: string;
   };
 };
 
@@ -185,6 +187,11 @@ async function* interceptTripwireStream(
     const typedChunk = chunk as MastraStreamChunk;
 
     if (typedChunk?.type === "tripwire") {
+      if (typedChunk.payload?.processorId === AGENT_STEP_LIMIT_PROCESSOR_ID) {
+        yield chunk;
+        continue;
+      }
+
       await onTripwire(typedChunk);
       return;
     }

@@ -15,9 +15,9 @@ export const CopilotProvider = ({ children }: CopilotProviderProps) => {
     <>
       <CopilotContexts />
       <AgentMessagesSanitizer />
-      <GlobalToolRendererProvider />
       <RoomToolsProvider />
       <BookingToolsProvider />
+      <GlobalToolRendererProvider />
       {children}
     </>
   );
