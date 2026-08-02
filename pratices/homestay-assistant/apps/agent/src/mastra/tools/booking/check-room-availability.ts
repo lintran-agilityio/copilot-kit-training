@@ -8,46 +8,80 @@ import {
   type CheckRoomAvailabilityOutput,
 } from "@/mastra/schemas/booking";
 import { checkRoomAvailability } from "@/mastra/services";
+import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
+import {
+  clearPinnedStay,
+  readPinnedStay,
+} from "@/mastra/utils/resolve-pinned-stay";
 import { getBusinessDates } from "@repo/utils/date";
 
 export const checkRoomAvailabilityTool = createTool({
   id: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
   description:
-    "Check room dates and guest capacity before booking. Always pass flow: use flow=create for a NEW stay (omit excludeBookingId); use flow=modify only after edit_modify_booking returns confirmed:true and always pass excludeBookingId=bookingId. Use absolute YYYY-MM-DD dates and the guest count from the latest message. The result includes mandatory nextAction + flow: call confirm_booking only for create, confirm_modify_booking only for modify, or stop when stop_booking. Never answer only that the room is available and never call create_booking/update_booking before confirmation.",
+    "Check room dates and guest capacity before booking. Always pass flow: use flow=create for a NEW stay (omit excludeBookingId); use flow=modify only after edit_modify_booking returns confirmed:true and always pass excludeBookingId=bookingId. CREATE: use absolute YYYY-MM-DD dates and guests from the latest message. MODIFY: use checkInDate, checkOutDate, and guests from the edit_modify_booking confirmed:true result — never the original booking dates, working-memory draft, or the latest chat message alone. The result includes mandatory nextAction + flow: call confirm_booking only for create, confirm_modify_booking only for modify, or stop when stop_booking. Never answer only that the room is available and never call create_booking/update_booking before confirmation.",
   inputSchema: checkRoomAvailabilityInputSchema,
   outputSchema: checkRoomAvailabilityOutputSchema,
-  execute: async (input) => {
+  execute: async (input, context) => {
     console.log("----CHECK ROOM AVAILABILITY TOOL EXECUTED----");
     const { today } = getBusinessDates();
 
-    if (input.checkInDate < today) {
+    // After edit_modify_booking, prepareStep pins the guest-selected stay so
+    // stale LLM args (original booking / working memory) cannot win.
+    const pinned = readPinnedStay(
+      context.requestContext,
+      REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE,
+    );
+    const pinnedRoomId = pinned?.roomId;
+    const pinnedBookingId = pinned?.bookingId;
+    const isPinnedModify = Boolean(pinned && pinnedRoomId && pinnedBookingId);
+
+    const resolved =
+      isPinnedModify && pinned && pinnedRoomId && pinnedBookingId
+        ? {
+            roomId: pinnedRoomId,
+            checkInDate: pinned.checkInDate,
+            checkOutDate: pinned.checkOutDate,
+            guests: pinned.guests,
+            flow: "modify" as const,
+            excludeBookingId: pinnedBookingId,
+          }
+        : input;
+
+    if (isPinnedModify) {
+      clearPinnedStay(
+        context.requestContext,
+        REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE,
+      );
+    }
+
+    if (resolved.checkInDate < today) {
       throw new Error(`checkInDate must be on or after today (${today})`);
     }
 
-    if (input.checkOutDate <= input.checkInDate) {
+    if (resolved.checkOutDate <= resolved.checkInDate) {
       throw new Error(
-        `checkOutDate ${input.checkOutDate} must be after checkInDate ${input.checkInDate}. Today is ${today}.`,
+        `checkOutDate ${resolved.checkOutDate} must be after checkInDate ${resolved.checkInDate}. Today is ${today}.`,
       );
     }
 
     const flow: CheckRoomAvailabilityOutput["flow"] =
-      input.flow ??
-      (input.excludeBookingId?.trim() ? "modify" : "create");
+      resolved.flow ??
+      (resolved.excludeBookingId?.trim() ? "modify" : "create");
     const isModify = flow === "modify";
 
-    if (isModify && !input.excludeBookingId?.trim()) {
+    if (isModify && !resolved.excludeBookingId?.trim()) {
       throw new Error(
         "excludeBookingId is required when flow is modify",
       );
     }
 
     const result = await checkRoomAvailability({
-      roomId: input.roomId,
-      checkInDate: input.checkInDate,
-      checkOutDate: input.checkOutDate,
-      guests: input.guests,
-      ...(isModify && input.excludeBookingId
-        ? { excludeBookingId: input.excludeBookingId }
+      roomId: resolved.roomId,
+      checkInDate: resolved.checkInDate,
+      checkOutDate: resolved.checkOutDate,
+      guests: resolved.guests,
+      ...(isModify && resolved.excludeBookingId
+        ? { excludeBookingId: resolved.excludeBookingId }
         : {}),
     });
 

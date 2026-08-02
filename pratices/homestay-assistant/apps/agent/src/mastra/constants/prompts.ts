@@ -291,6 +291,7 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 
 ### Confirm modify (\`confirm_modify_booking\`)
 - Show modify confirmation dialog and wait — do not call \`update_booking\` while the modal is open.
+- Pass \`bookingId\`, \`result.room\`, and the SAME \`checkInDate\` / \`checkOutDate\` / \`guests\` from \`check_room_availability.result\` (validated candidate from \`edit_modify_booking\` confirmed:true). Never reuse original booking dates or Booking draft / working-memory values.
 - After \`confirmed: true\` → call \`update_booking\` with \`bookingId\`, dates, and guests from the result. ConfirmSuccess renders automatically; then one short chat confirmation.
 - After \`confirmed: false\` → one short chat reply that the booking was kept unchanged.
 

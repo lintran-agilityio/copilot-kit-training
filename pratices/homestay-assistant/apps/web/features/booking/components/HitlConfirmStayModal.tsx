@@ -134,6 +134,10 @@ const HitlConfirmModifyStayModal = ({
   args: Partial<ConfirmModifyBookingArgs>;
   respond?: (result: ConfirmModifyBookingResult) => Promise<void>;
 }) => {
+  const pendingModifyStay = useBookingStore((state) => state.pendingModifyStay);
+  const setPendingModifyStay = useBookingStore(
+    (state) => state.setPendingModifyStay,
+  );
   const {
     isVisible,
     isSubmitting,
@@ -159,7 +163,14 @@ const HitlConfirmModifyStayModal = ({
     return null;
   }
 
-  const { bookingId, room, checkInDate, checkOutDate, guests } = args;
+  const { bookingId, room } = args;
+  // Prefer dates/guests the guest chose in edit_modify_booking over tool args
+  // the model may fill with stale working-memory or pre-edit values.
+  const stayFromEdit =
+    pendingModifyStay?.bookingId === bookingId ? pendingModifyStay : null;
+  const checkInDate = stayFromEdit?.checkInDate ?? args.checkInDate;
+  const checkOutDate = stayFromEdit?.checkOutDate ?? args.checkOutDate;
+  const guests = stayFromEdit?.guests ?? args.guests;
   const description: ReactNode = (
     <>
       Review the updated details for your stay at{" "}
@@ -167,6 +178,11 @@ const HitlConfirmModifyStayModal = ({
       saving.
     </>
   );
+
+  const clearPendingAndDismiss = () => {
+    setPendingModifyStay(null);
+    handleDismiss();
+  };
 
   return (
     <ConfirmBookingDialog
@@ -183,7 +199,7 @@ const HitlConfirmModifyStayModal = ({
       isSubmitting={isSubmitting}
       canRespond={canRespond}
       errorMessage={errorMessage}
-      onCancel={handleDismiss}
+      onCancel={clearPendingAndDismiss}
       onConfirm={() =>
         void confirm({
           confirmed: true,

@@ -29,6 +29,14 @@ export interface BookingDraft {
   guests: number;
 }
 
+/** Candidate stay chosen in edit_modify_booking — authoritative for confirm_modify UI. */
+export type PendingModifyStay = {
+  bookingId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  guests: number;
+};
+
 export type BookingDetails = {
   bookingId: string;
   roomName: string;

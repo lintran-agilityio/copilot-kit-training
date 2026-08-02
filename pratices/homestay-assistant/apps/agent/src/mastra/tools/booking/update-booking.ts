@@ -10,7 +10,12 @@ import {
   assertOwnedActiveBooking,
   updateBooking,
 } from "@/mastra/services";
+import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { getAuthUserId } from "@/mastra/middleware/get-auth-user-id";
+import {
+  clearPinnedStay,
+  readPinnedStay,
+} from "@/mastra/utils/resolve-pinned-stay";
 
 export const updateBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
@@ -32,15 +37,32 @@ export const updateBookingTool = createTool({
       "Authentication required to update a booking",
     );
     const serviceContext = { requestContext: context.requestContext };
-    const id = sanitizeBookingId(bookingId);
 
-    await assertOwnedActiveBooking(userId, id, serviceContext);
+    // Prefer the HITL confirm result pinned by prepareStep — the model often
+    // reuses stale draft/original dates when toolChoice forces this call.
+    const pinned = readPinnedStay(
+      context.requestContext,
+      REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY,
+    );
+    const resolvedBookingId = sanitizeBookingId(
+      pinned?.bookingId ?? bookingId,
+    );
+    const resolvedCheckIn = pinned?.checkInDate ?? checkInDate;
+    const resolvedCheckOut = pinned?.checkOutDate ?? checkOutDate;
+    const resolvedGuests = pinned?.guests ?? guests;
+
+    clearPinnedStay(
+      context.requestContext,
+      REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY,
+    );
+
+    await assertOwnedActiveBooking(userId, resolvedBookingId, serviceContext);
     return await updateBooking(
       {
-        bookingId: id,
-        checkInDate,
-        checkOutDate,
-        guests,
+        bookingId: resolvedBookingId,
+        checkInDate: resolvedCheckIn,
+        checkOutDate: resolvedCheckOut,
+        guests: resolvedGuests,
       },
       serviceContext,
     );

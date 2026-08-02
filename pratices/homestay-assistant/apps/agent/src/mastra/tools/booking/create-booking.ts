@@ -8,7 +8,12 @@ import {
   bookingSchema,
 } from "@/mastra/schemas/booking";
 import { createBooking } from "@/mastra/services";
+import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { getAuthUserId } from "@/mastra/middleware/get-auth-user-id";
+import {
+  clearPinnedStay,
+  readPinnedStay,
+} from "@/mastra/utils/resolve-pinned-stay";
 
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE_BOOKING,
@@ -23,13 +28,28 @@ export const createBookingTool = createTool({
       "Authentication required to create a booking",
     );
 
+    const pinned = readPinnedStay(
+      context.requestContext,
+      REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY,
+    );
+
+    const roomId = pinned?.roomId ?? params.roomId;
+    const checkInDate = pinned?.checkInDate ?? params.checkInDate;
+    const checkOutDate = pinned?.checkOutDate ?? params.checkOutDate;
+    const guests = pinned?.guests ?? params.guests;
+
+    clearPinnedStay(
+      context.requestContext,
+      REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY,
+    );
+
     const booking = await createBooking(
       {
-        roomId: params.roomId,
+        roomId,
         userId,
-        checkInDate: params.checkInDate,
-        checkOutDate: params.checkOutDate,
-        guests: params.guests,
+        checkInDate,
+        checkOutDate,
+        guests,
         status: params.status ?? BookingStatus.CONFIRMED,
       },
       { requestContext: context.requestContext },

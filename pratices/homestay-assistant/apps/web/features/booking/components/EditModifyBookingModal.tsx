@@ -21,6 +21,7 @@ import type {
   EditModifyBookingArgs,
   EditModifyBookingResult,
 } from "@/features/booking/schemas";
+import { useBookingStore } from "@/features/booking/stores/booking-store";
 import {
   RoomBookingDates,
   RoomBookingEstimatedTotal,
@@ -57,6 +58,9 @@ export const EditModifyBookingModal = ({
 }: EditModifyBookingModalProps) => {
   const { respondOnce, canRespond: canRespondHitl } =
     useHitlRespondOnce<EditModifyBookingResult>(respond);
+  const setPendingModifyStay = useBookingStore(
+    (state) => state.setPendingModifyStay,
+  );
 
   const ready = isHitlToolRespondable(status, respond) && hasRequiredArgs(args);
 
@@ -119,6 +123,7 @@ export const EditModifyBookingModal = ({
       return;
     }
 
+    setPendingModifyStay(null);
     void respondOnce({ confirmed: false });
   };
 
@@ -139,6 +144,14 @@ export const EditModifyBookingModal = ({
     setErrorMessage(null);
 
     try {
+      // Persist the guest-selected stay so confirm_modify_booking UI does not
+      // depend on LLM-filled tool args (which can reuse stale draft dates).
+      setPendingModifyStay({
+        bookingId,
+        checkInDate,
+        checkOutDate,
+        guests,
+      });
       await respondOnce({
         confirmed: true,
         bookingId,

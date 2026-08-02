@@ -58,6 +58,7 @@ type AgUiMastraAgent = {
     },
     callbacks: Record<string, unknown>,
   ) => Promise<unknown>;
+  clone?: () => AgUiMastraAgent;
 };
 
 type MastraStreamChunk = {
@@ -281,127 +282,152 @@ async function* interceptTripwireStream(
   }
 }
 
-export const enableProcessorTripwireHandling = <T extends Record<string, object>>(
+/**
+ * Installs the transcript filters and tripwire interception on one agent.
+ *
+ * These are instance-level overrides, and CopilotKit's run/connect handlers
+ * call `agent.clone()` per request. `MastraAgent.clone()` rebuilds the instance
+ * from its config, so it keeps none of them — leaving every request on the
+ * unpatched methods. Re-applying on each clone is what actually puts these
+ * filters on the request path.
+ */
+const patchAgUiAgent = (aguiAgent: AgUiMastraAgent) => {
+  if (patchedAgents.has(aguiAgent)) {
+    return;
+  }
+
+  if (!aguiAgent.streamMastraAgent || !aguiAgent.processFullStream) {
+    // Loud on purpose: these hooks are internals of @ag-ui/mastra. If a version
+    // bump renames them, the transcript filters stop running and history
+    // silently duplicates instead of failing.
+    console.warn(
+      "[ProcessorTripwire] MastraAgent is missing streamMastraAgent/processFullStream; transcript filtering and tripwire handling are disabled.",
+    );
+
+    return;
+  }
+
+  patchedAgents.add(aguiAgent);
+
+  const originalProcessFullStream = aguiAgent.processFullStream.bind(aguiAgent);
+  const originalStreamMastraAgent = aguiAgent.streamMastraAgent.bind(aguiAgent);
+  const originalClone = aguiAgent.clone?.bind(aguiAgent);
+
+  if (originalClone) {
+    aguiAgent.clone = () => {
+      const cloned = originalClone();
+      patchAgUiAgent(cloned);
+
+      return cloned;
+    };
+  } else {
+    console.warn(
+      "[ProcessorTripwire] MastraAgent has no clone(); per-request agent clones may bypass transcript filtering.",
+    );
+  }
+
+  aguiAgent.processFullStream = async (stream, callbacks, ...rest) => {
+    const tripwireContext = tripwireHandlingContext.getStore();
+
+    if (!tripwireContext) {
+      return originalProcessFullStream(stream, callbacks, ...rest);
+    }
+
+    const interceptedStream = interceptTripwireStream(stream, async (chunk) => {
+      const onTextPart = callbacks.onTextPart as
+        | ((text: string) => void)
+        | undefined;
+      const onFinishMessagePart = callbacks.onFinishMessagePart as
+        | (() => void)
+        | undefined;
+
+      onTextPart?.(formatProcessorBlockAssistantContent());
+      onFinishMessagePart?.();
+
+      if (tripwireContext.blockedUserMessageId) {
+        await persistBlockedMessageId({
+          mastraAgent: aguiAgent.agent,
+          threadId: tripwireContext.threadId,
+          messageId: tripwireContext.blockedUserMessageId,
+          requestContext: aguiAgent.requestContext,
+        });
+
+        const currentBlocked = aguiAgent.requestContext?.get(
+          REQUEST_CONTEXT_KEYS.BLOCKED_MESSAGE_IDS,
+        );
+        const blockedSet = new Set<string>(
+          Array.isArray(currentBlocked)
+            ? currentBlocked.filter(
+                (value): value is string => typeof value === "string",
+              )
+            : [],
+        );
+        blockedSet.add(tripwireContext.blockedUserMessageId);
+        await syncBlockedMessageIdsToRequestContext({
+          requestContext: aguiAgent.requestContext,
+          blockedMessageIds: [...blockedSet],
+        });
+      }
+
+      if (chunk.payload?.reason) {
+        console.info(
+          `[ProcessorTripwire] Blocked message ${tripwireContext.blockedUserMessageId ?? "unknown"}: ${chunk.payload.reason}`,
+        );
+      }
+    });
+
+    return originalProcessFullStream(interceptedStream, callbacks, ...rest);
+  };
+
+  aguiAgent.streamMastraAgent = async (input, callbacks) => {
+    const blockedMessageIds = await resolveBlockedMessageIds({
+      mastraAgent: aguiAgent.agent,
+      threadId: input.threadId,
+      requestContext: aguiAgent.requestContext,
+      messages: input.messages,
+    });
+
+    await syncBlockedMessageIdsToRequestContext({
+      requestContext: aguiAgent.requestContext,
+      blockedMessageIds,
+    });
+
+    const blockedUserMessageId = findLatestUnblockedUserMessageId(
+      input.messages,
+    );
+    const unblockedMessages = excludeBlockedUserMessages(input.messages);
+    const latestTurn = selectLatestUserTurn(unblockedMessages);
+    const resolvedToolCallIds = await loadResolvedToolCallIdsForThread({
+      mastraAgent: aguiAgent.agent,
+      threadId: input.threadId,
+      resourceId: aguiAgent.resourceId,
+      requestContext: aguiAgent.requestContext,
+    });
+
+    return tripwireHandlingContext.run(
+      {
+        threadId: input.threadId,
+        blockedUserMessageId,
+      },
+      () =>
+        originalStreamMastraAgent(
+          {
+            ...input,
+            messages: excludeResolvedToolCalls(latestTurn, resolvedToolCallIds),
+          },
+          callbacks,
+        ),
+    );
+  };
+};
+
+export const enableProcessorTripwireHandling = <
+  T extends Record<string, object>,
+>(
   agents: T,
 ): T => {
   for (const value of Object.values(agents)) {
-    const aguiAgent = value as AgUiMastraAgent;
-
-    if (
-      !aguiAgent.streamMastraAgent ||
-      !aguiAgent.processFullStream ||
-      patchedAgents.has(aguiAgent)
-    ) {
-      continue;
-    }
-
-    patchedAgents.add(aguiAgent);
-
-    const originalProcessFullStream =
-      aguiAgent.processFullStream.bind(aguiAgent);
-    const originalStreamMastraAgent =
-      aguiAgent.streamMastraAgent.bind(aguiAgent);
-
-    aguiAgent.processFullStream = async (stream, callbacks, ...rest) => {
-      const tripwireContext = tripwireHandlingContext.getStore();
-
-      if (!tripwireContext) {
-        return originalProcessFullStream(stream, callbacks, ...rest);
-      }
-
-      const interceptedStream = interceptTripwireStream(stream, async (chunk) => {
-        const onTextPart = callbacks.onTextPart as
-          | ((text: string) => void)
-          | undefined;
-        const onFinishMessagePart = callbacks.onFinishMessagePart as
-          | (() => void)
-          | undefined;
-
-        onTextPart?.(formatProcessorBlockAssistantContent());
-        onFinishMessagePart?.();
-
-        if (tripwireContext.blockedUserMessageId) {
-          await persistBlockedMessageId({
-            mastraAgent: aguiAgent.agent,
-            threadId: tripwireContext.threadId,
-            messageId: tripwireContext.blockedUserMessageId,
-            requestContext: aguiAgent.requestContext,
-          });
-
-          const currentBlocked = aguiAgent.requestContext?.get(
-            REQUEST_CONTEXT_KEYS.BLOCKED_MESSAGE_IDS,
-          );
-          const blockedSet = new Set<string>(
-            Array.isArray(currentBlocked)
-              ? currentBlocked.filter(
-                  (value): value is string => typeof value === "string",
-                )
-              : [],
-          );
-          blockedSet.add(tripwireContext.blockedUserMessageId);
-          await syncBlockedMessageIdsToRequestContext({
-            requestContext: aguiAgent.requestContext,
-            blockedMessageIds: [...blockedSet],
-          });
-        }
-
-        if (chunk.payload?.reason) {
-          console.info(
-            `[ProcessorTripwire] Blocked message ${tripwireContext.blockedUserMessageId ?? "unknown"}: ${chunk.payload.reason}`,
-          );
-        }
-      });
-
-      return originalProcessFullStream(
-        interceptedStream,
-        callbacks,
-        ...rest,
-      );
-    };
-
-    aguiAgent.streamMastraAgent = async (input, callbacks) => {
-      const blockedMessageIds = await resolveBlockedMessageIds({
-        mastraAgent: aguiAgent.agent,
-        threadId: input.threadId,
-        requestContext: aguiAgent.requestContext,
-        messages: input.messages,
-      });
-
-      await syncBlockedMessageIdsToRequestContext({
-        requestContext: aguiAgent.requestContext,
-        blockedMessageIds,
-      });
-
-      const blockedUserMessageId = findLatestUnblockedUserMessageId(
-        input.messages,
-      );
-      const unblockedMessages = excludeBlockedUserMessages(input.messages);
-      const latestTurn = selectLatestUserTurn(unblockedMessages);
-      const resolvedToolCallIds = await loadResolvedToolCallIdsForThread({
-        mastraAgent: aguiAgent.agent,
-        threadId: input.threadId,
-        resourceId: aguiAgent.resourceId,
-        requestContext: aguiAgent.requestContext,
-      });
-
-      return tripwireHandlingContext.run(
-        {
-          threadId: input.threadId,
-          blockedUserMessageId,
-        },
-        () =>
-          originalStreamMastraAgent(
-            {
-              ...input,
-              messages: excludeResolvedToolCalls(
-                latestTurn,
-                resolvedToolCallIds,
-              ),
-            },
-            callbacks,
-          ),
-      );
-    };
+    patchAgUiAgent(value as AgUiMastraAgent);
   }
 
   return agents;

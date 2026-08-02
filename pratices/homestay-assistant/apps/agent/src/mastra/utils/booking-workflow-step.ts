@@ -5,6 +5,12 @@ import type {
 
 import { TOOL_KEYS } from "@repo/constants";
 
+import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
+import {
+  parseConfirmedStay,
+  type ConfirmedStay,
+} from "@/mastra/utils/confirmed-stay";
+
 type ToolResultLike = {
   toolName?: string;
   input?: unknown;
@@ -16,6 +22,12 @@ type BookingWorkflowTransition =
   | { type: "stop" }
   | null;
 
+/**
+ * Narrows unknown JSON-like values to a plain object record.
+ *
+ * @param value - Raw tool input/output
+ * @returns Record when parseable, otherwise null
+ */
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -35,6 +47,12 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
   }
 };
 
+/**
+ * Resolves the next booking workflow transition from the latest tool result.
+ *
+ * @param toolResult - Last tool name/input/output from the agent step
+ * @returns Forced next tool, stop, or null when no transition applies
+ */
 export const resolveBookingWorkflowTransition = ({
   toolName,
   input,
@@ -119,6 +137,12 @@ export const resolveBookingWorkflowTransition = ({
   return null;
 };
 
+/**
+ * Reads the last tool result from the most recent agent step.
+ *
+ * @param steps - Agent step results from prepareStep
+ * @returns Last tool result, or null when none exist
+ */
 const getLastToolResult = (
   steps: ProcessInputStepArgs["steps"],
 ): ToolResultLike | null => {
@@ -133,12 +157,49 @@ const getLastToolResult = (
 };
 
 /**
+ * Stores a confirmed HITL stay on request context for the next forced tool.
+ *
+ * @param args - prepareStep args (needs requestContext)
+ * @param toolName - Previous tool that produced the stay
+ * @param stay - Parsed confirmed stay
+ */
+const stashConfirmedStayForNextTool = (
+  args: ProcessInputStepArgs,
+  toolName: string | undefined,
+  stay: ConfirmedStay,
+) => {
+  const requestContext = args.requestContext;
+
+  if (!requestContext) {
+    return;
+  }
+
+  if (toolName === TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING) {
+    requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE, stay);
+    return;
+  }
+
+  if (toolName === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING) {
+    requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY, stay);
+    return;
+  }
+
+  if (toolName === TOOL_KEYS.ACTION.CONFIRM_BOOKING) {
+    requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY, stay);
+  }
+};
+
+/**
  * Makes booking state transitions deterministic inside an agent run.
- * Forces the next required tool after availability/HITL results.
+ * Forces the next required tool after availability/HITL results and pins the
+ * confirmed stay onto request context so server tools ignore stale LLM args.
  *
  * Important: when there is no forced transition, return undefined so CopilotKit
  * frontend HITL tools (confirm/edit/cancel dialogs) stay available. An
  * activeTools allowlist of server tools only would hide those HITL tools.
+ *
+ * @param args - Mastra prepareStep / processInputStep arguments
+ * @returns Tool-choice override for the next step, or undefined
  */
 export const enforceBookingWorkflowStep = (
   args: ProcessInputStepArgs,
@@ -164,6 +225,12 @@ export const enforceBookingWorkflowStep = (
 
   if (!args.tools?.[transition.toolName]) {
     return undefined;
+  }
+
+  const stay = parseConfirmedStay(lastToolResult.output);
+
+  if (stay) {
+    stashConfirmedStayForNextTool(args, lastToolResult.toolName, stay);
   }
 
   return {
