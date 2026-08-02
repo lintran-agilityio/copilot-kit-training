@@ -33,9 +33,11 @@ export const useThreads = ({
 }: UseThreadsOptions) => {
   const threads = useThreadStore((state) => state.threads);
   const isLoading = useThreadStore((state) => state.threadsLoading);
+  const threadsFetched = useThreadStore((state) => state.threadsFetched);
   const error = useThreadStore((state) => state.threadsError);
   const setPersistedThreads = useThreadStore((state) => state.setPersistedThreads);
   const setThreadsLoading = useThreadStore((state) => state.setThreadsLoading);
+  const setThreadsFetched = useThreadStore((state) => state.setThreadsFetched);
   const setThreadsError = useThreadStore((state) => state.setThreadsError);
   const persistThread = useThreadStore((state) => state.persistThread);
   const deleteThreadLocal = useThreadStore((state) => state.deleteThread);
@@ -44,6 +46,7 @@ export const useThreads = ({
     if (!enabled) {
       setPersistedThreads([]);
       setThreadsLoading(false);
+      setThreadsFetched(false);
       setThreadsError(null);
       return;
     }
@@ -64,6 +67,7 @@ export const useThreads = ({
         (data.threads ?? []).map(mapChatThreadToThread),
       );
       setThreadsLoading(false);
+      setThreadsFetched(true);
     } catch (unknownError) {
       setThreadsError(
         unknownError instanceof Error
@@ -71,12 +75,15 @@ export const useThreads = ({
           : new Error(String(unknownError)),
       );
       setThreadsLoading(false);
+      // Still mark fetched so bootstrap can fall back to a draft.
+      setThreadsFetched(true);
     }
   }, [
     agentId,
     enabled,
     setPersistedThreads,
     setThreadsError,
+    setThreadsFetched,
     setThreadsLoading,
   ]);
 
@@ -131,17 +138,20 @@ export const useThreads = ({
     if (!enabled) {
       setPersistedThreads([]);
       setThreadsLoading(false);
+      setThreadsFetched(false);
       setThreadsError(null);
       return;
     }
 
     setThreadsLoading(true);
+    setThreadsFetched(false);
     void refetchThreads();
   }, [
     enabled,
     refetchThreads,
     setPersistedThreads,
     setThreadsError,
+    setThreadsFetched,
     setThreadsLoading,
   ]);
 
@@ -154,6 +164,7 @@ export const useThreads = ({
     threads,
     threadGroups,
     isLoading,
+    threadsFetched,
     error,
     refetchThreads,
     renameThread,

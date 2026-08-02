@@ -1,6 +1,6 @@
-import path from "node:path";
 import Database from "better-sqlite3";
 
+import { studioDbPath } from "agent/db-paths";
 import { getAgentResourceId, parseAgentResourceId } from "@repo/utils";
 import { THREAD_METADATA_BLOCKED_MESSAGE_IDS } from "@repo/constants";
 import type { ChatMessage, ChatThread } from "@/features/chat/types";
@@ -29,23 +29,54 @@ type MastraThreadIdRow = {
 
 type MastraThreadMetadataRow = {
   id: string;
-  metadata: string | null;
+  /** LibSQL/SQLite may return JSON text, a parsed object, or a MessagePack blob. */
+  metadata: unknown;
 };
 
-const readBlockedMessageIds = (metadataRaw: string | null | undefined) => {
-  if (!metadataRaw?.trim()) {
+const readBlockedIdsFromRecord = (metadata: Record<string, unknown>) => {
+  const blocked = metadata[THREAD_METADATA_BLOCKED_MESSAGE_IDS];
+
+  if (!Array.isArray(blocked)) {
     return [] as string[];
   }
 
+  return blocked.filter((value): value is string => typeof value === "string");
+};
+
+/**
+ * Mastra often stores thread.metadata as MessagePack BLOBs. better-sqlite3 then
+ * returns a Buffer — not a JSON string — so callers must not assume `.trim()`.
+ */
+const readBlockedMessageIds = (metadataRaw: unknown) => {
+  if (metadataRaw == null) {
+    return [] as string[];
+  }
+
+  if (
+    typeof metadataRaw === "object" &&
+    !Array.isArray(metadataRaw) &&
+    !Buffer.isBuffer(metadataRaw)
+  ) {
+    return readBlockedIdsFromRecord(metadataRaw as Record<string, unknown>);
+  }
+
+  let raw: string | null = null;
+
+  if (typeof metadataRaw === "string") {
+    raw = metadataRaw;
+  } else if (Buffer.isBuffer(metadataRaw) || metadataRaw instanceof Uint8Array) {
+    const asUtf8 = Buffer.from(metadataRaw).toString("utf8").trim();
+    // Only treat UTF-8 JSON text; MessagePack blobs are skipped (no blocked ids).
+    raw = asUtf8.startsWith("{") || asUtf8.startsWith("[") ? asUtf8 : null;
+  }
+
+  if (!raw?.trim()) {
+    return [];
+  }
+
   try {
-    const metadata = JSON.parse(metadataRaw) as Record<string, unknown>;
-    const blocked = metadata[THREAD_METADATA_BLOCKED_MESSAGE_IDS];
-
-    if (!Array.isArray(blocked)) {
-      return [];
-    }
-
-    return blocked.filter((value): value is string => typeof value === "string");
+    const metadata = JSON.parse(raw) as Record<string, unknown>;
+    return readBlockedIdsFromRecord(metadata);
   } catch {
     return [];
   }
@@ -58,6 +89,8 @@ type MastraMessagePart = {
     toolCallId?: string;
     toolName?: string;
     args?: unknown;
+    state?: unknown;
+    result?: unknown;
   };
 };
 
@@ -68,9 +101,8 @@ type MastraMessageContent = {
 
 type ChatToolCall = NonNullable<ChatMessage["toolCalls"]>[number];
 
-const getDatabasePath = () =>
-  process.env.MASTRA_DB_PATH ??
-  path.resolve(process.cwd(), "../agent/mastra.db");
+/** Same SQLite file Mastra Memory writes via agent/db-paths (cwd-relative). */
+const getDatabasePath = () => process.env.MASTRA_DB_PATH ?? studioDbPath;
 
 const getDatabase = (readonly = true) =>
   new Database(getDatabasePath(), { readonly });
@@ -88,6 +120,18 @@ const toToolCallArguments = (args: unknown) => {
     return JSON.stringify(args);
   } catch {
     return "{}";
+  }
+};
+
+const toToolResultContent = (result: unknown) => {
+  if (typeof result === "string") {
+    return result;
+  }
+
+  try {
+    return JSON.stringify(result ?? null);
+  } catch {
+    return "null";
   }
 };
 
@@ -143,6 +187,44 @@ const readToolCalls = (parsed: MastraMessageContent): ChatToolCall[] => {
   return toolCalls;
 };
 
+/**
+ * Mastra stores tool results inside assistant `parts[].toolInvocation`.
+ * CopilotKit generative UI expects separate AG-UI `role: "tool"` messages.
+ */
+const readToolResultMessages = (
+  parsed: MastraMessageContent,
+): ChatMessage[] => {
+  const seen = new Set<string>();
+  const results: ChatMessage[] = [];
+
+  for (const part of parsed.parts ?? []) {
+    if (part.type !== "tool-invocation" || !part.toolInvocation) {
+      continue;
+    }
+
+    const { toolCallId, state, result } = part.toolInvocation;
+
+    if (
+      !toolCallId ||
+      seen.has(toolCallId) ||
+      state !== "result" ||
+      result === undefined
+    ) {
+      continue;
+    }
+
+    seen.add(toolCallId);
+    results.push({
+      id: `${toolCallId}:result`,
+      role: "tool",
+      toolCallId,
+      content: toToolResultContent(result),
+    });
+  }
+
+  return results;
+};
+
 const readStoredMessage = (row: MastraMessageRow): ChatMessage => {
   try {
     const parsed = JSON.parse(row.content) as MastraMessageContent;
@@ -161,6 +243,30 @@ const readStoredMessage = (row: MastraMessageRow): ChatMessage => {
       role: row.role as ChatMessage["role"],
       content: row.content,
     };
+  }
+};
+
+/** Assistant/user/system row plus synthetic AG-UI tool-result messages. */
+const expandStoredMessages = (row: MastraMessageRow): ChatMessage[] => {
+  try {
+    const parsed = JSON.parse(row.content) as MastraMessageContent;
+    const toolCalls = readToolCalls(parsed);
+    const content = readMessageText(parsed, row.content);
+
+    const primary: ChatMessage = {
+      id: row.id,
+      role: row.role as ChatMessage["role"],
+      content,
+      ...(toolCalls.length > 0 ? { toolCalls } : {}),
+    };
+
+    if (row.role !== "assistant") {
+      return [primary];
+    }
+
+    return [primary, ...readToolResultMessages(parsed)];
+  } catch {
+    return [readStoredMessage(row)];
   }
 };
 
@@ -415,7 +521,7 @@ export const listMastraThreadMessages = ({
       .all(threadId, resourceId);
 
     return applyBlockedMessageMetadata(
-      rows.map(readStoredMessage),
+      rows.flatMap(expandStoredMessages),
       blockedMessageIds,
     );
   } finally {

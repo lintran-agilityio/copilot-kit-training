@@ -29,7 +29,13 @@ const getRecall = (memory: unknown): RecallFn | undefined => {
 
   const { recall } = memory as { recall?: unknown };
 
-  return typeof recall === "function" ? (recall as RecallFn) : undefined;
+  if (typeof recall !== "function") {
+    return undefined;
+  }
+
+  // Memory.recall relies on instance methods (e.g. getMergedThreadConfig).
+  // Extracting the function without binding loses `this` and throws.
+  return (args) => (recall as RecallFn).call(memory, args);
 };
 
 export const readResolvedToolCallIds = (messages: StoredMessage[]) => {

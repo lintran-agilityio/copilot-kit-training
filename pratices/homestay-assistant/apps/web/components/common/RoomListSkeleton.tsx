@@ -29,7 +29,7 @@ export const RoomListSkeleton = ({
       <div className="h-5 w-44 animate-pulse rounded-full bg-white/10" />
     </div>
 
-    <div className="grid grid-cols-2 gap-3 overflow-hidden pb-1">
+    <div className="grid grid-cols-1 gap-4 overflow-hidden pb-1 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: itemCount }, (_, index) => (
         <SkeletonItem key={`skeleton-item-${index}`} />
       ))}

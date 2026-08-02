@@ -16,6 +16,11 @@ import { dedupeThreadsById } from "@/features/threads/utils";
 type ThreadStoreState = {
   threads: Thread[];
   threadsLoading: boolean;
+  /**
+   * True only after /api/threads settles for the current scope.
+   * Prevents bootstrap from minting a draft while threads are still [].
+   */
+  threadsFetched: boolean;
   threadsError: Error | null;
 
   /** scopeKey → active thread id */
@@ -35,6 +40,7 @@ type ThreadStoreState = {
   deleteThread: (threadId: string) => void;
 
   setThreadsLoading: (threadsLoading: boolean) => void;
+  setThreadsFetched: (threadsFetched: boolean) => void;
   setThreadsError: (threadsError: Error | null) => void;
   setLoadingState: (loadingState: ThreadLoadingState) => void;
   setLoadError: (loadError: string | null) => void;
@@ -46,6 +52,7 @@ type ThreadStoreState = {
 export const useThreadStore = create<ThreadStoreState>()((set, get) => ({
   threads: [],
   threadsLoading: false,
+  threadsFetched: false,
   threadsError: null,
 
   activeThreadIds: {},
@@ -132,6 +139,8 @@ export const useThreadStore = create<ThreadStoreState>()((set, get) => ({
   },
 
   setThreadsLoading: (threadsLoading) => set({ threadsLoading }),
+
+  setThreadsFetched: (threadsFetched) => set({ threadsFetched }),
 
   setThreadsError: (threadsError) => set({ threadsError }),
 

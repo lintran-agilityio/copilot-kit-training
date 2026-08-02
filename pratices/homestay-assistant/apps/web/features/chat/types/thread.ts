@@ -22,6 +22,8 @@ export type ChatMessage = {
   id: string;
   role: "assistant" | "system" | "tool" | "user";
   content: string;
+  /** Required for AG-UI tool-result messages (`role: "tool"`). */
+  toolCallId?: string;
   toolCalls?: ChatToolCall[];
   metadata?: {
     blocked?: boolean;

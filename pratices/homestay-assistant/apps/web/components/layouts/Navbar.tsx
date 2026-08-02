@@ -32,7 +32,12 @@ export const Navbar = ({ activeTab = NavbarTab.HOME, className }: NavbarProps) =
         className,
       )}
     >
-      <Logo />
+      <Link
+        href="/"
+        className="text-sm transition-colors"
+      >
+        <Logo />
+      </Link>
 
       <nav className="flex items-center gap-8">
         <Link

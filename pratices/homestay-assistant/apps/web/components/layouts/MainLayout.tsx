@@ -59,7 +59,7 @@ export const MainLayout = ({
   className,
   activeTab = NavbarTab.HOME,
 }: MainLayoutProps) => {
-  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const agentId = AGENT_KEYS.MANAGE_ASSISTANT;
   const { scopeKey, activeThreadId, setActiveThread } = useActiveThread({
     agentId,
@@ -72,6 +72,7 @@ export const MainLayout = ({
     threads,
     threadGroups,
     isLoading: isLoadingThreads,
+    threadsFetched,
     error: threadsError,
     refetchThreads,
     renameThread,
@@ -93,8 +94,10 @@ export const MainLayout = ({
   });
 
   // Bootstrap: activate latest persisted thread, or create a draft.
+  // Wait for threadsFetched — threadsLoading starts false, so using only
+  // !isLoadingThreads races and mints an empty draft before /api/threads returns.
   useEffect(() => {
-    if (!scopeKey || activeThreadId) {
+    if (!scopeKey || activeThreadId || !threadsFetched) {
       return;
     }
 
@@ -107,17 +110,15 @@ export const MainLayout = ({
       return;
     }
 
-    if (!isLoadingThreads) {
-      handleCreateThread();
-    }
+    handleCreateThread();
   }, [
     activeThreadId,
     agent,
     handleCreateThread,
-    isLoadingThreads,
     scopeKey,
     setActiveThread,
     threads,
+    threadsFetched,
   ]);
 
   // Keep AG-UI agent.threadId === activeThreadId at all times.
@@ -148,10 +149,10 @@ export const MainLayout = ({
   );
 
   return (
-    <div className="flex h-screen w-full justify-center mx-2 bg-[#010507]">
+    <div className="mx-2 flex h-screen w-full justify-center bg-[#010507]">
       <div
         className={cn(
-          "flex flex-col h-full w-full max-w-[1440px] overflow-hidden  bg-[#010507] font-sans",
+          "flex h-full w-full max-w-[1440px] flex-col overflow-hidden bg-[#010507] font-sans",
           className,
         )}
       >

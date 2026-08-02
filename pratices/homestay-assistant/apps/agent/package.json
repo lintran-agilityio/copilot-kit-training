@@ -19,6 +19,7 @@
   "exports": {
     ".": "./src/mastra/index.ts",
     "./copilotkit": "./src/copilotkit.ts",
+    "./db-paths": "./src/mastra/db-paths.ts",
     "./middleware": "./src/mastra/middleware/index.ts"
   },
   "dependencies": {

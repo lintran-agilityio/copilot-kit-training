@@ -31,6 +31,7 @@ const toAgentMessages = (messages: ChatMessage[]): Message[] =>
     id: message.id,
     role: message.role,
     content: message.content,
+    ...(message.toolCallId ? { toolCallId: message.toolCallId } : {}),
     ...(message.metadata ? { metadata: message.metadata } : {}),
     ...(message.toolCalls?.length ? { toolCalls: message.toolCalls } : {}),
   })) as Message[];
