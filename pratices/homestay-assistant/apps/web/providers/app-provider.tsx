@@ -4,7 +4,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { CopilotProvider } from "@/features/copilot/providers";
-import { DynamicSuggestionConfig } from "@/features/chat/components";
+import { StaticSuggestionConfig } from "@/features/chat/components";
 import { HomestayReadable } from "@/features/copilot/readable";
 
 type AppProviderProps = {
@@ -33,7 +33,7 @@ export const AppProvider = ({
       {withCopilot ? (
         <CopilotProvider>
           <HomestayReadable />
-          <DynamicSuggestionConfig />
+          <StaticSuggestionConfig />
           {children}
         </CopilotProvider>
       ) : (

@@ -5,6 +5,7 @@ import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import {
   checkRoomAvailabilityInputSchema,
   checkRoomAvailabilityOutputSchema,
+  type CheckRoomAvailabilityOutput,
 } from "@/mastra/schemas/booking";
 import { checkRoomAvailability } from "@/mastra/services";
 import { getBusinessDates } from "@repo/utils/date";
@@ -12,16 +13,15 @@ import { getBusinessDates } from "@repo/utils/date";
 export const checkRoomAvailabilityTool = createTool({
   id: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
   description:
-    "Check whether a room is free for dates AND whether guests fit room.capacity. Always pass absolute YYYY-MM-DD check-in/out resolved from CURRENT DATE / agent context today+tomorrow (never invent years like 2023). Always pass guests from the LATEST user message (not an earlier turn). Returns available, guestsWithinCapacity, and full room. CREATE flow: if available, call confirm_booking then create_booking — never pass excludeBookingId. MODIFY flow: always pass excludeBookingId = the booking being modified (rooms can have multiple bookings; exclude so the current booking does not conflict with itself); if available, call confirm_modify_booking then update_booking — never call confirm_booking or create_booking. If guestsWithinCapacity is false or available is false, do NOT call confirm_booking / confirm_modify_booking — BookingUnavailableModal renders automatically; reply in chat. Do not call get_room_by_id in a book/modify turn.",
+    "Check room dates and guest capacity before booking. Always pass flow: use flow=create for a NEW stay (omit excludeBookingId); use flow=modify only after edit_modify_booking returns confirmed:true and always pass excludeBookingId=bookingId. Use absolute YYYY-MM-DD dates and the guest count from the latest message. The result includes mandatory nextAction + flow: call confirm_booking only for create, confirm_modify_booking only for modify, or stop when stop_booking. Never answer only that the room is available and never call create_booking/update_booking before confirmation.",
   inputSchema: checkRoomAvailabilityInputSchema,
   outputSchema: checkRoomAvailabilityOutputSchema,
   execute: async (input) => {
+    console.log("----CHECK ROOM AVAILABILITY TOOL EXECUTED----");
     const { today } = getBusinessDates();
 
     if (input.checkInDate < today) {
-      throw new Error(
-        `checkInDate must be on or after today (${today})`,
-      );
+      throw new Error(`checkInDate must be on or after today (${today})`);
     }
 
     if (input.checkOutDate <= input.checkInDate) {
@@ -30,6 +30,38 @@ export const checkRoomAvailabilityTool = createTool({
       );
     }
 
-    return await checkRoomAvailability(input);
+    const flow: CheckRoomAvailabilityOutput["flow"] =
+      input.flow ??
+      (input.excludeBookingId?.trim() ? "modify" : "create");
+    const isModify = flow === "modify";
+
+    if (isModify && !input.excludeBookingId?.trim()) {
+      throw new Error(
+        "excludeBookingId is required when flow is modify",
+      );
+    }
+
+    const result = await checkRoomAvailability({
+      roomId: input.roomId,
+      checkInDate: input.checkInDate,
+      checkOutDate: input.checkOutDate,
+      guests: input.guests,
+      ...(isModify && input.excludeBookingId
+        ? { excludeBookingId: input.excludeBookingId }
+        : {}),
+    });
+
+    const nextAction: CheckRoomAvailabilityOutput["nextAction"] =
+      result.available && result.guestsWithinCapacity
+        ? isModify
+          ? "confirm_modify_booking"
+          : "confirm_booking"
+        : "stop_booking";
+
+    return {
+      ...result,
+      nextAction,
+      flow,
+    };
   },
 });

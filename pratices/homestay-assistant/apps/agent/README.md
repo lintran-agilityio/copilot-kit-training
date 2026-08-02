@@ -18,7 +18,6 @@ Registered in `src/mastra/index.ts` (Studio) and `src/mastra/runtime.ts` (Copilo
 | Agent | Key | Role |
 | --- | --- | --- |
 | Homestay Manager | manage assistant | Public chat agent: rooms + booking workflows |
-| Suggestion | suggestion assistant | Chat suggestions / tool-choice helpers |
 
 Additional specialist agents (e.g. homestay / booking) live under `src/mastra/agents/` and are composed into the manager flow via tools and prompts.
 
@@ -87,7 +86,7 @@ Use the `dev` / `build` / `start` scripts from `package.json` (do not invoke `ma
 ```
 src/
   mastra/
-    agents/        # manage, suggestion, specialists
+    agents/        # manager and specialists
     tools/         # rooms + booking tools
     schemas/       # Zod schemas for tool I/O
     services/      # HTTP clients against the Nest API

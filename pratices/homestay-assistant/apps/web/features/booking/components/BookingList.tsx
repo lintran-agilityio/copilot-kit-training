@@ -1,4 +1,9 @@
+"use client";
+
+import { useAgent } from "@copilotkit/react-core/v2";
+
 import { EmptyMessages } from "@repo/components";
+import { AGENT_KEYS } from "@repo/constants";
 import { BookingCard } from "@/features/booking/components/BookingCard";
 import type { BookingResponse } from "@/features/booking/types/booking";
 import { cn } from "@repo/utils";
@@ -23,6 +28,7 @@ export const BookingList = ({
   isLoading,
   error,
 }: BookingListProps) => {
+  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
   const cancelBooking = useCancelBooking();
   const modifyBooking = useModifyBooking();
 
@@ -42,7 +48,9 @@ export const BookingList = ({
 
   if (!bookings.length) {
     return (
-      <EmptyMessages emptyMessage="No bookings found" />
+      <section className={cn("space-y-4 flex items-center justify-center h-full", className)}>
+        <EmptyMessages emptyMessage="No bookings found" />
+      </section>
     );
   }
 
@@ -60,6 +68,7 @@ export const BookingList = ({
           <BookingCard
             key={booking.id}
             booking={booking}
+            isAgentRunning={agent.isRunning}
             onCancelBooking={cancelBooking}
             onModifyBooking={modifyBooking}
           />

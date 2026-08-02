@@ -5,6 +5,7 @@ import type { Message } from "@ag-ui/client";
 
 import type { ChatMessage } from "@/features/chat/types";
 import {
+  applyBlockedMessageMetadata,
   mergeHydratedMessages,
   normalizeMessages,
 } from "@/features/chat/utils";
@@ -13,6 +14,7 @@ import { useThreadStore } from "@/features/threads/store/thread-store";
 type UseThreadMessagesProps = {
   agent: {
     threadId?: string;
+    isRunning?: boolean;
     messages?: Message[];
     setMessages?: (messages: Message[]) => void;
   };
@@ -23,6 +25,18 @@ type UseThreadMessagesProps = {
 type ThreadMessagesResponse = {
   messages?: ChatMessage[];
 };
+
+const toAgentMessages = (messages: ChatMessage[]): Message[] =>
+  messages.map((message) => ({
+    id: message.id,
+    role: message.role,
+    content: message.content,
+    ...(message.metadata ? { metadata: message.metadata } : {}),
+    ...(message.toolCalls?.length ? { toolCalls: message.toolCalls } : {}),
+  })) as Message[];
+
+const finalizeHydratedMessages = (messages: Message[]): Message[] =>
+  applyBlockedMessageMetadata(normalizeMessages(messages) as Message[]);
 
 /**
  * Hydrates messages for activeThreadId from Mastra.
@@ -35,6 +49,7 @@ export const useThreadMessages = ({
 }: UseThreadMessagesProps) => {
   const agentRef = useRef(agent);
   agentRef.current = agent;
+  const loadedThreadIdRef = useRef<string | null>(null);
   const setLoadingState = useThreadStore((state) => state.setLoadingState);
   const setLoadError = useThreadStore((state) => state.setLoadError);
   const reloadToken = useThreadStore((state) => state.reloadToken);
@@ -44,6 +59,9 @@ export const useThreadMessages = ({
     if (!threadId || typeof agentRef.current.setMessages !== "function") {
       return;
     }
+
+    const threadChanged = loadedThreadIdRef.current !== threadId;
+    loadedThreadIdRef.current = threadId;
 
     // Keep agent.threadId aligned with activeThreadId before any run.
     agentRef.current.threadId = threadId;
@@ -70,15 +88,7 @@ export const useThreadMessages = ({
         }
 
         const data = (await response.json()) as ThreadMessagesResponse;
-        const hydrated = (data.messages ?? []).map((message) => ({
-          id: message.id,
-          role: message.role,
-          content: message.content,
-          ...(message.metadata ? { metadata: message.metadata } : {}),
-          ...(message.toolCalls?.length
-            ? { toolCalls: message.toolCalls }
-            : {}),
-        })) as Message[];
+        const hydrated = toAgentMessages(data.messages ?? []);
 
         if (abortController.signal.aborted) {
           return;
@@ -86,12 +96,17 @@ export const useThreadMessages = ({
 
         const currentAgent = agentRef.current;
         currentAgent.threadId = threadId;
-        const merged = mergeHydratedMessages(
-          currentAgent.messages ?? [],
-          normalizeMessages(hydrated) as Message[],
-        );
 
-        currentAgent.setMessages?.(merged);
+        const normalizedHydrated = finalizeHydratedMessages(hydrated);
+        const liveMessages = threadChanged ? [] : (currentAgent.messages ?? []);
+
+        const nextMessages = currentAgent.isRunning
+          ? finalizeHydratedMessages(
+              mergeHydratedMessages(liveMessages, normalizedHydrated),
+            )
+          : normalizedHydrated;
+
+        currentAgent.setMessages?.(nextMessages);
         setLoadingState("loaded");
       } catch (error) {
         if (abortController.signal.aborted) {

@@ -29,11 +29,11 @@ export const useBookingStore = create<BookingStore>()((set) => ({
       ) {
         return state;
       }
-      return input;
+      return next;
     }),
 
   resetBooking: () => {
     useHomestayAgentUiStore.getState().resetWorkflow();
-    set({ ...DEFAULT_DRAFT });
+    set((state) => ({ ...state, ...DEFAULT_DRAFT }));
   },
 }));

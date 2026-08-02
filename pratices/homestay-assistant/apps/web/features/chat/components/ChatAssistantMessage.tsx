@@ -11,7 +11,10 @@ import {
   isHiddenAgentPrompt,
   isPageOnlyGenerativeTool,
 } from "@/features/copilot/config";
-import { getMessageTopSpacing } from "@/features/chat/utils";
+import {
+  getMessageTopSpacing,
+  isSupersededByToolCard,
+} from "@/features/chat/utils";
 import { cn } from "@repo/utils";
 
 const isResponseToHiddenPrompt = (
@@ -67,11 +70,17 @@ export const ChatAssistantMessage = ({
   }
 
   const chatToolCalls = getChatVisibleToolCalls(message.toolCalls);
-  const textContent = message.content?.trim() ?? "";
+  const rawTextContent = message.content?.trim() ?? "";
   const hasHiddenToolCalls = message.toolCalls?.some((toolCall) => {
     const toolName = toolCall.function?.name;
     return toolName ? isPageOnlyGenerativeTool(toolName) : false;
   });
+
+  // A rendered success card already answers the guest; drop the duplicate text.
+  const textContent = isSupersededByToolCard(messages, message.id)
+    ? ""
+    : rawTextContent;
+
   const hasVisibleContent =
     Boolean(textContent) || chatToolCalls.length > 0;
 

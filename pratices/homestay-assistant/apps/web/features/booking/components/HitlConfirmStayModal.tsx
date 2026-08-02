@@ -5,6 +5,7 @@ import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { ConfirmBookingDialog } from "@/components/confirm-modal";
 import { useHitlConfirmDialog } from "@/features/booking/hooks";
+import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useReportHomestayAgentWorkflow } from "@/features/chat/hooks/use-report-homestay-agent-workflow";
 import type {
   ConfirmBookingArgs,
@@ -29,12 +30,12 @@ const hasRoomStayFields = (
 ) =>
   Boolean(
     args.room?.id?.trim() &&
-      args.room?.name?.trim() &&
-      typeof args.room?.pricePerNight === "number" &&
-      args.checkInDate?.trim() &&
-      args.checkOutDate?.trim() &&
-      typeof args.guests === "number" &&
-      args.guests > 0,
+    args.room?.name?.trim() &&
+    typeof args.room?.pricePerNight === "number" &&
+    args.checkInDate?.trim() &&
+    args.checkOutDate?.trim() &&
+    typeof args.guests === "number" &&
+    args.guests > 0,
   );
 
 const hasRequiredCreateArgs = (
@@ -70,8 +71,20 @@ const HitlConfirmCreateStayModal = ({
   args: Partial<ConfirmBookingArgs>;
   respond?: (result: ConfirmBookingResult) => Promise<void>;
 }) => {
-  const { isVisible, isSubmitting, errorMessage, canRespond, handleDismiss, confirm } =
-    useHitlConfirmDialog(status, respond, "Failed to confirm booking");
+  const resetBooking = useBookingStore((state) => state.resetBooking);
+  const {
+    isVisible,
+    isSubmitting,
+    errorMessage,
+    canRespond,
+    handleDismiss,
+    confirm,
+  } = useHitlConfirmDialog(status, respond, "Failed to confirm booking");
+
+  const handleCancel = () => {
+    resetBooking();
+    handleDismiss();
+  };
 
   const hasArgs = hasRequiredCreateArgs(args);
   useReportHomestayAgentWorkflow(
@@ -98,7 +111,7 @@ const HitlConfirmCreateStayModal = ({
       isSubmitting={isSubmitting}
       canRespond={canRespond}
       errorMessage={errorMessage}
-      onCancel={handleDismiss}
+      onCancel={handleCancel}
       onConfirm={() =>
         void confirm({
           confirmed: true,
@@ -121,12 +134,18 @@ const HitlConfirmModifyStayModal = ({
   args: Partial<ConfirmModifyBookingArgs>;
   respond?: (result: ConfirmModifyBookingResult) => Promise<void>;
 }) => {
-  const { isVisible, isSubmitting, errorMessage, canRespond, handleDismiss, confirm } =
-    useHitlConfirmDialog(
-      status,
-      respond,
-      "Failed to confirm booking changes",
-    );
+  const {
+    isVisible,
+    isSubmitting,
+    errorMessage,
+    canRespond,
+    handleDismiss,
+    confirm,
+  } = useHitlConfirmDialog(
+    status,
+    respond,
+    "Failed to confirm booking changes",
+  );
 
   const hasArgs = hasRequiredModifyArgs(args);
   useReportHomestayAgentWorkflow(
@@ -144,7 +163,8 @@ const HitlConfirmModifyStayModal = ({
   const description: ReactNode = (
     <>
       Review the updated details for your stay at{" "}
-      <span className="font-medium text-zinc-200">{room.name}</span> before saving.
+      <span className="font-medium text-zinc-200">{room.name}</span> before
+      saving.
     </>
   );
 

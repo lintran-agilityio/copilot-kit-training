@@ -40,7 +40,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.CONFIRM_BOOKING,
       description:
-        "After check_room_availability succeeds (available true and guestsWithinCapacity true) for a NEW booking, show the confirm booking modal so the guest can approve the draft. Pass result.room from check_room_availability plus check-in, check-out, and guests from that same check. Do NOT call get_room_by_id in a book turn. Do NOT call create_booking until confirm_booking returns confirmed: true. If confirmed: false, reply in chat that the booking was not confirmed. If confirmed: true, call create_booking with roomId, checkInDate, checkOutDate, and guests from the result — the UI shows ConfirmSuccess automatically; then send one short guest-facing chat confirmation. Never use this tool for modifying an existing booking — use confirm_modify_booking instead.",
+        "Required immediately when a NEW booking availability result (flow=create) returns nextAction=confirm_booking. Show the approval modal using result.room and the same dates/guests. Wait for the response: confirmed=true requires create_booking with the returned fields; confirmed=false stops the booking flow, calls no more tools, and gets a brief 'booking stopped' reply. Never use this for modifying a booking.",
       parameters: confirmBookingSchema,
       render: ({ status, args, respond }) => (
         <ConfirmBookingModal
@@ -58,7 +58,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
       description:
-        "After find_booking_by_id returns a booking for MODIFY, open the edit form in the SAME turn. Pass bookingId, result.room, and the booking's current checkInDate, checkOutDate, and guests from bookings[0]. The guest edits dates/guests in the UI (prefilled). Do NOT ask in chat what to change. Do NOT call get_room_by_id. Do NOT call check_room_availability until edit_modify_booking returns confirmed: true. If confirmed: true, call check_room_availability with roomId, the new dates/guests, and excludeBookingId=bookingId. If confirmed: false, reply that the booking was kept unchanged.",
+        "After find_booking_by_id returns a booking for MODIFY, open the edit form in the SAME turn. Pass bookingId, result.room, and the booking's current checkInDate, checkOutDate, and guests from bookings[0]. The guest edits dates/guests in the UI (prefilled). Do NOT ask in chat what to change. Do NOT call get_room_by_id. Do NOT call check_room_availability until edit_modify_booking returns confirmed: true. If confirmed: true, call check_room_availability with flow=modify, roomId, the new dates/guests, and excludeBookingId=bookingId. Never use flow=create here. If confirmed: false, reply that the booking was kept unchanged.",
       parameters: editModifyBookingSchema,
       render: ({ status, args, respond }) => (
         <EditModifyBookingModal
@@ -76,7 +76,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
       description:
-        "After check_room_availability succeeds for a MODIFY flow (must have used excludeBookingId), show the read-only confirm modification modal. Pass bookingId, result.room from check_room_availability, and the candidate checkInDate, checkOutDate, and guests from edit_modify_booking. Do NOT call update_booking until confirm_modify_booking returns confirmed: true. If confirmed: true, call update_booking with bookingId, checkInDate, checkOutDate, and guests from the result — the UI shows ConfirmSuccess and refreshes the list automatically; then send one short guest-facing chat confirmation. If confirmed: false, reply that the booking was kept unchanged. Never use this for creating a new booking.",
+        "After check_room_availability succeeds for a MODIFY flow (flow=modify + excludeBookingId), show the read-only confirm modification modal. Pass bookingId, result.room from check_room_availability, and the candidate checkInDate, checkOutDate, and guests from edit_modify_booking. Do NOT call update_booking until confirm_modify_booking returns confirmed: true. If confirmed: true, call update_booking with bookingId, checkInDate, checkOutDate, and guests from the result — the UI shows ConfirmSuccess and refreshes the list automatically; then send one short guest-facing chat confirmation. If confirmed: false, reply that the booking was kept unchanged. Never use this for creating a new booking.",
       parameters: confirmModifyBookingSchema,
       render: ({ status, args, respond }) => (
         <ConfirmModifyBookingModal

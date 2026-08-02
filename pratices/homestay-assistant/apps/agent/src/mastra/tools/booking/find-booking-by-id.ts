@@ -16,6 +16,7 @@ export const findBookingByIdTool = createTool({
   inputSchema: findBookingByIdInputSchema,
   outputSchema: findBookingByIdOutputSchema,
   execute: async ({ bookingId }, context) => {
+    console.log('----FIND BOOKING BY ID TOOL EXECUTED----');
     const userId = resolveAgentUserId(
       context,
       "Authentication required to find bookings",

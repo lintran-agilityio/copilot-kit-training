@@ -59,6 +59,29 @@ export const isCheckRoomAvailabilityFailure = (
   result?: CheckRoomAvailabilityResult | string | null,
 ) => getAvailabilityFailureReason(result) != null;
 
+/**
+ * True when BookingUnavailableNotice has every field it needs to draw a card.
+ * Shared with the chat text-suppression rule so the two cannot drift apart.
+ */
+export const canRenderBookingUnavailableCard = (
+  result?: CheckRoomAvailabilityResult | string | null,
+) => {
+  if (!isCheckRoomAvailabilityFailure(result)) {
+    return false;
+  }
+
+  const parsed = parseToolResult<CheckRoomAvailabilityResult>(result);
+  const guests = Number(parsed?.guests);
+
+  return Boolean(
+    parsed?.room?.name?.trim() &&
+      parsed?.checkInDate?.trim() &&
+      parsed?.checkOutDate?.trim() &&
+      Number.isFinite(guests) &&
+      guests > 0,
+  );
+};
+
 export const isCancelBookingSuccess = (
   result?: CancelBookingResult | string | null,
 ) => {

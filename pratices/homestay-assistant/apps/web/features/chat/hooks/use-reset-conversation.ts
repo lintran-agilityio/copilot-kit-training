@@ -7,8 +7,8 @@ type UseResetConversationOptions = {
 };
 
 /**
- * Clears the current conversation UI while keeping the same thread id.
- * Prefer `useCreateThread` when starting a brand-new conversation context.
+ * Deletes the current conversation and starts an empty one.
+ * Prefer `useCreateThread` when the existing conversation must be kept.
  */
 export const useResetConversation = ({
   agentId,

@@ -1,10 +1,15 @@
 import {
   getBookingCancelDisplayText,
+  getBookingFormDisplayText,
   getBookingModifyDisplayText,
+  getBookingStayDisplayText,
   isBookingCancelPrompt,
+  isBookingFormPrompt,
   isBookingModifyPrompt,
+  isBookingStayPrompt,
   TOOL_KEYS,
 } from "@repo/constants";
+import { getUiActionPromptDisplayText } from "@repo/utils";
 import type { CopilotChatAssistantMessageProps } from "@copilotkit/react-core/v2";
 
 const { ACTION, BOOKING, GET } = TOOL_KEYS;
@@ -69,6 +74,18 @@ export const CHAT_VISIBLE_GENERATIVE_TOOLS = new Set([
   ...RENDER_BACKEND_TOOLS,
 ]);
 
+/**
+ * Tools whose card fully replaces the assistant's text reply.
+ * The agent is still required to speak (see "Never silent" in the prompt);
+ * we drop that text in the UI only once the card actually rendered.
+ */
+export const CHAT_TEXT_SUPPRESSED_TOOLS = new Set<string>([
+  BOOKING.CREATE_BOOKING,
+  BOOKING.CANCEL,
+  BOOKING.UPDATE_BOOKING,
+  BOOKING.CHECK_ROOM_AVAILABILITY,
+]);
+
 export const PAGE_ROOMS_PROMPT_PREFIX = "[page-rooms]";
 
 export const isPageOnlyGenerativeTool = (toolName: string) =>
@@ -109,15 +126,9 @@ export const getChatVisibleToolCalls = (toolCalls?: ToolCall[]) => {
   });
 };
 
-/** CopilotKit SuggestionEngine injects this as a user message on a cloned agent. */
-export const isSuggestionGenerationPrompt = (content: string) =>
-  content.includes("copilotkitSuggest") ||
-  content.startsWith("Suggest what the user could say next.");
-
 export const isHiddenAgentPrompt = (content: string) =>
   content.startsWith(PAGE_ROOMS_PROMPT_PREFIX) ||
   content.startsWith("Load all rooms.") ||
-  isSuggestionGenerationPrompt(content) ||
   /^Load rooms for \d{4}-\d{2}-\d{2}\./.test(content);
 
 export const getMessageTextContent = (
@@ -140,6 +151,19 @@ export const getUserVisibleMessageContent = (content: string) => {
 
   if (isBookingModifyPrompt(content)) {
     return getBookingModifyDisplayText(content);
+  }
+
+  if (isBookingFormPrompt(content)) {
+    return getBookingFormDisplayText(content);
+  }
+
+  if (isBookingStayPrompt(content)) {
+    return getBookingStayDisplayText(content);
+  }
+
+  const uiActionLabel = getUiActionPromptDisplayText(content);
+  if (uiActionLabel) {
+    return uiActionLabel;
   }
 
   return content;

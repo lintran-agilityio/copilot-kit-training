@@ -1,8 +1,15 @@
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
 
-import { AGENT_KEYS, AGENT_STEP_LIMIT, TOOL_KEYS } from "@repo/constants";
 import {
+  AGENT_KEYS,
+  AGENT_STEP_LIMIT,
+  AGENT_MEMORY_LAST_MESSAGES,
+  AGENT_MAX_OUTPUT_TOKEN_LIMIT,
+  TOOL_KEYS,
+} from "@repo/constants";
+import {
+  enforceBookingWorkflowStep,
   manageAgentPrompt,
   withCurrentDateInstructions,
 } from "@/mastra/utils";
@@ -30,8 +37,24 @@ export const manageAgent = new Agent({
     "Public chat agent that coordinates room discovery and booking workflows.",
   instructions: () => withCurrentDateInstructions(manageAgentPrompt),
   model: process.env.AI_MODEL || "openai/gpt-4o-mini",
+  // Rate-limit responses are transient; Mastra applies bounded backoff retries.
+  maxRetries: 2,
   defaultOptions: {
     maxSteps: AGENT_STEP_LIMIT,
+    modelSettings: {
+      maxOutputTokens: AGENT_MAX_OUTPUT_TOKEN_LIMIT,
+    },
+    // Prevent parallel tool calls: when the LLM emits a server-side tool and a
+    // HITL frontend tool in the same step, the server tool resolves immediately
+    // but the HITL call stays open waiting for user input. If the stream ends
+    // before the HITL result returns, CopilotKit throws INCOMPLETE_STREAM.
+    // Forcing sequential calls (one per step) eliminates this race condition.
+    providerOptions: {
+      openai: {
+        parallelToolCalls: false,
+      },
+    },
+    prepareStep: enforceBookingWorkflowStep,
   },
   tools: {
     [TOOL_KEYS.GET.ROOMS]: getRoomsTool,
@@ -48,6 +71,7 @@ export const manageAgent = new Agent({
   outputProcessors: [...agentOutputProcessors],
   memory: new Memory({
     options: {
+      lastMessages: AGENT_MEMORY_LAST_MESSAGES,
       workingMemory: {
         enabled: true,
         scope: "thread",

@@ -258,55 +258,9 @@ export const mergeHydratedMessages = <
   return orderedIds.map((id) => byId.get(id)!);
 };
 
-const isSuggestionGenerationContent = (content: unknown) => {
-  if (typeof content !== "string") {
-    return false;
-  }
-
-  return (
-    content.includes("copilotkitSuggest") ||
-    content.startsWith("Suggest what the user could say next.")
-  );
-};
-
-/**
- * Drop CopilotKit suggestion-generation turns that leaked onto the chat agent.
- * Those runs should stay on a cloned agent; if they pollute the main thread,
- * hide both the injected user prompt and the following assistant reply.
- */
-const stripSuggestionGenerationTurns = <
-  TMessage extends { role?: string; content?: unknown },
->(
-  messages: TMessage[],
-): TMessage[] => {
-  const result: TMessage[] = [];
-
-  for (let index = 0; index < messages.length; index += 1) {
-    const message = messages[index];
-
-    if (
-      message?.role === "user" &&
-      isSuggestionGenerationContent(message.content)
-    ) {
-      const next = messages[index + 1];
-      if (next?.role === "assistant") {
-        index += 1;
-      }
-      continue;
-    }
-
-    if (message) {
-      result.push(message);
-    }
-  }
-
-  return result;
-};
-
 export const normalizeMessages = <TMessage extends { role?: string; content?: unknown }>(
   messages: TMessage[],
-): TMessage[] =>
-  stripSuggestionGenerationTurns(messages.map(normalizeMessage));
+): TMessage[] => messages.map(normalizeMessage);
 
 export const normalize = (value: string) => {
   return value.trim().replace(/[^\w\s]/g, "").toLocaleLowerCase();

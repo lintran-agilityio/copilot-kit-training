@@ -5,4 +5,5 @@ export * from "./ChatAvatars";
 export * from "./ChatWelcomeScreen";
 export * from "./ChatAssistantMessage";
 export * from "./ChatUserMessage";
-export * from "./DynamicSuggestionConfig";
+export * from "./StaticSuggestionConfig";
+export * from "./ChatGenerativeUILayout";

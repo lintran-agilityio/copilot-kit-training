@@ -6,7 +6,11 @@ import {
   bookingSchema,
   updateBookingSchema,
 } from "@/mastra/schemas/booking";
-import { updateBooking } from "@/mastra/services";
+import {
+  assertOwnedActiveBooking,
+  updateBooking,
+} from "@/mastra/services";
+import { getAuthUserId } from "@/mastra/middleware/get-auth-user-id";
 
 export const updateBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
@@ -17,15 +21,28 @@ export const updateBookingTool = createTool({
     - Never call this to create a new booking.
     - After success, send one short guest-facing chat confirmation.
     - Do NOT call get_bookings — the UI shows ConfirmSuccess and refreshes the bookings list automatically.
-    - Never call this before confirm_modify_booking returns confirmed: true.`,
+    - Never call this before confirm_modify_booking returns confirmed: true.
+    - Only the signed-in owner's active (non-past) bookings can be updated.`,
   inputSchema: updateBookingSchema,
   outputSchema: bookingSchema,
-  execute: async ({ bookingId, checkInDate, checkOutDate, guests }) => {
-    return await updateBooking({
-      bookingId: sanitizeBookingId(bookingId),
-      checkInDate,
-      checkOutDate,
-      guests,
-    });
+  execute: async ({ bookingId, checkInDate, checkOutDate, guests }, context) => {
+    console.log("----UPDATE BOOKING TOOL EXECUTED----");
+    const userId = getAuthUserId(
+      context,
+      "Authentication required to update a booking",
+    );
+    const serviceContext = { requestContext: context.requestContext };
+    const id = sanitizeBookingId(bookingId);
+
+    await assertOwnedActiveBooking(userId, id, serviceContext);
+    return await updateBooking(
+      {
+        bookingId: id,
+        checkInDate,
+        checkOutDate,
+        guests,
+      },
+      serviceContext,
+    );
   },
 });

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useSuggestions } from "@copilotkit/react-core/v2";
 
+import { MAX_SUGGESTION_PILLS } from "@/features/chat/constants";
 import { ChatSuggestion } from "@/features/chat/types";
 import { normalize } from "@/features/chat/utils";
 
@@ -43,6 +44,6 @@ export const useChatSuggestions = ({
         return result;
       },
       [],
-    );
+    ).slice(0, MAX_SUGGESTION_PILLS);
   }, [suggestions]);
 };

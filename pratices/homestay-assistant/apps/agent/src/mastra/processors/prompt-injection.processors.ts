@@ -5,6 +5,7 @@ import {
 } from "@mastra/core/processors";
 
 import { AGENT_INPUT_TOKEN_LIMIT } from "@repo/constants";
+import { DedupeToolCallsProcessor } from "./dedupe-tool-calls.processor";
 import { ExcludeBlockedMessagesProcessor } from "./exclude-blocked-messages.processor";
 import { UserMessageTokenLimitProcessor } from "./user-message-token-limit.processor";
 const promptInjectionProcessor = new PromptInjectionDetector({
@@ -20,7 +21,7 @@ const tokenLimitProcessor = new TokenLimiterProcessor({
   trimMode: "contiguous",
 });
 
-/** Unicode → blocked-history filter → prompt injection → request size → context window */
+/** Unicode → blocked-history filter → prompt injection → request size → context window → prompt dedupe */
 export const securityInputProcessor = [
   new UnicodeNormalizer({
     stripControlChars: true,
@@ -30,4 +31,5 @@ export const securityInputProcessor = [
   promptInjectionProcessor,
   new UserMessageTokenLimitProcessor(),
   tokenLimitProcessor,
+  new DedupeToolCallsProcessor(),
 ];

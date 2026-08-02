@@ -2,7 +2,8 @@
 
 // Libs
 import dynamic from "next/dynamic";
-import { useCallback, useEffect } from "react";
+import { ChevronLeft, MessageSquare } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 import { cn } from "@repo/utils";
 import { AGENT_KEYS } from "@repo/constants";
@@ -58,6 +59,7 @@ export const MainLayout = ({
   className,
   activeTab = NavbarTab.HOME,
 }: MainLayoutProps) => {
+  const [isChatOpen, setIsChatOpen] = useState(true);
   const agentId = AGENT_KEYS.MANAGE_ASSISTANT;
   const { scopeKey, activeThreadId, setActiveThread } = useActiveThread({
     agentId,
@@ -149,12 +151,12 @@ export const MainLayout = ({
     <div className="flex h-screen w-full justify-center mx-2 bg-[#010507]">
       <div
         className={cn(
-          "flex flex-col h-full w-full max-w-[1920px] overflow-hidden  bg-[#010507] font-sans",
+          "flex flex-col h-full w-full max-w-[1440px] overflow-hidden  bg-[#010507] font-sans",
           className,
         )}
       >
         <Navbar activeTab={activeTab} />
-        <div className="flex min-h-0 min-w-0 flex-1">
+        <div className="relative flex min-h-0 min-w-0 flex-1">
           {/*  */}
           {/* <div className="hidden h-full min-h-0 shrink-0 lg:block">
             <ThreadSidebar
@@ -170,11 +172,43 @@ export const MainLayout = ({
               onDeleteThread={deleteThread}
             />
           </div> */}
-          <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
+          <main className="app-scrollbar relative z-0 min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
             {children}
           </main>
-          <div className="hidden h-full min-h-0 w-[min(100%,520px)] shrink-0 lg:block">
-            <ChatSidebar className="h-full" agentId={agentId} />
+          <div
+            className={cn(
+              "relative z-10 hidden h-full min-h-0 shrink-0 overflow-visible border-l border-white/10 bg-[#0a0a0a] transition-[width] duration-300 ease-in-out lg:block",
+              isChatOpen ? "w-[min(100%,520px)]" : "w-12",
+            )}
+          >
+            <button
+              type="button"
+              onClick={() => setIsChatOpen((open) => !open)}
+              aria-expanded={isChatOpen}
+              aria-label={isChatOpen ? "Close assistant" : "Open assistant"}
+              className={cn(
+                "absolute z-20 flex size-8 items-center justify-center rounded-md border border-white/10 bg-[#141414] text-zinc-300 shadow-lg transition hover:border-white/25 hover:bg-white/5 hover:text-white",
+                isChatOpen
+                  ? "-left-4 top-1/2 -translate-y-1/2"
+                  : "left-1/2 top-4 -translate-x-1/2",
+              )}
+            >
+              {isChatOpen ? (
+                <ChevronLeft className="size-4" aria-hidden />
+              ) : (
+                <MessageSquare className="size-4" aria-hidden />
+              )}
+            </button>
+            <div
+              className={cn(
+                "h-full overflow-hidden transition-opacity duration-200",
+                isChatOpen
+                  ? "w-[min(100%,520px)] opacity-100"
+                  : "pointer-events-none w-0 opacity-0",
+              )}
+            >
+              <ChatSidebar className="h-full w-[min(100%,520px)]" agentId={agentId} />
+            </div>
           </div>
         </div>
       </div>

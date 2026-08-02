@@ -12,12 +12,6 @@ import {
 } from "@/mastra/services";
 
 const getBookingsInputSchema = z.object({
-  userId: z
-    .string()
-    .optional()
-    .describe(
-      "Optional filter by user ID. Omit to use the signed-in user from the server session.",
-    ),
   roomId: z.string().optional().describe("Filter by room ID"),
   status: z
     .enum(Object.values(BookingStatus) as [string, ...string[]])
@@ -25,27 +19,20 @@ const getBookingsInputSchema = z.object({
     .describe("Filter by booking status"),
 });
 
-const resolveUserId = (
-  params: z.infer<typeof getBookingsInputSchema>,
-  context: Parameters<typeof getAuthUserId>[0],
-) => {
-  if (params.userId) {
-    return params.userId;
-  }
-
-  return getAuthUserId(context, "Authentication required to fetch bookings");
-};
-
 export const getBookingsTool = createTool({
   id: TOOL_KEYS.BOOKING.GET,
   description:
-    "Get bookings from the backend. For personal bookings, omit userId — the signed-in user is resolved automatically from the server session. After calling, always finish with one short guest-facing chat sentence.",
+    "Get the signed-in user's bookings from the backend. User identity always comes from the server session — never pass or invent a userId. After calling, always finish with one short guest-facing chat sentence.",
   inputSchema: getBookingsInputSchema,
   outputSchema: z.object({
     bookings: z.array(bookingSchema),
   }),
   execute: async (params, context) => {
-    const userId = resolveUserId(params, context);
+    console.log("----GET BOOKINGS TOOL EXECUTED----");
+    const userId = getAuthUserId(
+      context,
+      "Authentication required to fetch bookings",
+    );
 
     const bookings = await getBookings(
       {

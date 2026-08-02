@@ -3,7 +3,6 @@ import type { RequestContext } from "@mastra/core/request-context";
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
-import { enableSuggestionToolChoice } from "./enable-suggestion-tool-choice";
 import { enableProcessorTripwireHandling } from "./handle-processor-tripwire";
 import { runtimeMastra } from "@/mastra/runtime";
 
@@ -21,11 +20,9 @@ export const getCopilotkitAgents = ({
   requestContext,
 }: GetCopilotkitAgentsInput) =>
   enableProcessorTripwireHandling(
-    enableSuggestionToolChoice(
-      MastraAgent.getLocalAgents({
-        mastra: runtimeMastra,
-        resourceId: getAgentResourceId(userId, agentId),
-        requestContext,
-      }),
-    ),
+    MastraAgent.getLocalAgents({
+      mastra: runtimeMastra,
+      resourceId: getAgentResourceId(userId, agentId),
+      requestContext,
+    }),
   );

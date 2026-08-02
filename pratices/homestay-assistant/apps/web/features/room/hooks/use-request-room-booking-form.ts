@@ -1,58 +1,69 @@
 "use client";
 
+import { useCallback } from "react";
+import { usePathname } from "next/navigation";
+
 import { useUser } from "@clerk/nextjs";
 import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
-import { useCallback, useRef, useState } from "react";
 
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
+import { ROUTES } from "@/constants";
+import { buildBookingFormMessage } from "@/features/booking/utils/build-messages";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
-import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
+import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
+import { useRoomStore } from "@/features/room/stores/room-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 const BOOK_FLOW_KEY = "book-flow";
 
-export const useRequestRoomBooking = () => {
+type RequestRoomBookingFormArgs = {
+  roomId: string;
+  roomName: string;
+};
+
+export const useRequestRoomBookingForm = () => {
+  const pathname = usePathname();
   const { user, isLoaded } = useUser();
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
-  const requestInFlightRef = useRef(false);
-  const [isRequesting, setIsRequesting] = useState(false);
   const activeThreadIds = useThreadStore((state) => state.activeThreadIds);
   const createDraftThread = useThreadStore((state) => state.createDraftThread);
   const setPendingOutboundMessage = useChatStore(
     (state) => state.setPendingOutboundMessage,
   );
 
-  const requestRoomBooking = useCallback(
-    (message = "Book this room") => {
-      if (
-        !isLoaded ||
-        !user?.id ||
-        agent.isRunning ||
-        requestInFlightRef.current
-      ) {
+  return useCallback(
+    ({ roomId, roomName }: RequestRoomBookingFormArgs) => {
+      if (!isLoaded || !user?.id || !roomId) {
         return;
+      }
+
+      useBookingStore.getState().updateBookingDraft({
+        roomId,
+        checkInDate: null,
+        checkOutDate: null,
+        guests: 1,
+      });
+      useHomestayAgentUiStore.getState().pushFocusedRoom(roomId);
+      useHomestayAgentUiStore.getState().pushWorkflow({
+        key: BOOK_FLOW_KEY,
+        task: { type: "book", status: "in-progress" },
+        focus: { type: "room", id: roomId },
+      });
+
+      if (pathname === ROUTES.HOME) {
+        useRoomStore.getState().setSelectedRoomId(roomId);
       }
 
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
       const threadId =
         activeThreadIds[scopeKey] ?? createDraftThread(scopeKey);
-
-      const { roomId } = useBookingStore.getState();
-      if (roomId) {
-        useHomestayAgentUiStore.getState().pushWorkflow({
-          key: BOOK_FLOW_KEY,
-          task: { type: "book", status: "in-progress" },
-          focus: { type: "room", id: roomId },
-        });
-      }
+      const message = buildBookingFormMessage(roomId, roomName);
 
       if (copilotkit.runtimeConnectionStatus === "connected") {
-        requestInFlightRef.current = true;
-        setIsRequesting(true);
         agent.threadId = threadId;
 
         agent.addMessage({
@@ -61,15 +72,9 @@ export const useRequestRoomBooking = () => {
           content: message,
         });
 
-        void copilotkit
-          .runAgent({ agent })
-          .catch((error) => {
-            console.error("Failed to start booking workflow", error);
-          })
-          .finally(() => {
-            requestInFlightRef.current = false;
-            setIsRequesting(false);
-          });
+        void copilotkit.runAgent({ agent }).catch((error) => {
+          console.error("Failed to open room booking form in chat", error);
+        });
         return;
       }
 
@@ -81,13 +86,9 @@ export const useRequestRoomBooking = () => {
       copilotkit,
       createDraftThread,
       isLoaded,
-      setPendingOutboundMessage,
+      pathname,
       user?.id,
+      setPendingOutboundMessage,
     ],
   );
-
-  return {
-    requestRoomBooking,
-    isRequesting,
-  };
 };

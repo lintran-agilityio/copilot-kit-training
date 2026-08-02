@@ -20,6 +20,7 @@ import {
 import { useRoomBookingEstimate } from "@/features/room/hooks";
 import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
 import type { Room } from "@/features/room/types/room";
+import { buildBookingStayMessage } from "@/features/booking/utils/build-messages";
 import {
   addDays,
   startOfDay,
@@ -27,12 +28,12 @@ import {
   toDateKey,
   isCheckOutAfterCheckIn,
   parseDateKey,
-  buildActionPrompt,
 } from "@repo/utils";
 
 type RoomDetailProps = Room & {
   className?: string;
   imageUrls?: string[];
+  variant?: "page" | "chat-booking";
 };
 
 const dateKeysEqual = (
@@ -52,10 +53,11 @@ export const RoomDetail = ({
   className,
   pricePerNight,
   imageUrls,
+  variant = "page",
   ...room
 }: RoomDetailProps) => {
   const updateBookingDraft = useBooking((state) => state.updateBookingDraft);
-  const requestRoomBooking = useRequestRoomBooking();
+  const { requestRoomBooking, isRequesting } = useRequestRoomBooking();
   const {
     id,
     name,
@@ -159,6 +161,7 @@ export const RoomDetail = ({
   const handleBook = () => {
     if (
       isBookingDisabled ||
+      isRequesting ||
       !canProceed ||
       !checkInDate ||
       !checkOutDate ||
@@ -169,11 +172,13 @@ export const RoomDetail = ({
 
     syncDraft();
     requestRoomBooking(
-      buildActionPrompt({
-        action: `Book ${name} from ${checkInDate} to ${checkOutDate} for ${guests} guest${guests === 1 ? "" : "s"}`,
-        targetName: name,
-        identifiers: { roomId: id },
-      })
+      buildBookingStayMessage({
+        roomId: id,
+        roomName: name,
+        checkInDate,
+        checkOutDate,
+        guests,
+      }),
     );
   };
 
@@ -185,7 +190,50 @@ export const RoomDetail = ({
     }
   };
 
-  const headerLabel = matchesExistingBooking ? "Your booking" : "Room detail";
+  const headerLabel = matchesExistingBooking
+    ? "Your booking"
+    : variant === "chat-booking"
+      ? "Book this room"
+      : "Room detail";
+
+  const bookingSection = (
+    <>
+      <RoomBookingDates
+        checkInDate={checkInDate}
+        checkOutDate={checkOutDate}
+        onCheckInChange={handleCheckInChange}
+        onCheckOutChange={setLocalCheckOut}
+      />
+
+      <RoomBookingGuests
+        guests={guests}
+        capacity={capacity}
+        onGuestsChange={setLocalGuests}
+      />
+
+      {matchesExistingBooking ? (
+        <p className="text-sm text-zinc-400">
+          You already have a booking for these dates. Select different dates to
+          book another stay.
+        </p>
+      ) : null}
+
+      <div className="space-y-3 border-t border-white/8 pt-4">
+        <RoomBookingEstimatedTotal estimatedTotal={estimatedTotal} />
+
+        <Button
+          type="button"
+          size="lg"
+          className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
+          disabled={!canProceed || isBookingDisabled || isRequesting}
+          onClick={handleBook}
+        >
+          <CalendarCheck className="size-4" />
+          {isRequesting ? "Starting booking…" : "Book this room"}
+        </Button>
+      </div>
+    </>
+  );
 
   if (!room) {
     return (
@@ -199,26 +247,35 @@ export const RoomDetail = ({
     <article
       className={cn(
         "overflow-hidden rounded-xl border border-white/8 bg-[#111111]",
-        className
+        className,
       )}
     >
-      <RoomImageGallery
-        roomId={id}
-        imageUrl={imageUrl}
-        imageUrls={imageUrls}
-        name={name}
-        level={level ?? 0}
-        levelColor={levelColor ?? ""}
-        availableSlots={availableSlots}
-      />
+      {variant === "page" ? (
+        <RoomImageGallery
+          roomId={id}
+          imageUrl={imageUrl}
+          imageUrls={imageUrls}
+          name={name}
+          level={level ?? 0}
+          levelColor={levelColor ?? ""}
+          availableSlots={availableSlots}
+        />
+      ) : null}
 
-      <div className="flex flex-col gap-5 p-5">
+      <div
+        className={cn(
+          "flex flex-col gap-5",
+          variant === "chat-booking" ? "p-4" : "p-5",
+        )}
+      >
         <RoomBookingSummaryHeader
           label={headerLabel}
           name={name}
           capacityText={`${capacity} guests`}
           labelClassName="tracking-[0.2em]"
-          nameClassName="text-xl font-semibold"
+          nameClassName={
+            variant === "chat-booking" ? "text-lg font-semibold" : "text-xl font-semibold"
+          }
           aside={
             bookingStatus ? (
               <BookingStatusBadge status={bookingStatus} />
@@ -226,55 +283,24 @@ export const RoomDetail = ({
           }
         />
 
-        {pricePerNight != null ? (
+        {variant === "page" && pricePerNight != null ? (
           <RoomBookingPricePerNight pricePerNight={pricePerNight} />
         ) : null}
 
-        <p className="text-sm leading-relaxed text-zinc-400">{description}</p>
+        {variant === "page" ? (
+          <>
+            <p className="text-sm leading-relaxed text-zinc-400">{description}</p>
 
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
-            Amenities
-          </p>
-          <AmenitiesRoom amenities={amenities} />
-        </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
+                Amenities
+              </p>
+              <AmenitiesRoom amenities={amenities} />
+            </div>
+          </>
+        ) : null}
 
-        <>
-          <RoomBookingDates
-            checkInDate={checkInDate}
-            checkOutDate={checkOutDate}
-            onCheckInChange={handleCheckInChange}
-            onCheckOutChange={setLocalCheckOut}
-          />
-
-          <RoomBookingGuests
-            guests={guests}
-            capacity={capacity}
-            onGuestsChange={setLocalGuests}
-          />
-
-          {matchesExistingBooking ? (
-            <p className="text-sm text-zinc-400">
-              You already have a booking for these dates. Select different dates
-              to book another stay.
-            </p>
-          ) : null}
-
-          <div className="space-y-3 border-t border-white/8 pt-4">
-            <RoomBookingEstimatedTotal estimatedTotal={estimatedTotal} />
-
-            <Button
-              type="button"
-              size="lg"
-              className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
-              disabled={!canProceed || isBookingDisabled}
-              onClick={handleBook}
-            >
-              <CalendarCheck className="size-4" />
-              Book this room
-            </Button>
-          </div>
-        </>
+        {bookingSection}
       </div>
     </article>
   );

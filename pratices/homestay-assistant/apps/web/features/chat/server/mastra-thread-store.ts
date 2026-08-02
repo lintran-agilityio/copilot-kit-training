@@ -177,12 +177,8 @@ const getThreadName = (row: MastraThreadRow) => {
   return title || fallbackTitle || "New chat";
 };
 
-/**
- * CopilotKit SuggestionEngine sets threadId to a fresh UUID per reload.
- * When those runs used a memory-backed agent, they left ghost threads whose
- * first user message is the injected suggest prompt — hide them from the UI.
- */
-const isSuggestionGenerationThread = (firstUserContent: string | null) => {
+/** Keep historical suggestion-generation threads out of the sidebar. */
+const isLegacySuggestionThread = (firstUserContent: string | null) => {
   if (!firstUserContent) {
     return false;
   }
@@ -243,7 +239,7 @@ export const listMastraThreads = ({
       .all(resourceId);
 
     return rows
-      .filter((row) => !isSuggestionGenerationThread(row.firstUserContent))
+      .filter((row) => !isLegacySuggestionThread(row.firstUserContent))
       .map((row) => ({
         id: row.id,
         agentId: parseAgentResourceId(row.resourceId).agentId || agentId,
@@ -412,7 +408,7 @@ export const listMastraThreadMessages = ({
           FROM mastra_messages
           WHERE thread_id = ?
             AND resourceId = ?
-            AND role IN ('assistant', 'system', 'tool', 'user')
+            AND role IN ('assistant', 'system', 'user')
           ORDER BY createdAt ASC
         `,
       )

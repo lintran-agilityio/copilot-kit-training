@@ -4,7 +4,7 @@ import { BookingStatus } from "@repo/types";
 import { sanitizeBookingId } from "@repo/utils";
 import {
   bookingSchema,
-  checkRoomAvailabilityOutputSchema,
+  checkRoomAvailabilityResponseSchema,
   type Booking,
   type CheckRoomAvailabilityInput,
   type CreateBookingPayload,
@@ -48,16 +48,22 @@ export const getBookings = async (
     requestContext: serviceContext?.requestContext,
   });
 
+export type CheckRoomAvailabilityApiInput = Omit<
+  CheckRoomAvailabilityInput,
+  "flow"
+>;
+
 export const checkRoomAvailability = async (
-  input: CheckRoomAvailabilityInput
+  input: CheckRoomAvailabilityApiInput,
 ) =>
-  get(ROUTES.BOOKING_AVAILABILITY, checkRoomAvailabilityOutputSchema, {
+  get(ROUTES.BOOKING_AVAILABILITY, checkRoomAvailabilityResponseSchema, {
     searchParams: input,
     errorMessage: "Failed to check room availability",
   });
 
 export const updateBooking = async (
   input: UpdateBookingSchema,
+  serviceContext?: ServiceContext,
 ): Promise<Booking> => {
   const bookingId = sanitizeBookingId(input.bookingId);
 
@@ -70,14 +76,19 @@ export const updateBooking = async (
     },
     bookingSchema,
     "Failed to update booking",
+    serviceContext,
   );
 };
 
-export const cancelBooking = async (bookingId: string): Promise<Booking> =>
+export const cancelBooking = async (
+  bookingId: string,
+  serviceContext?: ServiceContext,
+): Promise<Booking> =>
   del(
     `${ROUTES.BOOKINGS}/${encodeURIComponent(sanitizeBookingId(bookingId))}`,
     bookingSchema,
-    "Failed to cancel booking"
+    "Failed to cancel booking",
+    serviceContext,
   );
 
 const toCancellationSummary = (booking: Booking) => ({
@@ -90,7 +101,7 @@ const toCancellationSummary = (booking: Booking) => ({
   totalPrice: booking.totalPrice,
 });
 
-const isActiveBooking = (booking: Booking) => {
+export const isActiveBooking = (booking: Booking) => {
   const status = booking.status.toUpperCase();
 
   if (status === BookingStatus.CANCELLED) {
@@ -106,6 +117,43 @@ const isActiveBooking = (booking: Booking) => {
 
   const checkout = new Date(`${booking.checkOutDate}T00:00:00`);
   return checkout >= today;
+};
+
+/**
+ * Load a booking and ensure it belongs to the signed-in user and is still
+ * active (not cancelled / past checkout). Used before cancel/update.
+ */
+export const assertOwnedActiveBooking = async (
+  userId: string,
+  bookingId: string,
+  serviceContext?: ServiceContext,
+): Promise<Booking> => {
+  const id = sanitizeBookingId(bookingId);
+
+  if (!id) {
+    throw new Error("Booking not found");
+  }
+
+  let booking: Booking;
+
+  try {
+    booking = await get<Booking>(
+      `${ROUTES.BOOKINGS}/${encodeURIComponent(id)}`,
+      bookingSchema,
+      {
+        errorMessage: "Failed to load booking",
+        requestContext: serviceContext?.requestContext,
+      },
+    );
+  } catch {
+    throw new Error("Booking not found");
+  }
+
+  if (booking.userId !== userId || !isActiveBooking(booking)) {
+    throw new Error("Booking not found or no longer active");
+  }
+
+  return booking;
 };
 
 export const findBookingById = async (

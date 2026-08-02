@@ -3,11 +3,12 @@
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { BookingUnavailable } from "@/components/confirm-modal";
+import { ChatGenerativeUILayout } from "@/features/chat/components";
 import { parseToolResult } from "@repo/utils";
 import { CheckRoomAvailabilityToolProps, CheckRoomAvailabilityResult } from "@/features/booking/types";
 import {
+  canRenderBookingUnavailableCard,
   getAvailabilityFailureReason,
-  isCheckRoomAvailabilityFailure,
 } from "@/features/booking/utils";
 
 export const BookingUnavailableNotice = ({
@@ -16,7 +17,7 @@ export const BookingUnavailableNotice = ({
 }: CheckRoomAvailabilityToolProps) => {
   if (
     status !== ToolCallStatus.Complete ||
-    !isCheckRoomAvailabilityFailure(result)
+    !canRenderBookingUnavailableCard(result)
   ) {
     return null;
   }
@@ -40,13 +41,15 @@ export const BookingUnavailableNotice = ({
   }
 
   return (
-    <BookingUnavailable
-      roomName={roomName}
-      checkInDate={checkInDate}
-      checkOutDate={checkOutDate}
-      guests={guests}
-      reason={reason}
-      capacity={availabilityResult?.room?.capacity}
-    />
+    <ChatGenerativeUILayout>
+      <BookingUnavailable
+        roomName={roomName}
+        checkInDate={checkInDate}
+        checkOutDate={checkOutDate}
+        guests={guests}
+        reason={reason}
+        capacity={availabilityResult?.room?.capacity}
+      />
+    </ChatGenerativeUILayout>
   );
 };

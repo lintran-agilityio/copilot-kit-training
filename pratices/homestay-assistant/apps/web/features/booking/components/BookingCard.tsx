@@ -17,6 +17,7 @@ import { isBookingCancellable } from "@/features/booking/utils";
 type BookingCardProps = {
   booking: BookingResponse;
   className?: string;
+  isAgentRunning?: boolean;
   onCancelBooking?: (booking: BookingResponse) => void;
   onModifyBooking?: (booking: BookingResponse) => void;
 };
@@ -24,6 +25,7 @@ type BookingCardProps = {
 export const BookingCard = ({
   booking,
   className,
+  isAgentRunning = false,
   onCancelBooking,
   onModifyBooking,
 }: BookingCardProps) => {
@@ -34,7 +36,8 @@ export const BookingCard = ({
     resolveRoomImage(imageUrl),
   );
 
-  const canModify = isBookingCancellable(status, checkOutDate);
+  const isCancellable = isBookingCancellable(status, checkOutDate);
+  const canModify = isCancellable && !isAgentRunning;
   const canCancel = canModify;
 
   const handleCancelBooking = () => {
@@ -117,31 +120,29 @@ export const BookingCard = ({
           </span>
         </div>
       </div>
-      {canModify || canCancel ? (
+      {isCancellable ? (
         <div className="m-4 mt-0 flex gap-2">
-          {canModify ? (
-            <Button
-              type="button"
-              size="lg"
-              variant="outline"
-              className="h-11 min-w-10 flex-1 gap-2 border-white/10 bg-transparent text-base font-medium text-zinc-100 hover:bg-white/5 hover:text-white cursor-pointer"
-              onClick={handleModifyBooking}
-            >
-              <Pencil className="size-4" />
-              Modify
-            </Button>
-          ) : null}
-          {canCancel ? (
-            <Button
-              type="button"
-              size="lg"
-              className="h-11 min-w-10 flex-1 gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
-              onClick={handleCancelBooking}
-            >
-              <CalendarCheck className="size-4" />
-              Cancel
-            </Button>
-          ) : null}
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            disabled={!canModify}
+            className="h-11 min-w-10 flex-1 gap-2 border-white/10 bg-transparent text-base font-medium text-zinc-100 hover:bg-white/5 hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={handleModifyBooking}
+          >
+            <Pencil className="size-4" />
+            Modify
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            disabled={!canCancel}
+            className="h-11 min-w-10 flex-1 gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+            onClick={handleCancelBooking}
+          >
+            <CalendarCheck className="size-4" />
+            Cancel
+          </Button>
         </div>
       ) : null}
     </article>

@@ -37,6 +37,39 @@ export const buildActionPrompt = ({
   return `${action} ${targetName}. ${metadata}`;
 };
 
+const UI_ACTION_PROMPT_DISPLAY: Record<
+  string,
+  (targetName: string) => string
+> = {
+  "Show booking form for": (targetName) => `Book ${targetName}`,
+  "Show detail room for": (targetName) => `View ${targetName}`,
+};
+
+/** Guest-facing label for UI-generated action prompts (hides roomId metadata). */
+export const getUiActionPromptDisplayText = (content: string): string | null => {
+  const trimmed = content.trim();
+  for (const [action, formatDisplay] of Object.entries(UI_ACTION_PROMPT_DISPLAY)) {
+    if (!trimmed.startsWith(action)) {
+      continue;
+    }
+
+    const afterAction = trimmed.slice(action.length).trimStart();
+    const dotIndex = afterAction.indexOf(".");
+    const targetName =
+      dotIndex === -1
+        ? afterAction.replace(/\s*roomId:\s*.*$/i, "").trim()
+        : afterAction.slice(0, dotIndex).trim();
+
+    if (!targetName) {
+      return null;
+    }
+
+    return formatDisplay(targetName);
+  }
+
+  return null;
+};
+
 /** Strip trailing punctuation/whitespace LLMs may include when parsing action prompts. */
 export const sanitizeBookingId = (raw: string) =>
   raw.trim().replace(/[.,;\s]+$/g, "");

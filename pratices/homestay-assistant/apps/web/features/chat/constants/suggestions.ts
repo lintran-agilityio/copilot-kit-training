@@ -1,67 +1,189 @@
 import type { HomestayAgentContext } from "@/features/chat/types";
+import { buildBookingFormMessage } from "@/features/booking/utils/build-messages";
+import { PAGE_ROOMS_PROMPT_PREFIX } from "@/features/copilot/config/page-generative-ui";
 
-const BASE_SUGGESTION_RULES = `Based on HomestayAgentContext (screen, focus, task) and the conversation,
-suggest the most useful next actions for the guest.
-
-Suggestions must be:
-- contextual to screen/focus/task
-- actionable
-- concise
-- based on available data
-- consistent with the current agent workflow
-
-Never invent data.
-Never suggest completed actions.
-Never suggest actions that contradict the current booking state.
-Each suggestion title should be a short pill label; the message should be a clear user request the assistant can act on.`;
-
-const INSTRUCTIONS_BY_SCREEN: Record<
-  HomestayAgentContext["screen"]["name"],
-  string
-> = {
-  home: `HomestayAgentContext screen.name is "home" (task.type usually "discover").
-Prefer showing available rooms, luxury rooms, checking availability for dates, or viewing their bookings.`,
-
-  "room-detail": `HomestayAgentContext screen.name is "room-detail" (focus.type usually "room").
-Prefer booking this room, checking availability for dates, or asking about amenities.
-If focus.id is set and suggesting a booking, the message MUST include that roomId and the room name when known.`,
-
-  "booking-form": `HomestayAgentContext screen.name is "booking-form" (task.type usually "book").
-If task.status is "awaiting-confirmation" or "in-progress", prefer adjusting dates/guests, canceling the draft, or browsing other rooms.
-If task.status is "completed", prefer viewing their bookings or browsing more rooms.`,
-
-  bookings: `HomestayAgentContext screen.name is "bookings" (task.type usually "manage").
-Prefer canceling a booking or browsing rooms for a new stay.`,
+export type StaticSuggestion = {
+  title: string;
+  message: string;
 };
 
-export const getSuggestionInstructions = (
+export const MAX_SUGGESTION_PILLS = 3;
+
+const isActiveWorkflowTask = (context: HomestayAgentContext): boolean => {
+  const task = context.task;
+  if (!task) {
+    return false;
+  }
+
+  if (task.type === "book" || task.type === "cancel") {
+    return task.status !== "idle";
+  }
+
+  return task.type === "manage" && task.status !== "idle";
+};
+
+export const getWorkflowStaticSuggestions = (
   context: HomestayAgentContext,
   roomName?: string | null,
-): string => {
-  const screenInstructions = INSTRUCTIONS_BY_SCREEN[context.screen.name];
-  const focusLine = context.focus
-    ? `focus: ${context.focus.type} id=${context.focus.id}`
-    : "focus: none";
-  const taskLine = context.task
-    ? `task: ${context.task.type} / ${context.task.status}`
-    : "task: none";
+): StaticSuggestion[] => {
+  const task = context.task;
+  if (!task || !isActiveWorkflowTask(context)) {
+    return [];
+  }
 
-  const roomLine =
-    (context.screen.name === "room-detail" ||
-      context.screen.name === "booking-form") &&
-    context.focus?.type === "room" &&
-    roomName
-      ? `The guest is viewing "${roomName}" (roomId: ${context.focus.id}).
-If suggesting a booking, the message MUST include roomId: ${context.focus.id} and the room name.`
-      : null;
+  const roomId = context.focus?.type === "room" ? context.focus.id : undefined;
+  const name = roomName?.trim() || "this room";
 
-  return [
-    BASE_SUGGESTION_RULES,
-    "",
-    `Current HomestayAgentContext: screen=${context.screen.name}; ${focusLine}; ${taskLine}.`,
-    screenInstructions,
-    roomLine,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  if (task.type === "book") {
+    if (task.status === "awaiting-confirmation") {
+      return [
+        {
+          title: "Change dates",
+          message: "I want to change my booking dates.",
+        },
+        {
+          title: "Change guests",
+          message: "I want to change the number of guests.",
+        },
+        {
+          title: "Browse rooms",
+          message: "Show me other available rooms.",
+        },
+      ];
+    }
+
+    if (task.status === "in-progress") {
+      const suggestions: StaticSuggestion[] = [];
+
+      if (roomId) {
+        suggestions.push({
+          title: "Open booking form",
+          message: buildBookingFormMessage(roomId, name),
+        });
+      }
+
+      suggestions.push({
+        title: "Browse rooms",
+        message: "Show me other available rooms.",
+      });
+
+      return suggestions;
+    }
+
+    if (task.status === "completed") {
+      return [
+        { title: "My bookings", message: "Show my bookings." },
+        {
+          title: "Book another",
+          message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
+        },
+      ];
+    }
+  }
+
+  if (task.type === "cancel") {
+    return [
+      {
+        title: "Keep booking",
+        message: "Never mind, keep my booking.",
+      },
+      {
+        title: "Browse rooms",
+        message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
+      },
+    ];
+  }
+
+  if (task.type === "manage" && task.status === "in-progress") {
+    return [
+      {
+        title: "My bookings",
+        message: "Show my bookings.",
+      },
+      {
+        title: "Book a room",
+        message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
+      },
+    ];
+  }
+
+  return [];
+};
+
+export const getPageStaticSuggestions = (
+  context: HomestayAgentContext,
+  roomName?: string | null,
+): StaticSuggestion[] => {
+  const roomId = context.focus?.type === "room" ? context.focus.id : undefined;
+  const name = roomName?.trim() || "this room";
+
+  switch (context.screen.name) {
+    case "home":
+      return [
+        {
+          title: "Browse rooms",
+          message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
+        },
+        { title: "My bookings", message: "Show my bookings." },
+        {
+          title: "Find rooms",
+          message: "Find available rooms for this weekend.",
+        },
+      ];
+
+    case "room-detail":
+      if (!roomId) {
+        return [
+          {
+            title: "Browse rooms",
+            message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
+          },
+        ];
+      }
+
+      return [
+        {
+          title: "Book this room",
+          message: buildBookingFormMessage(roomId, name),
+        },
+        {
+          title: "Amenities",
+          message: `Tell me about ${name} amenities and details (roomId: ${roomId}).`,
+        },
+      ];
+
+    case "booking-form":
+      return [
+        {
+          title: "Browse rooms",
+          message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
+        },
+        { title: "My bookings", message: "Show my bookings." },
+      ];
+
+    case "bookings":
+      return [
+        {
+          title: "Book a room",
+          message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
+        },
+        {
+          title: "Find rooms",
+          message: "Find available rooms for this weekend.",
+        },
+      ];
+  }
+};
+
+/** Workflow static suggestions take precedence over page-level pills. */
+export const getPriorityStaticSuggestions = (
+  context: HomestayAgentContext,
+  roomName?: string | null,
+): StaticSuggestion[] => {
+  const workflow = getWorkflowStaticSuggestions(context, roomName);
+  const source = workflow.length
+    ? workflow
+    : getPageStaticSuggestions(context, roomName);
+
+  return source.slice(0, MAX_SUGGESTION_PILLS);
 };

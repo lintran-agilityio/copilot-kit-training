@@ -2,7 +2,10 @@
 
 import { EmptyMessages } from "@repo/components";
 import { Room } from "@/features/room/components/Room";
-import { useRequestRoomDetail } from "@/features/room/hooks";
+import {
+  useOpenRoomOnPage,
+  useRequestRoomBookingForm,
+} from "@/features/room/hooks";
 import type { Room as RoomType } from "@/features/room/types/room";
 import { cn } from "@repo/utils";
 
@@ -19,7 +22,8 @@ export const ListRoom = ({
   compact = false,
   className,
 }: ListRoomProps) => {
-  const requestRoomDetail = useRequestRoomDetail();
+  const openRoomOnPage = useOpenRoomOnPage();
+  const requestRoomBookingForm = useRequestRoomBookingForm();
 
   return (
     <section className={cn("space-y-4", className)}>
@@ -46,7 +50,8 @@ export const ListRoom = ({
                   key={room.id}
                   {...room}
                   compact={compact}
-                  onSelect={requestRoomDetail}
+                  onSelect={openRoomOnPage}
+                  onBook={requestRoomBookingForm}
                 />
               </div>
             ))}

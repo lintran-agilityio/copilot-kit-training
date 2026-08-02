@@ -36,7 +36,8 @@ const useBookingAgentAction = (
     async (booking: BookingResponse) => {
       const room = booking.room;
 
-      if (!isLoaded || !user?.id || !booking.id || !room) return;
+      if (!isLoaded || !user?.id || !booking.id || !room || agent.isRunning)
+        return;
 
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
       const threadId =
