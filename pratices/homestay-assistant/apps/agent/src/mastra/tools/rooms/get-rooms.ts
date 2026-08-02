@@ -40,7 +40,6 @@ export const getRoomsTool = createTool({
   inputSchema: getRoomsInputSchema,
   outputSchema: getRoomsOutputSchema,
   execute: async () => {
-    console.log('----GET ROOMS TOOL EXECUTED----');
     const rooms = await getRooms();
     return { rooms };
   },

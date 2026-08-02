@@ -22,7 +22,6 @@ export const createBookingTool = createTool({
   inputSchema: createBookingSchema,
   outputSchema: bookingSchema,
   execute: async (params, context) => {
-    console.log("----CREATE BOOKING TOOL EXECUTED----");
     const userId = getAuthUserId(
       context,
       "Authentication required to create a booking",

@@ -22,7 +22,6 @@ export const cancelBookingTool = createTool({
   inputSchema: cancelBookingInputSchema,
   outputSchema: bookingSchema,
   execute: async ({ bookingId }, context) => {
-    console.log("----CANCEL BOOKING TOOL EXECUTED----");
     const userId = getAuthUserId(
       context,
       "Authentication required to cancel a booking",

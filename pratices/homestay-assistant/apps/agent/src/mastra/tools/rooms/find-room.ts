@@ -41,9 +41,6 @@ export const findRoomTool = createTool({
     'REQUIRED for room search/filter and date availability. Call find_room when the guest searches by room name and/or filters by date, guests, or room level (any combination). Pass only the filters they gave. Do NOT use get_rooms for name/date/filter queries. Results render as room cards in chat automatically — do NOT write room names or a list in text. After calling: reply with ONE very short sentence only (e.g. "I found N room(s) matching your request."). NEVER list room names — ListRoomPreview already renders them. Never end the turn with tools only. For plain browse-all with no filters, prefer get_rooms instead.',
   inputSchema: findRoomInputSchema,
   outputSchema: findRoomOutputSchema,
-  execute: async (inputData) => {
-    console.log('----FIND ROOM TOOL EXECUTED----');
-    return findRooms(inputData);
-  },
+  execute: async (inputData) => findRooms(inputData),
   toModelOutput: toFindRoomModelOutput,
 });

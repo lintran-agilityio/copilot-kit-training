@@ -22,7 +22,6 @@ export const checkRoomAvailabilityTool = createTool({
   inputSchema: checkRoomAvailabilityInputSchema,
   outputSchema: checkRoomAvailabilityOutputSchema,
   execute: async (input, context) => {
-    console.log("----CHECK ROOM AVAILABILITY TOOL EXECUTED----");
     const { today } = getBusinessDates();
 
     // After edit_modify_booking, prepareStep pins the guest-selected stay so

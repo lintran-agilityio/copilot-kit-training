@@ -31,7 +31,6 @@ export const updateBookingTool = createTool({
   inputSchema: updateBookingSchema,
   outputSchema: bookingSchema,
   execute: async ({ bookingId, checkInDate, checkOutDate, guests }, context) => {
-    console.log("----UPDATE BOOKING TOOL EXECUTED----");
     const userId = getAuthUserId(
       context,
       "Authentication required to update a booking",

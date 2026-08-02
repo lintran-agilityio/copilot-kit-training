@@ -28,7 +28,6 @@ export const getBookingsTool = createTool({
     bookings: z.array(bookingSchema),
   }),
   execute: async (params, context) => {
-    console.log("----GET BOOKINGS TOOL EXECUTED----");
     const userId = getAuthUserId(
       context,
       "Authentication required to fetch bookings",

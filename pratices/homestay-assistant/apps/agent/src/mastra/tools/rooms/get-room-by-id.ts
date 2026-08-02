@@ -40,7 +40,6 @@ export const getRoomByIdTool = createTool({
   inputSchema: getRoomDetailInputSchema,
   outputSchema: getRoomDetailOutputSchema,
   execute: async (inputData) => {
-    console.log('----GET ROOM BY ID TOOL EXECUTED----');
     const { roomId } = inputData;
     const room = await getRoom(roomId);
     return { room };
