@@ -12,7 +12,7 @@ export const ListRoomPreview = ({ rooms = [], title }: ListRoomPreviewProps) => 
       rooms={rooms}
       title={title ?? "Room results"}
       compact
-      className="max-w-full rounded-2xl border border-white/8 bg-white/[0.02] p-4"
+      className="max-w-full rounded-xl border border-white/12 bg-[#111111] p-3.5"
     />
   );
 };

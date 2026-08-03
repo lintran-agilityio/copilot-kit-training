@@ -2,14 +2,14 @@
 
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
-import { ChatGenerativeUILayout } from "@/features/chat/components";
+import { EmbeddedWidget } from "@/features/chat/components";
 import { RoomDetail } from "@/features/room/components";
 import type {
   GetRoomByIdResult,
   GetRoomByIdToolProps,
 } from "@/features/room/types";
 import { Loading } from "@repo/components";
-import { cn, parseToolResult } from "@repo/utils";
+import { parseToolResult } from "@repo/utils";
 
 export const GetRoomByIdNotice = ({
   status,
@@ -20,13 +20,9 @@ export const GetRoomByIdNotice = ({
     status === ToolCallStatus.InProgress
   ) {
     return (
-      <ChatGenerativeUILayout
-        className={cn(
-          "rounded-xl border border-white/10 bg-white/[0.02] px-4 py-6 text-sm text-zinc-400",
-        )}
-      >
+      <EmbeddedWidget className="px-4 py-6 text-zinc-400">
         <Loading />
-      </ChatGenerativeUILayout>
+      </EmbeddedWidget>
     );
   }
 
@@ -42,12 +38,12 @@ export const GetRoomByIdNotice = ({
   }
 
   return (
-    <ChatGenerativeUILayout>
+    <EmbeddedWidget unframed>
       <RoomDetail
         {...room}
         variant="chat-booking"
-        className="w-full border-white/10 bg-white/[0.02] shadow-none"
+        className="w-full border-white/12 bg-[#111111] shadow-none"
       />
-    </ChatGenerativeUILayout>
+    </EmbeddedWidget>
   );
 };

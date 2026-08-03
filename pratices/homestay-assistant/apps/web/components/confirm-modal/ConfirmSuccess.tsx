@@ -4,8 +4,6 @@ import { formatPrice, formatShortDateForDisplay } from "@repo/utils";
 
 type ConfirmSuccessProps = {
   title: string;
-  description: string;
-  id?: string;
   name?: string;
   checkInDate?: string;
   checkOutDate?: string;
@@ -15,8 +13,6 @@ type ConfirmSuccessProps = {
 
 export const ConfirmSuccess = ({
   title,
-  description,
-  id,
   name,
   checkInDate,
   checkOutDate,
@@ -27,61 +23,54 @@ export const ConfirmSuccess = ({
     checkInDate || checkOutDate || guests != null || totalPrice != null;
 
   return (
-    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-      <div className="flex items-start gap-3">
-        <div className="flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-          <CheckCircle className="h-9 w-9 text-green-600 dark:text-green-500" />
+    <div className="p-3.5">
+      <div className="flex items-start gap-2.5">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
+          <CheckCircle className="size-4 text-emerald-400" aria-hidden />
         </div>
 
-        <div className="space-y-1">
-          {title && (
-            <h3 className="font-medium text-green-900 text-lg">{title}</h3>
-          )}
+        <div className="min-w-0 flex-1 space-y-1">
+          {title ? (
+            <h3 className="text-sm font-medium text-emerald-300">{title}</h3>
+          ) : null}
 
-          {description && (
-            <p className="mt-1 text-base text-green-700">{description}</p>
-          )}
+          {name ? (
+            <p className="text-xs text-zinc-300">{`Room: ${name}`}</p>
+          ) : null}
 
-          {(name) && (
-            <p className="mt-2 text-base text-green-600">
-              {`Room: ${name}`}
-             
-            </p>
-          )}
-          {(id) && (
-            <p className="mt-2 text-base text-green-600">
-              {`ID: ${id}`}
-            </p>
-          )}
+          {hasBookingDetails ? (
+            <dl className="mt-2 space-y-0.5 border-t border-white/8 pt-2 text-xs text-zinc-300">
+              <div className="flex gap-2">
+                {checkInDate ? (
+                  <div className="flex gap-2">
+                    <dt className="font-medium text-zinc-500">Check-in:</dt>
+                    <dd>{formatShortDateForDisplay(checkInDate)}</dd>
+                  </div>
+                ) : null}
+                {guests != null ? (
+                  <div className="flex gap-2">
+                    <dt className="font-medium text-zinc-500">Guests:</dt>
+                    <dd>{guests}</dd>
+                  </div>
+                ) : null}
+              </div>
+              <div className="flex gap-2">
+                {checkOutDate ? (
+                  <div className="flex gap-2">
+                    <dt className="font-medium text-zinc-500">Check-out:</dt>
+                    <dd>{formatShortDateForDisplay(checkOutDate)}</dd>
+                  </div>
+                ) : null}
 
-          {hasBookingDetails && (
-            <dl className="mt-3 space-y-1 text-sm text-green-800">
-              {checkInDate && (
-                <div className="flex gap-2">
-                  <dt className="font-medium">Check-in:</dt>
-                  <dd>{formatShortDateForDisplay(checkInDate)}</dd>
-                </div>
-              )}
-              {checkOutDate && (
-                <div className="flex gap-2">
-                  <dt className="font-medium">Check-out:</dt>
-                  <dd>{formatShortDateForDisplay(checkOutDate)}</dd>
-                </div>
-              )}
-              {guests != null && (
-                <div className="flex gap-2">
-                  <dt className="font-medium">Guests:</dt>
-                  <dd>{guests}</dd>
-                </div>
-              )}
-              {totalPrice != null && (
-                <div className="flex gap-2">
-                  <dt className="font-medium">Total Price:</dt>
-                  <dd>{formatPrice(totalPrice)}</dd>
-                </div>
-              )}
+                {totalPrice != null ? (
+                  <div className="flex gap-2">
+                    <dt className="font-medium text-zinc-500">Total:</dt>
+                    <dd>{formatPrice(totalPrice)}</dd>
+                  </div>
+                ) : null}
+              </div>
             </dl>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

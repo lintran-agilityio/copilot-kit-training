@@ -1,4 +1,6 @@
 export * from "./build-homestay-agent-context";
+export * from "./chat-icon-status";
+export * from "./chat-toggle-button";
 export * from "./message-spacing";
 export * from "./scroll";
 export * from "./normalize-messages";

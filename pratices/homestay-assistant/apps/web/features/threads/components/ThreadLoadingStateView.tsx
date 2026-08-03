@@ -18,7 +18,7 @@ export const ThreadLoadingStateView = ({
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-md border border-white/10 px-3 py-1.5 text-xs text-zinc-200 transition hover:bg-white/5"
+            className="rounded-md border border-white/10 px-3 py-1.5 text-xs text-zinc-200 transition hover:bg-white/5 cursor-pointer"
           >
             Try again
           </button>

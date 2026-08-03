@@ -3,6 +3,8 @@
 import { cn } from "@repo/utils";
 import Image, { type StaticImageData } from "next/image";
 import { useState } from "react";
+import { Users } from "lucide-react";
+
 import {
   FALLBACK_ROOM_IMAGE,
   resolveRoomImage,
@@ -13,8 +15,8 @@ type RoomImageProps = {
   name: string;
   level: number;
   levelColor: string;
-  availableSlots: number;
   compact?: boolean;
+  capacity: number;
 };
 
 export function RoomImage({
@@ -22,8 +24,8 @@ export function RoomImage({
   name,
   level,
   levelColor,
-  availableSlots,
   compact = false,
+  capacity,
 }: RoomImageProps) {
   const [url, setUrl] = useState<string | StaticImageData>(
     resolveRoomImage(imageUrl),
@@ -48,8 +50,8 @@ export function RoomImage({
         className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
 
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4">
-        <div className="flex items-center gap-2">
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3">
+        <div className="flex items-center justify-between w-full">
           <span
             className="h-4 w-1 rounded-full"
             style={{ backgroundColor: levelColor }}
@@ -57,11 +59,11 @@ export function RoomImage({
           <span className="text-[11px] font-medium tracking-[0.15em] text-white/90">
             LEVEL {level}
           </span>
+          <div className="flex shrink-0 items-center gap-1.5 text-zinc-400">
+            <Users className="size-3.5 text-emerald-300" />
+            <span className="text-xs text-emerald-300">{capacity}</span>
+          </div>
         </div>
-
-        <span className="rounded-full bg-emerald-500/90 px-2.5 py-1 text-[11px] font-medium text-black">
-          {availableSlots} free
-        </span>
       </div>
     </div>
   );

@@ -72,13 +72,12 @@ export const Room = ({
         name={room.name || "Room Image"}
         level={room.level}
         levelColor={room.levelColor}
-        availableSlots={room.availableSlots}
         compact={compact}
+        capacity={room.capacity}
       />
       <div className="flex-1">
         <RoomInfo
           name={room.name}
-          capacity={room.capacity}
           description={room.description}
           amenities={room.amenities}
           compact={compact}
@@ -93,7 +92,7 @@ export const Room = ({
         >
           {canViewOnPage ? (
             <p className="text-xs text-zinc-500 transition-colors group-hover:text-zinc-300">
-              View on page
+              View {!compact ? "on page" : ""}
             </p>
           ) : null}
           {canBookInChat ? (

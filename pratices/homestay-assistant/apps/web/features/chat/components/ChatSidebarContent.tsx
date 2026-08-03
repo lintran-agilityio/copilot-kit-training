@@ -22,6 +22,7 @@ import {
   ChatUserMessage,
   ChatWelcomeScreen,
   ChatAssistantMessage,
+  ChatLoadingCursor,
 } from "@/features/chat/components";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
@@ -206,6 +207,7 @@ export const ChatSidebarContent = ({
               assistantMessage:
                 ChatAssistantMessage as typeof CopilotChatAssistantMessage,
               userMessage: ChatUserMessage as typeof CopilotChatUserMessage,
+              cursor: ChatLoadingCursor,
             }}
             input={{
               showDisclaimer: false,

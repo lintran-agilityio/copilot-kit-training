@@ -27,7 +27,7 @@ export const HeaderChat = ({
   return (
     <div
       className={cn(
-        "flex items-start justify-between border-b border-white/10 px-5 py-4",
+        "flex items-start justify-between border-b border-white/10 px-5 py-4 pr-12",
         className,
       )}
     >
@@ -36,7 +36,7 @@ export const HeaderChat = ({
         <p className="mt-0.5 text-xs text-zinc-500">{subtitle}</p>
       </div>
 
-      <div className="flex items-center gap-3 pt-1">
+      <div className="flex items-center gap-3 pt-1 pr-4">
         {onReset ? (
           <button
             type="button"

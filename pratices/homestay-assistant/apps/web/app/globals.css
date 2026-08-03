@@ -273,6 +273,28 @@ a {
   color: var(--color-zinc-100);
 }
 
+/* ConversationItem bubbles stay fill-only; EmbeddedWidget uses bordered cards */
+[data-sidebar-chat] [data-chat-message-ui] {
+  box-shadow: none;
+}
+
+/* Embedded widgets are timeline blocks — never inherit message-bubble chrome */
+[data-sidebar-chat] [data-chat-embedded-widget],
+[data-sidebar-chat] [data-chat-tool-ui] {
+  background: transparent;
+}
+
+/* Fallback when `zoom` is unavailable — scale generic tool UI in chat */
+@supports not (zoom: 1) {
+  [data-sidebar-chat] [data-chat-embedded-widget] .chat-tool-card,
+  [data-sidebar-chat] [data-chat-tool-ui] .chat-tool-card {
+    transform: scale(0.92);
+    transform-origin: top left;
+    width: calc(100% / 0.92);
+    max-width: min(calc(100% / 0.92), 370px);
+  }
+}
+
 [data-sidebar-chat] [data-testid="copilot-add-menu-button"] {
   display: none;
 }

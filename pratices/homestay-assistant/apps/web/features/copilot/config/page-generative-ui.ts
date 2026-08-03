@@ -131,16 +131,33 @@ export const isHiddenAgentPrompt = (content: string) =>
   content.startsWith("Load all rooms.") ||
   /^Load rooms for \d{4}-\d{2}-\d{2}\./.test(content);
 
-export const getMessageTextContent = (
-  content: string | Array<{ type: string; text?: string }>,
-) => {
+/**
+ * Extracts plain text from AG-UI message content.
+ * Handles string, text-part arrays, and missing content (common on tool-only turns).
+ *
+ * @param content - Message content from the agent runtime
+ * @returns Concatenated text, or an empty string when content is absent
+ */
+export const getMessageTextContent = (content?: unknown) => {
   if (typeof content === "string") {
     return content;
   }
 
+  // Streaming / tool-only assistant turns often omit content entirely.
+  if (!Array.isArray(content)) {
+    return "";
+  }
+
   return content
-    .filter((part) => part.type === "text" && part.text)
-    .map((part) => part.text)
+    .filter((part) => {
+      if (!part || typeof part !== "object") {
+        return false;
+      }
+
+      const candidate = part as { type?: unknown; text?: unknown };
+      return candidate.type === "text" && Boolean(candidate.text);
+    })
+    .map((part) => String((part as { text: string }).text))
     .join("");
 };
 

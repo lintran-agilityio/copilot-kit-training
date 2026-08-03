@@ -84,7 +84,7 @@ export const ThreadListItem = ({
         type="button"
         onClick={() => onSelect(thread.id)}
         disabled={isLoading && isActive}
-        className="min-w-0 flex-1 text-left"
+        className="min-w-0 flex-1 text-left cursor-pointer"
       >
         <span className="block truncate font-medium">{title}</span>
         <span className="mt-0.5 block text-[10px] text-zinc-600">
@@ -97,7 +97,7 @@ export const ThreadListItem = ({
         aria-label={`Open options for ${title}`}
         aria-expanded={isMenuOpen}
         onClick={() => setIsMenuOpen((open) => !open)}
-        className="rounded-md p-1 text-zinc-500 opacity-0 transition hover:bg-white/10 hover:text-zinc-200 group-hover:opacity-100 data-[open=true]:opacity-100"
+        className="rounded-md p-1 text-zinc-500 opacity-0 transition hover:bg-white/10 hover:text-zinc-200 group-hover:opacity-100 data-[open=true]:opacity-100 cursor-pointer"
         data-open={isMenuOpen}
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden />

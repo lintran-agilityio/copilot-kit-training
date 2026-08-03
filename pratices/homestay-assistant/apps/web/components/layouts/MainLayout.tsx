@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ChevronLeft, MessageSquare } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 import { cn } from "@repo/utils";
@@ -9,6 +8,8 @@ import { AGENT_KEYS } from "@repo/constants";
 
 import { Navbar } from "@/components/layouts";
 import { NavbarTab } from "@repo/types";
+import { ChatToggleButton } from "@/features/chat/components";
+import { useChatIconStatus } from "@/features/chat/hooks";
 import {
   useActiveThread,
   useArchiveThread,
@@ -164,6 +165,12 @@ export const MainLayout = ({
     [renameThread],
   );
 
+  const chatIconStatus = useChatIconStatus({
+    agentId,
+    isChatOpen,
+    threadId: activeThreadId,
+  });
+
   return (
     <div className="mx-2 flex h-screen w-full justify-center bg-[#010507]">
       <div
@@ -191,30 +198,30 @@ export const MainLayout = ({
           <main className="app-scrollbar relative z-0 min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
             {children}
           </main>
+          {/* Closed: circular FAB over the room list (bottom-right). */}
+          {!isChatOpen ? (
+            <ChatToggleButton
+              isChatOpen={false}
+              status={chatIconStatus}
+              onToggle={() => setIsChatOpen(true)}
+              className="hidden lg:flex"
+            />
+          ) : null}
           <div
             className={cn(
-              "relative z-10 hidden h-full min-h-0 shrink-0 overflow-visible border-l border-white/10 bg-[#0a0a0a] transition-[width] duration-300 ease-in-out lg:block",
-              isChatOpen ? "w-[min(100%,520px)]" : "w-12",
+              "relative z-10 hidden h-full min-h-0 shrink-0 overflow-visible bg-[#0a0a0a] transition-[width] duration-300 ease-in-out lg:block",
+              isChatOpen
+                ? "w-[min(100%,520px)] border-l border-white/10"
+                : "w-0 border-l-0",
             )}
           >
-            <button
-              type="button"
-              onClick={() => setIsChatOpen((open) => !open)}
-              aria-expanded={isChatOpen}
-              aria-label={isChatOpen ? "Close assistant" : "Open assistant"}
-              className={cn(
-                "absolute z-20 flex size-8 items-center justify-center rounded-md border border-white/10 bg-[#141414] text-zinc-300 shadow-lg transition hover:border-white/25 hover:bg-white/5 hover:text-white",
+            {isChatOpen ? (
+              <ChatToggleButton
                 isChatOpen
-                  ? "-left-4 top-1/2 -translate-y-1/2"
-                  : "left-1/2 top-4 -translate-x-1/2",
-              )}
-            >
-              {isChatOpen ? (
-                <ChevronLeft className="size-4" aria-hidden />
-              ) : (
-                <MessageSquare className="size-4" aria-hidden />
-              )}
-            </button>
+                  status={chatIconStatus}
+                  onToggle={() => setIsChatOpen(false)}
+                />
+            ) : null}
             <div
               className={cn(
                 "h-full overflow-hidden transition-opacity duration-200",

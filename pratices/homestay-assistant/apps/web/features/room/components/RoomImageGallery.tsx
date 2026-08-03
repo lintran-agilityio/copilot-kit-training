@@ -98,7 +98,7 @@ export const RoomImageGallery = ({
               aria-label={`View image ${index + 1}`}
               onClick={() => setActiveIndex(index)}
               className={cn(
-                "relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-colors",
+                "relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-colors cursor-pointer",
                 index === activeIndex
                   ? "border-emerald-400"
                   : "border-transparent opacity-70 hover:opacity-100"

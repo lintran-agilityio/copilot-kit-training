@@ -68,7 +68,7 @@ export const DateSelected = ({
           aria-label={`Previous ${label.toLowerCase()} dates`}
           disabled={disabled}
           onClick={() => setWindowStart((current) => addDays(current, -7))}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none cursor-pointer"
         >
           <ChevronLeft className="size-4" />
         </button>
@@ -102,7 +102,7 @@ export const DateSelected = ({
           aria-label={`Next ${label.toLowerCase()} dates`}
           disabled={disabled}
           onClick={() => setWindowStart((current) => addDays(current, 7))}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full cursor-pointer border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none"
         >
           <ChevronRight className="size-4" />
         </button>

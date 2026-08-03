@@ -11,22 +11,30 @@ import {
   isHiddenAgentPrompt,
   isPageOnlyGenerativeTool,
 } from "@/features/copilot/config";
+
+import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
+import { ConversationItem } from "@/features/chat/components/ConversationItem";
+
 import {
   getMessageTopSpacing,
   isSupersededByToolCard,
 } from "@/features/chat/utils";
+
 import { cn } from "@repo/utils";
 
 const isResponseToHiddenPrompt = (
   messages: CopilotChatAssistantMessageProps["messages"],
+
   messageId: string,
 ) => {
   const index = messages?.findIndex((item) => item.id === messageId) ?? -1;
+
   if (index <= 0 || !messages) {
     return false;
   }
 
   const previousMessage = messages[index - 1];
+
   if (previousMessage?.role !== "user") {
     return false;
   }
@@ -42,6 +50,7 @@ const isResponseToHiddenPrompt = (
 
 const ChatToolCallsView = ({
   message,
+
   messages,
 }: CopilotChatToolCallsViewProps) => {
   const visibleToolCalls = getChatVisibleToolCalls(message.toolCalls);
@@ -60,9 +69,13 @@ const ChatToolCallsView = ({
 
 export const ChatAssistantMessage = ({
   className,
+
   message,
+
   messages,
+
   toolbarVisible = false,
+
   ...props
 }: CopilotChatAssistantMessageProps) => {
   if (isResponseToHiddenPrompt(messages, message.id)) {
@@ -70,23 +83,30 @@ export const ChatAssistantMessage = ({
   }
 
   const chatToolCalls = getChatVisibleToolCalls(message.toolCalls);
+
   const rawTextContent = message.content?.trim() ?? "";
+
   const hasHiddenToolCalls = message.toolCalls?.some((toolCall) => {
     const toolName = toolCall.function?.name;
+
     return toolName ? isPageOnlyGenerativeTool(toolName) : false;
   });
 
   // A rendered success card already answers the guest; drop the duplicate text.
+
   const textContent = isSupersededByToolCard(messages, message.id)
     ? ""
     : rawTextContent;
 
-  const hasVisibleContent =
-    Boolean(textContent) || chatToolCalls.length > 0;
+  const hasVisibleContent = Boolean(textContent) || chatToolCalls.length > 0;
 
   if (!hasVisibleContent && !hasHiddenToolCalls) {
     return null;
   }
+
+  const hasConversation = Boolean(textContent);
+
+  const hasWidgets = chatToolCalls.length > 0;
 
   return (
     <CopilotChatAssistantMessage
@@ -99,20 +119,32 @@ export const ChatAssistantMessage = ({
     >
       {({ markdownRenderer, toolCallsView }) => (
         <div
-          data-chat-message-row="assistant"
+          data-chat-timeline-entry="assistant"
           className={cn(
-            "flex items-start gap-3",
-            getMessageTopSpacing(messages, message.id, "assistant"),
+            "flex flex-col gap-2.5",
+
+            getMessageTopSpacing(messages, message.id, "assistant", {
+              widgetOnly: hasWidgets && !hasConversation,
+            }),
           )}
         >
-          <div className="flex min-w-0 flex-1 flex-col gap-3">
-            {textContent && markdownRenderer ? (
-              <div className="chat-assistant-bubble max-w-[85%] rounded-2xl bg-zinc-800/80 px-4 py-3 text-sm leading-relaxed text-zinc-100">
+          {hasConversation && markdownRenderer ? (
+            <div
+              data-chat-message-row="assistant"
+              className="flex items-start justify-start gap-3 px-3"
+            >
+              <ChatAgentAvatar />
+              <ConversationItem role="assistant">
                 {markdownRenderer}
-              </div>
-            ) : null}
-            {toolCallsView}
-          </div>
+              </ConversationItem>
+            </div>
+          ) : null}
+
+          {toolCallsView ? (
+            <div data-chat-embedded-slot className="w-full">
+              {toolCallsView}
+            </div>
+          ) : null}
         </div>
       )}
     </CopilotChatAssistantMessage>

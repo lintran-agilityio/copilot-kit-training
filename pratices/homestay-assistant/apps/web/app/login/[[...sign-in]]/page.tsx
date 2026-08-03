@@ -9,7 +9,24 @@ const LoginPage = () => {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="flex flex-col items-center justify-center">
-        <SignIn routing="path" path={ROUTES.LOGIN} />
+        <SignIn
+          routing="path"
+          path={ROUTES.LOGIN}
+          appearance={{
+            options: {
+              unsafe_disableDevelopmentModeWarnings: true,
+            },
+            elements: {
+              // Hides "Secured by Clerk" footer branding (dev workaround;
+              // production removal requires Clerk Dashboard → Branding).
+              footer: {
+                "& > :last-child": {
+                  display: "none",
+                },
+              },
+            },
+          }}
+        />
       </div>
     </main>
   );

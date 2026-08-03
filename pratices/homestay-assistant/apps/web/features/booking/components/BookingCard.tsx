@@ -55,7 +55,7 @@ export const BookingCard = ({
   return (
     <article
       className={cn(
-        "group flex h-full flex-col min-w-[280px] max-w-[340px] flex-1 overflow-hidden rounded-xl border border-white/8 bg-[#111111] transition-colors hover:border-white/15",
+        "group flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/8 bg-[#111111] transition-colors hover:border-white/15",
         className,
       )}
     >
@@ -64,7 +64,7 @@ export const BookingCard = ({
           src={url}
           alt={room?.name ?? "Booked room"}
           fill
-          sizes="(max-width: 768px) 100vw, 340px"
+          sizes="(max-width: 768px) 100vw, 300px"
           onError={() => {
             setUrl(FALLBACK_ROOM_IMAGE);
           }}

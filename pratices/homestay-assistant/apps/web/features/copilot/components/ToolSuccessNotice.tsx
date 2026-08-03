@@ -4,9 +4,9 @@ import { useEffect, useRef } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { ConfirmSuccess } from "@/components/confirm-modal";
-import { ChatGenerativeUILayout } from "@/features/chat/components";
+import { EmbeddedWidget } from "@/features/chat/components";
 import { Loading } from "@repo/components";
-import { cn, parseToolResult } from "@repo/utils";
+import { parseToolResult } from "@repo/utils";
 
 import type { ToolRendererProps } from "@/features/copilot/types";
 
@@ -22,7 +22,8 @@ export type ToolSuccessDisplayResult = {
 export type ToolSuccessNoticeProps<TResult extends ToolSuccessDisplayResult> =
   ToolRendererProps<TResult> & {
     title: string;
-    description: string;
+    /** Kept for call-site compatibility; card UI no longer shows a description line. */
+    description?: string;
     isSuccess: (result?: TResult | string | null) => boolean;
     onSuccess?: () => void;
   };
@@ -31,7 +32,6 @@ export function ToolSuccessNotice<TResult extends ToolSuccessDisplayResult>({
   status,
   result,
   title,
-  description,
   isSuccess,
   onSuccess,
 }: ToolSuccessNoticeProps<TResult>) {
@@ -53,13 +53,9 @@ export function ToolSuccessNotice<TResult extends ToolSuccessDisplayResult>({
     status === ToolCallStatus.InProgress
   ) {
     return (
-      <ChatGenerativeUILayout
-        className={cn(
-          "rounded-xl border border-white/10 bg-white/[0.02] px-4 py-6 text-sm text-zinc-400",
-        )}
-      >
+      <EmbeddedWidget className="px-4 py-6 text-zinc-400">
         <Loading />
-      </ChatGenerativeUILayout>
+      </EmbeddedWidget>
     );
   }
 
@@ -67,10 +63,9 @@ export function ToolSuccessNotice<TResult extends ToolSuccessDisplayResult>({
     const parsed = parseToolResult<TResult>(result);
 
     return (
-      <ChatGenerativeUILayout>
+      <EmbeddedWidget>
         <ConfirmSuccess
           title={title}
-          description={description}
           id={parsed?.id}
           name={parsed?.room?.name}
           checkInDate={parsed?.checkInDate}
@@ -78,7 +73,7 @@ export function ToolSuccessNotice<TResult extends ToolSuccessDisplayResult>({
           guests={parsed?.guests}
           totalPrice={parsed?.totalPrice}
         />
-      </ChatGenerativeUILayout>
+      </EmbeddedWidget>
     );
   }
 

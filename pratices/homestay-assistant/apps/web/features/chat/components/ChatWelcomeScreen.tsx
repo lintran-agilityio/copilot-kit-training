@@ -4,6 +4,8 @@ import {
 } from "@copilotkit/react-core/v2";
 
 import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
+import { ConversationItem } from "@/features/chat/components/ConversationItem";
+
 import { cn } from "@repo/utils";
 
 type ChatWelcomeScreenProps = React.ComponentProps<
@@ -12,7 +14,9 @@ type ChatWelcomeScreenProps = React.ComponentProps<
 
 export const ChatWelcomeScreen = ({
   input,
+
   suggestionView,
+
   className,
 }: ChatWelcomeScreenProps) => {
   const labels = useCopilotChatConfiguration()?.labels;
@@ -24,13 +28,17 @@ export const ChatWelcomeScreen = ({
     >
       <div
         data-chat-messages
-        className="app-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pt-6"
+        className="app-scrollbar min-h-0 flex-1 overflow-y-auto pt-6"
       >
-        <div className="flex items-start gap-3">
+        <div
+          data-chat-message-row="assistant"
+          className="flex items-start gap-3 px-3"
+        >
           <ChatAgentAvatar />
-          <p className="max-w-[85%] rounded-2xl bg-zinc-800/80 px-4 py-3 text-sm leading-relaxed text-zinc-100">
+
+          <ConversationItem role="assistant">
             {labels?.welcomeMessageText}
-          </p>
+          </ConversationItem>
         </div>
       </div>
 
@@ -39,6 +47,7 @@ export const ChatWelcomeScreen = ({
         className="shrink-0 border-t border-white/5 bg-[#0a0a0a]"
       >
         {suggestionView}
+
         {input}
       </div>
     </div>

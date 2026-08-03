@@ -3,7 +3,7 @@
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { BookingUnavailable } from "@/components/confirm-modal";
-import { ChatGenerativeUILayout } from "@/features/chat/components";
+import { EmbeddedWidget } from "@/features/chat/components";
 import { parseToolResult } from "@repo/utils";
 import { CheckRoomAvailabilityToolProps, CheckRoomAvailabilityResult } from "@/features/booking/types";
 import {
@@ -41,7 +41,7 @@ export const BookingUnavailableNotice = ({
   }
 
   return (
-    <ChatGenerativeUILayout>
+    <EmbeddedWidget>
       <BookingUnavailable
         roomName={roomName}
         checkInDate={checkInDate}
@@ -50,6 +50,6 @@ export const BookingUnavailableNotice = ({
         reason={reason}
         capacity={availabilityResult?.room?.capacity}
       />
-    </ChatGenerativeUILayout>
+    </EmbeddedWidget>
   );
 };
