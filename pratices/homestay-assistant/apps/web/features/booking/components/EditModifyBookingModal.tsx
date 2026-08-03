@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { CalendarCheck } from "lucide-react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
+import {
+  HOMESTAY_AGENT_TASK_STATUS,
+  HOMESTAY_AGENT_TASK_TYPE,
+} from "@repo/constants";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -69,7 +73,10 @@ export const EditModifyBookingModal = ({
   useReportHomestayAgentWorkflow(
     ready,
     "modify-flow",
-    { type: "manage", status: "in-progress" },
+    {
+      type: HOMESTAY_AGENT_TASK_TYPE.MANAGE,
+      status: HOMESTAY_AGENT_TASK_STATUS.IN_PROGRESS,
+    },
     ready ? { type: "booking", id: bookingId } : undefined,
   );
   const room = args.room;

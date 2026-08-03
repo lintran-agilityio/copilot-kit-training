@@ -22,10 +22,13 @@ type HomestayAgentUiStore = {
   /** LIFO stack of room ids from mounted detail UI (supports multiple chat cards). */
   focusedRoomStack: string[];
   workflowEntries: HomestayAgentWorkflowEntry[];
+  /** Transient: set after create_booking succeeds; cleared on the next agent run. */
+  bookingJustCompleted: boolean;
   pushFocusedRoom: (roomId: string) => void;
   popFocusedRoom: (roomId: string) => void;
   pushWorkflow: (entry: HomestayAgentWorkflowEntry) => void;
   popWorkflow: (key: string) => void;
+  setBookingJustCompleted: (value: boolean) => void;
   resetWorkflow: () => void;
   reset: () => void;
 };
@@ -33,6 +36,7 @@ type HomestayAgentUiStore = {
 const initialState = {
   focusedRoomStack: [] as string[],
   workflowEntries: [] as HomestayAgentWorkflowEntry[],
+  bookingJustCompleted: false,
 };
 
 export const selectFocusedRoomId = (
@@ -71,6 +75,8 @@ export const useHomestayAgentUiStore = create<HomestayAgentUiStore>()(
       set((state) => ({
         workflowEntries: state.workflowEntries.filter((item) => item.key !== key),
       })),
+
+    setBookingJustCompleted: (value) => set({ bookingJustCompleted: value }),
 
     resetWorkflow: () => set({ workflowEntries: [] }),
 

@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 import { cn } from "@repo/utils";
@@ -8,6 +9,7 @@ import { AGENT_KEYS } from "@repo/constants";
 
 import { Navbar } from "@/components/layouts";
 import { NavbarTab } from "@repo/types";
+import { ROUTES } from "@/constants";
 import { ChatToggleButton } from "@/features/chat/components";
 import { useChatIconStatus } from "@/features/chat/hooks";
 import {
@@ -50,14 +52,12 @@ const ThreadSidebar = dynamic(
 type MainLayoutProps = {
   children: React.ReactNode;
   className?: string;
-  activeTab?: NavbarTab.HOME | NavbarTab.MY_BOOKINGS;
 };
 
-export const MainLayout = ({
-  children,
-  className,
-  activeTab = NavbarTab.HOME,
-}: MainLayoutProps) => {
+export const MainLayout = ({ children, className }: MainLayoutProps) => {
+  const pathname = usePathname();
+  const activeTab =
+    pathname === ROUTES.BOOKINGS ? NavbarTab.MY_BOOKINGS : NavbarTab.HOME;
   const [isChatOpen, setIsChatOpen] = useState(false);
   const agentId = AGENT_KEYS.MANAGE_ASSISTANT;
   const { scopeKey, activeThreadId, setActiveThread } = useActiveThread({

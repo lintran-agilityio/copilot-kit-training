@@ -17,9 +17,9 @@ type UseResetThreadOptions = {
  * Clears the conversation: archives the active Intelligence thread and starts
  * an empty draft thread.
  *
- * Clearing only `agent.messages` is not enough — the chat sidebar remounts on
- * every route change and re-hydrates the same thread id from storage, so the
- * conversation would come back on the next screen (and after a reload).
+ * Clearing only `agent.messages` is not enough — the same thread id stays
+ * active in the thread store, so a later CopilotChat connect/replay (or a
+ * full reload) would bring the archived conversation back.
  */
 export const useResetThread = ({
   agentId,

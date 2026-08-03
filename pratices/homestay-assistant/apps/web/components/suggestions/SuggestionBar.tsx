@@ -1,4 +1,8 @@
-import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
+import {
+  useAgent,
+  useCopilotKit,
+  UseAgentUpdate,
+} from "@copilotkit/react-core/v2";
 
 import { ChatSuggestion } from "@/features/chat/types";
 import { scheduleScrollChatToEnd } from "@/features/chat/utils";
@@ -18,11 +22,16 @@ export const SuggestionBar = ({
 }: SuggestionBarProps) => {
   const { agent } = useAgent({
     agentId,
+    updates: [UseAgentUpdate.OnRunStatusChanged],
   });
 
   const { copilotkit } = useCopilotKit();
 
   const handleSuggestionClick = async (prompt: string) => {
+    if (agent.isRunning) {
+      return;
+    }
+
     if (threadId) {
       agent.threadId = threadId;
     }
@@ -42,7 +51,7 @@ export const SuggestionBar = ({
     }
   };
 
-  if (!suggestions.length) {
+  if (agent.isRunning || !suggestions.length) {
     return null;
   }
 

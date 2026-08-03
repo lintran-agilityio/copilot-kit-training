@@ -1,7 +1,10 @@
 import { useMemo } from "react";
-import { useSuggestions } from "@copilotkit/react-core/v2";
+import { useAgent, useSuggestions } from "@copilotkit/react-core/v2";
 
-import { MAX_SUGGESTION_PILLS } from "@/features/chat/constants";
+import {
+  CHAT_SUGGESTIONS_AGENT_UPDATES,
+  MAX_SUGGESTION_PILLS,
+} from "@/features/chat/constants";
 import { ChatSuggestion } from "@/features/chat/types";
 import { normalize } from "@/features/chat/utils";
 
@@ -12,9 +15,19 @@ type UseChatSuggestionsOptions = {
 export const useChatSuggestions = ({
   agentId,
 }: UseChatSuggestionsOptions): ChatSuggestion[] => {
+  const { agent } = useAgent({
+    agentId,
+    updates: [...CHAT_SUGGESTIONS_AGENT_UPDATES],
+  });
   const { suggestions } = useSuggestions({ agentId });
 
   return useMemo(() => {
+    // Match CopilotChatView: hide pills while the agent is running.
+    // Clearing suggestion config alone leaves previously published pills in the store.
+    if (agent.isRunning) {
+      return [];
+    }
+
     const seen = new Set<string>();
     return suggestions.reduce<ChatSuggestion[]>(
       (result, suggestion) => {
@@ -45,5 +58,5 @@ export const useChatSuggestions = ({
       },
       [],
     ).slice(0, MAX_SUGGESTION_PILLS);
-  }, [suggestions]);
+  }, [agent.isRunning, suggestions]);
 };

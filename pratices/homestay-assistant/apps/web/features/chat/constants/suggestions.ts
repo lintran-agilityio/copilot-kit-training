@@ -1,5 +1,3 @@
-import type { HomestayAgentContext } from "@/features/chat/types";
-import { buildBookingFormMessage } from "@/features/booking/utils/build-messages";
 import { PAGE_ROOMS_PROMPT_PREFIX } from "@/features/copilot/config/page-generative-ui";
 
 export type StaticSuggestion = {
@@ -7,183 +5,133 @@ export type StaticSuggestion = {
   message: string;
 };
 
-export const MAX_SUGGESTION_PILLS = 3;
-
-const isActiveWorkflowTask = (context: HomestayAgentContext): boolean => {
-  const task = context.task;
-  if (!task) {
-    return false;
-  }
-
-  if (task.type === "book" || task.type === "cancel") {
-    return task.status !== "idle";
-  }
-
-  return task.type === "manage" && task.status !== "idle";
+/** Guest session signals used when no active workflow is driving pills. */
+export type SuggestionGuestState = {
+  hasActiveBookings: boolean;
+  hasSearchedRooms: boolean;
+  bookingJustCompleted: boolean;
 };
 
-export const getWorkflowStaticSuggestions = (
-  context: HomestayAgentContext,
-  roomName?: string | null,
-): StaticSuggestion[] => {
-  const task = context.task;
-  if (!task || !isActiveWorkflowTask(context)) {
-    return [];
-  }
+export const MAX_SUGGESTION_PILLS = 5;
 
-  const roomId = context.focus?.type === "room" ? context.focus.id : undefined;
-  const name = roomName?.trim() || "this room";
+/** Shared pills — title = meaning, message = concrete agent/UI action. */
+export const SUGGESTION = {
+  myBookings: {
+    title: "My bookings",
+    message: "Show my bookings.",
+  },
 
-  if (task.type === "book") {
-    if (task.status === "awaiting-confirmation") {
-      return [
-        {
-          title: "Change dates",
-          message: "I want to change my booking dates.",
-        },
-        {
-          title: "Change guests",
-          message: "I want to change the number of guests.",
-        },
-        {
-          title: "Browse rooms",
-          message: "Show me other available rooms.",
-        },
-      ];
-    }
+  viewBooking: {
+    title: "View booking",
+    message: "Show my bookings.",
+  },
 
-    if (task.status === "in-progress") {
-      const suggestions: StaticSuggestion[] = [];
+  findWeekendRooms: {
+    title: "This weekend",
+    message: "Find available rooms for this weekend.",
+  },
 
-      if (roomId) {
-        suggestions.push({
-          title: "Open booking form",
-          message: buildBookingFormMessage(roomId, name),
-        });
-      }
+  availableToday: {
+    title: "Available today",
+    message: "Show rooms available today.",
+  },
 
-      suggestions.push({
-        title: "Browse rooms",
-        message: "Show me other available rooms.",
-      });
+  availableTomorrow: {
+    title: "Tomorrow",
+    message: "Show rooms available tomorrow.",
+  },
 
-      return suggestions;
-    }
+  showMoreRooms: {
+    title: "Show more rooms",
+    message: "Show me more available rooms.",
+  },
 
-    if (task.status === "completed") {
-      return [
-        { title: "My bookings", message: "Show my bookings." },
-        {
-          title: "Book another",
-          message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
-        },
-      ];
-    }
-  }
+  familyRooms: {
+    title: "Family rooms",
+    message: "Show rooms for 4 or more guests.",
+  },
 
-  if (task.type === "cancel") {
-    return [
-      {
-        title: "Keep booking",
-        message: "Never mind, keep my booking.",
-      },
-      {
-        title: "Browse rooms",
-        message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
-      },
-    ];
-  }
+  luxuryRooms: {
+    title: "Luxury suites",
+    message: "Show your premium and luxury rooms",
+  },
 
-  if (task.type === "manage" && task.status === "in-progress") {
-    return [
-      {
-        title: "My bookings",
-        message: "Show my bookings.",
-      },
-      {
-        title: "Book a room",
-        message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
-      },
-    ];
-  }
+  cheapestRooms: {
+    title: "Best price",
+    message: "Show the most affordable rooms.",
+  },
 
-  return [];
-};
+  roomAmenities: {
+    title: "Amenities",
+    message: "What amenities do your rooms include?",
+  },
 
-export const getPageStaticSuggestions = (
-  context: HomestayAgentContext,
-  roomName?: string | null,
-): StaticSuggestion[] => {
-  const roomId = context.focus?.type === "room" ? context.focus.id : undefined;
-  const name = roomName?.trim() || "this room";
+  helpBooking: {
+    title: "How to book",
+    message: "How do I book a room?",
+  },
+  otherRooms: {
+    title: "Other rooms",
+    message: "Show me other available rooms.",
+  },
+  changeDates: {
+    title: "Change dates",
+    message: "I want to change my stay dates.",
+  },
+  changeGuests: {
+    title: "Change guests",
+    message: "I want to change the number of guests.",
+  },
+  keepBooking: {
+    title: "Keep booking",
+    message: "Never mind, keep my booking.",
+  },
+  modifyBooking: {
+    title: "Modify booking",
+    message: "I want to modify one of my bookings.",
+  },
+  cancelBooking: {
+    title: "Cancel booking",
+    message: "I want to cancel one of my bookings.",
+  },
+  bookAnother: {
+    title: "Book another room",
+    message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
+  },
+  helpDates: {
+    title: "Help with dates",
+    message: "Help me choose check-in and check-out dates.",
+  },
+  modifyRoom: {
+    title: "Modify room",
+    message: "I want to change the room for one of my bookings.",
+  },
+} as const satisfies Record<string, StaticSuggestion>;
 
-  switch (context.screen.name) {
-    case "home":
-      return [
-        {
-          title: "Browse rooms",
-          message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
-        },
-        { title: "My bookings", message: "Show my bookings." },
-        {
-          title: "Find rooms",
-          message: "Find available rooms for this weekend.",
-        },
-      ];
+export const FIRST_VISIT_SUGGESTIONS: StaticSuggestion[] = [
+  SUGGESTION.findWeekendRooms,
+  SUGGESTION.luxuryRooms,
+  SUGGESTION.helpBooking,
+  SUGGESTION.availableToday,
+];
 
-    case "room-detail":
-      if (!roomId) {
-        return [
-          {
-            title: "Browse rooms",
-            message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
-          },
-        ];
-      }
+export const ACTIVE_BOOKINGS_SUGGESTIONS: StaticSuggestion[] = [
+  SUGGESTION.myBookings,
+  SUGGESTION.modifyBooking,
+  SUGGESTION.cancelBooking,
+  SUGGESTION.bookAnother,
+];
 
-      return [
-        {
-          title: "Book this room",
-          message: buildBookingFormMessage(roomId, name),
-        },
-        {
-          title: "Amenities",
-          message: `Tell me about ${name} amenities and details (roomId: ${roomId}).`,
-        },
-      ];
+export const AFTER_SEARCH_SUGGESTIONS: StaticSuggestion[] = [
+  SUGGESTION.showMoreRooms,
+  SUGGESTION.familyRooms,
+  SUGGESTION.cheapestRooms,
+  SUGGESTION.roomAmenities,
+];
 
-    case "booking-form":
-      return [
-        {
-          title: "Browse rooms",
-          message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
-        },
-        { title: "My bookings", message: "Show my bookings." },
-      ];
-
-    case "bookings":
-      return [
-        {
-          title: "Book a room",
-          message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
-        },
-        {
-          title: "Find rooms",
-          message: "Find available rooms for this weekend.",
-        },
-      ];
-  }
-};
-
-/** Workflow static suggestions take precedence over page-level pills. */
-export const getPriorityStaticSuggestions = (
-  context: HomestayAgentContext,
-  roomName?: string | null,
-): StaticSuggestion[] => {
-  const workflow = getWorkflowStaticSuggestions(context, roomName);
-  const source = workflow.length
-    ? workflow
-    : getPageStaticSuggestions(context, roomName);
-
-  return source.slice(0, MAX_SUGGESTION_PILLS);
-};
+export const AFTER_BOOKING_SUGGESTIONS: StaticSuggestion[] = [
+  SUGGESTION.viewBooking,
+  SUGGESTION.bookAnother,
+  SUGGESTION.modifyBooking,
+  SUGGESTION.cancelBooking,
+];

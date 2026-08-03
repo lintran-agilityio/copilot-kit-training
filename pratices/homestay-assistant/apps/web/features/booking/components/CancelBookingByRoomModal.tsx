@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
+import {
+  HOMESTAY_AGENT_TASK_STATUS,
+  HOMESTAY_AGENT_TASK_TYPE,
+} from "@repo/constants";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -63,8 +67,8 @@ export const CancelBookingByRoomModal = ({
   const isAwaitingCancel = isHitlToolAwaitingUser(status);
 
   useReportHomestayAgentWorkflow(isAwaitingCancel, "cancel-flow", {
-    type: "cancel",
-    status: "awaiting-confirmation",
+    type: HOMESTAY_AGENT_TASK_TYPE.CANCEL,
+    status: HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION,
   });
 
   if (!isHitlToolAwaitingUser(status)) {

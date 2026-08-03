@@ -2,8 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { NavbarTab, PREFIX_URL } from "@repo/types";
-import { MainLayout } from "@/components/layouts";
+import { PREFIX_URL } from "@repo/types";
 import { PageHeader } from "@/components/common";
 import { BookingList } from "@/features/booking/components";
 import { getMyBookings } from "@/features/booking/services";
@@ -25,7 +24,7 @@ export const BookingsPageClient = ({ userId }: BookingsPageClientProps) => {
   });
 
   return (
-    <MainLayout activeTab={NavbarTab.MY_BOOKINGS}>
+    <>
       <PageHeader label="MY BOOKINGS" title="Your reservations" />
       <BookingList
         bookings={bookings}
@@ -34,6 +33,6 @@ export const BookingsPageClient = ({ userId }: BookingsPageClientProps) => {
         isLoading={isLoading}
         error={error ?? undefined}
       />
-    </MainLayout>
+    </>
   );
 };

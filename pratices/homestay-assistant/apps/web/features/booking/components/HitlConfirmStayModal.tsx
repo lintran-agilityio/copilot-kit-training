@@ -2,6 +2,10 @@
 
 import type { ReactNode } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
+import {
+  HOMESTAY_AGENT_TASK_STATUS,
+  HOMESTAY_AGENT_TASK_TYPE,
+} from "@repo/constants";
 
 import { ConfirmBookingDialog } from "@/components/confirm-modal";
 import { useHitlConfirmDialog } from "@/features/booking/hooks";
@@ -90,7 +94,10 @@ const HitlConfirmCreateStayModal = ({
   useReportHomestayAgentWorkflow(
     isVisible && hasArgs,
     "confirm-booking",
-    { type: "book", status: "awaiting-confirmation" },
+    {
+      type: HOMESTAY_AGENT_TASK_TYPE.BOOK,
+      status: HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION,
+    },
     hasArgs ? { type: "room", id: args.room.id } : undefined,
   );
 
@@ -155,7 +162,10 @@ const HitlConfirmModifyStayModal = ({
   useReportHomestayAgentWorkflow(
     isVisible && hasArgs,
     "confirm-modify-booking",
-    { type: "manage", status: "awaiting-confirmation" },
+    {
+      type: HOMESTAY_AGENT_TASK_TYPE.MANAGE,
+      status: HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION,
+    },
     hasArgs ? { type: "booking", id: args.bookingId } : undefined,
   );
 

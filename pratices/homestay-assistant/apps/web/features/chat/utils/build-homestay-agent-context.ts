@@ -1,3 +1,8 @@
+import {
+  HOMESTAY_AGENT_SCREEN,
+  HOMESTAY_AGENT_TASK_STATUS,
+  HOMESTAY_AGENT_TASK_TYPE,
+} from "@repo/constants";
 import { ROUTES } from "@/constants";
 import type { HomestayAgentContext } from "@/features/chat/types";
 import type { HomestayAgentWorkflowEntry } from "@/features/chat/stores/homestay-agent-ui-store";
@@ -22,9 +27,12 @@ export const buildHomestayAgentContext = (
 
   if (pathname === ROUTES.BOOKINGS) {
     return {
-      screen: { name: "bookings" },
+      screen: { name: HOMESTAY_AGENT_SCREEN.BOOKINGS },
       ...(active?.focus ? { focus: active.focus } : {}),
-      task: active?.task ?? { type: "manage", status: "idle" },
+      task: active?.task ?? {
+        type: HOMESTAY_AGENT_TASK_TYPE.MANAGE,
+        status: HOMESTAY_AGENT_TASK_STATUS.IDLE,
+      },
     };
   }
 
@@ -35,8 +43,11 @@ export const buildHomestayAgentContext = (
 
   if (!roomId && !active) {
     return {
-      screen: { name: "home" },
-      task: { type: "discover", status: "idle" },
+      screen: { name: HOMESTAY_AGENT_SCREEN.HOME },
+      task: {
+        type: HOMESTAY_AGENT_TASK_TYPE.DISCOVER,
+        status: HOMESTAY_AGENT_TASK_STATUS.IDLE,
+      },
     };
   }
 
@@ -47,21 +58,28 @@ export const buildHomestayAgentContext = (
 
   const isBookingForm =
     active?.focus?.type === "booking" ||
-    active?.task.type === "book" ||
-    (active?.task.type === "manage" && active.task.status !== "idle") ||
+    active?.task.type === HOMESTAY_AGENT_TASK_TYPE.BOOK ||
+    (active?.task.type === HOMESTAY_AGENT_TASK_TYPE.MANAGE &&
+      active.task.status !== HOMESTAY_AGENT_TASK_STATUS.IDLE) ||
     hasDraftForRoom;
 
   const screen = isBookingForm
-    ? { name: "booking-form" as const }
-    : { name: "room-detail" as const };
+    ? { name: HOMESTAY_AGENT_SCREEN.BOOKING_FORM }
+    : { name: HOMESTAY_AGENT_SCREEN.ROOM_DETAIL };
 
   const focus =
     active?.focus ??
     (roomId ? { type: "room" as const, id: roomId } : undefined);
 
   const defaultTask = hasDraftForRoom
-    ? ({ type: "book" as const, status: "idle" as const })
-    : ({ type: "discover" as const, status: "idle" as const });
+    ? {
+        type: HOMESTAY_AGENT_TASK_TYPE.BOOK,
+        status: HOMESTAY_AGENT_TASK_STATUS.IDLE,
+      }
+    : {
+        type: HOMESTAY_AGENT_TASK_TYPE.DISCOVER,
+        status: HOMESTAY_AGENT_TASK_STATUS.IDLE,
+      };
 
   return {
     screen,

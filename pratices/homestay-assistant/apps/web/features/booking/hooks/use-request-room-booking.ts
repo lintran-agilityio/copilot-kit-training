@@ -4,7 +4,11 @@ import { useUser } from "@clerk/nextjs";
 import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { useCallback, useRef, useState } from "react";
 
-import { AGENT_KEYS } from "@repo/constants";
+import {
+  AGENT_KEYS,
+  HOMESTAY_AGENT_TASK_STATUS,
+  HOMESTAY_AGENT_TASK_TYPE,
+} from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
 import { useBookingStore } from "@/features/booking/stores/booking-store";
@@ -45,7 +49,10 @@ export const useRequestRoomBooking = () => {
       if (roomId) {
         useHomestayAgentUiStore.getState().pushWorkflow({
           key: BOOK_FLOW_KEY,
-          task: { type: "book", status: "in-progress" },
+          task: {
+            type: HOMESTAY_AGENT_TASK_TYPE.BOOK,
+            status: HOMESTAY_AGENT_TASK_STATUS.IN_PROGRESS,
+          },
           focus: { type: "room", id: roomId },
         });
       }

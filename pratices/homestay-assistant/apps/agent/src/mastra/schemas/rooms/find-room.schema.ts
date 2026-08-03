@@ -6,7 +6,9 @@ export const findRoomInputSchema = z.object({
   name: z
     .string()
     .optional()
-    .describe("Partial room name to search (case-insensitive)"),
+    .describe(
+      "Partial room NAME only (e.g. Moonlight, Heritage). Never pass category words like luxury, premium, top-floor, suite — those use level instead.",
+    ),
   date: z
     .string()
     .optional()
@@ -22,7 +24,9 @@ export const findRoomInputSchema = z.object({
     .int()
     .min(0)
     .optional()
-    .describe("Room floor level to filter by"),
+    .describe(
+      "Room floor level. Use level: 4 for luxury / premium / top-floor / penthouse requests — do not put those words in name.",
+    ),
 });
 
 export type FindRoomInput = z.infer<typeof findRoomInputSchema>;

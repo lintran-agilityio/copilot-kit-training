@@ -41,7 +41,11 @@ export const useThreadMessages = ({
       return;
     }
 
-    const threadChanged = loadedThreadIdRef.current !== threadId;
+    // Remount starts with ref=null — that is NOT a thread switch. Clearing
+    // here would wipe in-memory agent.messages before Intelligence reconnects.
+    const previousThreadId = loadedThreadIdRef.current;
+    const isThreadSwitch =
+      previousThreadId != null && previousThreadId !== threadId;
     loadedThreadIdRef.current = threadId;
 
     agentRef.current.threadId = threadId;
@@ -52,9 +56,9 @@ export const useThreadMessages = ({
       return;
     }
 
-    // Persisted threads: Intelligence connect/replay fills messages after
-    // CopilotChat remounts. Clear only when switching threads.
-    if (threadChanged) {
+    // Persisted threads: clear only when switching to a different thread.
+    // History load still comes from CopilotChat connect/replay on real switches.
+    if (isThreadSwitch) {
       agentRef.current.setMessages?.([]);
     }
 

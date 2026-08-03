@@ -1,9 +1,19 @@
 import 'reflect-metadata';
 import 'dotenv/config';
+import { In } from 'typeorm';
 import { RoomEntity } from '@/modules/rooms/entities/room.entity';
+import { BookingEntity } from '@/modules/booking/entities/booking.entity';
 import dataSource from '@/database/data-source';
 import { Amenity } from '@/database/entities/enums';
 import { UserEntity } from '@/database/entities/user.entity';
+
+/** Pre-homestay catalog IDs left behind by older seeds — remove on every seed. */
+const LEGACY_ROOM_IDS = [
+  'studio-north',
+  'the-loft',
+  'meridian',
+  'observatory',
+] as const;
 
 const guestUser = {
   id: 'guest-user',
@@ -180,15 +190,11 @@ const rooms = [
   },
 ];
 
-const legacyImageUrlFixes: Record<string, string> = {
-  'the-loft':
-    'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80',
-};
-
 async function main(): Promise<void> {
   await dataSource.initialize();
 
   const roomRepository = dataSource.getRepository(RoomEntity);
+  const bookingRepository = dataSource.getRepository(BookingEntity);
   const userRepository = dataSource.getRepository(UserEntity);
 
   const now = new Date();
@@ -198,6 +204,14 @@ async function main(): Promise<void> {
     updatedAt: now,
   });
 
+  // Bookings FK is ON DELETE RESTRICT — clear legacy stays before dropping rooms.
+  const legacyBookingResult = await bookingRepository.delete({
+    roomId: In([...LEGACY_ROOM_IDS]),
+  });
+  const legacyRoomResult = await roomRepository.delete({
+    id: In([...LEGACY_ROOM_IDS]),
+  });
+
   await roomRepository.save(
     rooms.map((room) => ({
       ...room,
@@ -205,11 +219,11 @@ async function main(): Promise<void> {
     })),
   );
 
-  for (const [id, imageUrl] of Object.entries(legacyImageUrlFixes)) {
-    await roomRepository.update({ id }, { imageUrl, updatedAt: now });
-  }
-
-  console.log(`Seeded guest user and ${rooms.length} rooms.`);
+  console.log(
+    `Seeded guest user and ${rooms.length} rooms.` +
+      ` Removed ${legacyRoomResult.affected ?? 0} legacy rooms` +
+      ` and ${legacyBookingResult.affected ?? 0} legacy bookings.`,
+  );
 }
 
 main()

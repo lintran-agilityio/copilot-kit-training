@@ -5,7 +5,9 @@ import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
 
 export const syncRoomListToStore = (rooms: Room[], title?: string) => {
-  useRoomStore.getState().updateRoomList(rooms, title);
+  const store = useRoomStore.getState();
+  store.updateRoomList(rooms, title);
+  store.markAgentRoomSearch();
 };
 
 /**

@@ -6,3 +6,4 @@ export * from "./scroll";
 export * from "./normalize-messages";
 export * from "./blocked-messages";
 export * from "./tool-card-suppression";
+export * from "./suggestions";

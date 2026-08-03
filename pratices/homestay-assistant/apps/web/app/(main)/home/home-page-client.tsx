@@ -3,7 +3,6 @@
 import { useLayoutEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 
-import { MainLayout } from "@/components/layouts";
 import { PageHeader } from "@/components/common";
 import { RoomGrid } from "@/features/room/components";
 import { useRoomStore } from "@/features/room/stores/room-store";
@@ -21,10 +20,10 @@ const HomePageContent = ({ initialRooms }: HomePageClientProps) => {
   }, [initialRooms]);
 
   return (
-    <MainLayout>
+    <>
       <PageHeader />
       <RoomGrid className="mt-8" initialRooms={initialRooms} />
-    </MainLayout>
+    </>
   );
 };
 

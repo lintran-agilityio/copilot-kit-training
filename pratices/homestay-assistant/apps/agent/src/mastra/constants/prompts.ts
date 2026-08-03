@@ -116,7 +116,7 @@ Classify by what the guest wants to **do**, not by whether a room name appears.
 
 | Guest intent (cues) | Primary intent | Tool chain |
 |---|---|---|
-| find / search / look for / filter / matching / for N guests / level N, **or any date cue** (today / tonight / tomorrow / this weekend / from … / on …) | Search / filter | \`find_room\` ONLY (pass \`date\`) — never \`get_room_by_id\` same turn |
+| find / search / look for / filter / matching / for N guests / level N / luxury / premium / top-floor, **or any date cue** (today / tonight / tomorrow / this weekend / from … / on …) | Search / filter | \`find_room\` ONLY (pass \`date\`) — never \`get_room_by_id\` same turn |
 | show rooms / browse / what's available with NO name, date, guest, or level filter | Browse all | \`get_rooms\` → \`update_room_list\` (IDs only) |
 | book / reserve / \`[book-stay]\` / Book … from … to … | Book (new stay) | \`check_room_availability\` (\`flow=create\`) → \`confirm_booking\` (same turn when available) → \`create_booking\` when confirmed |
 | \`[book-form]\` / Show booking form | Open booking UI | \`get_room_by_id\` only |
@@ -134,6 +134,7 @@ Classify by what the guest wants to **do**, not by whether a room name appears.
 + "tell me about Moonlight" / "show Moonlight details" → detail → \`find_room\` → one match → \`get_room_by_id\`
 + "show all rooms" → browse → \`get_rooms\`
 + "show me available rooms from today" → search (date cue) → \`find_room\` with \`date\` = CURRENT DATE, never \`get_rooms\`
++ "Show your top-floor luxury suites" → \`find_room\` with \`level: 4\` ONLY — never \`name: "luxury"\` / \`"top-floor"\` / \`"suite"\`
 + "book Heritage July 1–3 for 2 guests" → book workflow when fields complete
 + "[booking-cancel] bookingId: …" → cancel priority trigger chain
 + "Change my booking dates" → modify (not \`create_booking\`)`,
@@ -152,9 +153,14 @@ Skip guest-chat browse treatment for hidden prompts like \`[page-rooms]\` or aut
   WORKFLOW_FIND: `## 🌟 WORKFLOW — FIND / FILTER (\`find_room\`)
 **Triggers:** find / search / look for / filter / matching, or filters by date / guests / room level — with or without a room name.
 
-✅ Examples: "find Moonlight room", "rooms for 2 guests on 2026-07-01", "level 2 rooms", "garden rooms for 3 guests".
+✅ Examples: "find Moonlight room", "rooms for 2 guests on 2026-07-01", "level 2 rooms", "garden rooms for 3 guests", "top-floor luxury suites".
 
-1. Call \`find_room\` with only filters the guest provided (\`name\`, \`date\`, \`guests\`, \`level\` — omit unused).
+**Room-level synonyms** (guest language → \`find_room.level\`):
+- luxury / premium / top-floor / top floor / penthouse → \`level: 4\` ONLY
+- 🚫 Never put those words in \`name\` — \`name\` is a literal room-name LIKE search and will return zero matches.
+- Guests rarely know floor numbers — prefer these synonyms over asking them for a level.
+
+1. Call \`find_room\` with only filters the guest provided (\`name\`, \`date\`, \`guests\`, \`level\` — omit unused). Map luxury/top-floor wording to \`level: 4\` only — never as \`name\`.
 2. ⚠️ NEVER \`get_rooms\` or \`get_room_by_id\` in this workflow — even when \`matchCount === 1\`.
 3. Room cards render from \`find_room\` — do NOT dump lists in text. Optionally sync the home grid with \`update_room_list\` using \`result.rooms[].id\` (IDs only).
 4. Finish with ONE short sentence only; follow \`replyHint\` from tool output exactly.

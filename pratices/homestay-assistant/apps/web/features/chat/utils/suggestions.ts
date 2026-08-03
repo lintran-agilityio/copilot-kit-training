@@ -1,0 +1,211 @@
+import {
+  HOMESTAY_AGENT_SCREEN,
+  HOMESTAY_AGENT_TASK_STATUS,
+  HOMESTAY_AGENT_TASK_TYPE,
+} from "@repo/constants";
+import { buildBookingFormMessage } from "@/features/booking/utils/build-messages";
+import {
+  ACTIVE_BOOKINGS_SUGGESTIONS,
+  AFTER_BOOKING_SUGGESTIONS,
+  AFTER_SEARCH_SUGGESTIONS,
+  FIRST_VISIT_SUGGESTIONS,
+  MAX_SUGGESTION_PILLS,
+  SUGGESTION,
+  type StaticSuggestion,
+  type SuggestionGuestState,
+} from "@/features/chat/constants/suggestions";
+import type { HomestayAgentContext } from "@/features/chat/types";
+
+const bookThisRoom = (roomId: string, roomName: string): StaticSuggestion => ({
+  title: "Book this room",
+  message: buildBookingFormMessage(roomId, roomName),
+});
+
+const openBookingForm = (roomId: string, roomName: string): StaticSuggestion => ({
+  title: "Open booking form",
+  message: buildBookingFormMessage(roomId, roomName),
+});
+
+const isActiveWorkflowTask = (context: HomestayAgentContext): boolean => {
+  const task = context.task;
+  if (!task) {
+    return false;
+  }
+
+  if (
+    task.type === HOMESTAY_AGENT_TASK_TYPE.BOOK ||
+    task.type === HOMESTAY_AGENT_TASK_TYPE.CANCEL
+  ) {
+    return task.status !== HOMESTAY_AGENT_TASK_STATUS.IDLE;
+  }
+
+  return (
+    task.type === HOMESTAY_AGENT_TASK_TYPE.MANAGE &&
+    task.status !== HOMESTAY_AGENT_TASK_STATUS.IDLE
+  );
+};
+
+const getFocusedRoomId = (context: HomestayAgentContext) =>
+  context.focus?.type === "room" ? context.focus.id : undefined;
+
+/**
+ * Active workflow pills — must match the guest's current task step.
+ * Prefer concrete next actions over generic page navigation.
+ */
+export const getWorkflowStaticSuggestions = (
+  context: HomestayAgentContext,
+  roomName?: string | null,
+): StaticSuggestion[] => {
+  const task = context.task;
+  if (!task || !isActiveWorkflowTask(context)) {
+    return [];
+  }
+
+  const roomId = getFocusedRoomId(context);
+  const name = roomName?.trim() || "this room";
+
+  if (task.type === HOMESTAY_AGENT_TASK_TYPE.BOOK) {
+    if (task.status === HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION) {
+      return [
+        SUGGESTION.changeDates,
+        SUGGESTION.changeGuests,
+        SUGGESTION.otherRooms,
+      ];
+    }
+
+    if (task.status === HOMESTAY_AGENT_TASK_STATUS.IN_PROGRESS) {
+      const suggestions: StaticSuggestion[] = [];
+
+      if (roomId) {
+        suggestions.push(openBookingForm(roomId, name));
+      }
+
+      suggestions.push(SUGGESTION.changeDates, SUGGESTION.otherRooms);
+      return suggestions;
+    }
+
+    if (task.status === HOMESTAY_AGENT_TASK_STATUS.COMPLETED) {
+      return AFTER_BOOKING_SUGGESTIONS;
+    }
+  }
+
+  if (task.type === HOMESTAY_AGENT_TASK_TYPE.CANCEL) {
+    return [SUGGESTION.keepBooking, SUGGESTION.myBookings];
+  }
+
+  if (task.type === HOMESTAY_AGENT_TASK_TYPE.MANAGE) {
+    if (task.status === HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION) {
+      return [
+        SUGGESTION.changeDates,
+        SUGGESTION.changeGuests,
+        SUGGESTION.keepBooking,
+      ];
+    }
+
+    if (task.status === HOMESTAY_AGENT_TASK_STATUS.IN_PROGRESS) {
+      return [
+        SUGGESTION.changeDates,
+        SUGGESTION.changeGuests,
+        SUGGESTION.myBookings,
+      ];
+    }
+
+    if (task.status === HOMESTAY_AGENT_TASK_STATUS.COMPLETED) {
+      return [SUGGESTION.myBookings, SUGGESTION.findWeekendRooms];
+    }
+  }
+
+  return [];
+};
+
+/**
+ * Idle guest-state pills — first visit / active bookings / post-search / post-booking.
+ * Priority: booking just completed → after search → has bookings → first visit.
+ */
+export const getGuestStateStaticSuggestions = (
+  guestState: SuggestionGuestState,
+): StaticSuggestion[] => {
+  if (guestState.bookingJustCompleted) {
+    return AFTER_BOOKING_SUGGESTIONS;
+  }
+
+  if (guestState.hasSearchedRooms) {
+    return AFTER_SEARCH_SUGGESTIONS;
+  }
+
+  if (guestState.hasActiveBookings) {
+    return ACTIVE_BOOKINGS_SUGGESTIONS;
+  }
+
+  return FIRST_VISIT_SUGGESTIONS;
+};
+
+/**
+ * Idle / discover page pills — primary action for the current screen + focus.
+ * Home uses guest-state sets; focused screens keep room/booking-specific actions.
+ */
+export const getPageStaticSuggestions = (
+  context: HomestayAgentContext,
+  roomName?: string | null,
+  guestState?: SuggestionGuestState,
+): StaticSuggestion[] => {
+  const roomId = getFocusedRoomId(context);
+  const name = roomName?.trim() || "this room";
+  const state = guestState ?? {
+    hasActiveBookings: false,
+    hasSearchedRooms: false,
+    bookingJustCompleted: false,
+  };
+
+  switch (context.screen.name) {
+    case HOMESTAY_AGENT_SCREEN.HOME:
+      return getGuestStateStaticSuggestions(state);
+
+    case HOMESTAY_AGENT_SCREEN.ROOM_DETAIL:
+      if (!roomId) {
+        return [SUGGESTION.myBookings];
+      }
+
+      return [
+        bookThisRoom(roomId, name),
+        SUGGESTION.roomAmenities,
+        SUGGESTION.myBookings,
+      ];
+
+    case HOMESTAY_AGENT_SCREEN.BOOKING_FORM:
+      return [
+        SUGGESTION.helpDates,
+        SUGGESTION.changeGuests,
+      ];
+
+    case HOMESTAY_AGENT_SCREEN.BOOKINGS:
+      return state.hasActiveBookings
+        ? ACTIVE_BOOKINGS_SUGGESTIONS
+        : [
+            SUGGESTION.findWeekendRooms,
+            SUGGESTION.helpBooking,
+            SUGGESTION.modifyRoom,
+          ];
+  }
+};
+
+/** Workflow static suggestions take precedence over guest-state / page pills. */
+export const getPriorityStaticSuggestions = (
+  context: HomestayAgentContext,
+  roomName?: string | null,
+  guestState?: SuggestionGuestState,
+): StaticSuggestion[] => {
+  const workflow = getWorkflowStaticSuggestions(context, roomName);
+
+  // Post-booking is transient guest state, not a lasting workflow report —
+  // still prefer it over page pills when no mid-flow workflow is active.
+  if (!workflow.length && guestState?.bookingJustCompleted) {
+    return AFTER_BOOKING_SUGGESTIONS.slice(0, MAX_SUGGESTION_PILLS);
+  }
+
+  const source = workflow.length
+    ? workflow
+    : getPageStaticSuggestions(context, roomName, guestState);
+
+  return source.slice(0, MAX_SUGGESTION_PILLS);
+};

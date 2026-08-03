@@ -1,20 +1,16 @@
-import type { HomestayAgentScreenName } from "@repo/constants";
+import type {
+  HomestayAgentScreenName,
+  HomestayAgentTaskStatus,
+  HomestayAgentTaskType,
+} from "@repo/constants";
 
-export type { HomestayAgentScreenName };
+export type {
+  HomestayAgentScreenName,
+  HomestayAgentTaskStatus,
+  HomestayAgentTaskType,
+};
 
 export type HomestayAgentFocusType = "room" | "booking";
-
-export type HomestayAgentTaskType =
-  | "discover"
-  | "book"
-  | "cancel"
-  | "manage";
-
-export type HomestayAgentTaskStatus =
-  | "idle"
-  | "in-progress"
-  | "awaiting-confirmation"
-  | "completed";
 
 export type HomestayAgentContext = {
   screen: {
