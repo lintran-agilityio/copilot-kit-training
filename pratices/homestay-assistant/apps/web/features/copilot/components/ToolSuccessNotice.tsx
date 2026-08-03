@@ -66,7 +66,6 @@ export function ToolSuccessNotice<TResult extends ToolSuccessDisplayResult>({
       <EmbeddedWidget>
         <ConfirmSuccess
           title={title}
-          id={parsed?.id}
           name={parsed?.room?.name}
           checkInDate={parsed?.checkInDate}
           checkOutDate={parsed?.checkOutDate}

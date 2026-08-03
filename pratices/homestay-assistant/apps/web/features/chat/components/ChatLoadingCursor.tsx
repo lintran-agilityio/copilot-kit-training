@@ -1,5 +1,6 @@
 "use client";
 
+import type { HTMLAttributes } from "react";
 import {
   useAgent,
   useCopilotChatConfiguration,
@@ -9,10 +10,6 @@ import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
 import { ConversationItem } from "@/features/chat/components/ConversationItem";
 import { getMessageTextContent } from "@/features/copilot/config";
 import { cn } from "@repo/utils";
-
-type ChatLoadingCursorProps = {
-  className?: string;
-};
 
 const hasVisibleAssistantText = (message: {
   role?: string;
@@ -29,18 +26,24 @@ const hasVisibleAssistantText = (message: {
  * Agent-running indicator for the CopilotChat message list `cursor` slot.
  * Replaces CopilotKit's default single pulse dot with an assistant-style typing row.
  * Hidden once the latest assistant message already has visible text (streaming).
+ *
+ * Always returns an Element (never null) — CopilotChat's cursor slot requires that.
  */
-export const ChatLoadingCursor = ({ className }: ChatLoadingCursorProps) => {
+export const ChatLoadingCursor = ({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) => {
   const agentId = useCopilotChatConfiguration()?.agentId;
   const { agent } = useAgent({ agentId });
   const lastMessage = agent.messages.at(-1);
 
   if (lastMessage && hasVisibleAssistantText(lastMessage)) {
-    return null;
+    return <div hidden aria-hidden {...props} />;
   }
 
   return (
     <div
+      {...props}
       data-testid="copilot-loading-cursor"
       data-chat-timeline-entry="assistant-loading"
       role="status"
