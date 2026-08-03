@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { Archive } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,10 @@ type DeleteThreadDialogProps = {
   onConfirm: () => void;
 };
 
+/**
+ * Soft-delete UX: archives the thread on Intelligence (recoverable via
+ * includeArchived). Hard delete remains available for admin/erase flows.
+ */
 export const DeleteThreadDialog = ({
   open,
   threadLabel,
@@ -42,17 +46,18 @@ export const DeleteThreadDialog = ({
       >
         <DialogHeader>
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
-              <AlertTriangle className="size-5" />
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-300">
+              <Archive className="size-5" aria-hidden />
             </div>
             <div className="space-y-1.5">
               <DialogTitle className="text-lg font-medium text-white">
-                Delete this thread?
+                Archive this thread?
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
-                This will permanently delete{" "}
+                This will archive{" "}
                 <span className="font-medium text-zinc-200">{threadLabel}</span>{" "}
-                and all of its messages. This action cannot be undone.
+                and hide it from the sidebar. Messages stay stored and can be
+                recovered later.
               </DialogDescription>
             </div>
           </div>
@@ -70,11 +75,11 @@ export const DeleteThreadDialog = ({
           </Button>
           <Button
             type="button"
-            variant="destructive"
+            className="bg-amber-600 text-white hover:bg-amber-500"
             disabled={isDeleting}
             onClick={onConfirm}
           >
-            {isDeleting ? "Deleting…" : "Delete thread"}
+            {isDeleting ? "Archiving…" : "Archive thread"}
           </Button>
         </DialogFooter>
       </DialogContent>

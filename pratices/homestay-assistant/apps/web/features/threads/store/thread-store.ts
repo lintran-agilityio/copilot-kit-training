@@ -11,13 +11,13 @@ import { dedupeThreadsById } from "@/features/threads/utils";
  * - CopilotChat / AG-UI / Mastra threadId
  *
  * Draft threads exist only as activeThreadId until the first message
- * is persisted by Mastra, then they appear in threads[].
+ * is persisted by CopilotKit Intelligence, then they appear in threads[].
  */
 type ThreadStoreState = {
   threads: Thread[];
   threadsLoading: boolean;
   /**
-   * True only after /api/threads settles for the current scope.
+   * True only after Intelligence thread list settles for the current scope.
    * Prevents bootstrap from minting a draft while threads are still [].
    */
   threadsFetched: boolean;
@@ -25,7 +25,7 @@ type ThreadStoreState = {
 
   /** scopeKey → active thread id */
   activeThreadIds: Record<string, string | undefined>;
-  /** Client-created ids not yet in Mastra storage */
+  /** Client-created ids not yet persisted by Intelligence */
   draftThreadIds: Record<string, true>;
 
   /** Chat session for the active thread */
@@ -87,7 +87,8 @@ export const useThreadStore = create<ThreadStoreState>()((set, get) => ({
         ...state.activeThreadIds,
         [scopeKey]: threadId,
       },
-      loadingState: state.draftThreadIds[threadId] ? "loaded" : "loading",
+      // Intelligence connect/replay hydrates messages; no manual fetch wait.
+      loadingState: "loaded",
       loadError: null,
     }));
   },

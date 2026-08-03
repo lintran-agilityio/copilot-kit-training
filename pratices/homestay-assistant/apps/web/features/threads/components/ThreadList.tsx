@@ -63,7 +63,9 @@ export const ThreadList = ({
   onRename,
   onDelete,
 }: ThreadListProps) => {
-  if (isLoading) {
+  // Only block the list on the initial fetch — keep existing rows visible
+  // while a background refetch runs (e.g. draft → persisted).
+  if (isLoading && threads.length === 0) {
     return (
       <div className="rounded-xl border border-white/5 px-3 py-2 text-xs text-zinc-500">
         Loading threads...
@@ -75,6 +77,9 @@ export const ThreadList = ({
     return (
       <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
         Failed to load threads.
+        {error.message ? (
+          <p className="mt-1 text-[11px] text-red-300/80">{error.message}</p>
+        ) : null}
       </div>
     );
   }

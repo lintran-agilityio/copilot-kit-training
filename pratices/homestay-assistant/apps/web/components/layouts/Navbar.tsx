@@ -49,7 +49,7 @@ export const Navbar = ({ activeTab = NavbarTab.HOME, className }: NavbarProps) =
               : "text-zinc-500 hover:text-zinc-300",
           )}
         >
-          HomeStay
+          Homestay
         </Link>
         <Link
           href={ROUTES.BOOKINGS}

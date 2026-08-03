@@ -10,22 +10,23 @@ import { useThreadStore } from "@/features/threads/store/thread-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import type { Thread } from "@/features/threads/types";
 
-type UseDeleteThreadOptions = {
+type UseArchiveThreadOptions = {
   agentId: string;
   threads: Thread[];
-  deleteThreadRemote: (threadId: string) => Promise<void>;
+  archiveThreadRemote: (threadId: string) => Promise<void>;
   onCreateThread: () => void;
 };
 
 /**
- * Deletes from Mastra + ThreadStore, then activates latest or creates draft.
+ * Archives on Intelligence (soft-remove from default list), then activates
+ * the latest remaining thread or starts a new draft.
  */
-export const useDeleteThread = ({
+export const useArchiveThread = ({
   agentId,
   threads,
-  deleteThreadRemote,
+  archiveThreadRemote,
   onCreateThread,
-}: UseDeleteThreadOptions) => {
+}: UseArchiveThreadOptions) => {
   const { agent } = useAgent({ agentId });
   const { scopeKey, activeThreadId, setActiveThread } = useActiveThread({
     agentId,
@@ -37,13 +38,13 @@ export const useDeleteThread = ({
   const resetHomestayAgentUi = useHomestayAgentUiStore((state) => state.reset);
   const setLoadingState = useThreadStore((state) => state.setLoadingState);
 
-  const deleteThread = useCallback(
+  const archiveThread = useCallback(
     async (threadId: string) => {
       if (!scopeKey) {
         return;
       }
 
-      await deleteThreadRemote(threadId);
+      await archiveThreadRemote(threadId);
 
       if (activeThreadId !== threadId) {
         return;
@@ -57,7 +58,7 @@ export const useDeleteThread = ({
       agent.setMessages?.([]);
 
       if (nextThread) {
-        setLoadingState("loading");
+        setLoadingState("loaded");
         agent.threadId = nextThread.id;
         setActiveThread(nextThread.id);
         return;
@@ -68,8 +69,8 @@ export const useDeleteThread = ({
     [
       activeThreadId,
       agent,
+      archiveThreadRemote,
       clearPendingOutboundMessage,
-      deleteThreadRemote,
       onCreateThread,
       resetBooking,
       resetHomestayAgentUi,
@@ -80,5 +81,5 @@ export const useDeleteThread = ({
     ],
   );
 
-  return { deleteThread };
+  return { archiveThread };
 };

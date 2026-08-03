@@ -1,6 +1,5 @@
 "use client";
 
-// Libs
 import dynamic from "next/dynamic";
 import { ChevronLeft, MessageSquare } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -8,13 +7,12 @@ import { useAgent } from "@copilotkit/react-core/v2";
 import { cn } from "@repo/utils";
 import { AGENT_KEYS } from "@repo/constants";
 
-// Components
 import { Navbar } from "@/components/layouts";
 import { NavbarTab } from "@repo/types";
 import {
   useActiveThread,
+  useArchiveThread,
   useCreateThread,
-  useDeleteThread,
   useSwitchThread,
   useThreads,
   useThreadStore,
@@ -65,9 +63,8 @@ export const MainLayout = ({
     agentId,
   });
   const { agent } = useAgent({ agentId });
-  const { createThread } = useCreateThread({ agentId });
-  const { switchThread } = useSwitchThread({ agentId });
   const loadingState = useThreadStore((state) => state.loadingState);
+  const isDraftThread = useThreadStore((state) => state.isDraftThread);
   const {
     threads,
     threadGroups,
@@ -75,27 +72,35 @@ export const MainLayout = ({
     threadsFetched,
     error: threadsError,
     refetchThreads,
+    startNewThread,
     renameThread,
-    deleteThread: deleteThreadRemote,
+    archiveThread: archiveThreadRemote,
   } = useThreads({
     agentId,
     enabled: Boolean(scopeKey),
+    activeThreadId,
   });
+
+  const { createThread } = useCreateThread({
+    agentId,
+    startNewThread,
+  });
+  const { switchThread } = useSwitchThread({ agentId });
 
   const handleCreateThread = useCallback(() => {
     createThread();
   }, [createThread]);
 
-  const { deleteThread } = useDeleteThread({
+  const { archiveThread } = useArchiveThread({
     agentId,
     threads,
-    deleteThreadRemote,
+    archiveThreadRemote,
     onCreateThread: handleCreateThread,
   });
 
   // Bootstrap: activate latest persisted thread, or create a draft.
-  // Wait for threadsFetched — threadsLoading starts false, so using only
-  // !isLoadingThreads races and mints an empty draft before /api/threads returns.
+  // Wait for threadsFetched — isLoading starts false before Intelligence
+  // connects, so using only !isLoadingThreads races and mints an empty draft.
   useEffect(() => {
     if (!scopeKey || activeThreadId || !threadsFetched) {
       return;
@@ -128,9 +133,14 @@ export const MainLayout = ({
     }
   }, [activeThreadId, agent]);
 
-  // After messages change, refresh persisted list (draft → sidebar row).
+  // First run on a draft: refresh once so Intelligence replaces the local row.
+  // Do not refetch on every subsequent message — that reloads the whole list.
   useEffect(() => {
-    if (!scopeKey || agent.messages.length === 0) {
+    if (!scopeKey || !activeThreadId || agent.messages.length === 0) {
+      return;
+    }
+
+    if (!isDraftThread(activeThreadId)) {
       return;
     }
 
@@ -139,7 +149,13 @@ export const MainLayout = ({
     }, 500);
 
     return () => window.clearTimeout(refreshTimeout);
-  }, [agent.messages.length, refetchThreads, scopeKey]);
+  }, [
+    activeThreadId,
+    agent.messages.length,
+    isDraftThread,
+    refetchThreads,
+    scopeKey,
+  ]);
 
   const handleRenameThread = useCallback(
     async (threadId: string, name: string) => {
@@ -152,14 +168,13 @@ export const MainLayout = ({
     <div className="mx-2 flex h-screen w-full justify-center bg-[#010507]">
       <div
         className={cn(
-          "flex h-full w-full max-w-[1440px] flex-col overflow-hidden bg-[#010507] font-sans",
+          "flex h-full w-full max-w-[1560px] flex-col overflow-hidden bg-[#010507] font-sans",
           className,
         )}
       >
         <Navbar activeTab={activeTab} />
         <div className="relative flex min-h-0 min-w-0 flex-1">
-          {/*  */}
-          {/* <div className="hidden h-full min-h-0 shrink-0 lg:block">
+          <div className="hidden h-full min-h-0 shrink-0 lg:block">
             <ThreadSidebar
               threads={threads}
               threadGroups={threadGroups}
@@ -170,9 +185,9 @@ export const MainLayout = ({
               onSelectThread={switchThread}
               onCreateThread={handleCreateThread}
               onRenameThread={handleRenameThread}
-              onDeleteThread={deleteThread}
+              onDeleteThread={archiveThread}
             />
-          </div> */}
+          </div>
           <main className="app-scrollbar relative z-0 min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
             {children}
           </main>

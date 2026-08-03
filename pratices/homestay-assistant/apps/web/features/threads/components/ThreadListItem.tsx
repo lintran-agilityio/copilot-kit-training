@@ -59,7 +59,7 @@ export const ThreadListItem = ({
       await onDelete(thread.id);
       setIsDeleteOpen(false);
     } catch (error) {
-      console.error("Failed to delete thread", error);
+      console.error("Failed to archive thread", error);
     } finally {
       setIsDeleting(false);
     }

@@ -27,6 +27,7 @@ export const useSwitchThread = ({ agentId }: UseSwitchThreadOptions) => {
   const resetBooking = useBookingStore((state) => state.resetBooking);
   const resetHomestayAgentUi = useHomestayAgentUiStore((state) => state.reset);
   const setLoadError = useThreadStore((state) => state.setLoadError);
+  const setLoadingState = useThreadStore((state) => state.setLoadingState);
 
   const switchThread = useCallback(
     (threadId: string) => {
@@ -35,6 +36,7 @@ export const useSwitchThread = ({ agentId }: UseSwitchThreadOptions) => {
       }
 
       setLoadError(null);
+      setLoadingState("loaded");
       clearPendingOutboundMessage(scopeKey);
       resetBooking();
       resetHomestayAgentUi();
@@ -51,6 +53,7 @@ export const useSwitchThread = ({ agentId }: UseSwitchThreadOptions) => {
       scopeKey,
       setActiveThread,
       setLoadError,
+      setLoadingState,
     ],
   );
 

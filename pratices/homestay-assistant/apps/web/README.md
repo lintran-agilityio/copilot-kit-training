@@ -43,8 +43,10 @@ NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
 OPENAI_API_KEY=sk-...
 API_URL=http://localhost:5001
-# optional — Mastra thread DB path override
-# MASTRA_DB_PATH=
+# CopilotKit Intelligence (cloud-hosted multi-thread persistence)
+INTELLIGENCE_API_URL=https://api.intelligence.copilotkit.ai
+INTELLIGENCE_GATEWAY_WS_URL=wss://realtime.intelligence.copilotkit.ai
+INTELLIGENCE_API_KEY=cpk_...
 ```
 
 | Variable | Description |
@@ -52,7 +54,9 @@ API_URL=http://localhost:5001
 | `NEXT_PUBLIC_CLERK_*` / `CLERK_SECRET_KEY` | Clerk auth |
 | `OPENAI_API_KEY` | Model access for the assistant runtime |
 | `API_URL` | Nest API base URL (defaults to `http://localhost:5001`) |
-| `MASTRA_DB_PATH` | Optional override for Mastra/SQLite thread storage |
+| `INTELLIGENCE_API_URL` | CopilotKit Intelligence REST base URL |
+| `INTELLIGENCE_GATEWAY_WS_URL` | CopilotKit Intelligence realtime WebSocket URL |
+| `INTELLIGENCE_API_KEY` | CopilotKit Intelligence API key |
 
 ## Run
 
@@ -84,14 +88,11 @@ pnpm check-types
 
 | Route | Purpose |
 | --- | --- |
-| `/api/copilotkit/[[...slug]]` | CopilotKit runtime → Mastra agents |
+| `/api/copilotkit/[[...slug]]` | CopilotKit Intelligence runtime → Mastra agents + `/threads*` |
 | `/api/rooms` | Proxy room listing/detail to Nest API |
 | `/api/bookings` | Proxy bookings |
 | `/api/bookings/availability` | Availability checks |
 | `/api/bookings/[id]` | Booking by id |
-| `/api/threads` | Thread list/create |
-| `/api/threads/[threadId]` | Thread update/delete |
-| `/api/threads/[threadId]/messages` | Thread messages |
 
 ## Project layout
 

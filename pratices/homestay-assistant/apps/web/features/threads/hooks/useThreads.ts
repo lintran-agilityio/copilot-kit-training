@@ -1,173 +1,174 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useThreads as useCopilotThreads } from "@copilotkit/react-core/v2";
 
-import type { ChatThread } from "@/features/chat/types";
 import type { Thread } from "@/features/threads/types";
 import {
   groupThreadsByDate,
-  mapChatThreadToThread,
+  mapIntelligenceThreadToThread,
 } from "@/features/threads/utils";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 type UseThreadsOptions = {
   agentId: string;
   enabled?: boolean;
+  /** Active thread — used to surface a local draft row before Intelligence persists it. */
+  activeThreadId?: string | null;
 };
 
-type ChatThreadsResponse = {
-  threads?: ChatThread[];
-};
+const createDraftThreadItem = (
+  threadId: string,
+  agentId: string,
+): Thread => {
+  const now = new Date();
 
-type RenameThreadResponse = {
-  thread?: ChatThread;
+  return {
+    id: threadId,
+    title: "New chat",
+    createdAt: now,
+    updatedAt: now,
+    status: "active",
+    messageCount: 0,
+    agentId,
+  };
 };
 
 /**
- * Syncs ThreadStore.threads[] from Mastra via /api/threads.
- * Sidebar renders only persisted threads; drafts stay out until first message.
+ * Lists / renames / archives durable threads via CopilotKit Intelligence.
+ * Active drafts appear in the sidebar immediately; Intelligence rows replace
+ * them after the first persisted run (without wiping the list on refetch).
  */
 export const useThreads = ({
   agentId,
   enabled = true,
+  activeThreadId = null,
 }: UseThreadsOptions) => {
-  const threads = useThreadStore((state) => state.threads);
-  const isLoading = useThreadStore((state) => state.threadsLoading);
-  const threadsFetched = useThreadStore((state) => state.threadsFetched);
-  const error = useThreadStore((state) => state.threadsError);
-  const setPersistedThreads = useThreadStore((state) => state.setPersistedThreads);
-  const setThreadsLoading = useThreadStore((state) => state.setThreadsLoading);
   const setThreadsFetched = useThreadStore((state) => state.setThreadsFetched);
   const setThreadsError = useThreadStore((state) => state.setThreadsError);
-  const persistThread = useThreadStore((state) => state.persistThread);
+  const setPersistedThreads = useThreadStore(
+    (state) => state.setPersistedThreads,
+  );
   const deleteThreadLocal = useThreadStore((state) => state.deleteThread);
+  const draftThreadIds = useThreadStore((state) => state.draftThreadIds);
+  const hasLoadedOnceRef = useRef(false);
 
-  const refetchThreads = useCallback(async () => {
-    if (!enabled) {
-      setPersistedThreads([]);
-      setThreadsLoading(false);
-      setThreadsFetched(false);
-      setThreadsError(null);
-      return;
-    }
-
-    setThreadsError(null);
-
-    try {
-      const response = await fetch(
-        `/api/threads?${new URLSearchParams({ agentId }).toString()}`,
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch threads: ${response.status}`);
-      }
-
-      const data = (await response.json()) as ChatThreadsResponse;
-      setPersistedThreads(
-        (data.threads ?? []).map(mapChatThreadToThread),
-      );
-      setThreadsLoading(false);
-      setThreadsFetched(true);
-    } catch (unknownError) {
-      setThreadsError(
-        unknownError instanceof Error
-          ? unknownError
-          : new Error(String(unknownError)),
-      );
-      setThreadsLoading(false);
-      // Still mark fetched so bootstrap can fall back to a draft.
-      setThreadsFetched(true);
-    }
-  }, [
+  const {
+    threads: intelligenceThreads,
+    isLoading,
+    error,
+    refetchThreads,
+    startNewThread,
+    renameThread: renameIntelligenceThread,
+    archiveThread: archiveIntelligenceThread,
+    deleteThread: deleteIntelligenceThread,
+  } = useCopilotThreads({
     agentId,
     enabled,
-    setPersistedThreads,
-    setThreadsError,
-    setThreadsFetched,
-    setThreadsLoading,
-  ]);
+  });
 
-  const renameThread = useCallback(
-    async (threadId: string, name: string) => {
-      const response = await fetch(
-        `/api/threads/${encodeURIComponent(threadId)}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ agentId, name }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to rename thread: ${response.status}`);
-      }
-
-      const data = (await response.json()) as RenameThreadResponse;
-
-      if (!data.thread) {
-        await refetchThreads();
-        return;
-      }
-
-      persistThread(mapChatThreadToThread(data.thread));
-    },
-    [agentId, persistThread, refetchThreads],
+  const persistedThreads = useMemo(
+    () =>
+      intelligenceThreads.map((thread) =>
+        mapIntelligenceThreadToThread(thread, agentId),
+      ),
+    [agentId, intelligenceThreads],
   );
 
-  const deleteThreadRemote = useCallback(
-    async (threadId: string) => {
-      const response = await fetch(
-        `/api/threads/${encodeURIComponent(threadId)}?${new URLSearchParams({
-          agentId,
-        }).toString()}`,
-        { method: "DELETE" },
-      );
+  const threads = useMemo(() => {
+    const persistedIds = new Set(
+      persistedThreads.map((thread) => thread.id),
+    );
 
-      if (!response.ok) {
-        throw new Error(`Failed to delete thread: ${response.status}`);
-      }
-
-      deleteThreadLocal(threadId);
-    },
-    [agentId, deleteThreadLocal],
-  );
-
-  useEffect(() => {
-    if (!enabled) {
-      setPersistedThreads([]);
-      setThreadsLoading(false);
-      setThreadsFetched(false);
-      setThreadsError(null);
-      return;
+    // Optimistic row for the active draft until Intelligence returns it.
+    if (
+      activeThreadId &&
+      draftThreadIds[activeThreadId] &&
+      !persistedIds.has(activeThreadId)
+    ) {
+      return [
+        createDraftThreadItem(activeThreadId, agentId),
+        ...persistedThreads,
+      ];
     }
 
-    setThreadsLoading(true);
-    setThreadsFetched(false);
-    void refetchThreads();
-  }, [
-    enabled,
-    refetchThreads,
-    setPersistedThreads,
-    setThreadsError,
-    setThreadsFetched,
-    setThreadsLoading,
-  ]);
+    return persistedThreads;
+  }, [activeThreadId, agentId, draftThreadIds, persistedThreads]);
 
   const threadGroups = useMemo(
     () => groupThreadsByDate(threads),
     [threads],
   );
 
+  // Initial fetch only — background refetch must not flash "Loading threads..."
+  useEffect(() => {
+    if (!enabled) {
+      hasLoadedOnceRef.current = false;
+      return;
+    }
+
+    if (!isLoading) {
+      hasLoadedOnceRef.current = true;
+    }
+  }, [enabled, isLoading]);
+
+  const isInitialLoading = Boolean(enabled && isLoading && !hasLoadedOnceRef.current);
+
+  // Mirror load settlement into ThreadStore so bootstrap waits correctly.
+  // Sync persisted rows so draft flags clear once Intelligence knows the thread.
+  useEffect(() => {
+    if (!enabled) {
+      setThreadsFetched(false);
+      setThreadsError(null);
+      return;
+    }
+
+    if (isLoading) {
+      setThreadsFetched(false);
+      return;
+    }
+
+    setPersistedThreads(persistedThreads);
+    setThreadsFetched(true);
+    setThreadsError(error);
+  }, [
+    enabled,
+    error,
+    isLoading,
+    persistedThreads,
+    setPersistedThreads,
+    setThreadsError,
+    setThreadsFetched,
+  ]);
+
+  const renameThread = async (threadId: string, name: string) => {
+    await renameIntelligenceThread(threadId, name);
+  };
+
+  const archiveThread = async (threadId: string) => {
+    await archiveIntelligenceThread(threadId);
+    deleteThreadLocal(threadId);
+  };
+
+  const deleteThreadRemote = async (threadId: string) => {
+    await deleteIntelligenceThread(threadId);
+    deleteThreadLocal(threadId);
+  };
+
+  const persistThread = () => {
+    void refetchThreads();
+  };
+
   return {
     threads,
     threadGroups,
-    isLoading,
-    threadsFetched,
+    isLoading: isInitialLoading,
+    threadsFetched: enabled ? !isLoading : false,
     error,
     refetchThreads,
+    startNewThread,
     renameThread,
+    archiveThread,
     deleteThread: deleteThreadRemote,
     persistThread,
   };

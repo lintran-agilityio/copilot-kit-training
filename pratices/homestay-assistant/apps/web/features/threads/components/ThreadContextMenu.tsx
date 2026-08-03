@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Archive } from "lucide-react";
 
 type ThreadContextMenuProps = {
   onRename: () => void;
@@ -16,7 +16,7 @@ export const ThreadContextMenu = ({
       <button
         type="button"
         onClick={onRename}
-        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] text-zinc-300 transition hover:bg-white/10 hover:text-white cursor-pointer"
+        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] text-zinc-300 transition hover:bg-white/10 hover:text-white"
       >
         <Pencil className="h-3.5 w-3.5" aria-hidden />
         Rename
@@ -24,10 +24,10 @@ export const ThreadContextMenu = ({
       <button
         type="button"
         onClick={onDelete}
-        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] text-red-300 transition hover:bg-red-500/10 hover:text-red-200 cursor-pointer"
+        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] text-amber-300 transition hover:bg-amber-500/10 hover:text-amber-200"
       >
-        <Trash2 className="h-3.5 w-3.5" aria-hidden />
-        Delete
+        <Archive className="h-3.5 w-3.5" aria-hidden />
+        Archive
       </button>
     </div>
   );

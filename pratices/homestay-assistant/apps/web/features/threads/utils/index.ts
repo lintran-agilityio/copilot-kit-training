@@ -2,4 +2,4 @@ export * from "./dedupeThreadsById";
 export * from "./formatThreadTime";
 export * from "./getThreadTitle";
 export * from "./groupThreadsByDate";
-export * from "./mapChatThread";
+export * from "./mapIntelligenceThread";

@@ -85,6 +85,9 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
       agent={AGENT_KEYS.MANAGE_ASSISTANT}
       credentials="include"
       runtimeUrl={AGENT_URLS.MANAGE_ASSISTANT}
+      // Intelligence thread routes (/threads*) require REST transport.
+      // Single-endpoint /info always reports threadEndpoints.list=false.
+      useSingleEndpoint={false}
     >
       <ClerkTokenSync />
       <AppProvider>{children}</AppProvider>
