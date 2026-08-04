@@ -1,4 +1,4 @@
-app = "homestay-web"
+app = "web-homestay-2"
 primary_region = "sin"
 
 [build]
