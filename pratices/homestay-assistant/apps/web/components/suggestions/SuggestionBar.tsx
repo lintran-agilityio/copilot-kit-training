@@ -3,16 +3,41 @@ import {
   useCopilotKit,
   UseAgentUpdate,
 } from "@copilotkit/react-core/v2";
+import {
+  AGENT_KEYS,
+  getBookingFormDisplayText,
+  isBookingFormPrompt,
+  parseBookingFormRoomId,
+} from "@repo/constants";
 
+import { CopilotSuggestion } from "@/components/suggestions/CopilotSuggestion";
+import { prepareBookingFormMessage } from "@/features/booking/utils/prepare-booking-form-message";
 import { ChatSuggestion } from "@/features/chat/types";
 import { scheduleScrollChatToEnd } from "@/features/chat/utils";
-import { AGENT_KEYS } from "@repo/constants";
-import { CopilotSuggestion } from "@/components/suggestions/CopilotSuggestion";
+import { runAgentSafely } from "@/features/chat/utils/agent-run";
 
 type SuggestionBarProps = {
   suggestions: ChatSuggestion[];
   agentId?: string;
   threadId?: string;
+};
+
+const resolveOutboundPrompt = (prompt: string) => {
+  if (!isBookingFormPrompt(prompt)) {
+    return prompt;
+  }
+
+  const roomId = parseBookingFormRoomId(prompt);
+  if (!roomId) {
+    return prompt;
+  }
+
+  const display = getBookingFormDisplayText(prompt);
+  const roomName = display.startsWith("Book ")
+    ? display.slice("Book ".length).trim()
+    : "this room";
+
+  return prepareBookingFormMessage(roomId, roomName).message;
 };
 
 export const SuggestionBar = ({
@@ -39,13 +64,13 @@ export const SuggestionBar = ({
     agent.addMessage({
       id: crypto.randomUUID(),
       role: "user",
-      content: prompt,
+      content: resolveOutboundPrompt(prompt),
     });
 
     scheduleScrollChatToEnd("auto");
 
     try {
-      await copilotkit.runAgent({ agent });
+      await runAgentSafely(() => copilotkit.runAgent({ agent }));
     } finally {
       scheduleScrollChatToEnd("auto");
     }

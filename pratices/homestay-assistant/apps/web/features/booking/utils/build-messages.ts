@@ -30,11 +30,15 @@ export const buildBookingStayMessage = ({
   return `${BOOKING_STAY_PROMPT_PREFIX} roomId: ${roomId}. checkInDate: ${checkInDate}. checkOutDate: ${checkOutDate}. guests: ${guests}. ${display}`;
 };
 
-export const buildBookingFormMessage = (roomId: string, roomName: string) =>
+export const buildBookingFormMessage = (
+  roomId: string,
+  roomName: string,
+  artifactId?: string,
+) =>
   `${BOOKING_FORM_PROMPT_PREFIX} ${buildActionPrompt({
     action: "Show booking form for",
     targetName: roomName || "this room",
-    identifiers: { roomId },
+    identifiers: artifactId ? { roomId, artifactId } : { roomId },
   })}`;
 
 export const buildBookingCancelMessage = (booking: BookingResponse) => {

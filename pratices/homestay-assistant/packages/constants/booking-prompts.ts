@@ -56,6 +56,30 @@ export const getBookingModifyDisplayText = (content: string): string => {
   return withoutPrefix.replace(BOOKING_ID_PREFIX, "").trim();
 };
 
+/** Trailing agent metadata on `[book-form]` prompts (roomId + optional artifactId). */
+const BOOKING_FORM_METADATA_SUFFIX =
+  /\.\s*roomId:\s*[^.]+\.(?:\s*artifactId:\s*[^.]+\.?)?\s*$/i;
+
+export const parseBookingFormArtifactId = (
+  content: string,
+): string | null => {
+  if (!isBookingFormPrompt(content)) {
+    return null;
+  }
+
+  const match = content.match(/\bartifactId:\s*([^\s.]+)/i);
+  return match?.[1] ?? null;
+};
+
+export const parseBookingFormRoomId = (content: string): string | null => {
+  if (!isBookingFormPrompt(content)) {
+    return null;
+  }
+
+  const match = content.match(/\broomId:\s*([^\s.]+)/i);
+  return match?.[1] ?? null;
+};
+
 export const getBookingFormDisplayText = (content: string): string => {
   if (!isBookingFormPrompt(content)) {
     return content;
@@ -64,20 +88,20 @@ export const getBookingFormDisplayText = (content: string): string => {
   const withoutPrefix = content
     .slice(BOOKING_FORM_PROMPT_PREFIX.length)
     .trimStart();
-  const withoutRoomId = withoutPrefix.replace(
-    /\.\s*roomId:\s*[^.]+\.?\s*$/i,
+  const withoutMetadata = withoutPrefix.replace(
+    BOOKING_FORM_METADATA_SUFFIX,
     "",
   );
 
-  if (withoutRoomId.startsWith("Show booking form for ")) {
-    const name = withoutRoomId
+  if (withoutMetadata.startsWith("Show booking form for ")) {
+    const name = withoutMetadata
       .slice("Show booking form for ".length)
       .replace(/\.$/, "")
       .trim();
-    return name ? `Book ${name}` : withoutRoomId.trim();
+    return name ? `Book ${name}` : withoutMetadata.trim();
   }
 
-  return withoutRoomId.trim();
+  return withoutMetadata.trim();
 };
 
 export const getBookingStayDisplayText = (content: string): string => {

@@ -28,10 +28,11 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID,
       parameters: getRoomByIdInputSchema,
-      render: ({ status, result }) => (
+      render: ({ status, result, toolCallId }) => (
         <GetRoomByIdNotice
           status={status}
           result={result as GetRoomByIdResult | string | null}
+          toolCallId={toolCallId}
         />
       ),
     },

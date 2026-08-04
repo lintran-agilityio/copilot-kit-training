@@ -6,6 +6,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useRequestRoomBooking } from "@/features/booking/hooks/use-request-room-booking";
 import { useBooking } from "@/features/booking/hooks/use-booking";
 import { useReportHomestayFocusedRoom } from "@/features/chat/hooks/use-report-homestay-focused-room";
+import { useArtifactStore } from "@/features/chat/stores/artifact-store";
+import {
+  ARTIFACT_STATUS,
+  isArtifactLocked,
+} from "@/features/chat/types/artifact";
 import { Button } from "@/components/ui/button";
 import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
 import { RoomBookingDates } from "@/features/room/components/RoomBookingDates";
@@ -46,6 +51,8 @@ type RoomDetailProps = Room & {
   variant?: RoomDetailVariant;
   /** How the user opened page detail: view = editable; book = locked dates, no CTA. */
   entryMode?: RoomDetailEntryMode;
+  /** Chat generative UI artifact — locks the form after workflow completion. */
+  artifactId?: string;
 };
 
 const dateKeysEqual = (
@@ -67,10 +74,15 @@ export const RoomDetail = ({
   imageUrls,
   variant = ROOM_DETAIL_VARIANT.PAGE,
   entryMode = ROOM_DETAIL_ENTRY_MODE.VIEW,
+  artifactId,
   ...room
 }: RoomDetailProps) => {
   const updateBookingDraft = useBooking((state) => state.updateBookingDraft);
   const { requestRoomBooking, isRequesting } = useRequestRoomBooking();
+  const artifactStatus = useArtifactStore((state) =>
+    artifactId ? state.artifacts[artifactId]?.status : undefined,
+  );
+  const setArtifactStatus = useArtifactStore((state) => state.setStatus);
   const {
     id,
     name,
@@ -90,7 +102,8 @@ export const RoomDetail = ({
 
   const isPage = variant === ROOM_DETAIL_VARIANT.PAGE;
   const isBookEntry = isPage && entryMode === ROOM_DETAIL_ENTRY_MODE.BOOK;
-  const fieldsReadOnly = isBookEntry;
+  const artifactLocked = isArtifactLocked(artifactStatus);
+  const fieldsReadOnly = isBookEntry || artifactLocked;
 
   const [checkInDate, setLocalCheckIn] = useState<string | null>(() => {
     if (roomCheckInDate) {
@@ -167,8 +180,10 @@ export const RoomDetail = ({
       ? countNightOfDates(checkInDate, checkOutDate)
       : 0;
 
-  const isBookingDisabled = matchesExistingBooking;
+  const isBookingDisabled = matchesExistingBooking || artifactLocked;
   const showBookButton = !isBookEntry;
+  const isSubmittingArtifact =
+    artifactStatus === ARTIFACT_STATUS.SUBMITTING || isRequesting;
 
   const syncDraft = () => {
     if (!checkInDate || !checkOutDate || pricePerNight == null) {
@@ -196,6 +211,9 @@ export const RoomDetail = ({
     }
 
     syncDraft();
+    if (artifactId) {
+      setArtifactStatus(artifactId, ARTIFACT_STATUS.SUBMITTING);
+    }
     requestRoomBooking(
       buildBookingStayMessage({
         roomId: id,
@@ -287,11 +305,11 @@ export const RoomDetail = ({
           type="button"
           size="lg"
           className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
-          disabled={!canProceed || isBookingDisabled || isRequesting}
+          disabled={!canProceed || isBookingDisabled || isSubmittingArtifact}
           onClick={handleBook}
         >
           <CalendarCheck className="size-4" />
-          {isRequesting ? "Starting booking…" : "Book this room"}
+          {isSubmittingArtifact ? "Starting booking…" : "Book this room"}
         </Button>
       ) : null}
     </div>
@@ -403,11 +421,11 @@ export const RoomDetail = ({
             type="button"
             size="lg"
             className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
-            disabled={!canProceed || isBookingDisabled || isRequesting}
+            disabled={!canProceed || isBookingDisabled || isSubmittingArtifact}
             onClick={handleBook}
           >
             <CalendarCheck className="size-4" />
-            {isRequesting ? "Starting booking…" : "Book this room"}
+            {isSubmittingArtifact ? "Starting booking…" : "Book this room"}
           </Button>
         </div>
       </div>

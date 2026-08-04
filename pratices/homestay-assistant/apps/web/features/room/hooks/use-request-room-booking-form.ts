@@ -14,10 +14,11 @@ import {
 import { getAgentResourceId } from "@repo/utils";
 
 import { ROUTES } from "@/constants";
-import { buildBookingFormMessage } from "@/features/booking/utils/build-messages";
+import { prepareBookingFormMessage } from "@/features/booking/utils/prepare-booking-form-message";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
+import { runAgentSafely } from "@/features/chat/utils/agent-run";
 import { ROOM_DETAIL_ENTRY_MODE } from "@/features/room/constants/room-detail";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
@@ -71,7 +72,7 @@ export const useRequestRoomBookingForm = () => {
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
       const threadId =
         activeThreadIds[scopeKey] ?? createDraftThread(scopeKey);
-      const message = buildBookingFormMessage(roomId, roomName);
+      const { message } = prepareBookingFormMessage(roomId, roomName);
 
       if (copilotkit.runtimeConnectionStatus === "connected") {
         agent.threadId = threadId;
@@ -82,9 +83,12 @@ export const useRequestRoomBookingForm = () => {
           content: message,
         });
 
-        void copilotkit.runAgent({ agent }).catch((error) => {
-          console.error("Failed to open room booking form in chat", error);
-        });
+        void runAgentSafely(
+          () => copilotkit.runAgent({ agent }),
+          (error) => {
+            console.error("Failed to open room booking form in chat", error);
+          },
+        );
         return;
       }
 

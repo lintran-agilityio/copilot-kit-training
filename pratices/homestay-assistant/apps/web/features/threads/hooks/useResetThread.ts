@@ -5,6 +5,10 @@ import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
 import { AGENT_URLS } from "@repo/constants";
 import { useChatScopeKey } from "@/features/chat/hooks/use-chat-scope-key";
+import {
+  requestRuntimeAgentStop,
+  stopGeneration,
+} from "@/features/chat/utils/agent-run";
 import { useCreateThread } from "@/features/threads/hooks/useCreateThread";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
@@ -41,7 +45,21 @@ export const useResetThread = ({
 
     // An in-flight run would keep writing to (and so re-create) the thread.
     if (agent.isRunning) {
-      copilotkit.stopAgent({ agent });
+      const threadId = agent.threadId;
+
+      stopGeneration(
+        () => copilotkit.stopAgent({ agent }),
+        () => agent.abortRun(),
+        threadId
+          ? () =>
+              requestRuntimeAgentStop({
+                runtimeUrl: AGENT_URLS.MANAGE_ASSISTANT,
+                agentId,
+                threadId,
+                headers: copilotkit.headers,
+              })
+          : undefined,
+      );
     }
 
     createThread();

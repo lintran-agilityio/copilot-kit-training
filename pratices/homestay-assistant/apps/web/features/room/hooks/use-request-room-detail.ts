@@ -8,6 +8,7 @@ import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId, buildActionPrompt } from "@repo/utils";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
+import { runAgentSafely } from "@/features/chat/utils/agent-run";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 type OpenRoomDetailArgs = {
@@ -53,9 +54,12 @@ export const useRequestRoomDetail = () => {
           content: message,
         });
 
-        void copilotkit.runAgent({ agent }).catch((error) => {
-          console.error("Failed to open room detail in chat", error);
-        });
+        void runAgentSafely(
+          () => copilotkit.runAgent({ agent }),
+          (error) => {
+            console.error("Failed to open room detail in chat", error);
+          },
+        );
         return;
       }
 

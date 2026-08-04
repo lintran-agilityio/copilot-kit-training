@@ -14,6 +14,7 @@ import { getAgentResourceId } from "@repo/utils";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
+import { runAgentSafely } from "@/features/chat/utils/agent-run";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 const BOOK_FLOW_KEY = "book-flow";
@@ -68,15 +69,15 @@ export const useRequestRoomBooking = () => {
           content: message,
         });
 
-        void copilotkit
-          .runAgent({ agent })
-          .catch((error) => {
+        void runAgentSafely(
+          () => copilotkit.runAgent({ agent }),
+          (error) => {
             console.error("Failed to start booking workflow", error);
-          })
-          .finally(() => {
-            requestInFlightRef.current = false;
-            setIsRequesting(false);
-          });
+          },
+        ).finally(() => {
+          requestInFlightRef.current = false;
+          setIsRequesting(false);
+        });
         return;
       }
 

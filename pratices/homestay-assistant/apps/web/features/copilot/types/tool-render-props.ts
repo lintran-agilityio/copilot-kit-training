@@ -9,4 +9,5 @@ export type ToolRendererStatus =
 export type ToolRendererProps<TResult> = {
   status: ToolRendererStatus;
   result?: TResult | string | null;
+  toolCallId?: string;
 };

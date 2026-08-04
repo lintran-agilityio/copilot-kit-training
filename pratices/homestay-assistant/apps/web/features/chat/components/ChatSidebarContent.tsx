@@ -15,6 +15,7 @@ import {
   useChatSuggestions,
   useChatScroll,
   useResetConversation,
+  useStopGeneration,
   useThreadMessages,
 } from "@/features/chat/hooks";
 import {
@@ -26,6 +27,7 @@ import {
 } from "@/features/chat/components";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
+import { runAgentSafely } from "@/features/chat/utils/agent-run";
 import { SuggestionBar } from "@/components/suggestions";
 import { ThreadLoadingStateView } from "@/features/threads/components";
 import { useChatSession } from "@/features/threads/hooks/useChatSession";
@@ -36,6 +38,7 @@ export const ChatSidebarContent = ({
 }: ChatSidebarProps) => {
   const suggestions = useChatSuggestions({ agentId });
   const { resetConversation } = useResetConversation({ agentId });
+  const { stopGeneration } = useStopGeneration({ agentId });
   const {
     scopeKey,
     activeThreadId,
@@ -130,11 +133,12 @@ export const ChatSidebarContent = ({
       content: pendingMessage,
     });
 
-    try {
-      await currentCopilotkit.runAgent({ agent: currentAgent });
-    } catch (error) {
-      console.error("Failed to send pending message", error);
-    }
+    await runAgentSafely(
+      () => currentCopilotkit.runAgent({ agent: currentAgent }),
+      (error) => {
+        console.error("Failed to send pending message", error);
+      },
+    );
   };
 
   useEffect(() => {
@@ -188,6 +192,8 @@ export const ChatSidebarContent = ({
             threadId={activeThreadId}
             autoScroll="pin-to-bottom"
             className="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+            // Square Stop → abort stream; conversation preserved.
+            onStop={stopGeneration}
             // CopilotChat always injects autoSuggestions into scrollView when the
             // chat has messages. Hide that built-in strip — we render SuggestionBar
             // once in the footer (and on the welcome screen).

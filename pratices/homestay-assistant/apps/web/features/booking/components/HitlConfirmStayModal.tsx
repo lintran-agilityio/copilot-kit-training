@@ -10,6 +10,7 @@ import {
 import { ConfirmBookingDialog } from "@/components/confirm-modal";
 import { useHitlConfirmDialog } from "@/features/booking/hooks";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
+import { useArtifactStore } from "@/features/chat/stores/artifact-store";
 import { useReportHomestayAgentWorkflow } from "@/features/chat/hooks/use-report-homestay-agent-workflow";
 import type {
   ConfirmBookingArgs,
@@ -76,6 +77,9 @@ const HitlConfirmCreateStayModal = ({
   respond?: (result: ConfirmBookingResult) => Promise<void>;
 }) => {
   const resetBooking = useBookingStore((state) => state.resetBooking);
+  const finalizeBookingForms = useArtifactStore(
+    (state) => state.finalizeBookingForms,
+  );
   const {
     isVisible,
     isSubmitting,
@@ -86,6 +90,7 @@ const HitlConfirmCreateStayModal = ({
   } = useHitlConfirmDialog(status, respond, "Failed to confirm booking");
 
   const handleCancel = () => {
+    finalizeBookingForms("cancelled");
     resetBooking();
     handleDismiss();
   };

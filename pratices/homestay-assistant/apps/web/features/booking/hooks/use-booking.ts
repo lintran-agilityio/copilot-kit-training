@@ -13,6 +13,7 @@ import {
   buildBookingModifyMessage,
 } from "@/features/booking/utils";
 import { useChatStore } from "@/features/chat/stores/chat-store";
+import { runAgentSafely } from "@/features/chat/utils/agent-run";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 /** Selector hook over the module booking store. */
@@ -56,9 +57,12 @@ const useBookingAgentAction = (
         content: message,
       });
 
-      copilotkit.runAgent({ agent }).catch((error) => {
-        console.error(`Failed to start ${label} flow`, error);
-      });
+      void runAgentSafely(
+        () => copilotkit.runAgent({ agent }),
+        (error) => {
+          console.error(`Failed to start ${label} flow`, error);
+        },
+      );
     },
     [
       agent,

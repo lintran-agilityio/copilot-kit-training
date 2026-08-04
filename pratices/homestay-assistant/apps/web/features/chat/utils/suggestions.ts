@@ -18,6 +18,7 @@ import type { HomestayAgentContext } from "@/features/chat/types";
 
 const bookThisRoom = (roomId: string, roomName: string): StaticSuggestion => ({
   title: "Book this room",
+  // Artifact is minted on click in SuggestionBar (avoid register-on-render).
   message: buildBookingFormMessage(roomId, roomName),
 });
 
