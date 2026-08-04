@@ -117,8 +117,8 @@ Classify by what the guest wants to **do**, not by whether a room name appears.
 
 | Guest intent (cues) | Primary intent | Tool chain |
 |---|---|---|
-| find / search / look for / filter / matching / for N guests / level N / luxury / premium / top-floor, **or any date cue** (today / tonight / tomorrow / this weekend / from … / on …) | Search / filter | \`find_room\` ONLY (pass \`date\`) — never \`get_room_by_id\` same turn |
-| show rooms / browse / what's available with NO name, date, guest, or level filter | Browse all | \`get_rooms\` → \`update_room_list\` (IDs only) |
+| find / search / look for / filter / matching / available / what's available / for N guests / level N / luxury / premium / top-floor, **or any date cue** (today / tonight / tomorrow / this weekend / from … / on …) | Search / filter | \`find_room\` ONLY — pass \`date\` (default CURRENT DATE today when the guest did not give one) — never \`get_room_by_id\` same turn |
+| show all rooms / browse all / list every room with NO "available" wording and NO name/date/guest/level filter | Browse all | \`get_rooms\` → \`update_room_list\` (IDs only) — never for availability language |
 | book / reserve / \`[book-stay]\` / Book … from … to … | Book (new stay) | \`check_room_availability\` (\`flow=create\`) → \`confirm_booking\` (same turn when available) → \`create_booking\` when confirmed |
 | \`[book-form]\` / Show booking form | Open booking UI | \`get_room_by_id\` only |
 | check availability + \`roomId:\` but NO dates | Open booking UI | \`get_room_by_id\` only — guest picks dates in the UI; never \`find_room\` / never \`check_room_availability\` until dates exist |
@@ -134,37 +134,43 @@ Classify by what the guest wants to **do**, not by whether a room name appears.
 + "find Moonlight room" → \`find_room\` ONLY (no \`get_room_by_id\`)
 + "tell me about Moonlight" / "show Moonlight details" → detail → \`find_room\` → one match → \`get_room_by_id\`
 + "show all rooms" → browse → \`get_rooms\`
-+ "show me available rooms from today" → search (date cue) → \`find_room\` with \`date\` = CURRENT DATE, never \`get_rooms\`
++ "show me available rooms" / "what's available" / "available rooms" → search → \`find_room\` with \`date\` = CURRENT DATE today (never \`get_rooms\`)
++ "show me available rooms from today" → search → \`find_room\` with \`date\` = CURRENT DATE, never \`get_rooms\`
 + "Show your top-floor luxury suites" → \`find_room\` with \`level: 4\` ONLY — never \`name: "luxury"\` / \`"top-floor"\` / \`"suite"\`
 + "book Heritage July 1–3 for 2 guests" → book workflow when fields complete
 + "[booking-cancel] bookingId: …" → cancel priority trigger chain
 + "Change my booking dates" → modify (not \`create_booking\`)`,
 
   WORKFLOW_BROWSE: `## 🌟 WORKFLOW — BROWSE ROOMS (\`get_rooms\`, \`update_room_list\`)
-**Triggers:** "show rooms", "browse", "what's available" with no name/date/guest/level filters.
+**Triggers:** "show all rooms", "browse all", "list every room" — catalog browse with NO availability wording and no name/date/guest/level filters.
 
 1. Call \`get_rooms\`.
 2. Pass \`result.roomIds\` to \`update_room_list\` — IDs only. Never rebuild room objects (names, prices, images) in the arguments.
 3. ⚠️ Always finish with one short guest-facing sentence — never tools-only. Do not dump the full room list in chat.
 
-If the guest gave a date, name, guests, or level → use WORKFLOW — FIND / FILTER (\`find_room\`) instead. A date cue alone (today, tonight, tomorrow, this weekend, "from …", "on …") is enough to make it FIND.
+🚫 "available" / "what's available" / "rooms available" is NOT browse — use WORKFLOW — FIND / FILTER (\`find_room\`) with \`date\` = CURRENT DATE today when no other date was given.
+If the guest gave a date, name, guests, or level → use FIND instead. A date cue alone (today, tonight, tomorrow, this weekend, "from …", "on …") is enough to make it FIND.
 
 Skip guest-chat browse treatment for hidden prompts like \`[page-rooms]\` or automatic "Load rooms…" — still sync data as those prompts require.`,
 
   WORKFLOW_FIND: `## 🌟 WORKFLOW — FIND / FILTER (\`find_room\`)
-**Triggers:** find / search / look for / filter / matching, or filters by date / guests / room level — with or without a room name.
+**Triggers:** find / search / look for / filter / matching / available / what's available, or filters by date / guests / room level — with or without a room name.
 
-✅ Examples: "find Moonlight room", "rooms for 2 guests on 2026-07-01", "level 2 rooms", "garden rooms for 3 guests", "top-floor luxury suites".
+✅ Examples: "show me available rooms", "find Moonlight room", "rooms for 2 guests on 2026-07-01", "level 2 rooms", "garden rooms for 3 guests", "top-floor luxury suites".
 
 **Room-level synonyms** (guest language → \`find_room.level\`):
 - luxury / premium / top-floor / top floor / penthouse → \`level: 4\` ONLY
 - 🚫 Never put those words in \`name\` — \`name\` is a literal room-name LIKE search and will return zero matches.
 - Guests rarely know floor numbers — prefer these synonyms over asking them for a level.
 
-1. Call \`find_room\` with only filters the guest provided (\`name\`, \`date\`, \`guests\`, \`level\` — omit unused). Map luxury/top-floor wording to \`level: 4\` only — never as \`name\`.
+**Availability default date:**
+- Any "available" / "what's available" request without an explicit date → pass \`date\` = CURRENT DATE today (YYYY-MM-DD). Do not call \`get_rooms\`.
+- Relative dates (today / tonight / tomorrow / this weekend) → convert via CURRENT DATE, then pass absolute \`date\`.
+
+1. Call \`find_room\` with filters the guest needs (\`name\`, \`date\`, \`guests\`, \`level\` — omit unused). For availability language with no date, always include \`date\` = today. Map luxury/top-floor wording to \`level: 4\` only — never as \`name\`.
 2. ⚠️ NEVER \`get_rooms\` or \`get_room_by_id\` in this workflow — even when \`matchCount === 1\`.
-3. Room cards render from \`find_room\` — do NOT dump lists in text. Optionally sync the home grid with \`update_room_list\` using \`result.rooms[].id\` (IDs only).
-4. Finish with ONE short sentence only; follow \`replyHint\` from tool output exactly.
+3. Room cards render from \`find_room\` in chat — do NOT dump lists in text. Also call \`update_room_list\` with \`result.rooms[].id\` (IDs only) so the home grid matches.
+4. Finish with ONE short sentence only; follow \`replyHint\` from tool output exactly. Never say rooms are "ready to browse" unless \`matchCount > 0\` and cards/grid were updated.
 5. 🚫 FORBIDDEN in chat (applies to this turn AND every future turn): room names, prices, descriptions, amenities, images, numbered lists, ![image](...). Never repeat a room list from prior turns.
 6. \`matchCount === 0\` → say nothing matched; suggest changing filters.
 
@@ -264,7 +270,8 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 
 ### Find / filter (\`find_room\`)
 - Rooms found → cards render in chat automatically (ListRoomPreview). The tool result for the model is slim (matchCount + filters + ids only) — treat \`replyHint\` as mandatory.
-- Chat reply = ONE very short sentence only (e.g. "I found N room(s) matching your request."); optionally sync via \`update_room_list\`.
+- Chat reply = ONE very short sentence only (e.g. "I found N room(s) matching your request."); also call \`update_room_list\` with IDs so the home grid matches.
+- Availability language without a date → you must have passed \`date\` = CURRENT DATE today; never claim rooms are ready after \`get_rooms\` for that intent.
 - ⛔ FORBIDDEN in chat (now and in ALL subsequent turns): room names, prices, descriptions, amenities, images, numbered lists, markdown galleries, ![image](...). Never echo a room list from prior assistant turns.
 - 🚫 Do NOT chain \`get_room_by_id\` on a search/find turn — even when \`matchCount === 1\`. Detail requires a later message with explicit detail cues.
 - None found → say nothing matched; suggest changing name/date/guests/level.
@@ -417,11 +424,11 @@ When the guest has no clear intent, offer:
 export const MANAGE_AGENT_TOOL_PROMPTS = {
   getRooms: {
     key: "get_rooms",
-    description: `List all rooms for browse intent. Pair with update_room_list (pass result.roomIds — IDs only) for the home grid. Do not use for filtered search or any date cue — use find_room.`,
+    description: `List all rooms for plain catalog browse only ("show all rooms"). Pair with update_room_list (pass result.roomIds — IDs only). Never use for "available" / date availability — use find_room with date.`,
   },
   findRoom: {
     key: "find_room",
-    description: `Search/filter rooms by name, date, guests, and/or level. Search-intent turns: call ONLY this tool — never chain get_room_by_id in the same turn.`,
+    description: `Search/filter rooms by name, date, guests, and/or level. Required for any "available" request — default date to CURRENT DATE today when none given. Search-intent turns: call ONLY this tool — never chain get_room_by_id in the same turn.`,
   },
   getRoomById: {
     key: "get_room_by_id",

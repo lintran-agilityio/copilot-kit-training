@@ -9,6 +9,7 @@ export const buildCurrentDateInstructions = (now = new Date()): string => {
     Tomorrow is ${tomorrow}.
     When the guest says relative dates (today, tomorrow, next Friday, in 3 days), convert them using these values.
     Examples: "tomorrow" → ${tomorrow}; "today" → ${today}.
+    When the guest asks for available rooms without naming a date, use today (${today}) as find_room.date.
     Never invent years or dates from training data (e.g. never use 2023). Pass only absolute YYYY-MM-DD to date tools.
     If working memory or earlier turns have a different check-in/out, overwrite them when the latest message uses relative dates.
     Check-in and check-out must be on or after ${today} unless the guest explicitly gave a past date.

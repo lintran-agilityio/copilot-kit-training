@@ -18,60 +18,58 @@ export const runtime = "nodejs";
 
 const basePath = "/api/copilotkit";
 
-const intelligenceApiUrl = process.env.INTELLIGENCE_API_URL;
-const intelligenceWsUrl = process.env.INTELLIGENCE_GATEWAY_WS_URL;
-const intelligenceApiKey = process.env.INTELLIGENCE_API_KEY;
+const createRuntime = () => {
+  const apiUrl = process.env.INTELLIGENCE_API_URL;
+  const wsUrl = process.env.INTELLIGENCE_GATEWAY_WS_URL;
+  const apiKey = process.env.INTELLIGENCE_API_KEY;
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+  console.log("INTELLIGENCE_API_URL:", apiUrl);
+  console.log("INTELLIGENCE_GATEWAY_WS_URL:", wsUrl);
+  console.log("INTELLIGENCE_API_KEY:", apiKey);
 
-if (!intelligenceApiUrl || !intelligenceWsUrl || !intelligenceApiKey) {
-  throw new Error(
-    "Missing CopilotKit Intelligence env: INTELLIGENCE_API_URL, INTELLIGENCE_GATEWAY_WS_URL, INTELLIGENCE_API_KEY",
-  );
+  if (!apiUrl || !wsUrl || !apiKey) {
+    throw new Error(
+      "Missing CopilotKit Intelligence env"
+    );
+  }
+
+  const intelligence = new CopilotKitIntelligence({
+    apiUrl,
+    wsUrl,
+    apiKey,
+  });
+
+  return new CopilotRuntime({
+    intelligence,
+    agents: async () => {
+      const agentRequest = getCurrentAgentRequest();
+
+      if (!agentRequest) {
+        return {};
+      }
+
+      return getCopilotkitAgents({
+        userId: agentRequest.auth.userId,
+        agentId: agentRequest.agentId,
+        requestContext: agentRequest.requestContext,
+      });
+    },
+    identifyUser: () => {
+      const agentRequest = getCurrentAgentRequest();
+  
+      if (!agentRequest?.auth.userId) {
+        throw new Error("Authenticated user required for Intelligence threads");
+      }
+  
+      return {
+        id: agentRequest.auth.userId,
+        name: agentRequest.auth.userId,
+      };
+    },
+    generateThreadNames: true,
+  });
 }
 
-const intelligence = new CopilotKitIntelligence({
-  apiUrl: intelligenceApiUrl,
-  wsUrl: intelligenceWsUrl,
-  apiKey: intelligenceApiKey,
-});
-
-const copilotRuntime = new CopilotRuntime({
-  agents: async () => {
-    const agentRequest = getCurrentAgentRequest();
-
-    if (!agentRequest) {
-      return {};
-    }
-
-    return getCopilotkitAgents({
-      userId: agentRequest.auth.userId,
-      agentId: agentRequest.agentId,
-      requestContext: agentRequest.requestContext,
-    });
-  },
-  intelligence,
-  identifyUser: () => {
-    const agentRequest = getCurrentAgentRequest();
-
-    if (!agentRequest?.auth.userId) {
-      throw new Error("Authenticated user required for Intelligence threads");
-    }
-
-    return {
-      id: agentRequest.auth.userId,
-      name: agentRequest.auth.userId,
-    };
-  },
-  generateThreadNames: true,
-});
-
-// REST (multi-route) is required for Intelligence threads:
-// single-route /info always sets threadEndpointsEnabled=false.
-const multiRouteHandler = createCopilotRuntimeHandler({
-  runtime: copilotRuntime,
-  basePath,
-});
-
-const dispatchCopilotRequest = (req: Request) => multiRouteHandler(req);
 
 const handler = async (req: Request) => {
   const { userId, sessionId } = await auth();
@@ -83,8 +81,20 @@ const handler = async (req: Request) => {
   });
 
   if (!pipeline.ok) {
-    return Response.json({ error: pipeline.error }, { status: pipeline.status });
+    return Response.json(
+      { error: pipeline.error },
+      { status: pipeline.status },
+    );
   }
+
+  // Create runtime per request
+  const runtime = createRuntime();
+
+  // Create CopilotKit handler
+  const dispatchCopilotRequest = createCopilotRuntimeHandler({
+    runtime,
+    basePath,
+  });
 
   return runWithAgentRequest(toAgentRequestState(pipeline), () =>
     dispatchCopilotRequest(req),

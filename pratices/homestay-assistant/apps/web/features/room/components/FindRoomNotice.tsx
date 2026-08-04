@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { parseToolResult } from "@repo/utils";
@@ -10,10 +11,14 @@ import type {
   FindRoomResult,
   FindRoomToolProps,
 } from "@/features/room/types";
-import { buildFindRoomTitle } from "@/features/room/utils";
+import {
+  buildFindRoomTitle,
+  syncRoomListToStore,
+} from "@/features/room/utils";
 
 /**
  * Renders find_room tool output in chat: skeleton while loading, room cards when done.
+ * Also syncs matches to the home room grid so the page matches the chat cards.
  *
  * @param props - CopilotKit tool render status and result
  */
@@ -21,6 +26,30 @@ export const FindRoomNotice = ({
   status,
   result,
 }: FindRoomToolProps) => {
+  const lastSyncedKeyRef = useRef<string | null>(null);
+
+  const parsed =
+    status === ToolCallStatus.Complete
+      ? parseToolResult<FindRoomResult>(result)
+      : null;
+  const rooms = parsed?.rooms ?? [];
+  const title = parsed ? buildFindRoomTitle(parsed) : "Room results";
+  const roomIdsKey = rooms.map((room) => room.id).join(",");
+
+  useEffect(() => {
+    if (status !== ToolCallStatus.Complete || !rooms.length) {
+      return;
+    }
+
+    const syncKey = `${title}:${roomIdsKey}`;
+    if (lastSyncedKeyRef.current === syncKey) {
+      return;
+    }
+
+    lastSyncedKeyRef.current = syncKey;
+    syncRoomListToStore(rooms, title);
+  }, [status, rooms, title, roomIdsKey]);
+
   if (
     status === ToolCallStatus.Executing ||
     status === ToolCallStatus.InProgress
@@ -36,10 +65,7 @@ export const FindRoomNotice = ({
     return null;
   }
 
-  const parsed = parseToolResult<FindRoomResult>(result);
-  const rooms = parsed?.rooms ?? [];
-
-  if (!rooms || !rooms.length) {
+  if (!rooms.length) {
     return (
       <EmbeddedWidget className="px-3.5 py-3 text-zinc-400">
         No rooms matched that search.
@@ -49,7 +75,7 @@ export const FindRoomNotice = ({
 
   return (
     <EmbeddedWidget unframed>
-      <ListRoomPreview rooms={rooms} title={buildFindRoomTitle(parsed ?? {})} />
+      <ListRoomPreview rooms={rooms} title={title} />
     </EmbeddedWidget>
   );
 };

@@ -43,7 +43,7 @@ export const SUGGESTION = {
 
   showMoreRooms: {
     title: "Show more rooms",
-    message: "Show me more available rooms.",
+    message: "Show me more rooms available today.",
   },
 
   familyRooms: {
@@ -72,7 +72,7 @@ export const SUGGESTION = {
   },
   otherRooms: {
     title: "Other rooms",
-    message: "Show me other available rooms.",
+    message: "Show me other rooms available today.",
   },
   changeDates: {
     title: "Change dates",
@@ -96,7 +96,7 @@ export const SUGGESTION = {
   },
   bookAnother: {
     title: "Book another room",
-    message: `${PAGE_ROOMS_PROMPT_PREFIX} Load all rooms.`,
+    message: "I'd like to book another room.",
   },
   helpDates: {
     title: "Help with dates",
