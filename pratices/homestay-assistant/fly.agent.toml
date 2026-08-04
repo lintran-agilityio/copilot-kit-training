@@ -1,4 +1,4 @@
-app = "homestay-agent"
+app = "agent-homestay"
 primary_region = "sin"
 
 [build]
