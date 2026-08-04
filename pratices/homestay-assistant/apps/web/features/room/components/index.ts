@@ -2,6 +2,8 @@ export * from "./ListRoom";
 export * from "./Room";
 export * from "./RoomGrid";
 export * from "./RoomDetail";
+export * from "./RoomDetailRating";
+export * from "./RoomDetailHighlights";
 export * from "./RoomInfo";
 export * from "./RoomImage";
 export * from "./RoomImageGallery";

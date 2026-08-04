@@ -12,7 +12,7 @@ export const PageHeader = ({
   className,
 }: PageHeaderProps) => {
   return (
-    <div className={cn("mb-8", className)}>
+    <div className={cn("mb-4", className)}>
       <p className="mb-2 text-[11px] font-medium tracking-[0.25em] text-zinc-500">
         {label}
       </p>

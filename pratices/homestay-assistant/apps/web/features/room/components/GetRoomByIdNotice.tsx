@@ -4,6 +4,7 @@ import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { EmbeddedWidget } from "@/features/chat/components";
 import { RoomDetail } from "@/features/room/components";
+import { ROOM_DETAIL_VARIANT } from "@/features/room/constants/room-detail";
 import type {
   GetRoomByIdResult,
   GetRoomByIdToolProps,
@@ -41,7 +42,7 @@ export const GetRoomByIdNotice = ({
     <EmbeddedWidget unframed>
       <RoomDetail
         {...room}
-        variant="chat-booking"
+        variant={ROOM_DETAIL_VARIANT.CHAT_BOOKING}
         className="w-full border-white/12 bg-[#111111] shadow-none"
       />
     </EmbeddedWidget>

@@ -18,6 +18,7 @@ import { buildBookingFormMessage } from "@/features/booking/utils/build-messages
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
+import { ROOM_DETAIL_ENTRY_MODE } from "@/features/room/constants/room-detail";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
@@ -62,7 +63,9 @@ export const useRequestRoomBookingForm = () => {
       });
 
       if (pathname === ROUTES.HOME) {
-        useRoomStore.getState().setSelectedRoomId(roomId);
+        useRoomStore
+          .getState()
+          .setSelectedRoomId(roomId, ROOM_DETAIL_ENTRY_MODE.BOOK);
       }
 
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);

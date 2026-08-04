@@ -1,5 +1,9 @@
 import { create } from "zustand";
 
+import {
+  ROOM_DETAIL_ENTRY_MODE,
+  type RoomDetailEntryMode,
+} from "@/features/room/constants/room-detail";
 import type { Room } from "@/features/room/types/room";
 
 type RoomStore = {
@@ -7,11 +11,15 @@ type RoomStore = {
   roomListTitle: string | undefined;
   isRoomListLoading: boolean;
   selectedRoomId: string | null;
+  selectedRoomMode: RoomDetailEntryMode;
   /** True after the agent syncs the room grid (find/browse), not the initial page seed. */
   hasAgentRoomSearch: boolean;
   updateRoomList: (rooms: Room[], title?: string) => void;
   markAgentRoomSearch: () => void;
-  setSelectedRoomId: (roomId: string | null) => void;
+  setSelectedRoomId: (
+    roomId: string | null,
+    mode?: RoomDetailEntryMode,
+  ) => void;
   clearSelectedRoom: () => void;
   clearAgentRoomSearch: () => void;
 };
@@ -21,6 +29,7 @@ export const useRoomStore = create<RoomStore>()((set) => ({
   roomListTitle: undefined,
   isRoomListLoading: false,
   selectedRoomId: null,
+  selectedRoomMode: ROOM_DETAIL_ENTRY_MODE.VIEW,
   hasAgentRoomSearch: false,
 
   updateRoomList: (rooms, title) =>
@@ -28,9 +37,17 @@ export const useRoomStore = create<RoomStore>()((set) => ({
 
   markAgentRoomSearch: () => set({ hasAgentRoomSearch: true }),
 
-  setSelectedRoomId: (roomId) => set({ selectedRoomId: roomId }),
+  setSelectedRoomId: (roomId, mode = ROOM_DETAIL_ENTRY_MODE.VIEW) =>
+    set({
+      selectedRoomId: roomId,
+      selectedRoomMode: roomId == null ? ROOM_DETAIL_ENTRY_MODE.VIEW : mode,
+    }),
 
-  clearSelectedRoom: () => set({ selectedRoomId: null }),
+  clearSelectedRoom: () =>
+    set({
+      selectedRoomId: null,
+      selectedRoomMode: ROOM_DETAIL_ENTRY_MODE.VIEW,
+    }),
 
   clearAgentRoomSearch: () => set({ hasAgentRoomSearch: false }),
 }));

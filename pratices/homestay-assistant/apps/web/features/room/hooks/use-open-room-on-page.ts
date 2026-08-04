@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 
+import { ROOM_DETAIL_ENTRY_MODE } from "@/features/room/constants/room-detail";
 import { useRoomStore } from "@/features/room/stores/room-store";
 
 type OpenRoomOnPageArgs = {
@@ -17,7 +18,7 @@ export const useOpenRoomOnPage = () => {
         return;
       }
 
-      setSelectedRoomId(roomId);
+      setSelectedRoomId(roomId, ROOM_DETAIL_ENTRY_MODE.VIEW);
     },
     [setSelectedRoomId],
   );

@@ -1,0 +1,20 @@
+import { Star } from "lucide-react";
+
+import {
+  ROOM_DETAIL_STATIC_RATING,
+  ROOM_DETAIL_STATIC_REVIEW_COUNT,
+} from "@/features/room/constants/room-detail";
+
+export const RoomDetailRating = () => {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <Star className="size-4 fill-[#e6c547] text-[#e6c547]" />
+      <span className="font-semibold text-white">
+        {ROOM_DETAIL_STATIC_RATING.toFixed(1)}
+      </span>
+      <span className="font-medium text-emerald-400">
+        ({ROOM_DETAIL_STATIC_REVIEW_COUNT} reviews)
+      </span>
+    </div>
+  );
+};

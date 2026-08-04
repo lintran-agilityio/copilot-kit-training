@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import { ChevronRight, Images } from "lucide-react";
 
 import { cn } from "@repo/utils";
 import {
@@ -16,7 +17,6 @@ type RoomImageGalleryProps = {
   name: string;
   level: number;
   levelColor: string;
-  availableSlots: number;
   imageUrls?: string[];
 };
 
@@ -26,7 +26,6 @@ export const RoomImageGallery = ({
   name,
   level,
   levelColor,
-  availableSlots,
   imageUrls,
 }: RoomImageGalleryProps) => {
   const images = useMemo(() => {
@@ -39,8 +38,9 @@ export const RoomImageGallery = ({
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [failedImages, setFailedImages] = useState<Set<string>>(
-    () => new Set()
+    () => new Set(),
   );
+  const [thumbStart, setThumbStart] = useState(0);
   const activeImage = images[activeIndex] ?? imageUrl;
   const resolveImage = (src: string) =>
     failedImages.has(src) ? FALLBACK_ROOM_IMAGE : resolveRoomImage(src);
@@ -57,14 +57,28 @@ export const RoomImageGallery = ({
     });
   };
 
+  const visibleThumbCount = 5;
+  const canScrollThumbs = images.length > visibleThumbCount;
+  const visibleThumbs = images.slice(thumbStart, thumbStart + visibleThumbCount);
+
+  const handleNextThumbs = () => {
+    if (!canScrollThumbs) {
+      return;
+    }
+
+    setThumbStart((current) =>
+      Math.min(current + 1, Math.max(0, images.length - visibleThumbCount)),
+    );
+  };
+
   return (
     <div className="space-y-3">
-      <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
+      <div className="relative aspect-[2/1] overflow-hidden rounded-xl bg-zinc-900">
         <Image
           src={resolveImage(activeImage)}
           alt={`${name} — photo ${activeIndex + 1}`}
           fill
-          sizes="(max-width: 768px) 100vw, 300px"
+          sizes="(max-width: 1024px) 80vw, 50vw"
           onError={() => {
             markImageFailed(activeImage);
           }}
@@ -72,52 +86,66 @@ export const RoomImageGallery = ({
           className="object-cover transition-opacity duration-300"
         />
 
-        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4">
-          <div className="flex items-center gap-2">
-            <span
-              className="h-4 w-1 rounded-full"
-              style={{ backgroundColor: levelColor }}
-            />
-            <span className="text-[11px] font-medium tracking-[0.15em] text-white/90">
-              LEVEL {level}
-            </span>
-          </div>
+        <span
+          className="absolute left-4 top-4 rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-black"
+          style={{ backgroundColor: levelColor || "#e6c547" }}
+        >
+          Level {level}
+        </span>
 
-          <span className="rounded-full bg-emerald-500/90 px-2.5 py-1 text-[11px] font-medium text-black">
-            {availableSlots} free
-          </span>
-        </div>
+        <span className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-md bg-black/65 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+          <Images className="size-3.5 text-[#e6c547]" />
+          {activeIndex + 1} / {images.length}
+        </span>
       </div>
 
       {images.length > 1 ? (
-        <div className="app-scrollbar flex gap-2 overflow-x-auto pb-1">
-          {images.map((url, index) => (
+        <div className="flex items-center gap-2">
+          <div className="app-scrollbar flex flex-1 gap-2 overflow-x-auto pb-1">
+            {visibleThumbs.map((url, offset) => {
+              const index = thumbStart + offset;
+
+              return (
+                <button
+                  key={`${url}-${index}`}
+                  type="button"
+                  aria-label={`View image ${index + 1}`}
+                  onClick={() => setActiveIndex(index)}
+                  className={cn(
+                    "relative aspect-[4/3] w-[4.75rem] shrink-0 overflow-hidden rounded-lg border-2 transition-colors cursor-pointer sm:w-24",
+                    index === activeIndex
+                      ? "border-[#e6c547]"
+                      : "border-transparent opacity-70 hover:opacity-100",
+                  )}
+                >
+                  <Image
+                    src={resolveImage(url)}
+                    alt={`${name} thumbnail ${index + 1}`}
+                    width={96}
+                    height={72}
+                    sizes="96px"
+                    className="size-full object-cover"
+                    loading="lazy"
+                    onError={() => {
+                      markImageFailed(url);
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+
+          {canScrollThumbs &&
+          thumbStart + visibleThumbCount < images.length ? (
             <button
-              key={`${url}-${index}`}
               type="button"
-              aria-label={`View image ${index + 1}`}
-              onClick={() => setActiveIndex(index)}
-              className={cn(
-                "relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-colors cursor-pointer",
-                index === activeIndex
-                  ? "border-emerald-400"
-                  : "border-transparent opacity-70 hover:opacity-100"
-              )}
+              aria-label="Show more thumbnails"
+              onClick={handleNextThumbs}
+              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/12 text-zinc-300 transition-colors hover:border-white/25 hover:text-white cursor-pointer"
             >
-              <Image
-                src={resolveImage(url)}
-                alt={`${name} thumbnail ${index + 1}`}
-                width={80}
-                height={80}
-                sizes="(max-width: 768px) 100vw, 80px"
-                className="size-full object-cover"
-                loading="lazy"
-                onError={() => {
-                  markImageFailed(url);
-                }}
-              />
+              <ChevronRight className="size-4" />
             </button>
-          ))}
+          ) : null}
         </div>
       ) : null}
     </div>
