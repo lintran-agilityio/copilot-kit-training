@@ -42,11 +42,12 @@ export const BookingToolsProvider = () => {
       description:
         "Required immediately when a NEW booking availability result (flow=create) returns nextAction=confirm_booking. Show the approval modal using result.room and the same dates/guests. Wait for the response: confirmed=true requires create_booking with the returned fields; confirmed=false stops the booking flow, calls no more tools, and gets a brief 'booking stopped' reply. Never use this for modifying a booking.",
       parameters: confirmBookingSchema,
-      render: ({ status, args, respond }) => (
+      render: ({ status, args, respond, result }) => (
         <ConfirmBookingModal
           status={status}
           args={args as Partial<ConfirmBookingArgs>}
           respond={respond}
+          result={result}
         />
       ),
     },
@@ -60,11 +61,12 @@ export const BookingToolsProvider = () => {
       description:
         "After find_booking_by_id returns a booking for MODIFY, open the edit form in the SAME turn. Pass bookingId, result.room, and the booking's current checkInDate, checkOutDate, and guests from bookings[0]. The guest edits dates/guests in the UI (prefilled). Do NOT ask in chat what to change. Do NOT call get_room_by_id. Do NOT call check_room_availability until edit_modify_booking returns confirmed: true. If confirmed: true, call check_room_availability with flow=modify, roomId, the new dates/guests, and excludeBookingId=bookingId. Never use flow=create here. If confirmed: false, reply that the booking was kept unchanged.",
       parameters: editModifyBookingSchema,
-      render: ({ status, args, respond }) => (
+      render: ({ status, args, respond, result }) => (
         <EditModifyBookingModal
           status={status}
           args={args as Partial<EditModifyBookingArgs>}
           respond={respond}
+          result={result}
         />
       ),
     },
@@ -78,11 +80,12 @@ export const BookingToolsProvider = () => {
       description:
         "After check_room_availability succeeds for a MODIFY flow (flow=modify + excludeBookingId), show the read-only confirm modification modal. Pass bookingId, result.room, and the SAME checkInDate, checkOutDate, and guests from check_room_availability.result (the dates just validated — which came from edit_modify_booking confirmed:true). Never reuse the original booking dates, working-memory draft, or edit_modify_booking tool-call args. Do NOT call update_booking until confirm_modify_booking returns confirmed: true. If confirmed: true, call update_booking with bookingId, checkInDate, checkOutDate, and guests from the result — the UI shows ConfirmSuccess and refreshes the list automatically; then send one short guest-facing chat confirmation. If confirmed: false, reply that the booking was kept unchanged. Never use this for creating a new booking.",
       parameters: confirmModifyBookingSchema,
-      render: ({ status, args, respond }) => (
+      render: ({ status, args, respond, result }) => (
         <ConfirmModifyBookingModal
           status={status}
           args={args as Partial<ConfirmModifyBookingArgs>}
           respond={respond}
+          result={result}
         />
       ),
     },
@@ -96,11 +99,12 @@ export const BookingToolsProvider = () => {
       description:
         "After find_booking_by_id returns bookings.length > 0, show the cancel confirmation dialog with bookings and queryName from the find result as-is. Do NOT call cancel_booking until show_cancel_dialog_confirm returns confirmed: true. If confirmed: true, call cancel_booking with bookingId from the result, then reply in chat confirming the cancellation. Do NOT call get_bookings or show_cancellation_success after cancel — the UI shows success and refreshes the list automatically. If confirmed: false, reply in chat that the booking was kept.",
       parameters: cancelBookingByRoomSchema,
-      render: ({ status, args, respond }) => (
+      render: ({ status, args, respond, result }) => (
         <CancelBookingByRoomModal
           status={status}
           args={args as Partial<CancelBookingByRoomArgs>}
           respond={respond}
+          result={result}
         />
       ),
     },

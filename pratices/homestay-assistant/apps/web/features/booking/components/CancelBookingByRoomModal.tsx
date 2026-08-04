@@ -6,18 +6,17 @@ import {
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
+import { parseToolResult } from "@repo/utils";
 
 import { Button } from "@/components/ui/button";
+import { EmbeddedWidget } from "@/features/chat/components";
+import { HitlDecisionUserMessage } from "@/features/booking/components/HitlDecisionUserMessage";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
+  HITL_DECISION_STATUS,
+  isHitlDecisionTerminal,
   isHitlToolAwaitingUser,
+  resolveHitlDecisionStatus,
+  shouldRenderHitlCard,
   useHitlRespondOnce,
 } from "@/features/booking/utils";
 import type {
@@ -32,6 +31,7 @@ type CancelBookingByRoomModalProps = {
   status: ToolCallStatus;
   args: Partial<CancelBookingByRoomArgs>;
   respond?: (result: CancelBookingByRoomResult) => Promise<void>;
+  result?: unknown;
 };
 
 type BookingItem = CancelBookingByRoomArgs["bookings"][number];
@@ -57,6 +57,7 @@ export const CancelBookingByRoomModal = ({
   status,
   args,
   respond,
+  result,
 }: CancelBookingByRoomModalProps) => {
   const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(
     null,
@@ -64,31 +65,30 @@ export const CancelBookingByRoomModal = ({
   const { respondOnce, canRespond } =
     useHitlRespondOnce<CancelBookingByRoomResult>(respond);
 
-  const isAwaitingCancel = isHitlToolAwaitingUser(status);
+  const bookings = (args.bookings ?? []).filter(hasValidBooking);
+  const hasArgs = bookings.length > 0;
+  const decisionStatus = resolveHitlDecisionStatus(status, result);
+  const isComplete = isHitlDecisionTerminal(decisionStatus);
+  const isAwaitingCancel = isHitlToolAwaitingUser(status) && !isComplete;
+  const parsedResult = parseToolResult<CancelBookingByRoomResult>(
+    result as CancelBookingByRoomResult | string | null | undefined,
+  );
 
   useReportHomestayAgentWorkflow(isAwaitingCancel, "cancel-flow", {
     type: HOMESTAY_AGENT_TASK_TYPE.CANCEL,
     status: HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION,
   });
 
-  if (!isHitlToolAwaitingUser(status)) {
+  if (!shouldRenderHitlCard(status, hasArgs)) {
     return null;
   }
-
-  const bookings = (args.bookings ?? []).filter(hasValidBooking);
-
-  if (!bookings.length) {
-    return null;
-  }
-
-  const handleOpenDialogCancelBooking = (nextOpen: boolean) => {
-    if (!nextOpen && canRespond) {
-      respondOnce({ confirmed: false, reason: "declined" });
-    }
-  };
 
   const handleKeepBookings = () => {
-    respondOnce({ confirmed: false, reason: "declined" });
+    if (!canRespond) {
+      return;
+    }
+
+    void respondOnce({ confirmed: false, reason: "declined" });
   };
 
   const confirmRespond = (bookingItem: BookingDetails) =>
@@ -107,12 +107,77 @@ export const CancelBookingByRoomModal = ({
         }
       : undefined;
 
+  // After completion, prefer the confirmed booking card when we know which one.
+  if (isComplete) {
+    const completedBooking =
+      parsedResult?.confirmed && parsedResult.bookingId
+        ? bookings.find((b) => b.bookingId === parsedResult.bookingId)
+        : bookings.length === 1
+          ? bookings[0]
+          : null;
+
+    if (completedBooking) {
+      return (
+        <ConfirmCancelBookingModal
+          status={status}
+          bookingItem={toBookingDetails(completedBooking)}
+          result={result}
+        />
+      );
+    }
+
+    return (
+      <>
+        <EmbeddedWidget>
+          <div className="space-y-3 p-3.5 text-zinc-100">
+            <div className="space-y-1">
+              <h3 className="text-sm font-medium text-white">
+                {decisionStatus === HITL_DECISION_STATUS.REJECTED
+                  ? "Cancelled by you"
+                  : decisionStatus === HITL_DECISION_STATUS.APPROVED
+                    ? "Confirmed by you"
+                    : "Confirmation expired"}
+              </h3>
+              <p className="text-xs text-zinc-400">
+                {decisionStatus === HITL_DECISION_STATUS.REJECTED
+                  ? `You kept all bookings matching “${args.queryName}”.`
+                  : `Multiple bookings match “${args.queryName}”.`}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {bookings.map((booking) => (
+                <div
+                  key={booking.bookingId}
+                  className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs"
+                >
+                  <span className="font-medium text-zinc-100">
+                    {booking.roomName}
+                  </span>
+                  <span className="text-zinc-400">
+                    {booking.checkInDate} → {booking.checkOutDate}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </EmbeddedWidget>
+        <HitlDecisionUserMessage
+          decisionStatus={decisionStatus}
+          confirmLabel="Cancel booking"
+          cancelLabel="Keep bookings"
+        />
+      </>
+    );
+  }
+
   if (bookings.length === 1 && bookings[0]) {
     return (
       <ConfirmCancelBookingModal
         status={status}
         bookingItem={toBookingDetails(bookings[0])}
         respond={confirmRespond(toBookingDetails(bookings[0]))}
+        result={result}
       />
     );
   }
@@ -123,22 +188,23 @@ export const CancelBookingByRoomModal = ({
         status={status}
         bookingItem={selectedBooking}
         respond={confirmRespond(selectedBooking)}
+        result={result}
       />
     );
   }
 
   return (
-    <Dialog open onOpenChange={handleOpenDialogCancelBooking}>
-      <DialogContent className="border-white/10 bg-[#111111] text-zinc-100 sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-base font-medium text-white">
+    <EmbeddedWidget>
+      <div className="space-y-3 p-3.5 text-zinc-100">
+        <div className="space-y-1">
+          <h3 className="text-sm font-medium text-white">
             Which booking should be cancelled?
-          </DialogTitle>
-          <DialogDescription className="text-sm text-zinc-400">
+          </h3>
+          <p className="text-xs text-zinc-400">
             Multiple bookings match &ldquo;{args.queryName}&rdquo;. Select one to
             cancel.
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
         <div className="space-y-2">
           {bookings.map((booking) => (
@@ -146,7 +212,7 @@ export const CancelBookingByRoomModal = ({
               key={booking.bookingId}
               type="button"
               disabled={!canRespond}
-              className="flex w-full flex-col rounded-xl border border-white/8 bg-white/[0.02] p-4 text-left text-sm transition hover:bg-white/[0.05] disabled:opacity-50"
+              className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs transition hover:bg-white/[0.05] disabled:opacity-50"
               onClick={() => setSelectedBooking(toBookingDetails(booking))}
             >
               <span className="font-medium text-zinc-100">{booking.roomName}</span>
@@ -157,18 +223,19 @@ export const CancelBookingByRoomModal = ({
           ))}
         </div>
 
-        <DialogFooter className="border-white/8 bg-transparent">
+        <div className="pt-0.5">
           <Button
             type="button"
             variant="outline"
+            size="sm"
             className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
             disabled={!canRespond}
             onClick={handleKeepBookings}
           >
             Keep bookings
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </EmbeddedWidget>
   );
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { EmbeddedWidget } from "@/features/chat/components";
@@ -53,14 +53,32 @@ const GetRoomByIdBookingForm = ({
   room: NonNullable<GetRoomByIdResult["room"]>;
   toolCallId?: string;
 }) => {
-  const bindToolCall = useArtifactStore((state) => state.bindToolCall);
+  const boundArtifactId = useArtifactStore((state) =>
+    toolCallId ? state.toolCallBindings[toolCallId] : undefined,
+  );
+  const [fallbackArtifactId, setFallbackArtifactId] = useState<string | null>(
+    null,
+  );
 
-  const artifactId = useMemo(() => {
-    if (!toolCallId) {
-      return useArtifactStore.getState().registerBookingForm(room.id);
+  useEffect(() => {
+    if (toolCallId) {
+      if (useArtifactStore.getState().toolCallBindings[toolCallId]) {
+        return;
+      }
+      useArtifactStore.getState().bindToolCall(toolCallId, room.id);
+      return;
     }
-    return bindToolCall(toolCallId, room.id);
-  }, [bindToolCall, room.id, toolCallId]);
+
+    if (fallbackArtifactId) {
+      return;
+    }
+
+    setFallbackArtifactId(
+      useArtifactStore.getState().registerBookingForm(room.id),
+    );
+  }, [fallbackArtifactId, room.id, toolCallId]);
+
+  const artifactId = boundArtifactId ?? fallbackArtifactId ?? undefined;
 
   return (
     <EmbeddedWidget unframed>

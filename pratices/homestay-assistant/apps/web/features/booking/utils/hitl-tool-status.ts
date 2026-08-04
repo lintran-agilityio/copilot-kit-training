@@ -6,9 +6,11 @@ import { useCallback, useRef, useState } from "react";
  * `inProgress` → `executing` → `complete` — no separate "awaiting respond" status.
  *
  * `useHumanInTheLoop` passes `respond` only while status is `executing`
- * (`InProgress` and `Complete` get `respond: undefined`). HITL modals must
- * gate on `Executing`, not `InProgress` (backend `useRenderTool` UIs often
- * treat both as in-flight — that pattern must not be copied here).
+ * (`InProgress` and `Complete` get `respond: undefined`). HITL cards must
+ * gate interactive actions on `Executing`, not `InProgress` (backend
+ * `useRenderTool` UIs often treat both as in-flight — that pattern must not
+ * be copied here). Completed HITL cards stay mounted; create/modify
+ * confirm UI shows Confirmed/Cancelled by you from the respond payload.
  */
 export const isHitlToolInProgress = (status: ToolCallStatus) =>
   status === ToolCallStatus.InProgress;

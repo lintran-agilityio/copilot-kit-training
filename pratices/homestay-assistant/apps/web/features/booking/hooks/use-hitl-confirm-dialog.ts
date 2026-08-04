@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
-import { isHitlToolRespondable, useHitlRespondOnce } from "@/features/booking/utils";
+import {
+  isHitlToolFinished,
+  isHitlToolRespondable,
+  resolveHitlDecisionStatus,
+  useHitlRespondOnce,
+  type HitlDecisionStatus,
+} from "@/features/booking/utils";
 
 export type HitlConfirmDialogResult =
   | { confirmed: false }
@@ -13,12 +19,19 @@ export const useHitlConfirmDialog = <
   status: ToolCallStatus,
   respond: ((result: TResult) => Promise<void>) | undefined,
   defaultErrorMessage: string,
+  result?: unknown,
 ) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { respondOnce, canRespond } = useHitlRespondOnce<TResult>(respond);
 
-  const isVisible = isHitlToolRespondable(status, respond);
+  const isAwaiting = isHitlToolRespondable(status, respond);
+  const isFinished = isHitlToolFinished(status);
+  const shouldRender = isAwaiting || isFinished;
+  const decisionStatus: HitlDecisionStatus = resolveHitlDecisionStatus(
+    status,
+    result,
+  );
 
   const handleDismiss = () => {
     if (!canRespond) {
@@ -50,10 +63,11 @@ export const useHitlConfirmDialog = <
   };
 
   return {
-    isVisible,
+    shouldRender,
     isSubmitting,
     errorMessage,
     canRespond,
+    decisionStatus,
     handleDismiss,
     confirm,
   };

@@ -33,7 +33,6 @@ export const ConfirmSuccess = ({
           {title ? (
             <h3 className="text-sm font-medium text-emerald-300">{title}</h3>
           ) : null}
-
           {name ? (
             <p className="text-xs text-zinc-300">{`Room: ${name}`}</p>
           ) : null}

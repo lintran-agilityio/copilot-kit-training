@@ -8,10 +8,13 @@ import {
 } from "@repo/constants";
 
 import { ConfirmBookingDialog } from "@/components/confirm-modal";
+import { EmbeddedWidget } from "@/features/chat/components";
+import { HitlDecisionUserMessage } from "@/features/booking/components/HitlDecisionUserMessage";
 import { useHitlConfirmDialog } from "@/features/booking/hooks";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useArtifactStore } from "@/features/chat/stores/artifact-store";
 import { useReportHomestayAgentWorkflow } from "@/features/chat/hooks/use-report-homestay-agent-workflow";
+import { shouldRenderHitlCard } from "@/features/booking/utils";
 import type {
   ConfirmBookingArgs,
   ConfirmBookingResult,
@@ -35,12 +38,12 @@ const hasRoomStayFields = (
 ) =>
   Boolean(
     args.room?.id?.trim() &&
-    args.room?.name?.trim() &&
-    typeof args.room?.pricePerNight === "number" &&
-    args.checkInDate?.trim() &&
-    args.checkOutDate?.trim() &&
-    typeof args.guests === "number" &&
-    args.guests > 0,
+      args.room?.name?.trim() &&
+      typeof args.room?.pricePerNight === "number" &&
+      args.checkInDate?.trim() &&
+      args.checkOutDate?.trim() &&
+      typeof args.guests === "number" &&
+      args.guests > 0,
   );
 
 const hasRequiredCreateArgs = (
@@ -54,6 +57,7 @@ const hasRequiredModifyArgs = (
 
 type HitlConfirmStayModalProps = {
   status: ToolCallStatus;
+  result?: unknown;
 } & (
   | {
       variant: "create";
@@ -71,23 +75,31 @@ const HitlConfirmCreateStayModal = ({
   status,
   args,
   respond,
+  result,
 }: {
   status: ToolCallStatus;
   args: Partial<ConfirmBookingArgs>;
   respond?: (result: ConfirmBookingResult) => Promise<void>;
+  result?: unknown;
 }) => {
   const resetBooking = useBookingStore((state) => state.resetBooking);
   const finalizeBookingForms = useArtifactStore(
     (state) => state.finalizeBookingForms,
   );
   const {
-    isVisible,
+    shouldRender,
     isSubmitting,
     errorMessage,
     canRespond,
+    decisionStatus,
     handleDismiss,
     confirm,
-  } = useHitlConfirmDialog(status, respond, "Failed to confirm booking");
+  } = useHitlConfirmDialog(
+    status,
+    respond,
+    "Failed to confirm booking",
+    result,
+  );
 
   const handleCancel = () => {
     finalizeBookingForms("cancelled");
@@ -97,7 +109,7 @@ const HitlConfirmCreateStayModal = ({
 
   const hasArgs = hasRequiredCreateArgs(args);
   useReportHomestayAgentWorkflow(
-    isVisible && hasArgs,
+    shouldRender && hasArgs && canRespond,
     "confirm-booking",
     {
       type: HOMESTAY_AGENT_TASK_TYPE.BOOK,
@@ -106,34 +118,43 @@ const HitlConfirmCreateStayModal = ({
     hasArgs ? { type: "room", id: args.room.id } : undefined,
   );
 
-  if (!isVisible || !hasArgs) {
+  if (!shouldRenderHitlCard(status, hasArgs) || !shouldRender || !hasArgs) {
     return null;
   }
 
   const { room, checkInDate, checkOutDate, guests } = args;
 
   return (
-    <ConfirmBookingDialog
-      open
-      roomName={room.name}
-      checkInDate={checkInDate}
-      checkOutDate={checkOutDate}
-      guests={guests}
-      pricePerNight={room.pricePerNight}
-      isSubmitting={isSubmitting}
-      canRespond={canRespond}
-      errorMessage={errorMessage}
-      onCancel={handleCancel}
-      onConfirm={() =>
-        void confirm({
-          confirmed: true,
-          roomId: room.id,
-          checkInDate,
-          checkOutDate,
-          guests,
-        })
-      }
-    />
+    <>
+      <EmbeddedWidget>
+        <ConfirmBookingDialog
+          roomName={room.name}
+          checkInDate={checkInDate}
+          checkOutDate={checkOutDate}
+          guests={guests}
+          pricePerNight={room.pricePerNight}
+          isSubmitting={isSubmitting}
+          canRespond={canRespond}
+          decisionStatus={decisionStatus}
+          errorMessage={errorMessage}
+          onCancel={handleCancel}
+          onConfirm={() =>
+            void confirm({
+              confirmed: true,
+              roomId: room.id,
+              checkInDate,
+              checkOutDate,
+              guests,
+            })
+          }
+        />
+      </EmbeddedWidget>
+      <HitlDecisionUserMessage
+        decisionStatus={decisionStatus}
+        confirmLabel="Confirm booking"
+        cancelLabel="Cancel booking"
+      />
+    </>
   );
 };
 
@@ -141,31 +162,35 @@ const HitlConfirmModifyStayModal = ({
   status,
   args,
   respond,
+  result,
 }: {
   status: ToolCallStatus;
   args: Partial<ConfirmModifyBookingArgs>;
   respond?: (result: ConfirmModifyBookingResult) => Promise<void>;
+  result?: unknown;
 }) => {
   const pendingModifyStay = useBookingStore((state) => state.pendingModifyStay);
   const setPendingModifyStay = useBookingStore(
     (state) => state.setPendingModifyStay,
   );
   const {
-    isVisible,
+    shouldRender,
     isSubmitting,
     errorMessage,
     canRespond,
+    decisionStatus,
     handleDismiss,
     confirm,
   } = useHitlConfirmDialog(
     status,
     respond,
     "Failed to confirm booking changes",
+    result,
   );
 
   const hasArgs = hasRequiredModifyArgs(args);
   useReportHomestayAgentWorkflow(
-    isVisible && hasArgs,
+    shouldRender && hasArgs && canRespond,
     "confirm-modify-booking",
     {
       type: HOMESTAY_AGENT_TASK_TYPE.MANAGE,
@@ -174,7 +199,7 @@ const HitlConfirmModifyStayModal = ({
     hasArgs ? { type: "booking", id: args.bookingId } : undefined,
   );
 
-  if (!isVisible || !hasArgs) {
+  if (!shouldRenderHitlCard(status, hasArgs) || !shouldRender || !hasArgs) {
     return null;
   }
 
@@ -200,31 +225,40 @@ const HitlConfirmModifyStayModal = ({
   };
 
   return (
-    <ConfirmBookingDialog
-      open
-      roomName={room.name}
-      checkInDate={checkInDate}
-      checkOutDate={checkOutDate}
-      guests={guests}
-      pricePerNight={room.pricePerNight}
-      title="Confirm booking changes?"
-      description={description}
-      confirmLabel="Confirm changes"
-      submittingLabel="Updating…"
-      isSubmitting={isSubmitting}
-      canRespond={canRespond}
-      errorMessage={errorMessage}
-      onCancel={clearPendingAndDismiss}
-      onConfirm={() =>
-        void confirm({
-          confirmed: true,
-          bookingId,
-          checkInDate,
-          checkOutDate,
-          guests,
-        })
-      }
-    />
+    <>
+      <EmbeddedWidget>
+        <ConfirmBookingDialog
+          roomName={room.name}
+          checkInDate={checkInDate}
+          checkOutDate={checkOutDate}
+          guests={guests}
+          pricePerNight={room.pricePerNight}
+          title="Confirm booking changes?"
+          description={description}
+          confirmLabel="Confirm changes"
+          submittingLabel="Updating…"
+          isSubmitting={isSubmitting}
+          canRespond={canRespond}
+          decisionStatus={decisionStatus}
+          errorMessage={errorMessage}
+          onCancel={clearPendingAndDismiss}
+          onConfirm={() =>
+            void confirm({
+              confirmed: true,
+              bookingId,
+              checkInDate,
+              checkOutDate,
+              guests,
+            })
+          }
+        />
+      </EmbeddedWidget>
+      <HitlDecisionUserMessage
+        decisionStatus={decisionStatus}
+        confirmLabel="Confirm changes"
+        cancelLabel="Cancel changes"
+      />
+    </>
   );
 };
 
@@ -235,6 +269,7 @@ export const HitlConfirmStayModal = (props: HitlConfirmStayModalProps) => {
         status={props.status}
         args={props.args}
         respond={props.respond}
+        result={props.result}
       />
     );
   }
@@ -244,6 +279,7 @@ export const HitlConfirmStayModal = (props: HitlConfirmStayModalProps) => {
       status={props.status}
       args={props.args}
       respond={props.respond}
+      result={props.result}
     />
   );
 };

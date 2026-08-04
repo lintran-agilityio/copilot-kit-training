@@ -12,8 +12,20 @@ type ConfirmBookingModalProps = {
   status: ToolCallStatus;
   args: Partial<ConfirmBookingArgs>;
   respond?: (result: ConfirmBookingResult) => Promise<void>;
+  result?: unknown;
 };
 
-export const ConfirmBookingModal = (props: ConfirmBookingModalProps) => (
-  <HitlConfirmStayModal variant="create" {...props} />
+export const ConfirmBookingModal = ({
+  status,
+  args,
+  respond,
+  result,
+}: ConfirmBookingModalProps) => (
+  <HitlConfirmStayModal
+    variant="create"
+    status={status}
+    args={args}
+    respond={respond}
+    result={result}
+  />
 );

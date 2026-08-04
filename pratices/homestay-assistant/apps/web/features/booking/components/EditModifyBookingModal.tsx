@@ -1,25 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { CalendarCheck } from "lucide-react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 import {
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
+import { parseToolResult } from "@repo/utils";
 
 import { Button } from "@/components/ui/button";
+import { EmbeddedWidget } from "@/features/chat/components";
+import { HitlDecisionUserMessage } from "@/features/booking/components/HitlDecisionUserMessage";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
+  HITL_DECISION_STATUS,
+  isHitlDecisionTerminal,
   isHitlToolRespondable,
+  resolveHitlDecisionStatus,
+  shouldRenderHitlCard,
   useHitlRespondOnce,
+  type HitlDecisionStatus,
 } from "@/features/booking/utils";
 import type {
   EditModifyBookingArgs,
@@ -40,6 +40,7 @@ type EditModifyBookingModalProps = {
   status: ToolCallStatus;
   args: Partial<EditModifyBookingArgs>;
   respond?: (result: EditModifyBookingResult) => Promise<void>;
+  result?: unknown;
 };
 
 const hasRequiredArgs = (args: Partial<EditModifyBookingArgs>) =>
@@ -55,10 +56,51 @@ const hasRequiredArgs = (args: Partial<EditModifyBookingArgs>) =>
       args.guests > 0,
   );
 
+const getSettledCopy = (
+  decisionStatus: HitlDecisionStatus,
+  roomName: string,
+): { title: string; description: ReactNode } => {
+  if (decisionStatus === HITL_DECISION_STATUS.APPROVED) {
+    return {
+      title: "Confirmed by you",
+      description: (
+        <>
+          You confirmed updated stay details for{" "}
+          <span className="font-medium text-zinc-200">{roomName}</span>.
+        </>
+      ),
+    };
+  }
+
+  if (decisionStatus === HITL_DECISION_STATUS.REJECTED) {
+    return {
+      title: "Cancelled by you",
+      description: (
+        <>
+          You kept the current booking for{" "}
+          <span className="font-medium text-zinc-200">{roomName}</span>.
+        </>
+      ),
+    };
+  }
+
+  return {
+    title: "Confirmation expired",
+    description: (
+      <>
+        This modify confirmation for{" "}
+        <span className="font-medium text-zinc-200">{roomName}</span> is no
+        longer available.
+      </>
+    ),
+  };
+};
+
 export const EditModifyBookingModal = ({
   status,
   args,
   respond,
+  result,
 }: EditModifyBookingModalProps) => {
   const { respondOnce, canRespond: canRespondHitl } =
     useHitlRespondOnce<EditModifyBookingResult>(respond);
@@ -66,9 +108,16 @@ export const EditModifyBookingModal = ({
     (state) => state.setPendingModifyStay,
   );
 
-  const ready = isHitlToolRespondable(status, respond) && hasRequiredArgs(args);
+  const hasArgs = hasRequiredArgs(args);
+  const decisionStatus = resolveHitlDecisionStatus(status, result);
+  const isComplete = isHitlDecisionTerminal(decisionStatus);
+  const ready =
+    isHitlToolRespondable(status, respond) && hasArgs && !isComplete;
 
   const bookingId = args.bookingId ?? "";
+  const parsedResult = parseToolResult<EditModifyBookingResult>(
+    result as EditModifyBookingResult | string | null | undefined,
+  );
 
   useReportHomestayAgentWorkflow(
     ready,
@@ -80,10 +129,20 @@ export const EditModifyBookingModal = ({
     ready ? { type: "booking", id: bookingId } : undefined,
   );
   const room = args.room;
-  const initialCheckIn = args.checkInDate?.trim() || null;
-  const initialCheckOut = args.checkOutDate?.trim() || null;
+  const initialCheckIn =
+    (parsedResult?.confirmed
+      ? parsedResult.checkInDate
+      : args.checkInDate)?.trim() || null;
+  const initialCheckOut =
+    (parsedResult?.confirmed
+      ? parsedResult.checkOutDate
+      : args.checkOutDate)?.trim() || null;
   const initialGuests =
-    typeof args.guests === "number" && args.guests > 0 ? args.guests : 1;
+    parsedResult?.confirmed && typeof parsedResult.guests === "number"
+      ? parsedResult.guests
+      : typeof args.guests === "number" && args.guests > 0
+        ? args.guests
+        : 1;
 
   const [checkInDate, setCheckInDate] = useState<string | null>(initialCheckIn);
   const [checkOutDate, setCheckOutDate] = useState<string | null>(
@@ -97,7 +156,7 @@ export const EditModifyBookingModal = ({
   );
 
   useEffect(() => {
-    if (!ready || !initialCheckIn || !initialCheckOut || !room) {
+    if (!hasArgs || !initialCheckIn || !initialCheckOut || !room) {
       return;
     }
 
@@ -107,7 +166,7 @@ export const EditModifyBookingModal = ({
     setGuests(Math.min(Math.max(1, initialGuests), room.capacity));
     setErrorMessage(null);
     setDatesSeed(nextSeed);
-  }, [ready, initialCheckIn, initialCheckOut, initialGuests, room]);
+  }, [hasArgs, initialCheckIn, initialCheckOut, initialGuests, room]);
 
   const canRespond = canRespondHitl && ready && room != null;
 
@@ -121,7 +180,7 @@ export const EditModifyBookingModal = ({
 
   const canSubmit = canRespond && canProceed;
 
-  if (!ready || !room) {
+  if (!shouldRenderHitlCard(status, hasArgs) || !room) {
     return null;
   }
 
@@ -135,6 +194,10 @@ export const EditModifyBookingModal = ({
   };
 
   const handleCheckInChange = (dateKey: string) => {
+    if (isComplete) {
+      return;
+    }
+
     const next = resolveCheckOutAfterCheckInChange(dateKey, checkOutDate);
     setCheckInDate(next.checkInDate);
     if (next.checkOutDate !== checkOutDate) {
@@ -178,83 +241,93 @@ export const EditModifyBookingModal = ({
     }
   };
 
-  const actionsDisabled = !canRespond || isSubmitting;
+  const actionsDisabled = !canRespond || isSubmitting || isComplete;
+  const fieldsDisabled = actionsDisabled;
+  const settled = isComplete ? getSettledCopy(decisionStatus, room.name) : null;
 
   return (
-    <Dialog
-      open
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen && canRespond && !isSubmitting) {
-          handleCancel();
-        }
-      }}
-    >
-      <DialogContent
-        showCloseButton={!isSubmitting}
-        className="max-h-[90vh] overflow-y-auto border-white/10 bg-[#111111] text-zinc-100 sm:max-w-lg"
-      >
-        <DialogHeader>
-          <DialogTitle className="text-lg font-medium text-white">
-            Modify your booking
-          </DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            Update check-in, check-out, or guests for{" "}
-            <span className="font-medium text-zinc-200">{room.name}</span>. The
-            room stays the same.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <EmbeddedWidget>
+        <div className="space-y-3 p-3.5 text-zinc-100">
+          <div className="space-y-1">
+            <h3 className="text-sm font-medium text-white">
+              {settled?.title ?? "Modify your booking"}
+            </h3>
+            <p className="text-xs text-zinc-400">
+              {settled?.description ?? (
+                <>
+                  Update check-in, check-out, or guests for{" "}
+                  <span className="font-medium text-zinc-200">{room.name}</span>
+                  . The room stays the same.
+                </>
+              )}
+            </p>
+          </div>
 
-        <div className="space-y-4">
-          <RoomBookingPreviewCard
-            name={room.name}
-            imageUrl={room.imageUrl}
-            capacity={room.capacity}
-            pricePerNight={room.pricePerNight}
-          />
+          <div className="space-y-3">
+            <RoomBookingPreviewCard
+              name={room.name}
+              imageUrl={room.imageUrl}
+              capacity={room.capacity}
+              pricePerNight={room.pricePerNight}
+            />
 
-          <RoomBookingDates
-            key={datesSeed}
-            checkInDate={checkInDate}
-            checkOutDate={checkOutDate}
-            onCheckInChange={handleCheckInChange}
-            onCheckOutChange={setCheckOutDate}
-          />
+            <RoomBookingDates
+              key={datesSeed}
+              checkInDate={checkInDate}
+              checkOutDate={checkOutDate}
+              disabled={fieldsDisabled}
+              onCheckInChange={handleCheckInChange}
+              onCheckOutChange={
+                fieldsDisabled ? () => undefined : setCheckOutDate
+              }
+            />
 
-          <RoomBookingGuests
-            guests={guests}
-            capacity={room.capacity}
-            disabled={actionsDisabled}
-            onGuestsChange={setGuests}
-          />
+            <RoomBookingGuests
+              guests={guests}
+              capacity={room.capacity}
+              disabled={fieldsDisabled}
+              onGuestsChange={setGuests}
+            />
 
-          <RoomBookingEstimatedTotal estimatedTotal={estimatedTotal} />
+            <RoomBookingEstimatedTotal estimatedTotal={estimatedTotal} />
 
-          {errorMessage ? (
-            <p className="text-sm text-red-400">{errorMessage}</p>
-          ) : null}
+            {errorMessage ? (
+              <p className="text-xs text-red-400">{errorMessage}</p>
+            ) : null}
+          </div>
+
+          {isComplete ? null : (
+            <div className="flex flex-wrap gap-2 pt-0.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white cursor-pointer"
+                disabled={actionsDisabled}
+                onClick={handleCancel}
+              >
+                Keep current booking
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="gap-1.5 bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
+                disabled={!canSubmit || isSubmitting}
+                onClick={handleConfirm}
+              >
+                <CalendarCheck className="size-3.5" />
+                {isSubmitting ? "Continuing…" : "Continue"}
+              </Button>
+            </div>
+          )}
         </div>
-
-        <DialogFooter className="gap-2 border-white/8 bg-transparent sm:gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white cursor-pointer"
-            disabled={actionsDisabled}
-            onClick={handleCancel}
-          >
-            Keep current booking
-          </Button>
-          <Button
-            type="button"
-            className="gap-2 bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
-            disabled={!canSubmit || isSubmitting}
-            onClick={handleConfirm}
-          >
-            <CalendarCheck className="size-4" />
-            {isSubmitting ? "Continuing…" : "Continue"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </EmbeddedWidget>
+      <HitlDecisionUserMessage
+        decisionStatus={decisionStatus}
+        confirmLabel="Continue"
+        cancelLabel="Keep current booking"
+      />
+    </>
   );
 };
