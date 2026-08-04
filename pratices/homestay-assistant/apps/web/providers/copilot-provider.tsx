@@ -60,24 +60,24 @@ const ClerkTokenSync = () => {
 
 const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
   const pathname = usePathname();
-  const { isLoaded, userId } = useAuth();
+  const { isLoaded } = useAuth();
 
-  // Always provide QueryClient — pages like /bookings use useQuery even before
-  // CopilotKit mounts (Clerk hydration can briefly report !userId).
+  // Login has no Copilot hooks. Keep QueryClient for any shared client pages.
   if (isLoginRoute(pathname)) {
     return <AppProvider withCopilot={false}>{children}</AppProvider>;
   }
 
+  // MainLayout / chat children (SuggestionBar, ChatSidebarContent, booking
+  // hooks, etc.) call useCopilotKit() unconditionally, so CopilotKit must be
+  // mounted as soon as auth is resolved. Gate on isLoaded only — userId can
+  // legitimately lag isLoaded during Clerk hydration, and server pages
+  // already redirect unauthenticated users to login before this mounts.
   if (!isLoaded) {
     return (
       <AppProvider withCopilot={false}>
         <AuthLoadingFallback />
       </AppProvider>
     );
-  }
-
-  if (!userId) {
-    return <AppProvider withCopilot={false}>{children}</AppProvider>;
   }
 
   return (
