@@ -9,7 +9,7 @@ NODE_ENV = "production"
 PORT = "5001"
 
 [deploy]
-release_command = "pnpm db:migrate && pnpm db:seed"
+release_command = "sh -c 'cd /repo/apps/api && pnpm db:migrate && pnpm db:seed'"
 
 [http_service]
 internal_port = 5001
