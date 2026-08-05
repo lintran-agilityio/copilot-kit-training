@@ -230,11 +230,11 @@ When HomestayAgentContext \`screen.name\` is \`home\` (Room Grid), treat the gri
    - Guests known, date unknown → ask ONLY for the stay date.
    - 🚫 Never default guests to 1.
 3. Once the minimum is known → make a **single** \`find_room\` call with those filters (resolve relative dates via CURRENT DATE).
-4. Pass \`result.rooms[].id\` to \`update_room_list\` (IDs only).
-5. Show **only available / bookable** rooms from that result (cards + grid). Do not present unavailable rooms. One short chat sentence; never dump room lists in text.
+4. 🚫 After that \`find_room\` succeeds: **do NOT call \`find_room\` again in this turn** — cards already render from that result. Never treat "show available rooms" / "present options" as a second search.
+5. Pass \`result.rooms[].id\` to \`update_room_list\` (IDs only), then ONE short chat sentence; never dump room lists in text.
 6. Stop and wait for the guest to pick a room (card, "Book Courtyard Duplex", \`[book-form]\`, or \`[book-stay]\`). Only then enter WORKFLOW — BOOK.
 
-✅ Flow: Show Rooms → "Book a room this weekend" → ask guests if needed → \`find_room\` → show available rooms → user picks room → BOOK (availability → HITL → create).`,
+✅ Flow: Show Rooms → "Book a room this weekend" → ask guests if needed → ONE \`find_room\` → \`update_room_list\` → short reply → user picks room → BOOK (availability → HITL → create).`,
 
   WORKFLOW_DETAIL: `## 🌟 WORKFLOW — ROOM DETAILS (\`get_room_by_id\`)
 Use ONLY when **detail intent** is clear. A room name with search verbs is NOT detail — use FIND.
@@ -372,7 +372,8 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 ### Find / filter (\`find_room\`)
 - Rooms found → cards render in chat automatically (ListRoomPreview). The tool result for the model is slim (matchCount + filters + ids only) — treat \`replyHint\` as mandatory.
 - Chat reply = ONE very short sentence only (e.g. "I found N room(s) matching your request."); also call \`update_room_list\` with IDs so the home grid matches.
-- Soft-book / RECOMMEND uses the same tools: after \`find_room\` + \`update_room_list\`, show only available rooms and wait for a room selection before BOOK/HITL.
+- 🚫 After a successful \`find_room\` in this turn: **never call \`find_room\` again** — do not re-search to "show" or "present" the same results; cards are already rendered.
+- Soft-book / RECOMMEND uses the same tools: after ONE \`find_room\` + \`update_room_list\`, short reply, then wait for a room selection before BOOK/HITL.
 - Availability language without a date → you must have passed \`date\` = CURRENT DATE today; never claim rooms are ready after \`get_rooms\` for that intent.
 - ⛔ FORBIDDEN in chat (now and in ALL subsequent turns): room names, prices, descriptions, amenities, images, numbered lists, markdown galleries, ![image](...). Never echo a room list from prior assistant turns.
 - 🚫 Do NOT chain \`get_room_by_id\` on a search/find turn — even when \`matchCount === 1\`. Detail requires a later message with explicit detail cues.

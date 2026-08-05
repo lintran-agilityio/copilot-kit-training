@@ -13,10 +13,59 @@ import {
   runWithAgentRequest,
   toAgentRequestState,
 } from "agent/middleware";
+import {
+  isCopilotKitInfoPath,
+  rewriteIntelligenceWsUrlInInfoBody,
+  shouldProxyIntelligenceRealtime,
+} from "@/lib/rewrite-intelligence-ws-url";
 
 export const runtime = "nodejs";
 
 const basePath = "/api/copilotkit";
+
+/**
+ * On non-localhost hosts, rewrite /info intelligence.wsUrl to the same-origin
+ * proxy path handled by apps/web/server.mjs (Origin allowlist workaround).
+ */
+const maybeRewriteInfoResponse = async (
+  req: Request,
+  response: Response,
+): Promise<Response> => {
+  if (!shouldProxyIntelligenceRealtime(req)) {
+    return response;
+  }
+
+  const pathname = new URL(req.url).pathname;
+
+  if (!isCopilotKitInfoPath(pathname, basePath)) {
+    return response;
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (!contentType.includes("application/json")) {
+    return response;
+  }
+
+  try {
+    const body: unknown = await response.clone().json();
+    const rewritten = rewriteIntelligenceWsUrlInInfoBody(req, body);
+
+    if (rewritten === body) {
+      return response;
+    }
+
+    const headers = new Headers(response.headers);
+    headers.delete("content-length");
+
+    return Response.json(rewritten, {
+      status: response.status,
+      headers,
+    });
+  } catch {
+    return response;
+  }
+};
 
 const createRuntime = () => {
   const apiUrl = process.env.INTELLIGENCE_API_URL;
@@ -133,9 +182,11 @@ const handler = async (req: Request) => {
     basePath,
   });
 
-  return runWithAgentRequest(toAgentRequestState(pipeline), () =>
+  const response = await runWithAgentRequest(toAgentRequestState(pipeline), () =>
     dispatchCopilotRequest(req),
   );
+
+  return maybeRewriteInfoResponse(req, response);
 };
 
 export const GET = handler;

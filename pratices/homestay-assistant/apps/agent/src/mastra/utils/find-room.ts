@@ -53,7 +53,7 @@ export const toFindRoomModelOutput = (output: FindRoomOutput) => {
   const replyHint =
     matchCount === 0
       ? "No rooms matched. Reply with ONE short sentence that nothing matched and suggest changing name/date/guests/level. Do NOT invent rooms. Do NOT say rooms are ready to browse."
-      : `Pass rooms[].id to update_room_list. Room cards are already rendered in chat — do NOT write room names, a numbered list, or any room details in your reply. Reply with ONE very short sentence only (e.g. "I found ${matchCount} room(s) matching your request."). Never list room names in text.`;
+      : `Pass rooms[].id to update_room_list. Room cards are already rendered in chat — do NOT call find_room again this turn, and do NOT write room names, a numbered list, or any room details in your reply. Reply with ONE very short sentence only (e.g. "I found ${matchCount} room(s) matching your request."). Never list room names in text.`;
 
   return {
     type: "json" as const,
