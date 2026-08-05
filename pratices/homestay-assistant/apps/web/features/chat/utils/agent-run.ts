@@ -16,9 +16,14 @@ type AgentMessageLike = {
   role?: string;
 };
 
-type StoppableAgent = {
-  messages: AgentMessageLike[];
-  setMessages: (messages: AgentMessageLike[]) => void;
+/**
+ * Structural view of a CopilotKit agent. Generic over the concrete message
+ * type because `setMessages` is contravariant: an agent that only accepts its
+ * own message union is not assignable to one accepting `AgentMessageLike[]`.
+ */
+type StoppableAgent<TMessage extends AgentMessageLike> = {
+  messages: TMessage[];
+  setMessages: (messages: TMessage[]) => void;
 };
 
 /** True when the error is an intentional abort (user Stop / reset). */
@@ -154,8 +159,8 @@ export const getTrailingAssistantMessageId = (
  * stubs from aborting HITL, partial follow-up text, etc.). Prior turns and
  * the triggering user message stay intact.
  */
-export const discardInFlightAssistantTurn = (
-  agent: StoppableAgent,
+export const discardInFlightAssistantTurn = <TMessage extends AgentMessageLike>(
+  agent: StoppableAgent<TMessage>,
   assistantMessageId: string | undefined,
 ): void => {
   if (!assistantMessageId) {

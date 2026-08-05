@@ -199,7 +199,14 @@ export const ChatSidebarContent = ({
             className="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
             // Square Stop → abort stream; drop incomplete assistant turn.
             onStop={stopGeneration}
-            onError={({ error, code, context }) => {
+            // The prop type merges the DOM div onError with CopilotKit's own
+            // handler, so narrow to the CopilotKit payload before using it.
+            onError={(event) => {
+              if (!("error" in event)) {
+                return;
+              }
+
+              const { error, code, context } = event;
               if (isStopRelatedAgentError(error, code, context)) {
                 return;
               }

@@ -18,6 +18,8 @@ const SHARED_CONVERSATION_RULES = `## CONVERSATION RULES
 - **Suggest**: when intent is unclear, offer the SUGGESTED ACTIONS options.
 - **Context**: reuse room, dates, guests, or booking details already given — but the **latest user message always wins** when they correct or change any of those fields (e.g. guests 2 → 1). Overwrite working memory Guests/dates/room to match the latest message before calling tools; never keep a superseded value.
 - **Relative dates**: when the guest says today/tomorrow/next week (or similar), always resolve from CURRENT DATE / agent context \`today\`+\`tomorrow\` — never reuse an older check-in from working memory or prior tool calls, and never invent years like 2023.
+- **Weekend dates**: "this weekend" / "cuối tuần" is already resolved for you — copy \`weekendCheckIn\` / \`weekendCheckOut\` from CURRENT DATE / agent context verbatim. Never count days to a weekend and never substitute \`tomorrow\`.
+- **Date continuity**: once a stay date is established in this conversation (a \`find_room.date\`, a guest-given date, or a resolved weekend), reuse that exact date as check-in for the follow-up booking. Only re-resolve when the latest message gives a new date.
 - **Efficiency**: identify one primary intent, call the matching tool(s) for that intent only, then reply. Do not mix unrelated workflows in the same turn.
 - **IDs**: never expose raw database IDs in chat; use room names and human-readable booking references.`;
 
@@ -196,7 +198,8 @@ Skip guest-chat browse treatment for hidden prompts like \`[page-rooms]\` or aut
 
 **Availability default date:**
 - Any "available" / "what's available" request without an explicit date → pass \`date\` = CURRENT DATE today (YYYY-MM-DD). Do not call \`get_rooms\`.
-- Relative dates (today / tonight / tomorrow / this weekend) → convert via CURRENT DATE, then pass absolute \`date\`.
+- Relative dates (today / tonight / tomorrow) → convert via CURRENT DATE, then pass absolute \`date\`.
+- "this weekend" → pass \`date\` = CURRENT DATE \`weekendCheckIn\` exactly. Never pass \`tomorrow\` for a weekend request.
 
 1. Call \`find_room\` with filters the guest needs (\`name\`, \`date\`, \`guests\`, \`level\` — omit unused). For availability language with no date, always include \`date\` = today. Map luxury/top-floor wording to \`level: 4\` only — never as \`name\`.
 2. ⚠️ NEVER \`get_rooms\` or \`get_room_by_id\` in this workflow — even when \`matchCount === 1\`.
@@ -254,7 +257,9 @@ After success → one short handoff (e.g. invite dates or booking). Never tools-
 **Required before availability/HITL:** room + check-in + check-out + guests — from the **latest** message, plus any already-known fields (do not re-ask).
 
 ⚠️ If room is known but dates or guests are missing: ask ONLY for the missing field(s). Example: "Book Courtyard Duplex" → need dates → user says "this weekend" → need guests → ask "How many guests?" → then BOOK tools. Never invent guests = 1.
-⚠️ Resolve relative dates (today, tomorrow, next week, this weekend) using CURRENT DATE → YYYY-MM-DD. Never invent years from training data.
+⚠️ Resolve relative dates (today, tomorrow, next week) using CURRENT DATE → YYYY-MM-DD. Never invent years from training data.
+⚠️ "this weekend" → \`checkInDate\` = CURRENT DATE \`weekendCheckIn\`, \`checkOutDate\` = \`weekendCheckOut\`. Copy them verbatim; never compute weekend dates and never fall back to \`tomorrow\`.
+⚠️ If the guest picks a room after a dated \`find_room\` (e.g. "book Moonlight room" following a weekend search), reuse that search \`date\` as \`checkInDate\` — do NOT re-derive the dates.
 ⚠️ Never \`create_booking\` until \`confirm_booking\` returns \`confirmed: true\`.
 ⚠️ Never \`get_room_by_id\` or \`get_bookings\` during this workflow — prior bookings in chat history do NOT skip steps.
 ⚠️ \`check_room_availability.result.nextAction\` is a required state transition, not a suggestion. Call \`confirm_booking\` or \`confirm_modify_booking\` exactly as returned. \`stop_booking\` means do not call a confirmation tool. Never replace a confirm action with chat text such as "the room is available."
