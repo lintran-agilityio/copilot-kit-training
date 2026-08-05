@@ -17,7 +17,9 @@ import { parse } from "node:url";
 import next from "next";
 import { WebSocket, WebSocketServer } from "ws";
 
-const dev = process.env.NODE_ENV !== "production";
+// Fly / Docker often omit NODE_ENV; treat anything except explicit development
+// as production so we don't boot `next` in dev mode without a compiler.
+const dev = process.env.NODE_ENV === "development";
 /** Next uses this for absolute URL generation — keep localhost, bind separately. */
 const hostname = "localhost";
 const listenHost = process.env.HOSTNAME || "0.0.0.0";
@@ -93,11 +95,12 @@ const pipeSockets = (client, upstream) => {
 };
 
 const app = next({ dev, hostname, port });
-const handle = app.getRequestHandler();
-const upgradeHandler = app.getUpgradeHandler();
 const wss = new WebSocketServer({ noServer: true });
 
 await app.prepare();
+
+const handle = app.getRequestHandler();
+const upgradeHandler = app.getUpgradeHandler();
 
 const upstreamBase = resolveUpstreamBase();
 const server = createServer((req, res) => {
