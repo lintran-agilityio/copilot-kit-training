@@ -16,6 +16,8 @@ export class RoomsService {
 
   /**
    * Lists rooms, optionally filtered by date availability, name, guests, and level.
+   * Guest count matches \`capacity >= guests\` (not exact equality); results prefer
+   * the smallest sufficient capacity.
    *
    * @param query - Optional filters; empty returns all rooms
    * @returns Room response DTOs

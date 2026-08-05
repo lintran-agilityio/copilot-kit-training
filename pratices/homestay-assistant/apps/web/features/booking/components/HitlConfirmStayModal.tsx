@@ -16,7 +16,7 @@ import { HitlDecisionUserMessage } from "@/features/booking/components/HitlDecis
 import { useHitlConfirmDialog } from "@/features/booking/hooks";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useArtifactStore } from "@/features/chat/stores/artifact-store";
-import { useReportHomestayAgentWorkflow } from "@/features/chat/hooks/use-report-homestay-agent-workflow";
+import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks/use-report-homestay-agent-ui-focus";
 import { shouldRenderHitlCard } from "@/features/booking/utils";
 import type {
   ConfirmBookingArgs,
@@ -143,7 +143,7 @@ const HitlConfirmCreateStayModal = ({
   };
 
   const hasArgs = hasRequiredCreateArgs(args);
-  useReportHomestayAgentWorkflow(
+  useReportHomestayAgentUiFocus(
     shouldRender && hasArgs && canRespond,
     "confirm-booking",
     {
@@ -224,7 +224,7 @@ const HitlConfirmModifyStayModal = ({
   );
 
   const hasArgs = hasRequiredModifyArgs(args);
-  useReportHomestayAgentWorkflow(
+  useReportHomestayAgentUiFocus(
     shouldRender && hasArgs && canRespond,
     "confirm-modify-booking",
     {

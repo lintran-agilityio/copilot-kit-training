@@ -60,9 +60,10 @@ export class RoomsRepository {
 
   /**
    * Finds rooms matching optional name, capacity, level, and availability filters.
+   * Guest count is a minimum (`capacity >= guests`), never an exact match.
    *
    * @param filters - Combined search/filter criteria; omit a field to skip it
-   * @returns Matching rooms ordered by name
+   * @returns Matching rooms ordered by smallest sufficient capacity, then name
    */
   async findByFilters(filters: {
     name?: string;
@@ -89,6 +90,7 @@ export class RoomsRepository {
       });
     }
 
+    // Party size is a floor: a room for 4 guests is valid for a party of 3.
     if (filters.guests != null && !Number.isNaN(filters.guests)) {
       qb.andWhere('room.capacity >= :guests', { guests: filters.guests });
     }
@@ -97,7 +99,10 @@ export class RoomsRepository {
       qb.andWhere('room.level = :level', { level: filters.level });
     }
 
-    return qb.orderBy('room.name', 'ASC').getMany();
+    return qb
+      .orderBy('room.capacity', 'ASC')
+      .addOrderBy('room.name', 'ASC')
+      .getMany();
   }
 
   async findActiveBookingByRoomAndUser(

@@ -30,7 +30,8 @@ export class GetAvailableRoomsQueryDto {
   name?: string;
 
   @ApiProperty({
-    description: 'Minimum guest capacity the room must support',
+    description:
+      'Party size — matches rooms where capacity >= guests (not exact equality). Larger rooms are included; results prefer the smallest sufficient capacity.',
     example: 2,
     required: false,
     minimum: 1,

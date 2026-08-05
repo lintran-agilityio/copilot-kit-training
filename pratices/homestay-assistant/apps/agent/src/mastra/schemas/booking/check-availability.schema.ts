@@ -86,7 +86,7 @@ export const bookingAvailabilityNextActionSchema = z.enum([
 export const checkRoomAvailabilityOutputSchema =
   checkRoomAvailabilityResponseSchema.extend({
     nextAction: bookingAvailabilityNextActionSchema.describe(
-      "Mandatory workflow transition: call the named confirm tool immediately, or stop when stop_booking is returned.",
+      "Mandatory step-machine transition: call the named confirm tool immediately, or stop when stop_booking is returned.",
     ),
     flow: bookingAvailabilityFlowSchema.describe(
       "Echo of the resolved flow — create never routes to confirm_modify_booking; modify never routes to confirm_booking.",

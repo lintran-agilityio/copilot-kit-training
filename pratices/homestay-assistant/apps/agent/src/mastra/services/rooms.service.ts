@@ -27,6 +27,7 @@ export const getRooms = async (): Promise<Room[]> => {
 
 /**
  * Searches and filters rooms by name, date, guests, and/or level.
+ * Guest count matches capacity >= guests (not exact equality).
  * Empty matches return `{ rooms: [] }` (never throw) so chat tool UI can complete.
  *
  * @param filters - Optional search/filter criteria

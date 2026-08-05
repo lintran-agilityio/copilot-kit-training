@@ -5,7 +5,7 @@ import {
 } from "@repo/constants";
 import { ROUTES } from "@/constants";
 import type { HomestayAgentContext } from "@/features/chat/types";
-import type { HomestayAgentWorkflowEntry } from "@/features/chat/stores/homestay-agent-ui-store";
+import type { HomestayAgentUiFocusEntry } from "@/features/chat/stores/homestay-agent-ui-store";
 
 export type HomestayAgentDraftSnapshot = {
   roomId: string | null;
@@ -15,7 +15,8 @@ export type HomestayAgentDraftSnapshot = {
 
 export type HomestayAgentUiSnapshot = {
   focusedRoomId: string | null;
-  activeWorkflow: HomestayAgentWorkflowEntry | null;
+  /** Active UI focus stack top (suggestion / context). */
+  activeUiFocus: HomestayAgentUiFocusEntry | null;
 };
 
 export const buildHomestayAgentContext = (
@@ -23,7 +24,7 @@ export const buildHomestayAgentContext = (
   draft: HomestayAgentDraftSnapshot,
   ui: HomestayAgentUiSnapshot,
 ): HomestayAgentContext => {
-  const active = ui.activeWorkflow;
+  const active = ui.activeUiFocus;
 
   if (pathname === ROUTES.BOOKINGS) {
     return {

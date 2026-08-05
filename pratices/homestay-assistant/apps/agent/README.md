@@ -2,6 +2,18 @@
 
 Mastra agents for Homestay Assistant. Tools call the Nest API for rooms and bookings; CopilotKit consumes the exported agents from the web app.
 
+## Layer ownership
+
+| Layer | Owns | Does not own |
+| --- | --- | --- |
+| Web | Chat UI, HITL UI, RenderTool, Context, Thread UX, Zustand UI state | Booking orchestration, business state |
+| CopilotKit Runtime / BFF | `/api/copilotkit`, auth forwarding, Intelligence | Business logic |
+| AG-UI bridge (`src/ag-ui`) | Stream adaptation, stop latch, tripwire compatibility | Prompts, tools |
+| Mastra | Agents, `prepareStep` step machine, memory, tools | React / UI |
+| Nest | Domain logic, persistence | Orchestration |
+
+Mastra should stay usable if CopilotKit is later replaced by AG-UI directly.
+
 ## Stack
 
 - Mastra (`@mastra/core`, memory, observability, LibSQL / DuckDB storage)
@@ -17,18 +29,30 @@ Registered in `src/mastra/index.ts` (Studio) and `src/mastra/runtime.ts` (Copilo
 
 | Agent | Key | Role |
 | --- | --- | --- |
-| Homestay Manager | manage assistant | Public chat agent: rooms + booking workflows |
+| Homestay Manager | `manage-assistant` | Public chat agent: rooms + booking flows |
 
-Additional specialist agents (e.g. homestay / booking) live under `src/mastra/agents/` and are composed into the manager flow via tools and prompts.
+One agent today — no specialist agents under `agents/` yet.
 
 ## Tools
 
 | Domain | Tools |
 | --- | --- |
 | Rooms | `get_rooms`, `find_room`, `get_room_by_id` |
-| Bookings | `check_room_availability`, `create_booking`, `get_bookings`, `find_booking_by_id`, `cancel_booking` |
+| Bookings | `check_room_availability`, `create_booking`, `update_booking`, `get_bookings`, `find_booking_by_id`, `cancel_booking` |
+
+Frontend HITL tools (`confirm_booking`, `edit_modify_booking`, `confirm_modify_booking`, `show_cancel_dialog_confirm`, `update_room_list`) are registered in the web app.
 
 Tool implementations call `API_URL` via services in `src/mastra/services/`.
+
+## Storage
+
+| File | Used by |
+| --- | --- |
+| `mastra-runtime.db` | CopilotKit / AG-UI runtime (`runtime.ts`) |
+| `mastra-studio.db` | Mastra Studio (`index.ts`) — starts clean |
+| `mastra.duckdb` | Studio observability only |
+
+Directory resolves from `process.cwd()/src/mastra/public` (or `MASTRA_DATA_DIR`). Next BFF uses `apps/web/...`; Studio uses `apps/agent/...`.
 
 ## Exports
 
@@ -36,8 +60,9 @@ Tool implementations call `API_URL` via services in `src/mastra/services/`.
 
 | Export | Path | Use |
 | --- | --- | --- |
-| `agent` | `./src/mastra/index.ts` | Mastra instance / Studio agents |
-| `agent/copilotkit` | `./src/copilotkit.ts` | `getCopilotkitAgents(userId)` for the web runtime |
+| `agent` | `./src/mastra/index.ts` | Studio Mastra instance |
+| `agent/copilotkit` | `./src/copilotkit.ts` | `getCopilotkitAgents` for the web runtime |
+| `agent/middleware` | `./src/mastra/middleware/index.ts` | Request ALS / Clerk pipeline |
 
 ## Environment
 
@@ -49,6 +74,7 @@ cp .env.example .env
 | --- | --- |
 | `OPENAI_API_KEY` | Required for model calls |
 | `API_URL` | Nest API base URL (default `http://localhost:5001`) |
+| `MASTRA_DATA_DIR` | Optional override for LibSQL / DuckDB directory |
 | `MASTRA_PLATFORM_ACCESS_TOKEN` | Optional — Mastra Platform observability |
 | `MASTRA_PROJECT_ID` | Optional — Mastra Platform project |
 | `OPENAI_TRACING` | Optional — tracing flag |
@@ -72,29 +98,49 @@ pnpm dev
 
 Mastra Studio: [http://localhost:4111](http://localhost:4111)
 
-Other scripts:
-
-```sh
-pnpm build
-pnpm start
-```
-
-Use the `dev` / `build` / `start` scripts from `package.json` (do not invoke `mastra` CLI flags ad hoc unless you know you need them). See [`AGENTS.md`](./AGENTS.md).
-
 ## Project layout
 
 ```
 src/
+  ag-ui/                 # stop latch + stream/tripwire bridge
+  copilotkit.ts          # AG-UI agent export for web
+  handle-processor-tripwire.ts  # shim → ag-ui
   mastra/
-    agents/        # manager and specialists
-    tools/         # rooms + booking tools
-    schemas/       # Zod schemas for tool I/O
-    services/      # HTTP clients against the Nest API
-    constants/     # prompts, working-memory templates
-    index.ts       # Studio Mastra instance
-    runtime.ts     # CopilotKit runtime Mastra instance
-  copilotkit.ts    # AG-UI agent export for web
+    agents/              # manage-agent
+    booking/             # step-machine (prepareStep state machine)
+    tools/               # rooms + booking tools
+    schemas/
+    services/
+    constants/
+      prompts/           # intent playbook (golden wording)
+      working-memory.ts  # soft draft hints (not step machine)
+    index.ts             # Studio Mastra (mastra-studio.db)
+    runtime.ts           # CopilotKit Mastra (mastra-runtime.db)
 ```
+
+## Naming map (Phase 4)
+
+| Concept | Canonical name | Deprecated alias |
+| --- | --- | --- |
+| Forced tool hops | `enforceBookingStep` / `booking/step-machine.ts` | `enforceBookingWorkflowStep` |
+| LLM instruction sections | intent playbook / `PLAYBOOK_*` | `WORKFLOW_*` section keys (wording unchanged) |
+| Web suggestion state | UI focus stack (`uiFocusEntries`, `pushUiFocus`) | `workflowEntries`, `pushWorkflow` |
+| Report HITL focus | `useReportHomestayAgentUiFocus` | `useReportHomestayAgentWorkflow` |
+
+Prompt **strings** stay golden — Phase 4 only splits/comments/aliases.
+
+## Regression checklist
+
+After Milestone A / Phase 4 (structure + naming only — no prompt/tool-order changes), verify:
+
+1. Browse all / find room → cards
+2. Book stay → confirm → create
+3. Modify → edit → confirm → update
+4. Cancel → dialog → cancel
+5. Stop mid-run (first click)
+6. New thread / switch thread
+7. Reload page → history still there (`mastra-runtime.db`)
+8. Suggestion pills still appear during confirm / modify / cancel HITL
 
 ## Docs
 

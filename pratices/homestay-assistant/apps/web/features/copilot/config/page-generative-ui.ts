@@ -7,6 +7,7 @@ import {
   isBookingFormPrompt,
   isBookingModifyPrompt,
   isBookingStayPrompt,
+  PAGE_ROOMS_PROMPT_PREFIX,
   TOOL_KEYS,
 } from "@repo/constants";
 import { getUiActionPromptDisplayText } from "@repo/utils";
@@ -86,7 +87,7 @@ export const CHAT_TEXT_SUPPRESSED_TOOLS = new Set<string>([
   BOOKING.CHECK_ROOM_AVAILABILITY,
 ]);
 
-export const PAGE_ROOMS_PROMPT_PREFIX = "[page-rooms]";
+export { PAGE_ROOMS_PROMPT_PREFIX };
 
 export const isPageOnlyGenerativeTool = (toolName: string) =>
   PAGE_ONLY_GENERATIVE_TOOLS.has(toolName);

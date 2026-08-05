@@ -1,5 +1,3 @@
-export const THREAD_METADATA_BLOCKED_MESSAGE_IDS = "blockedMessageIds";
-
 export const PROCESSOR_BLOCK_MESSAGE_PREFIX = "@@processor-block@@";
 
 export const PROCESSOR_BLOCK_ASSISTANT_TEXT =

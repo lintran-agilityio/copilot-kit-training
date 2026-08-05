@@ -48,7 +48,7 @@ export const useRequestRoomBooking = () => {
 
       const { roomId } = useBookingStore.getState();
       if (roomId) {
-        useHomestayAgentUiStore.getState().pushWorkflow({
+        useHomestayAgentUiStore.getState().pushUiFocus({
           key: BOOK_FLOW_KEY,
           task: {
             type: HOMESTAY_AGENT_TASK_TYPE.BOOK,
@@ -72,7 +72,7 @@ export const useRequestRoomBooking = () => {
         void runAgentSafely(
           () => copilotkit.runAgent({ agent }),
           (error) => {
-            console.error("Failed to start booking workflow", error);
+            console.error("Failed to start booking flow", error);
           },
         ).finally(() => {
           requestInFlightRef.current = false;

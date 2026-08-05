@@ -41,7 +41,7 @@ export const useBookingStore = create<BookingStore>()((set) => ({
   setPendingModifyStay: (stay) => set({ pendingModifyStay: stay }),
 
   resetBooking: () => {
-    useHomestayAgentUiStore.getState().resetWorkflow();
+    useHomestayAgentUiStore.getState().resetUiFocus();
     set((state) => ({ ...state, ...DEFAULT_DRAFT, pendingModifyStay: null }));
   },
 }));

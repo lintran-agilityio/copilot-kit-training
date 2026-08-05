@@ -18,7 +18,9 @@ export const findRoomInputSchema = z.object({
     .int()
     .positive()
     .optional()
-    .describe("Minimum guest capacity the room must support"),
+    .describe(
+      "Party size (guest count). Matches rooms with capacity >= guests — NOT exact capacity equality. Pass the party size as stated; never require capacity === guests.",
+    ),
   level: z
     .number()
     .int()

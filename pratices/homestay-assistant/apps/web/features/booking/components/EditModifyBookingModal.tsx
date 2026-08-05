@@ -32,7 +32,7 @@ import {
   RoomBookingGuests,
   RoomBookingPreviewCard,
 } from "@/features/room/components";
-import { useReportHomestayAgentWorkflow } from "@/features/chat/hooks";
+import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
 import { useRoomBookingEstimate } from "@/features/room/hooks";
 import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
 
@@ -119,7 +119,7 @@ export const EditModifyBookingModal = ({
     result as EditModifyBookingResult | string | null | undefined,
   );
 
-  useReportHomestayAgentWorkflow(
+  useReportHomestayAgentUiFocus(
     ready,
     "modify-flow",
     {

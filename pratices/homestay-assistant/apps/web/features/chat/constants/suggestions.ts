@@ -5,7 +5,7 @@ export type StaticSuggestion = {
   message: string;
 };
 
-/** Guest session signals used when no active workflow is driving pills. */
+/** Guest session signals used when no active UI focus is driving pills. */
 export type SuggestionGuestState = {
   hasActiveBookings: boolean;
   hasSearchedRooms: boolean;

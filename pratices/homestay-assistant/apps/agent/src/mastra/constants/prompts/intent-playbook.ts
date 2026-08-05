@@ -1,8 +1,12 @@
 /**
- * Homestay agent instruction sections.
- * Static sections stay cache-friendly; each tool's own description owns
- * arguments, formats, and any follow-up tools — this prompt only governs
- * orchestration, tone, and global behavior.
+ * Intent playbook — LLM instruction sections for manage-agent.
+ *
+ * Ownership:
+ * - This file: intent routing, tone, language, playbook order (golden wording).
+ * - `mastra/booking/step-machine.ts`: forced tool transitions after availability/HITL.
+ * - Web Zustand UI focus stack: suggestion pills only — not booking authority.
+ *
+ * Phase 4: structure/comments/aliases only. Do not trim playbook strings yet.
  */
 
 export type AgentInstructionSections = Record<string, string>;
@@ -83,7 +87,6 @@ A terminal unavailable result or a guest declining/dismissing confirmation also 
 - Message starts with \`[book-stay]\` → **NEW booking** workflow ONLY (even if the guest already has other bookings in this chat).
   1. Parse \`roomId\`, \`checkInDate\`, \`checkOutDate\`, \`guests\` from the message — use ONLY these values.
   2. \`check_room_availability\` with \`flow=create\` (omit \`excludeBookingId\`) → obey \`result.nextAction\`: \`confirm_booking\` must run in the same turn; \`stop_booking\` ends the flow.
-  3. Wait for \`confirm_booking\` → \`confirmed: true\` → \`create_booking\`; \`confirmed: false\` → stop the flow and reply that booking was stopped.
   → Never \`get_room_by_id\`. Never \`get_bookings\`. Never end the turn by only saying the room is available or repeating booking info in chat — \`confirm_booking\` must run when availability succeeds.
 - Message starts with \`[book-form]\` → \`get_room_by_id\` with \`roomId:\` from the message only; guest picks dates in the UI. Never \`check_room_availability\` on this turn.
 - Message starts with \`[booking-cancel]\` → \`find_booking_by_id\` then \`show_cancel_dialog_confirm\` in the SAME turn.
@@ -204,6 +207,11 @@ Skip guest-chat browse treatment for hidden prompts like \`[page-rooms]\` or aut
 - Relative dates (today / tonight / tomorrow) → convert via CURRENT DATE, then pass absolute \`date\`.
 - "this weekend" → pass \`date\` = CURRENT DATE \`weekendCheckIn\` exactly. Never pass \`tomorrow\` for a weekend request.
 
+**Guest count (\`guests\`) semantics:**
+- \`guests\` is the party size. The API matches rooms with \`capacity >= guests\` (e.g. 3 guests → capacity 3, 4, 6 all valid).
+- 🚫 NEVER treat guest count as an exact room-capacity requirement (\`capacity === guests\`).
+- Pass the stated party size as \`guests\`; do not invent a \`name\` or \`level\` filter from the guest count.
+
 1. Call \`find_room\` with filters the guest needs (\`name\`, \`date\`, \`guests\`, \`level\` — omit unused). For availability language with no date, always include \`date\` = today. Map luxury/top-floor wording to \`level: 4\` only — never as \`name\`.
 2. ⚠️ NEVER \`get_rooms\` or \`get_room_by_id\` in this workflow — even when \`matchCount === 1\`.
 3. Room cards render from \`find_room\` in chat — do NOT dump lists in text. Also call \`update_room_list\` with \`result.rooms[].id\` (IDs only) so the home grid matches.
@@ -229,12 +237,14 @@ When HomestayAgentContext \`screen.name\` is \`home\` (Room Grid), treat the gri
    - Date known, guests unknown → ask ONLY "How many guests?" — do not re-ask check-in/check-out.
    - Guests known, date unknown → ask ONLY for the stay date.
    - 🚫 Never default guests to 1.
+   - 🚫 \`guests\` is party size (\`capacity >= guests\`), never an exact-capacity filter.
 3. Once the minimum is known → make a **single** \`find_room\` call with those filters (resolve relative dates via CURRENT DATE).
 4. 🚫 After that \`find_room\` succeeds: **do NOT call \`find_room\` again in this turn** — cards already render from that result. Never treat "show available rooms" / "present options" as a second search.
 5. Pass \`result.rooms[].id\` to \`update_room_list\` (IDs only), then ONE short chat sentence; never dump room lists in text.
 6. Stop and wait for the guest to pick a room (card, "Book Courtyard Duplex", \`[book-form]\`, or \`[book-stay]\`). Only then enter WORKFLOW — BOOK.
 
-✅ Flow: Show Rooms → "Book a room this weekend" → ask guests if needed → ONE \`find_room\` → \`update_room_list\` → short reply → user picks room → BOOK (availability → HITL → create).`,
+✅ Flow: Show Rooms → "Book a room this weekend" → ask guests if needed → ONE \`find_room\` → \`update_room_list\` → short reply → user picks room → BOOK (availability → HITL → create).
+✅ Example: "Book a room for 3 guests this weekend" → \`find_room({ guests: 3, date: weekendCheckIn })\` — a capacity-4 room is a valid match.`,
 
   WORKFLOW_DETAIL: `## 🌟 WORKFLOW — ROOM DETAILS (\`get_room_by_id\`)
 Use ONLY when **detail intent** is clear. A room name with search verbs is NOT detail — use FIND.
@@ -533,9 +543,29 @@ When the guest has no clear intent, offer:
 } as const satisfies AgentInstructionSections;
 
 /**
- * Orchestration hints aligned with registered manage-agent tools (see manage-agent.ts).
- * Tool schemas and arguments live on each tool's description — these are routing reminders only.
+ * Routing reminders aligned with manage-agent tools (see manage-agent.ts).
+ * Tool schemas own arguments; forced hops after HITL/availability live in the booking step machine.
  */
+
+/**
+ * Canonical playbook section keys. `WORKFLOW_*` keys remain as deprecated aliases
+ * so existing imports keep working; prefer `PLAYBOOK_*` in new code.
+ */
+export const MANAGE_AGENT_PLAYBOOK_SECTIONS = {
+  BOUNDARY: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_BOUNDARY,
+  BROWSE: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_BROWSE,
+  FIND: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_FIND,
+  RECOMMEND: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_RECOMMEND,
+  DETAIL: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_DETAIL,
+  BOOK: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_BOOK,
+  LIST: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_LIST,
+  CANCEL: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_CANCEL,
+  MODIFY: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_MODIFY,
+} as const;
+
+/** @deprecated Prefer `MANAGE_AGENT_PLAYBOOK_SECTIONS` / `PLAYBOOK_*` via building-instruction. */
+export const MANAGE_AGENT_WORKFLOW_SECTIONS = MANAGE_AGENT_PLAYBOOK_SECTIONS;
+
 export const MANAGE_AGENT_TOOL_PROMPTS = {
   getRooms: {
     key: "get_rooms",
@@ -543,7 +573,7 @@ export const MANAGE_AGENT_TOOL_PROMPTS = {
   },
   findRoom: {
     key: "find_room",
-    description: `Search/filter rooms by name, date, guests, and/or level. Required for any "available" request and for soft-book/recommend when book intent has no specific room — default date to CURRENT DATE today when none given. Search/recommend turns: call ONLY this tool (+ update_room_list) — never chain get_room_by_id, check_room_availability, or confirm_booking in the same turn.`,
+    description: `Search/filter rooms by name, date, guests, and/or level. guests = party size (capacity >= guests; larger rooms count — never exact capacity). Required for any "available" request and for soft-book/recommend when book intent has no specific room — default date to CURRENT DATE today when none given. Search/recommend turns: call ONLY this tool (+ update_room_list) — never chain get_room_by_id, check_room_availability, or confirm_booking in the same turn.`,
   },
   getRoomById: {
     key: "get_room_by_id",

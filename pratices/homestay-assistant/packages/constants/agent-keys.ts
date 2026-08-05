@@ -1,7 +1,2 @@
-export const AGENT_KEYS = {
-  MANAGE_ASSISTANT: "manage-assistant",
-};
-
-export const AGENT_URLS = {
-  MANAGE_ASSISTANT: "/api/copilotkit",
-};
+/** Shim — canonical definitions live in `agent-names.ts`. */
+export { AGENT_KEYS, AGENT_NAMES, AGENT_URLS } from "./agent-names.js";

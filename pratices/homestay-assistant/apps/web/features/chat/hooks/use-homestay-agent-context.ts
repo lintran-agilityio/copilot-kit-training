@@ -3,7 +3,7 @@ import { usePathname } from "next/navigation";
 
 import { useBooking } from "@/features/booking/hooks";
 import {
-  selectActiveHomestayWorkflow,
+  selectActiveHomestayUiFocus,
   selectFocusedRoomId,
   useHomestayAgentUiStore,
 } from "@/features/chat/stores/homestay-agent-ui-store";
@@ -18,15 +18,15 @@ export const useHomestayAgentContext = (): HomestayAgentContext => {
   const focusedRoomId = useHomestayAgentUiStore((s) =>
     selectFocusedRoomId(s.focusedRoomStack),
   );
-  const workflowEntries = useHomestayAgentUiStore((s) => s.workflowEntries);
+  const uiFocusEntries = useHomestayAgentUiStore((s) => s.uiFocusEntries);
 
   return useMemo(() => {
-    const activeWorkflow = selectActiveHomestayWorkflow(workflowEntries);
+    const activeUiFocus = selectActiveHomestayUiFocus(uiFocusEntries);
 
     return buildHomestayAgentContext(
       pathname,
       { roomId, checkInDate, checkOutDate },
-      { focusedRoomId, activeWorkflow },
+      { focusedRoomId, activeUiFocus },
     );
   }, [
     checkInDate,
@@ -34,6 +34,6 @@ export const useHomestayAgentContext = (): HomestayAgentContext => {
     focusedRoomId,
     pathname,
     roomId,
-    workflowEntries,
+    uiFocusEntries,
   ]);
 };

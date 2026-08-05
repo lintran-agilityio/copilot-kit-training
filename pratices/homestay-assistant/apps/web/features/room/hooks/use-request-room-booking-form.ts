@@ -63,7 +63,7 @@ export const useRequestRoomBookingForm = () => {
         guests: 1,
       });
       useHomestayAgentUiStore.getState().pushFocusedRoom(roomId);
-      useHomestayAgentUiStore.getState().pushWorkflow({
+      useHomestayAgentUiStore.getState().pushUiFocus({
         key: BOOK_FLOW_KEY,
         task: {
           type: HOMESTAY_AGENT_TASK_TYPE.BOOK,

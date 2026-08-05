@@ -1,13 +1,11 @@
-export const BOOKING_CANCEL_PROMPT_PREFIX = "[booking-cancel]";
-export const BOOKING_CANCEL_CONFIRM_PROMPT_PREFIX = "[booking-cancel-confirm]";
-export const BOOKING_MODIFY_PROMPT_PREFIX = "[booking-modify]";
-/** UI: open RoomDetail booking form in chat (no availability yet). */
-export const BOOKING_FORM_PROMPT_PREFIX = "[book-form]";
-/** UI: submit dates/guests — full create-booking tool chain. */
-export const BOOKING_STAY_PROMPT_PREFIX = "[book-stay]";
-
-/** Separates guest-facing copy from agent-only booking metadata in cancel prompts. */
-export const BOOKING_CANCEL_METADATA_SEPARATOR = " || ";
+import {
+  BOOKING_CANCEL_CONFIRM_PROMPT_PREFIX,
+  BOOKING_CANCEL_METADATA_SEPARATOR,
+  BOOKING_CANCEL_PROMPT_PREFIX,
+  BOOKING_FORM_PROMPT_PREFIX,
+  BOOKING_MODIFY_PROMPT_PREFIX,
+  BOOKING_STAY_PROMPT_PREFIX,
+} from "./prompt-tags.js";
 
 export const isBookingCancelPrompt = (content: string) =>
   content.startsWith(BOOKING_CANCEL_PROMPT_PREFIX) &&

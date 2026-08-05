@@ -8,8 +8,8 @@ import {
   AGENT_MAX_OUTPUT_TOKEN_LIMIT,
   TOOL_KEYS,
 } from "@repo/constants";
+import { enforceBookingStep } from "@/mastra/booking/step-machine";
 import {
-  enforceBookingWorkflowStep,
   manageAgentPrompt,
   withCurrentDateInstructions,
 } from "@/mastra/utils";
@@ -34,7 +34,7 @@ export const manageAgent = new Agent({
   id: AGENT_KEYS.MANAGE_ASSISTANT,
   name: "Homestay Manager Agent",
   description:
-    "Public chat agent that coordinates room discovery and booking workflows.",
+    "Public chat agent that coordinates room discovery and booking flows (step machine + HITL).",
   instructions: () => withCurrentDateInstructions(manageAgentPrompt),
   model: process.env.AI_MODEL || "openai/gpt-4o-mini",
   // Rate-limit responses are transient; Mastra applies bounded backoff retries.
@@ -54,7 +54,8 @@ export const manageAgent = new Agent({
         parallelToolCalls: false,
       },
     },
-    prepareStep: enforceBookingWorkflowStep,
+    // Booking step machine (forced tool transitions). Alias: enforceBookingWorkflowStep.
+    prepareStep: enforceBookingStep,
   },
   tools: {
     [TOOL_KEYS.GET.ROOMS]: getRoomsTool,

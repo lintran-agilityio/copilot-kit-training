@@ -14,8 +14,11 @@ import {
   createMastraServerMiddleware,
 } from './middleware';
 
+/**
+ * Studio-only Mastra instance (observability + DuckDB).
+ * CopilotKit uses `runtime.ts` / `mastra-runtime.db` — not this store.
+ */
 export const mastra = new Mastra({
-  workflows: {},
   agents: {
     [AGENT_KEYS.MANAGE_ASSISTANT]: manageAgent,
   },

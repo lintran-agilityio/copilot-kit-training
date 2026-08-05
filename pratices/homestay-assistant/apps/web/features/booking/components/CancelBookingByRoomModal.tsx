@@ -24,7 +24,7 @@ import type {
   CancelBookingByRoomResult,
 } from "@/features/booking/schemas";
 import type { BookingDetails } from "@/features/booking/types";
-import { useReportHomestayAgentWorkflow } from "@/features/chat/hooks";
+import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
 import { ConfirmCancelBookingModal } from "./ConfirmCancelBookingModal";
 
 type CancelBookingByRoomModalProps = {
@@ -74,7 +74,7 @@ export const CancelBookingByRoomModal = ({
     result as CancelBookingByRoomResult | string | null | undefined,
   );
 
-  useReportHomestayAgentWorkflow(isAwaitingCancel, "cancel-flow", {
+  useReportHomestayAgentUiFocus(isAwaitingCancel, "cancel-flow", {
     type: HOMESTAY_AGENT_TASK_TYPE.CANCEL,
     status: HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION,
   });

@@ -24,6 +24,7 @@ type CopilotKitProvidersProps = {
 };
 
 const TOKEN_REFRESH_MS = 50_000;
+const CLERK_TOKEN_HEADER = "x-clerk-token";
 
 const isLoginRoute = (pathname: string) =>
   pathname === ROUTES.LOGIN || pathname.startsWith(`${ROUTES.LOGIN}/`);
@@ -46,11 +47,11 @@ const handleCopilotError = (event: CopilotErrorEvent) => {
   );
 };
 
-/** Syncs Clerk session JWT into CopilotKit request headers (rotating tokens). */
-const ClerkTokenSync = () => {
+/** Keeps rotating Clerk JWTs on an already-mounted CopilotKitProvider. */
+const ClerkTokenSync = ({ initialToken }: { initialToken: string }) => {
   const { getToken } = useAuth();
   const { copilotkit } = useCopilotKit();
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState(initialToken);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,12 +59,10 @@ const ClerkTokenSync = () => {
     const sync = async () => {
       const next = await getToken();
 
-      if (!cancelled) {
+      if (!cancelled && next) {
         setToken(next);
       }
     };
-
-    void sync();
 
     const id = window.setInterval(() => {
       void sync();
@@ -78,7 +77,7 @@ const ClerkTokenSync = () => {
   useEffect(() => {
     copilotkit.setHeaders({
       ...copilotkit.headers,
-      "x-clerk-token": token ?? "",
+      [CLERK_TOKEN_HEADER]: token,
     });
   }, [copilotkit, token]);
 
@@ -88,7 +87,8 @@ const ClerkTokenSync = () => {
 const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const [clerkToken, setClerkToken] = useState<string | null>(null);
 
   // Signing out flips isSignedIn before Clerk's own redirect lands, so the
   // previously-mounted page (bookings query, CopilotKit info fetch, etc.)
@@ -99,18 +99,40 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
     }
   }, [isLoaded, isSignedIn, pathname, router]);
 
+  // Resolve the JWT before mounting CopilotKitProvider so the first /info
+  // request already carries x-clerk-token (ClerkTokenSync alone races that fetch).
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) {
+      setClerkToken(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadToken = async () => {
+      const next = await getToken();
+
+      if (!cancelled) {
+        setClerkToken(next);
+      }
+    };
+
+    void loadToken();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, isLoaded, isSignedIn]);
+
   // Login has no Copilot hooks. Keep QueryClient for any shared client pages.
   if (isLoginRoute(pathname)) {
     return <AppProvider withCopilot={false}>{children}</AppProvider>;
   }
 
-  // MainLayout / chat children (SuggestionBar, ChatSidebarContent, booking
-  // hooks, etc.) call useCopilotKit() unconditionally, so CopilotKit must be
-  // mounted as soon as auth is resolved. Gate on isLoaded and isSignedIn —
-  // userId can legitimately lag isLoaded during Clerk hydration, and server
-  // pages already redirect unauthenticated users to login before this mounts,
-  // but a client-side sign-out only surfaces through isSignedIn.
-  if (!isLoaded || !isSignedIn) {
+  // MainLayout / chat children call useCopilotKit() unconditionally.
+  // Wait for Clerk session AND the first JWT so /api/copilotkit/info is not
+  // fired unauthenticated (which leaves the registry empty → "agent not found").
+  if (!isLoaded || !isSignedIn || !clerkToken) {
     return (
       <AppProvider withCopilot={false}>
         <AuthLoadingFallback />
@@ -126,12 +148,14 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
     <CopilotKitProvider
       credentials="include"
       runtimeUrl={AGENT_URLS.MANAGE_ASSISTANT}
+      publicApiKey={process.env.NEXT_PUBLIC_COPILOTKIT_API_KEY}
+      headers={{ [CLERK_TOKEN_HEADER]: clerkToken }}
       // Intelligence thread routes (/threads*) require REST transport.
       // Single-endpoint /info always reports threadEndpoints.list=false.
       useSingleEndpoint={false}
       onError={handleCopilotError}
     >
-      <ClerkTokenSync />
+      <ClerkTokenSync initialToken={clerkToken} />
       <AppProvider>{children}</AppProvider>
     </CopilotKitProvider>
   );

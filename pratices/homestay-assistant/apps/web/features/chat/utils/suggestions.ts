@@ -27,7 +27,7 @@ const openBookingForm = (roomId: string, roomName: string): StaticSuggestion => 
   message: buildBookingFormMessage(roomId, roomName),
 });
 
-const isActiveWorkflowTask = (context: HomestayAgentContext): boolean => {
+const isActiveUiFocusTask = (context: HomestayAgentContext): boolean => {
   const task = context.task;
   if (!task) {
     return false;
@@ -50,15 +50,16 @@ const getFocusedRoomId = (context: HomestayAgentContext) =>
   context.focus?.type === "room" ? context.focus.id : undefined;
 
 /**
- * Active workflow pills — must match the guest's current task step.
+ * Active UI-focus pills — must match the guest's current task step.
  * Prefer concrete next actions over generic page navigation.
+ * (UI focus stack only — not Mastra booking step-machine authority.)
  */
-export const getWorkflowStaticSuggestions = (
+export const getUiFocusStaticSuggestions = (
   context: HomestayAgentContext,
   roomName?: string | null,
 ): StaticSuggestion[] => {
   const task = context.task;
-  if (!task || !isActiveWorkflowTask(context)) {
+  if (!task || !isActiveUiFocusTask(context)) {
     return [];
   }
 
@@ -190,23 +191,26 @@ export const getPageStaticSuggestions = (
   }
 };
 
-/** Workflow static suggestions take precedence over guest-state / page pills. */
+/** UI-focus static suggestions take precedence over guest-state / page pills. */
 export const getPriorityStaticSuggestions = (
   context: HomestayAgentContext,
   roomName?: string | null,
   guestState?: SuggestionGuestState,
 ): StaticSuggestion[] => {
-  const workflow = getWorkflowStaticSuggestions(context, roomName);
+  const uiFocus = getUiFocusStaticSuggestions(context, roomName);
 
-  // Post-booking is transient guest state, not a lasting workflow report —
-  // still prefer it over page pills when no mid-flow workflow is active.
-  if (!workflow.length && guestState?.bookingJustCompleted) {
+  // Post-booking is transient guest state, not a lasting UI-focus report —
+  // still prefer it over page pills when no mid-flow focus is active.
+  if (!uiFocus.length && guestState?.bookingJustCompleted) {
     return AFTER_BOOKING_SUGGESTIONS.slice(0, MAX_SUGGESTION_PILLS);
   }
 
-  const source = workflow.length
-    ? workflow
+  const source = uiFocus.length
+    ? uiFocus
     : getPageStaticSuggestions(context, roomName, guestState);
 
   return source.slice(0, MAX_SUGGESTION_PILLS);
 };
+
+/** @deprecated Prefer `getUiFocusStaticSuggestions`. */
+export const getWorkflowStaticSuggestions = getUiFocusStaticSuggestions;

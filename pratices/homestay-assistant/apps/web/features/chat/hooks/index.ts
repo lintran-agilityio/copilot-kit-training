@@ -7,4 +7,4 @@ export * from "./use-reset-conversation";
 export * from "./use-silence-stop-run-errors";
 export * from "./use-stop-generation";
 export * from "./use-thread-messages";
-export * from "./use-report-homestay-agent-workflow";
+export * from "./use-report-homestay-agent-ui-focus";
