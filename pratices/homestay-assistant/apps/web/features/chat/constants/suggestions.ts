@@ -88,7 +88,7 @@ export const SUGGESTION = {
   },
   modifyBooking: {
     title: "Modify booking",
-    message: "I want to modify one of my bookings.",
+    message: "I want to change the dates or number of guests on one of my bookings.",
   },
   cancelBooking: {
     title: "Cancel booking",
@@ -102,9 +102,10 @@ export const SUGGESTION = {
     title: "Help with dates",
     message: "Help me choose check-in and check-out dates.",
   },
+  /** Alias of dates/guests modify — product cannot swap rooms on a booking. */
   modifyRoom: {
-    title: "Modify room",
-    message: "I want to change the room for one of my bookings.",
+    title: "Change dates or guests",
+    message: "I want to change the dates or number of guests on one of my bookings.",
   },
 } as const satisfies Record<string, StaticSuggestion>;
 
@@ -117,7 +118,7 @@ export const FIRST_VISIT_SUGGESTIONS: StaticSuggestion[] = [
 
 export const ACTIVE_BOOKINGS_SUGGESTIONS: StaticSuggestion[] = [
   SUGGESTION.myBookings,
-  SUGGESTION.modifyBooking,
+  SUGGESTION.modifyRoom,
   SUGGESTION.cancelBooking,
   SUGGESTION.bookAnother,
 ];
@@ -132,6 +133,6 @@ export const AFTER_SEARCH_SUGGESTIONS: StaticSuggestion[] = [
 export const AFTER_BOOKING_SUGGESTIONS: StaticSuggestion[] = [
   SUGGESTION.viewBooking,
   SUGGESTION.bookAnother,
-  SUGGESTION.modifyBooking,
+  SUGGESTION.modifyRoom,
   SUGGESTION.cancelBooking,
 ];

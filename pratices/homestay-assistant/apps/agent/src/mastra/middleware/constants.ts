@@ -18,6 +18,11 @@ export const REQUEST_CONTEXT_KEYS = {
    * create_booking args when the model fills stale dates.
    */
   PENDING_CREATE_STAY: "pendingCreateStay",
+  /**
+   * Booking id from show_cancel_dialog_confirm confirmed:true — used to override
+   * cancel_booking args when the model fills a stale id from an earlier turn.
+   */
+  PENDING_CANCEL_BOOKING_ID: "pendingCancelBookingId",
 } as const;
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";

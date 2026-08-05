@@ -7,6 +7,7 @@ import { enableProcessorTripwireHandling } from "./handle-processor-tripwire";
 import { runtimeMastra } from "@/mastra/runtime";
 
 export { runtimeMastra as mastra } from "@/mastra/runtime";
+export { latchThreadStop } from "./handle-processor-tripwire";
 
 type GetCopilotkitAgentsInput = {
   userId: string;

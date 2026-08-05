@@ -185,7 +185,7 @@ export const getPageStaticSuggestions = (
         : [
             SUGGESTION.findWeekendRooms,
             SUGGESTION.helpBooking,
-            SUGGESTION.modifyRoom,
+            SUGGESTION.bookAnother,
           ];
   }
 };

@@ -13,9 +13,6 @@ const LoginPage = () => {
           routing="path"
           path={ROUTES.LOGIN}
           appearance={{
-            options: {
-              unsafe_disableDevelopmentModeWarnings: true,
-            },
             elements: {
               // Hides "Secured by Clerk" footer branding (dev workaround;
               // production removal requires Clerk Dashboard → Branding).

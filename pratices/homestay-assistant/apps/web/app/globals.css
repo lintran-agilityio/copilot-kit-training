@@ -263,6 +263,37 @@ a {
   scrollbar-color: rgb(82 82 91 / 0.7) transparent;
 }
 
+/*
+ * CopilotKit reserves padding-bottom for an overlay input. Our input lives in
+ * [data-chat-footer], so that padding becomes empty space above the chatbox.
+ * Also pin short threads to the bottom of the scrollport (spacer grows only
+ * when content is shorter than the viewport).
+ */
+[data-sidebar-chat] [data-testid="copilot-scroll-content"] {
+  padding-bottom: 0.5rem !important;
+}
+
+[data-sidebar-chat]
+  [data-chat-messages]
+  div:has(> div > [data-testid="copilot-scroll-content"]) {
+  min-height: 100% !important;
+}
+
+[data-sidebar-chat]
+  [data-chat-messages]
+  div:has(> [data-testid="copilot-scroll-content"]) {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+[data-sidebar-chat]
+  [data-chat-messages]
+  div:has(> [data-testid="copilot-scroll-content"])::before {
+  content: "";
+  flex-grow: 1;
+}
+
 [data-sidebar-chat] [data-chat-footer] {
   flex-shrink: 0;
 }

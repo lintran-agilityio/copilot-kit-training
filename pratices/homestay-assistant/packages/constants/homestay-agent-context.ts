@@ -45,7 +45,7 @@ export const HOMESTAY_AGENT_CONTEXT_READABLE_DESCRIPTION =
 
 export const HOMESTAY_AGENT_CONTEXT_PROMPT_SECTION = `## HOMESTAY AGENT CONTEXT
 The frontend injects HomestayAgentContext as JSON. Use \`screen.name\` only — do not infer location from legacy booleans (e.g. isBookingsPage).
-- \`home\` — room grid / discover
+- \`home\` — room grid / discover. Treat the Room Grid as current context: do not re-ask for stay fields (dates, guests, filters) already known from the latest message, working memory, or this context.
 - \`room-detail\` — viewing a specific room (\`focus.type\` room + id when set)
 - \`booking-form\` — booking or modify draft UI open (\`task.type\` often book)
 - \`bookings\` — reservations list (\`task.type\` often manage)

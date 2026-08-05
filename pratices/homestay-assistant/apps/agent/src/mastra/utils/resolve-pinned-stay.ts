@@ -46,6 +46,27 @@ export const readPinnedStay = (
 };
 
 /**
+ * Reads a pinned booking id from request context.
+ *
+ * @param requestContext - Agent request context
+ * @param key - Request-context key for the pinned booking id
+ * @returns Trimmed booking id when present, otherwise null
+ */
+export const readPinnedBookingId = (
+  requestContext: RequestContext | undefined,
+  key: (typeof REQUEST_CONTEXT_KEYS)[keyof typeof REQUEST_CONTEXT_KEYS],
+): string | null => {
+  const value = requestContext?.get(key);
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+/**
  * Clears a pinned stay after the consuming tool has applied it.
  *
  * @param requestContext - Agent request context

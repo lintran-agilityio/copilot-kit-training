@@ -178,7 +178,12 @@ export const EditModifyBookingModal = ({
     capacity: room?.capacity ?? 0,
   });
 
-  const canSubmit = canRespond && canProceed;
+  const hasStayChanges =
+    checkInDate !== (args.checkInDate?.trim() || null) ||
+    checkOutDate !== (args.checkOutDate?.trim() || null) ||
+    guests !== args.guests;
+
+  const canSubmit = canRespond && canProceed && hasStayChanges;
 
   if (!shouldRenderHitlCard(status, hasArgs) || !room) {
     return null;
@@ -210,17 +215,34 @@ export const EditModifyBookingModal = ({
       return;
     }
 
+    const originalCheckInDate = args.checkInDate?.trim();
+    const originalCheckOutDate = args.checkOutDate?.trim();
+    const originalGuests = args.guests;
+    if (
+      !originalCheckInDate ||
+      !originalCheckOutDate ||
+      typeof originalGuests !== "number" ||
+      originalGuests <= 0
+    ) {
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
-      // Persist the guest-selected stay so confirm_modify_booking UI does not
-      // depend on LLM-filled tool args (which can reuse stale draft dates).
+      // Persist the guest-selected stay + originals so confirm_modify_booking
+      // can render before→after diffs without trusting stale LLM args.
       setPendingModifyStay({
         bookingId,
         checkInDate,
         checkOutDate,
         guests,
+        original: {
+          checkInDate: originalCheckInDate,
+          checkOutDate: originalCheckOutDate,
+          guests: originalGuests,
+        },
       });
       await respondOnce({
         confirmed: true,

@@ -156,6 +156,105 @@ const getLastToolResult = (
   return lastResult as ToolResultLike;
 };
 
+type ToolInvocationLike = {
+  state?: string;
+  toolName?: string;
+  args?: unknown;
+  result?: unknown;
+};
+
+/**
+ * Reads the newest completed tool result from the current turn's messages.
+ *
+ * CopilotKit frontend HITL tools run in the browser, so their results arrive as
+ * message parts and never appear in `steps[].toolResults`. Reading the messages
+ * keeps the HITL -> server-tool hop deterministic. The scan stops at the latest
+ * user message so a finished workflow cannot force a transition on a new turn.
+ *
+ * @param messages - Messages for the current step
+ * @returns Last tool result of this turn, or null when none exist
+ */
+const getLastToolResultFromMessages = (
+  messages: ProcessInputStepArgs["messages"] | undefined,
+): ToolResultLike | null => {
+  if (!messages?.length) {
+    return null;
+  }
+
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+
+    if (message?.role === "user") {
+      return null;
+    }
+
+    const parts = asRecord(message?.content)?.parts;
+
+    if (!Array.isArray(parts)) {
+      continue;
+    }
+
+    for (let cursor = parts.length - 1; cursor >= 0; cursor -= 1) {
+      const part = asRecord(parts[cursor]);
+
+      if (part?.type !== "tool-invocation") {
+        continue;
+      }
+
+      const invocation = asRecord(part.toolInvocation) as
+        | ToolInvocationLike
+        | null;
+
+      if (invocation?.state !== "result" || !invocation.toolName) {
+        continue;
+      }
+
+      return {
+        toolName: invocation.toolName,
+        input: invocation.args,
+        output: invocation.result,
+      };
+    }
+  }
+
+  return null;
+};
+
+type BookingWorkflowStepSource = {
+  toolResult: ToolResultLike;
+  transition: Exclude<BookingWorkflowTransition, null>;
+};
+
+/**
+ * Picks the tool result that decides this step, preferring the agent's own steps
+ * and falling back to the messages for browser-executed HITL results.
+ *
+ * @param args - prepareStep args
+ * @returns Deciding tool result with its transition, or null when none applies
+ */
+const resolveBookingWorkflowStepSource = (
+  args: ProcessInputStepArgs,
+): BookingWorkflowStepSource | null => {
+  const candidates = [
+    getLastToolResult(args.steps),
+    getLastToolResultFromMessages(args.messages),
+  ];
+
+  for (const toolResult of candidates) {
+    if (!toolResult) {
+      continue;
+    }
+
+    const transition = resolveBookingWorkflowTransition(toolResult);
+
+    if (transition) {
+      return { toolResult, transition };
+    }
+  }
+
+  return null;
+};
+
 /**
  * Stores a confirmed HITL stay on request context for the next forced tool.
  *
@@ -190,6 +289,41 @@ const stashConfirmedStayForNextTool = (
 };
 
 /**
+ * Pins the booking id the guest just confirmed in the cancel dialog, so
+ * cancel_booking uses it instead of a stale id the model may carry over from an
+ * earlier turn in the same thread.
+ *
+ * @param args - prepareStep args (needs requestContext)
+ * @param toolName - Previous tool that produced the confirmation
+ * @param output - Raw HITL tool output
+ */
+const stashConfirmedCancelBookingId = (
+  args: ProcessInputStepArgs,
+  toolName: string | undefined,
+  output: unknown,
+) => {
+  if (toolName !== TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM) {
+    return;
+  }
+
+  const requestContext = args.requestContext;
+  const result = asRecord(output);
+
+  if (!requestContext || result?.confirmed !== true) {
+    return;
+  }
+
+  const bookingId =
+    typeof result.bookingId === "string" ? result.bookingId.trim() : "";
+
+  if (!bookingId) {
+    return;
+  }
+
+  requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_CANCEL_BOOKING_ID, bookingId);
+};
+
+/**
  * Makes booking state transitions deterministic inside an agent run.
  * Forces the next required tool after availability/HITL results and pins the
  * confirmed stay onto request context so server tools ignore stale LLM args.
@@ -204,17 +338,13 @@ const stashConfirmedStayForNextTool = (
 export const enforceBookingWorkflowStep = (
   args: ProcessInputStepArgs,
 ): ProcessInputStepResult | undefined => {
-  const lastToolResult = getLastToolResult(args.steps);
+  const source = resolveBookingWorkflowStepSource(args);
 
-  if (!lastToolResult) {
+  if (!source) {
     return undefined;
   }
 
-  const transition = resolveBookingWorkflowTransition(lastToolResult);
-
-  if (!transition) {
-    return undefined;
-  }
+  const { toolResult: lastToolResult, transition } = source;
 
   if (transition.type === "stop") {
     return {
@@ -232,6 +362,13 @@ export const enforceBookingWorkflowStep = (
   if (stay) {
     stashConfirmedStayForNextTool(args, lastToolResult.toolName, stay);
   }
+
+  // The cancel dialog result carries no dates, so parseConfirmedStay skips it.
+  stashConfirmedCancelBookingId(
+    args,
+    lastToolResult.toolName,
+    lastToolResult.output,
+  );
 
   return {
     activeTools: [transition.toolName],

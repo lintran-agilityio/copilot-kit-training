@@ -39,6 +39,17 @@ type MastraAgentLike = {
       metadata: Record<string, unknown>;
     }) => Promise<unknown>;
   } | null>;
+  stream?: (
+    messages: unknown,
+    options?: Record<string, unknown>,
+  ) => Promise<unknown>;
+  abortRunStream?: (runId: string) => boolean;
+};
+
+type AgUiRunInput = {
+  runId?: string;
+  threadId?: string;
+  [key: string]: unknown;
 };
 
 type AgUiMastraAgent = {
@@ -59,6 +70,13 @@ type AgUiMastraAgent = {
     callbacks: Record<string, unknown>,
   ) => Promise<unknown>;
   clone?: () => AgUiMastraAgent;
+  run?: (input: AgUiRunInput) => unknown;
+  /**
+   * AbstractAgent.abortRun is a no-op; Intelligence runner stop relies on it.
+   * We override it to abort the Mastra stream via abortSignal (not detachActiveRun,
+   * which drops the Phoenix runner socket and surfaces RUNNER_CONNECTION_DROPPED).
+   */
+  abortRun?: () => void;
 };
 
 type MastraStreamChunk = {
@@ -70,6 +88,177 @@ type MastraStreamChunk = {
 };
 
 const patchedAgents = new WeakSet<object>();
+const streamPatchedMastraAgents = new WeakSet<object>();
+
+/** Per CopilotKit/Intelligence runId — abortSignal injected into Mastra stream(). */
+const abortControllersByRunId = new Map<string, AbortController>();
+
+/**
+ * Threads with a Stop the user just requested.
+ *
+ * A single visible "generation" spans a chain of server runs: the stream ends,
+ * then the client starts a follow-up run (frontend-tool continuation / retry).
+ * Aborting only the run that happens to be active when Stop arrives leaves the
+ * chain alive — and a Stop landing in the gap between two runs aborts nothing
+ * at all, which is why the first click appeared to do nothing.
+ *
+ * While a thread is latched, any run that is not an explicit new user action is
+ * aborted before it streams. Pre-aborted runs finish cleanly (RUN_FINISHED, no
+ * RUN_ERROR), so this stays invisible to the user.
+ */
+const stopLatchByThreadId = new Map<
+  string,
+  { latchedAt: number; stoppedUserMessageId?: string }
+>();
+
+/** Long enough to swallow the follow-up chain, short enough not to eat a real next turn. */
+const STOP_LATCH_TTL_MS = 10_000;
+
+/** Newest user message id seen per thread — identifies the turn a Stop belongs to. */
+const lastUserMessageIdByThreadId = new Map<string, string>();
+
+const trailingUserMessageId = (messages: AgUiMessage[]): string | undefined => {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === "user" && typeof message.id === "string") {
+      return message.id;
+    }
+  }
+
+  return undefined;
+};
+
+/**
+ * Record that the user stopped this thread.
+ *
+ * Must also be called for a stop that finds no active run: the visible
+ * generation is a chain of runs, so a Stop often lands in the gap between two
+ * of them. Without the latch, the next run in the chain starts and the chat
+ * keeps generating — the "needs a second click" symptom.
+ */
+export const latchThreadStop = (threadId: string): void => {
+  if (!threadId) {
+    return;
+  }
+
+  stopLatchByThreadId.set(threadId, {
+    latchedAt: Date.now(),
+    stoppedUserMessageId: lastUserMessageIdByThreadId.get(threadId),
+  });
+};
+
+const isAbortLikeError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.name === "AbortError" ||
+    error.message === "Fetch is aborted" ||
+    error.message === "signal is aborted without reason" ||
+    /aborted/i.test(error.message)
+  );
+};
+
+/**
+ * Stop forwarding chunks as soon as `signal` aborts — do not wait for the
+ * next LLM token. A plain `for await` only checks aborted after each chunk,
+ * so Stop appeared to do nothing until another token arrived (often a
+ * second click).
+ */
+async function* takeUntilAborted(
+  stream: AsyncIterable<unknown>,
+  signal: AbortSignal | undefined,
+) {
+  if (signal?.aborted) {
+    return;
+  }
+
+  const iterator = stream[Symbol.asyncIterator]();
+  let abortListener: (() => void) | undefined;
+  const abortPromise =
+    signal == null
+      ? null
+      : new Promise<"aborted">((resolve) => {
+          if (signal.aborted) {
+            resolve("aborted");
+            return;
+          }
+
+          abortListener = () => resolve("aborted");
+          signal.addEventListener("abort", abortListener, { once: true });
+        });
+
+  try {
+    while (true) {
+      const nextPromise = iterator.next();
+      const raced =
+        abortPromise == null
+          ? { kind: "next" as const, result: await nextPromise }
+          : await Promise.race([
+              nextPromise.then((result) => ({
+                kind: "next" as const,
+                result,
+              })),
+              abortPromise.then((kind) => ({ kind })),
+            ]);
+
+      if (raced.kind === "aborted") {
+        try {
+          await iterator.return?.();
+        } catch {
+          // Best-effort close of the underlying Mastra stream.
+        }
+        return;
+      }
+
+      if (raced.result.done) {
+        return;
+      }
+
+      yield raced.result.value;
+    }
+  } catch (error) {
+    if (signal?.aborted || isAbortLikeError(error)) {
+      return;
+    }
+
+    throw error;
+  } finally {
+    if (signal && abortListener) {
+      signal.removeEventListener("abort", abortListener);
+    }
+  }
+}
+
+/**
+ * Shared LocalMastraAgent instances are reused across AG-UI clones. Inject
+ * abortSignal from the per-runId map so concurrent threads do not share one
+ * controller.
+ */
+const ensureMastraStreamAbortInjection = (
+  mastraAgent: MastraAgentLike | null | undefined,
+) => {
+  if (!mastraAgent?.stream || streamPatchedMastraAgents.has(mastraAgent)) {
+    return;
+  }
+
+  streamPatchedMastraAgents.add(mastraAgent);
+
+  const originalStream = mastraAgent.stream.bind(mastraAgent);
+
+  mastraAgent.stream = (messages, options = {}) => {
+    const runId = typeof options.runId === "string" ? options.runId : undefined;
+    const controller = runId
+      ? abortControllersByRunId.get(runId)
+      : undefined;
+
+    return originalStream(messages, {
+      ...options,
+      ...(controller ? { abortSignal: controller.signal } : {}),
+    });
+  };
+};
 
 export const isBlockedUserMessage = (message: AgUiMessage) =>
   message.role === "user" && isBlockedMessageMetadata(message.metadata);
@@ -283,7 +472,8 @@ async function* interceptTripwireStream(
 }
 
 /**
- * Installs the transcript filters and tripwire interception on one agent.
+ * Installs stop/abort wiring, transcript filters, and tripwire interception
+ * on one agent.
  *
  * These are instance-level overrides, and CopilotKit's run/connect handlers
  * call `agent.clone()` per request. `MastraAgent.clone()` rebuilds the instance
@@ -296,22 +486,16 @@ const patchAgUiAgent = (aguiAgent: AgUiMastraAgent) => {
     return;
   }
 
-  if (!aguiAgent.streamMastraAgent || !aguiAgent.processFullStream) {
-    // Loud on purpose: these hooks are internals of @ag-ui/mastra. If a version
-    // bump renames them, the transcript filters stop running and history
-    // silently duplicates instead of failing.
-    console.warn(
-      "[ProcessorTripwire] MastraAgent is missing streamMastraAgent/processFullStream; transcript filtering and tripwire handling are disabled.",
-    );
-
-    return;
-  }
-
   patchedAgents.add(aguiAgent);
 
-  const originalProcessFullStream = aguiAgent.processFullStream.bind(aguiAgent);
-  const originalStreamMastraAgent = aguiAgent.streamMastraAgent.bind(aguiAgent);
   const originalClone = aguiAgent.clone?.bind(aguiAgent);
+  const originalAbortRun = aguiAgent.abortRun?.bind(aguiAgent);
+  const originalRun = aguiAgent.run?.bind(aguiAgent);
+  let activeRunId: string | undefined;
+  let activeThreadId: string | undefined;
+  let activeUserMessageId: string | undefined;
+
+  ensureMastraStreamAbortInjection(aguiAgent.agent);
 
   if (originalClone) {
     aguiAgent.clone = () => {
@@ -326,57 +510,250 @@ const patchAgUiAgent = (aguiAgent: AgUiMastraAgent) => {
     );
   }
 
-  aguiAgent.processFullStream = async (stream, callbacks, ...rest) => {
-    const tripwireContext = tripwireHandlingContext.getStore();
+  if (originalRun) {
+    aguiAgent.run = (input) => {
+      const runId =
+        typeof input.runId === "string" && input.runId.length > 0
+          ? input.runId
+          : undefined;
+      const threadId =
+        typeof input.threadId === "string" ? input.threadId : undefined;
+      const messages = Array.isArray(input.messages)
+        ? (input.messages as AgUiMessage[])
+        : [];
 
-    if (!tripwireContext) {
-      return originalProcessFullStream(stream, callbacks, ...rest);
+      if (activeRunId && activeRunId !== runId) {
+        abortControllersByRunId.delete(activeRunId);
+      }
+
+      activeRunId = runId;
+      activeThreadId = threadId;
+      activeUserMessageId = trailingUserMessageId(messages);
+
+      if (threadId && activeUserMessageId) {
+        lastUserMessageIdByThreadId.set(threadId, activeUserMessageId);
+      }
+
+      const controller = new AbortController();
+
+      if (runId) {
+        abortControllersByRunId.set(runId, controller);
+      }
+
+      // A run starting while the thread is latched is part of the chain the
+      // user just stopped — unless it is an explicit new user action (new user
+      // message, or a HITL resume). Abort before the model streams anything.
+      const latch = threadId ? stopLatchByThreadId.get(threadId) : undefined;
+      const isLatchLive =
+        !!latch && Date.now() - latch.latchedAt < STOP_LATCH_TTL_MS;
+      const isResume =
+        (Array.isArray(input.resume) && input.resume.length > 0) ||
+        !!(input.forwardedProps as { command?: unknown } | undefined)?.command;
+      const isNewUserTurn =
+        !!activeUserMessageId &&
+        activeUserMessageId !== latch?.stoppedUserMessageId;
+      const blockedByStop = isLatchLive && !isResume && !isNewUserTurn;
+
+      // An expired latch, a resume, or a new user turn all release the thread.
+      if (threadId && !blockedByStop) {
+        stopLatchByThreadId.delete(threadId);
+      }
+
+      if (blockedByStop) {
+        controller.abort();
+      }
+
+      // TEMP: remove once first-click Stop is confirmed fixed.
+      console.info("[StopDebug] run() start", {
+        threadId,
+        runId,
+        controllerCount: abortControllersByRunId.size,
+        lastMessageRole: messages.at(-1)?.role,
+        messageCount: messages.length,
+        userMessageId: activeUserMessageId,
+        isResume,
+        isLatchLive,
+        blockedByStop,
+      });
+
+      // Bound map growth if clones are discarded without abort/complete.
+      if (abortControllersByRunId.size > 64) {
+        const oldest = abortControllersByRunId.keys().next().value;
+        if (oldest && oldest !== runId) {
+          abortControllersByRunId.delete(oldest);
+        }
+      }
+
+      return originalRun(input);
+    };
+  }
+
+  // CopilotKit Intelligence `runner.stop()` calls `agent.abortRun()`.
+  // Abort the Mastra stream via abortSignal so the runner can finalize with
+  // stopRequested. Do NOT call detachActiveRun — that leaves the Phoenix
+  // ingestion socket (`{:shutdown, :left}`) and the gateway emits
+  // RUNNER_CONNECTION_DROPPED as a user-facing agent error.
+  aguiAgent.abortRun = () => {
+    const runId = activeRunId;
+    const controller = runId ? abortControllersByRunId.get(runId) : undefined;
+
+    // Latch the thread so the follow-up run the client starts right after this
+    // abort does not keep the generation alive (the reason Stop needed a
+    // second click).
+    if (activeThreadId) {
+      latchThreadStop(activeThreadId);
     }
 
-    const interceptedStream = interceptTripwireStream(stream, async (chunk) => {
-      const onTextPart = callbacks.onTextPart as
-        | ((text: string) => void)
-        | undefined;
-      const onFinishMessagePart = callbacks.onFinishMessagePart as
-        | (() => void)
-        | undefined;
-
-      onTextPart?.(formatProcessorBlockAssistantContent());
-      onFinishMessagePart?.();
-
-      if (tripwireContext.blockedUserMessageId) {
-        await persistBlockedMessageId({
-          mastraAgent: aguiAgent.agent,
-          threadId: tripwireContext.threadId,
-          messageId: tripwireContext.blockedUserMessageId,
-          requestContext: aguiAgent.requestContext,
-        });
-
-        const currentBlocked = aguiAgent.requestContext?.get(
-          REQUEST_CONTEXT_KEYS.BLOCKED_MESSAGE_IDS,
-        );
-        const blockedSet = new Set<string>(
-          Array.isArray(currentBlocked)
-            ? currentBlocked.filter(
-                (value): value is string => typeof value === "string",
-              )
-            : [],
-        );
-        blockedSet.add(tripwireContext.blockedUserMessageId);
-        await syncBlockedMessageIdsToRequestContext({
-          requestContext: aguiAgent.requestContext,
-          blockedMessageIds: [...blockedSet],
-        });
-      }
-
-      if (chunk.payload?.reason) {
-        console.info(
-          `[ProcessorTripwire] Blocked message ${tripwireContext.blockedUserMessageId ?? "unknown"}: ${chunk.payload.reason}`,
-        );
-      }
+    // TEMP: remove once first-click Stop is confirmed fixed.
+    console.info("[StopDebug] abortRun() called", {
+      runId,
+      threadId: activeThreadId,
+      hasController: !!controller,
+      alreadyAborted: controller?.signal.aborted,
     });
 
-    return originalProcessFullStream(interceptedStream, callbacks, ...rest);
+    // Abort only — keep the controller in the map until the run Observable
+    // unwinds. Deleting here races processFullStream/stream() startup and
+    // can leave a still-running generation without an abortSignal.
+    if (runId) {
+      controller?.abort();
+    }
+
+    try {
+      if (
+        runId &&
+        typeof aguiAgent.agent?.abortRunStream === "function"
+      ) {
+        aguiAgent.agent.abortRunStream(runId);
+      }
+    } catch (error) {
+      console.error(
+        "[ProcessorTripwire] abortRunStream failed during abortRun",
+        error,
+      );
+    }
+
+    try {
+      originalAbortRun?.();
+    } catch (error) {
+      console.error("[ProcessorTripwire] original abortRun failed", error);
+    }
+  };
+
+  if (!aguiAgent.streamMastraAgent || !aguiAgent.processFullStream) {
+    // Loud on purpose: these hooks are internals of @ag-ui/mastra. If a version
+    // bump renames them, the transcript filters stop running and history
+    // silently duplicates instead of failing.
+    console.warn(
+      "[ProcessorTripwire] MastraAgent is missing streamMastraAgent/processFullStream; transcript filtering and tripwire handling are disabled.",
+    );
+
+    return;
+  }
+
+  const originalProcessFullStream = aguiAgent.processFullStream.bind(aguiAgent);
+  const originalStreamMastraAgent = aguiAgent.streamMastraAgent.bind(aguiAgent);
+
+  aguiAgent.processFullStream = async (stream, callbacks, ...rest) => {
+    const runId = activeRunId;
+    const signal = runId
+      ? abortControllersByRunId.get(runId)?.signal
+      : undefined;
+
+    // TEMP: remove once first-click Stop is confirmed fixed.
+    console.info("[StopDebug] processFullStream() start", {
+      runId,
+      hasSignal: !!signal,
+      alreadyAborted: signal?.aborted,
+    });
+
+    let chunkCount = 0;
+    let effectiveStream: AsyncIterable<unknown> = takeUntilAborted(
+      stream,
+      signal,
+    );
+    if (signal) {
+      const countedSource = effectiveStream;
+      effectiveStream = (async function* () {
+        for await (const chunk of countedSource) {
+          chunkCount += 1;
+          yield chunk;
+        }
+        // TEMP: remove once first-click Stop is confirmed fixed.
+        console.info("[StopDebug] processFullStream() stream ended", {
+          runId,
+          chunkCount,
+          aborted: signal.aborted,
+        });
+      })();
+    }
+
+    const tripwireContext = tripwireHandlingContext.getStore();
+
+    if (tripwireContext) {
+      effectiveStream = interceptTripwireStream(
+        effectiveStream,
+        async (chunk) => {
+          const onTextPart = callbacks.onTextPart as
+            | ((text: string) => void)
+            | undefined;
+          const onFinishMessagePart = callbacks.onFinishMessagePart as
+            | (() => void)
+            | undefined;
+
+          onTextPart?.(formatProcessorBlockAssistantContent());
+          onFinishMessagePart?.();
+
+          if (tripwireContext.blockedUserMessageId) {
+            await persistBlockedMessageId({
+              mastraAgent: aguiAgent.agent,
+              threadId: tripwireContext.threadId,
+              messageId: tripwireContext.blockedUserMessageId,
+              requestContext: aguiAgent.requestContext,
+            });
+
+            const currentBlocked = aguiAgent.requestContext?.get(
+              REQUEST_CONTEXT_KEYS.BLOCKED_MESSAGE_IDS,
+            );
+            const blockedSet = new Set<string>(
+              Array.isArray(currentBlocked)
+                ? currentBlocked.filter(
+                    (value): value is string => typeof value === "string",
+                  )
+                : [],
+            );
+            blockedSet.add(tripwireContext.blockedUserMessageId);
+            await syncBlockedMessageIdsToRequestContext({
+              requestContext: aguiAgent.requestContext,
+              blockedMessageIds: [...blockedSet],
+            });
+          }
+
+          if (chunk.payload?.reason) {
+            console.info(
+              `[ProcessorTripwire] Blocked message ${tripwireContext.blockedUserMessageId ?? "unknown"}: ${chunk.payload.reason}`,
+            );
+          }
+        },
+      );
+    }
+
+    try {
+      return await originalProcessFullStream(
+        effectiveStream,
+        callbacks,
+        ...rest,
+      );
+    } catch (error) {
+      if (signal?.aborted || isAbortLikeError(error)) {
+        return false;
+      }
+
+      throw error;
+    }
+    // AbortController lifetime is owned by run() — do not delete here.
+    // Multi-step / tool loops can call processFullStream more than once per
+    // runId; deleting early made later abortRun() a no-op (needed 2nd Stop).
   };
 
   aguiAgent.streamMastraAgent = async (input, callbacks) => {

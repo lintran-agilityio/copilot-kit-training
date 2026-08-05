@@ -7,7 +7,10 @@ import {
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
 
-import { ConfirmBookingDialog } from "@/components/confirm-modal";
+import {
+  ConfirmBookingDialog,
+  ConfirmModifyBookingDialog,
+} from "@/components/confirm-modal";
 import { EmbeddedWidget } from "@/features/chat/components";
 import { HitlDecisionUserMessage } from "@/features/booking/components/HitlDecisionUserMessage";
 import { useHitlConfirmDialog } from "@/features/booking/hooks";
@@ -23,6 +26,7 @@ import type {
   ConfirmModifyBookingArgs,
   ConfirmModifyBookingResult,
 } from "@/features/booking/schemas";
+import type { ModifyStaySnapshot } from "@/features/booking/types/booking";
 
 const hasRoomStayFields = (
   args: Partial<{
@@ -54,6 +58,37 @@ const hasRequiredModifyArgs = (
   args: Partial<ConfirmModifyBookingArgs>,
 ): args is ConfirmModifyBookingArgs =>
   Boolean(args.bookingId?.trim()) && hasRoomStayFields(args);
+
+const resolveOriginalStay = (
+  pending:
+    | {
+        bookingId: string;
+        original: ModifyStaySnapshot;
+      }
+    | null
+    | undefined,
+  bookingId: string,
+  args: ConfirmModifyBookingArgs,
+): ModifyStaySnapshot | null => {
+  if (pending?.bookingId === bookingId) {
+    return pending.original;
+  }
+
+  if (
+    args.originalCheckInDate?.trim() &&
+    args.originalCheckOutDate?.trim() &&
+    typeof args.originalGuests === "number" &&
+    args.originalGuests > 0
+  ) {
+    return {
+      checkInDate: args.originalCheckInDate,
+      checkOutDate: args.originalCheckOutDate,
+      guests: args.originalGuests,
+    };
+  }
+
+  return null;
+};
 
 type HitlConfirmStayModalProps = {
   status: ToolCallStatus;
@@ -211,9 +246,10 @@ const HitlConfirmModifyStayModal = ({
   const checkInDate = stayFromEdit?.checkInDate ?? args.checkInDate;
   const checkOutDate = stayFromEdit?.checkOutDate ?? args.checkOutDate;
   const guests = stayFromEdit?.guests ?? args.guests;
+  const original = resolveOriginalStay(pendingModifyStay, bookingId, args);
   const description: ReactNode = (
     <>
-      Review the updated details for your stay at{" "}
+      Review the changes for your stay at{" "}
       <span className="font-medium text-zinc-200">{room.name}</span> before
       saving.
     </>
@@ -224,39 +260,72 @@ const HitlConfirmModifyStayModal = ({
     handleDismiss();
   };
 
+  const handleConfirm = () => {
+    void confirm({
+      confirmed: true,
+      bookingId,
+      checkInDate,
+      checkOutDate,
+      guests,
+    }).then(() => {
+      setPendingModifyStay(null);
+    });
+  };
+
+  // Without originals we cannot render before→after diffs — fall back to the
+  // create-style summary of the proposed stay only.
+  if (!original) {
+    return (
+      <>
+        <EmbeddedWidget>
+          <ConfirmBookingDialog
+            roomName={room.name}
+            checkInDate={checkInDate}
+            checkOutDate={checkOutDate}
+            guests={guests}
+            pricePerNight={room.pricePerNight}
+            title="Modify booking"
+            description={description}
+            confirmLabel="Confirm Changes"
+            submittingLabel="Updating…"
+            isSubmitting={isSubmitting}
+            canRespond={canRespond}
+            decisionStatus={decisionStatus}
+            errorMessage={errorMessage}
+            onCancel={clearPendingAndDismiss}
+            onConfirm={handleConfirm}
+          />
+        </EmbeddedWidget>
+        <HitlDecisionUserMessage
+          decisionStatus={decisionStatus}
+          confirmLabel="Confirm Changes"
+          cancelLabel="Cancel"
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <EmbeddedWidget>
-        <ConfirmBookingDialog
+        <ConfirmModifyBookingDialog
           roomName={room.name}
-          checkInDate={checkInDate}
-          checkOutDate={checkOutDate}
-          guests={guests}
           pricePerNight={room.pricePerNight}
-          title="Confirm booking changes?"
+          original={original}
+          next={{ checkInDate, checkOutDate, guests }}
           description={description}
-          confirmLabel="Confirm changes"
-          submittingLabel="Updating…"
           isSubmitting={isSubmitting}
           canRespond={canRespond}
           decisionStatus={decisionStatus}
           errorMessage={errorMessage}
           onCancel={clearPendingAndDismiss}
-          onConfirm={() =>
-            void confirm({
-              confirmed: true,
-              bookingId,
-              checkInDate,
-              checkOutDate,
-              guests,
-            })
-          }
+          onConfirm={handleConfirm}
         />
       </EmbeddedWidget>
       <HitlDecisionUserMessage
         decisionStatus={decisionStatus}
-        confirmLabel="Confirm changes"
-        cancelLabel="Cancel changes"
+        confirmLabel="Confirm Changes"
+        cancelLabel="Cancel"
       />
     </>
   );

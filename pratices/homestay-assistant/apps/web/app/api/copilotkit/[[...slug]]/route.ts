@@ -6,7 +6,7 @@ import {
   createCopilotRuntimeHandler,
 } from "@copilotkit/runtime/v2";
 
-import { getCopilotkitAgents } from "agent/copilotkit";
+import { getCopilotkitAgents, latchThreadStop } from "agent/copilotkit";
 import {
   getCurrentAgentRequest,
   runAgentRequestPipeline,
@@ -56,11 +56,11 @@ const createRuntime = () => {
     },
     identifyUser: () => {
       const agentRequest = getCurrentAgentRequest();
-  
+
       if (!agentRequest?.auth.userId) {
         throw new Error("Authenticated user required for Intelligence threads");
       }
-  
+
       return {
         id: agentRequest.auth.userId,
         name: agentRequest.auth.userId,
@@ -70,8 +70,50 @@ const createRuntime = () => {
   });
 }
 
+// Singleton: the Intelligence runtime's runner tracks in-flight runs in an
+// in-memory Map keyed by threadId. Rebuilding the runtime per request gives
+// every request (including the later "stop" request) its own empty runner,
+// so Stop can never find the run it's supposed to cancel — the server keeps
+// generating and the client just reconnects to the still-running stream.
+let copilotRuntimeInstance: ReturnType<typeof createRuntime> | undefined;
+
+const getCopilotRuntime = () => {
+  copilotRuntimeInstance ??= createRuntime();
+  return copilotRuntimeInstance;
+};
+
+/**
+ * Thread id of a `POST /agent/{agentId}/stop/{threadId}` request.
+ *
+ * The runner only reaches `agent.abortRun()` when a run is registered for the
+ * thread. A visible generation is a chain of runs, so Stop frequently lands in
+ * the gap between two of them and aborts nothing — the thread must be latched
+ * from the request itself so the next run in the chain cannot continue.
+ */
+const stoppedThreadIdFromRequest = (req: Request): string | undefined => {
+  if (req.method !== "POST") {
+    return undefined;
+  }
+
+  const segments = new URL(req.url).pathname.split("/").filter(Boolean);
+  const stopIndex = segments.lastIndexOf("stop");
+
+  if (stopIndex < 0 || segments[stopIndex - 2] !== "agent") {
+    return undefined;
+  }
+
+  const threadId = segments[stopIndex + 1];
+
+  return threadId ? decodeURIComponent(threadId) : undefined;
+};
 
 const handler = async (req: Request) => {
+  const stoppedThreadId = stoppedThreadIdFromRequest(req);
+
+  if (stoppedThreadId) {
+    latchThreadStop(stoppedThreadId);
+  }
+
   const { userId, sessionId } = await auth();
 
   const pipeline = await runAgentRequestPipeline({
@@ -87,12 +129,8 @@ const handler = async (req: Request) => {
     );
   }
 
-  // Create runtime per request
-  const runtime = createRuntime();
-
-  // Create CopilotKit handler
   const dispatchCopilotRequest = createCopilotRuntimeHandler({
-    runtime,
+    runtime: getCopilotRuntime(),
     basePath,
   });
 

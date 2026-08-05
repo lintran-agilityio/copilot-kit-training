@@ -15,6 +15,7 @@ import {
   useChatSuggestions,
   useChatScroll,
   useResetConversation,
+  useSilenceStopRunErrors,
   useStopGeneration,
   useThreadMessages,
 } from "@/features/chat/hooks";
@@ -27,7 +28,10 @@ import {
 } from "@/features/chat/components";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
-import { runAgentSafely } from "@/features/chat/utils/agent-run";
+import {
+  isStopRelatedAgentError,
+  runAgentSafely,
+} from "@/features/chat/utils/agent-run";
 import { SuggestionBar } from "@/components/suggestions";
 import { ThreadLoadingStateView } from "@/features/threads/components";
 import { useChatSession } from "@/features/threads/hooks/useChatSession";
@@ -39,6 +43,7 @@ export const ChatSidebarContent = ({
   const suggestions = useChatSuggestions({ agentId });
   const { resetConversation } = useResetConversation({ agentId });
   const { stopGeneration } = useStopGeneration({ agentId });
+  useSilenceStopRunErrors({ agentId });
   const {
     scopeKey,
     activeThreadId,
@@ -192,8 +197,15 @@ export const ChatSidebarContent = ({
             threadId={activeThreadId}
             autoScroll="pin-to-bottom"
             className="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-            // Square Stop → abort stream; conversation preserved.
+            // Square Stop → abort stream; drop incomplete assistant turn.
             onStop={stopGeneration}
+            onError={({ error, code, context }) => {
+              if (isStopRelatedAgentError(error, code, context)) {
+                return;
+              }
+
+              console.error("[CopilotChat]", code, error);
+            }}
             // CopilotChat always injects autoSuggestions into scrollView when the
             // chat has messages. Hide that built-in strip — we render SuggestionBar
             // once in the footer (and on the welcome screen).
@@ -217,7 +229,8 @@ export const ChatSidebarContent = ({
             }}
             input={{
               showDisclaimer: false,
-              bottomAnchored: true,
+              // Footer owns the input — overlay anchoring only reserves dead space.
+              bottomAnchored: false,
               className: "pointer-events-auto m-4 mt-0",
             }}
           >

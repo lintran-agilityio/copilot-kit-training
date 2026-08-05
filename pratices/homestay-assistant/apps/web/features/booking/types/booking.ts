@@ -29,12 +29,18 @@ export interface BookingDraft {
   guests: number;
 }
 
-/** Candidate stay chosen in edit_modify_booking — authoritative for confirm_modify UI. */
-export type PendingModifyStay = {
-  bookingId: string;
+/** Pre-edit booking stay used to render confirm_modify before → after diffs. */
+export type ModifyStaySnapshot = {
   checkInDate: string;
   checkOutDate: string;
   guests: number;
+};
+
+/** Candidate stay chosen in edit_modify_booking — authoritative for confirm_modify UI. */
+export type PendingModifyStay = ModifyStaySnapshot & {
+  bookingId: string;
+  /** Original booking values from edit_modify_booking args (before the guest edited). */
+  original: ModifyStaySnapshot;
 };
 
 export type BookingDetails = {

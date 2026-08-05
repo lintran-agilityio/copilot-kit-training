@@ -24,6 +24,24 @@ export const confirmModifyBookingSchema = z.object({
     .describe(
       "Updated guests from check_room_availability.result — same as edit_modify_booking confirmed:true",
     ),
+  originalCheckInDate: z
+    .string()
+    .optional()
+    .describe(
+      "Pre-edit check-in from edit_modify_booking tool-call args (current booking) — for UI before→after diffs only",
+    ),
+  originalCheckOutDate: z
+    .string()
+    .optional()
+    .describe(
+      "Pre-edit check-out from edit_modify_booking tool-call args (current booking) — for UI before→after diffs only",
+    ),
+  originalGuests: z
+    .number()
+    .optional()
+    .describe(
+      "Pre-edit guests from edit_modify_booking tool-call args (current booking) — for UI before→after diffs only",
+    ),
 });
 
 export type ConfirmModifyBookingArgs = z.infer<

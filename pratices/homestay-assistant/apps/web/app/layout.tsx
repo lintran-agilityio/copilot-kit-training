@@ -37,7 +37,21 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AppErrorBoundary>
-          <ClerkProvider>
+          <ClerkProvider
+            appearance={{
+              options: {
+                unsafe_disableDevelopmentModeWarnings: true,
+              },
+              elements: {
+                // Hides "Secured by Clerk" branding in the UserButton popover
+                // (dev workaround; production removal requires a paid Clerk
+                // plan via Dashboard → Branding).
+                userButtonPopoverFooter: {
+                  display: "none",
+                },
+              },
+            }}
+          >
             <CopilotKitProviders>{children}</CopilotKitProviders>
           </ClerkProvider>
         </AppErrorBoundary>
