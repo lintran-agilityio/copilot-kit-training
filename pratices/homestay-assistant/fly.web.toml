@@ -1,5 +1,10 @@
+# fly.toml app configuration file generated for homestay-web on 2026-08-05T10:44:01Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = "homestay-web"
-primary_region = "sin"
+primary_region = 'sin'
 
 [build]
   dockerfile = "Dockerfile.web"
@@ -12,8 +17,9 @@ primary_region = "sin"
   internal_port = 3000
   force_https = true
   auto_start_machines = true
-  auto_stop_machines = "off"
+  auto_stop_machines = 'stop'
   min_machines_running = 1
+  concurrency = { hard_limit = 1000, soft_limit = 800, type = 'connections' }
 
 [http_service.concurrency]
     type = "connections"           # "requests"
@@ -21,6 +27,6 @@ primary_region = "sin"
     hard_limit = 1000
 
 [[vm]]
-  cpu_kind = "shared"
+  cpu_kind = 'shared'
   cpus = 1
   memory_mb = 512
