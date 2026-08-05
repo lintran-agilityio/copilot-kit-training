@@ -14,8 +14,7 @@ import {
   toAgentRequestState,
 } from "agent/middleware";
 import {
-  isCopilotKitInfoPath,
-  rewriteIntelligenceWsUrlInInfoBody,
+  rewriteIntelligenceRealtimeUrlsInBody,
   shouldProxyIntelligenceRealtime,
 } from "@/lib/rewrite-intelligence-ws-url";
 
@@ -24,20 +23,19 @@ export const runtime = "nodejs";
 const basePath = "/api/copilotkit";
 
 /**
- * On non-localhost hosts, rewrite /info intelligence.wsUrl to the same-origin
- * proxy path handled by apps/web/server.mjs (Origin allowlist workaround).
+ * On non-localhost hosts, point every managed realtime URL the runtime hands
+ * the browser (`/info` intelligence.wsUrl, and the run / connect envelopes'
+ * realtime.clientUrl) at the same-origin proxy in apps/web/server.mjs.
+ *
+ * Matched on the body rather than the path: only JSON responses are inspected,
+ * and only the two known URL fields are touched, so a new endpoint that carries
+ * a gateway URL is covered without another path allowlist.
  */
-const maybeRewriteInfoResponse = async (
+const maybeRewriteRealtimeUrls = async (
   req: Request,
   response: Response,
 ): Promise<Response> => {
   if (!shouldProxyIntelligenceRealtime(req)) {
-    return response;
-  }
-
-  const pathname = new URL(req.url).pathname;
-
-  if (!isCopilotKitInfoPath(pathname, basePath)) {
     return response;
   }
 
@@ -49,7 +47,7 @@ const maybeRewriteInfoResponse = async (
 
   try {
     const body: unknown = await response.clone().json();
-    const rewritten = rewriteIntelligenceWsUrlInInfoBody(req, body);
+    const rewritten = rewriteIntelligenceRealtimeUrlsInBody(req, body);
 
     if (rewritten === body) {
       return response;
@@ -186,7 +184,7 @@ const handler = async (req: Request) => {
     dispatchCopilotRequest(req),
   );
 
-  return maybeRewriteInfoResponse(req, response);
+  return maybeRewriteRealtimeUrls(req, response);
 };
 
 export const GET = handler;
