@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { CopilotKit, useCopilotKit } from "@copilotkit/react-core/v2";
 
@@ -60,7 +60,17 @@ const ClerkTokenSync = () => {
 
 const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
   const pathname = usePathname();
-  const { isLoaded } = useAuth();
+  const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
+
+  // Signing out flips isSignedIn before Clerk's own redirect lands, so the
+  // previously-mounted page (bookings query, CopilotKit info fetch, etc.)
+  // keeps running with a dead session and spams 401s. Bail out immediately.
+  useEffect(() => {
+    if (isLoaded && !isSignedIn && !isLoginRoute(pathname)) {
+      router.replace(ROUTES.LOGIN);
+    }
+  }, [isLoaded, isSignedIn, pathname, router]);
 
   // Login has no Copilot hooks. Keep QueryClient for any shared client pages.
   if (isLoginRoute(pathname)) {
@@ -69,10 +79,11 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
 
   // MainLayout / chat children (SuggestionBar, ChatSidebarContent, booking
   // hooks, etc.) call useCopilotKit() unconditionally, so CopilotKit must be
-  // mounted as soon as auth is resolved. Gate on isLoaded only — userId can
-  // legitimately lag isLoaded during Clerk hydration, and server pages
-  // already redirect unauthenticated users to login before this mounts.
-  if (!isLoaded) {
+  // mounted as soon as auth is resolved. Gate on isLoaded and isSignedIn —
+  // userId can legitimately lag isLoaded during Clerk hydration, and server
+  // pages already redirect unauthenticated users to login before this mounts,
+  // but a client-side sign-out only surfaces through isSignedIn.
+  if (!isLoaded || !isSignedIn) {
     return (
       <AppProvider withCopilot={false}>
         <AuthLoadingFallback />
