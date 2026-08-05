@@ -82,6 +82,29 @@ export const isStopRelatedAgentError = (
 };
 
 /**
+ * True when the run never started because the runtime could not acquire the
+ * Intelligence thread lock.
+ *
+ * `handleIntelligenceRun` maps every `acquireThreadLock` rejection to HTTP 409,
+ * and `@copilotkit/core` turns any 409 on a run into `AgentThreadLockedError`.
+ * So this covers a genuine concurrent run *and* connectivity failures to the
+ * Intelligence platform (observed: UND_ERR_CONNECT_TIMEOUT after 10s). Retry is
+ * the right response to both — the platform lock TTL is 20s.
+ *
+ * CopilotKit emits the same failure twice, once as `agent_thread_locked` from
+ * `onRunFailed` and once as `agent_run_failed`, so match on the error name too.
+ */
+export const isThreadLockedAgentError = (
+  error: unknown,
+  code?: string,
+): boolean => {
+  return (
+    code === "agent_thread_locked" ||
+    (error instanceof Error && error.name === "AgentThreadLockedError")
+  );
+};
+
+/**
  * Stop the local CopilotRuntime / Intelligence runner for a thread.
  *
  * Needed because Intelligence-mode `agent.abortRun()` only pushes Phoenix

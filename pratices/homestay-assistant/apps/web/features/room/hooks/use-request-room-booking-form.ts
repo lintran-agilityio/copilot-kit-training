@@ -28,6 +28,11 @@ const BOOK_FLOW_KEY = "book-flow";
 type RequestRoomBookingFormArgs = {
   roomId: string;
   roomName: string;
+  /**
+   * Whether to also open the room detail on the home page. Page room cards
+   * keep this on; chat cards turn it off so booking stays inside chat.
+   */
+  openOnPage?: boolean;
 };
 
 export const useRequestRoomBookingForm = () => {
@@ -42,7 +47,11 @@ export const useRequestRoomBookingForm = () => {
   );
 
   return useCallback(
-    ({ roomId, roomName }: RequestRoomBookingFormArgs) => {
+    ({
+      roomId,
+      roomName,
+      openOnPage = true,
+    }: RequestRoomBookingFormArgs) => {
       if (!isLoaded || !user?.id || !roomId) {
         return;
       }
@@ -63,7 +72,7 @@ export const useRequestRoomBookingForm = () => {
         focus: { type: "room", id: roomId },
       });
 
-      if (pathname === ROUTES.HOME) {
+      if (openOnPage && pathname === ROUTES.HOME) {
         useRoomStore
           .getState()
           .setSelectedRoomId(roomId, ROOM_DETAIL_ENTRY_MODE.BOOK);

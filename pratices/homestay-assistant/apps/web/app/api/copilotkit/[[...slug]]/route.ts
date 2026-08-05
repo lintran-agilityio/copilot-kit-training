@@ -25,7 +25,6 @@ const createRuntime = () => {
   console.log("NODE_ENV:", process.env.NODE_ENV);
   console.log("INTELLIGENCE_API_URL:", apiUrl);
   console.log("INTELLIGENCE_GATEWAY_WS_URL:", wsUrl);
-  console.log("INTELLIGENCE_API_KEY:", apiKey);
 
   if (!apiUrl || !wsUrl || !apiKey) {
     throw new Error(

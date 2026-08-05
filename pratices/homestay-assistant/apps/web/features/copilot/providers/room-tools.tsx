@@ -10,8 +10,8 @@ import {
 } from "@/features/room/schemas";
 import {
   formatRoomListSyncResult,
+  markAgentRoomSearch,
   resolveRoomsByIds,
-  syncRoomListToStore,
 } from "@/features/room/utils";
 import {
   FindRoomNotice,
@@ -59,16 +59,16 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
       description:
-        "Update the room grid when HomestayAgentContext screen.name is home. Pass room IDs only — get_rooms result.roomIds or find_room result.rooms[].id; the UI resolves the room details. After this succeeds, always send one short guest-facing chat reply summarizing that rooms are ready.",
+        "Acknowledge the rooms you just found so the chat can present them. Pass room IDs only — get_rooms result.roomIds or find_room result.rooms[].id; the UI resolves the room details and shows the cards in chat. This never changes the page the guest is browsing. After this succeeds, always send one short guest-facing chat reply summarizing that rooms are ready.",
       parameters: updateRoomListSchema,
       handler: async ({ roomIds, title }) => {
         const rooms = await resolveRoomsByIds(roomIds);
 
         if (!rooms.length) {
-          return "Could not resolve those room IDs — the room grid was left unchanged.";
+          return "Could not resolve those room IDs — nothing to show.";
         }
 
-        syncRoomListToStore(rooms, title);
+        markAgentRoomSearch();
         return formatRoomListSyncResult(rooms, title);
       },
     },

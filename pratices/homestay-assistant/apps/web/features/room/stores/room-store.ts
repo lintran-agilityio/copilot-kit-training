@@ -12,7 +12,7 @@ type RoomStore = {
   isRoomListLoading: boolean;
   selectedRoomId: string | null;
   selectedRoomMode: RoomDetailEntryMode;
-  /** True after the agent syncs the room grid (find/browse), not the initial page seed. */
+  /** True after the agent searched rooms in chat. Drives suggestions only — the grid is page-owned. */
   hasAgentRoomSearch: boolean;
   updateRoomList: (rooms: Room[], title?: string) => void;
   markAgentRoomSearch: () => void;

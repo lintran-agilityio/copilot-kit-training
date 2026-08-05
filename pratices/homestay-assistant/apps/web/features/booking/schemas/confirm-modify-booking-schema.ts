@@ -28,19 +28,19 @@ export const confirmModifyBookingSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Pre-edit check-in from edit_modify_booking tool-call args (current booking) — for UI before→after diffs only",
+      "Pre-change check-in of the current booking — from edit_modify_booking tool-call args, or from find_booking_by_id / get_bookings when the edit form was skipped. For UI before→after diffs only",
     ),
   originalCheckOutDate: z
     .string()
     .optional()
     .describe(
-      "Pre-edit check-out from edit_modify_booking tool-call args (current booking) — for UI before→after diffs only",
+      "Pre-change check-out of the current booking — from edit_modify_booking tool-call args, or from find_booking_by_id / get_bookings when the edit form was skipped. For UI before→after diffs only",
     ),
   originalGuests: z
     .number()
     .optional()
     .describe(
-      "Pre-edit guests from edit_modify_booking tool-call args (current booking) — for UI before→after diffs only",
+      "Pre-change guests of the current booking — from edit_modify_booking tool-call args, or from find_booking_by_id / get_bookings when the edit form was skipped. For UI before→after diffs only",
     ),
 });
 

@@ -198,39 +198,38 @@ export const MainLayout = ({ children, className }: MainLayoutProps) => {
           <main className="app-scrollbar relative z-0 min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-8 md:px-4">
             {children}
           </main>
-          {/* Closed: circular FAB over the room list (bottom-right). */}
+          {/* Closed: circular FAB over the room list (bottom-right, all breakpoints). */}
           {!isChatOpen ? (
             <ChatToggleButton
               isChatOpen={false}
               status={chatIconStatus}
               onToggle={() => setIsChatOpen(true)}
-              className="hidden lg:flex"
             />
           ) : null}
           <div
             className={cn(
-              "relative z-10 hidden h-full min-h-0 shrink-0 overflow-visible bg-[#0a0a0a] transition-[width] duration-300 ease-in-out lg:block",
+              "relative z-10 min-h-0 shrink-0 overflow-visible bg-[#0a0a0a] transition-[width] duration-300 ease-in-out",
               isChatOpen
-                ? "w-[min(100%,520px)] border-l border-white/10"
-                : "w-0 border-l-0",
+                ? "fixed inset-0 z-40 h-full w-full lg:static lg:z-10 lg:h-full lg:w-[min(100%,520px)] lg:border-l lg:border-white/10"
+                : "hidden w-0 border-l-0 lg:block",
             )}
           >
             {isChatOpen ? (
               <ChatToggleButton
                 isChatOpen
-                  status={chatIconStatus}
-                  onToggle={() => setIsChatOpen(false)}
-                />
+                status={chatIconStatus}
+                onToggle={() => setIsChatOpen(false)}
+              />
             ) : null}
             <div
               className={cn(
                 "h-full overflow-hidden transition-opacity duration-200",
                 isChatOpen
-                  ? "w-[min(100%,520px)] opacity-100"
+                  ? "w-full opacity-100 lg:w-[min(100%,520px)]"
                   : "pointer-events-none w-0 opacity-0",
               )}
             >
-              <ChatSidebar className="h-full w-[min(100%,520px)]" agentId={agentId} />
+              <ChatSidebar className="h-full w-full lg:w-[min(100%,520px)]" agentId={agentId} />
             </div>
           </div>
         </div>

@@ -4,10 +4,13 @@ import { getRooms } from "@/features/room/services";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
 
-export const syncRoomListToStore = (rooms: Room[], title?: string) => {
-  const store = useRoomStore.getState();
-  store.updateRoomList(rooms, title);
-  store.markAgentRoomSearch();
+/**
+ * Records that the agent ran a room search so chat suggestions can react.
+ * Deliberately does not touch the page room grid — agent search results are
+ * presented in chat only.
+ */
+export const markAgentRoomSearch = () => {
+  useRoomStore.getState().markAgentRoomSearch();
 };
 
 /**
@@ -32,5 +35,5 @@ export const resolveRoomsByIds = async (roomIds: string[]): Promise<Room[]> => {
 
 export const formatRoomListSyncResult = (rooms: Room[], title?: string) =>
   title
-    ? `Updated room grid with ${rooms.length} room(s) (${title}).`
-    : `Updated room grid with ${rooms.length} room(s).`;
+    ? `Showed ${rooms.length} room(s) in chat (${title}).`
+    : `Showed ${rooms.length} room(s) in chat.`;

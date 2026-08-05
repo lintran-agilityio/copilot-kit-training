@@ -3,12 +3,21 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { CopilotKit, useCopilotKit } from "@copilotkit/react-core/v2";
+import {
+  CopilotKitProvider,
+  useCopilotKit,
+  type CopilotKitProviderProps,
+} from "@copilotkit/react-core/v2";
 
-import { AGENT_KEYS, AGENT_URLS } from "@repo/constants";
+import { AGENT_URLS } from "@repo/constants";
 import { ROUTES } from "@/constants";
+import { isStopRelatedAgentError } from "@/features/chat/utils/agent-run";
 import { AppProvider } from "@/providers/app-provider";
 import { AuthLoadingFallback } from "@/components/fallback";
+
+type CopilotErrorEvent = Parameters<
+  NonNullable<CopilotKitProviderProps["onError"]>
+>[0];
 
 type CopilotKitProvidersProps = {
   children: React.ReactNode;
@@ -18,6 +27,24 @@ const TOKEN_REFRESH_MS = 50_000;
 
 const isLoginRoute = (pathname: string) =>
   pathname === ROUTES.LOGIN || pathname.startsWith(`${ROUTES.LOGIN}/`);
+
+/**
+ * Replaces CopilotKit's built-in fallback logger so Stop / thread reset does
+ * not log as a failure. Aborting a pending human-in-the-loop card rejects its
+ * handler, which CopilotKit emits as `tool_handler_failed` — expected, not an
+ * error. Everything else keeps the library's original console format.
+ */
+const handleCopilotError = (event: CopilotErrorEvent) => {
+  if (isStopRelatedAgentError(event.error, event.code, event.context)) {
+    return;
+  }
+
+  console.error(
+    `[CopilotKit] Error (${event.code}):`,
+    event.error,
+    event.context ?? {},
+  );
+};
 
 /** Syncs Clerk session JWT into CopilotKit request headers (rotating tokens). */
 const ClerkTokenSync = () => {
@@ -91,18 +118,22 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
     );
   }
 
+  // CopilotKitProvider, not the v1-compat `CopilotKit` wrapper: that wrapper
+  // strips `onError` before rendering the provider and only forwards it to a
+  // cloud path that needs a publicApiKey, so the built-in console fallback can
+  // never be replaced. Nothing here uses the v1 bridges it adds.
   return (
-    <CopilotKit
-      agent={AGENT_KEYS.MANAGE_ASSISTANT}
+    <CopilotKitProvider
       credentials="include"
       runtimeUrl={AGENT_URLS.MANAGE_ASSISTANT}
       // Intelligence thread routes (/threads*) require REST transport.
       // Single-endpoint /info always reports threadEndpoints.list=false.
       useSingleEndpoint={false}
+      onError={handleCopilotError}
     >
       <ClerkTokenSync />
       <AppProvider>{children}</AppProvider>
-    </CopilotKit>
+    </CopilotKitProvider>
   );
 };
 

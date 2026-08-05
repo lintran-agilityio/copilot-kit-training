@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CopilotChat,
   CopilotChatAssistantMessage,
@@ -11,7 +11,10 @@ import {
 } from "@copilotkit/react-core/v2";
 
 import { cn } from "@repo/utils";
-import { WELCOME_MESSAGE } from "@/features/chat/constants";
+import {
+  RUN_START_FAILED_MESSAGE,
+  WELCOME_MESSAGE,
+} from "@/features/chat/constants";
 import {
   useChatSuggestions,
   useChatScroll,
@@ -26,11 +29,13 @@ import {
   ChatWelcomeScreen,
   ChatAssistantMessage,
   ChatLoadingCursor,
+  ChatRunErrorNotice,
 } from "@/features/chat/components";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
 import {
   isStopRelatedAgentError,
+  isThreadLockedAgentError,
   runAgentSafely,
 } from "@/features/chat/utils/agent-run";
 import { SuggestionBar } from "@/components/suggestions";
@@ -74,6 +79,8 @@ export const ChatSidebarContent = ({
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId });
   const [hasHydrated, setHasHydrated] = useState(false);
+  const [runStartError, setRunStartError] = useState<string | null>(null);
+  const [isRetryingRun, setIsRetryingRun] = useState(false);
   const isThreadLoading = loadingState === "loading";
   const isThreadError = loadingState === "error";
   const agentRef = useRef(agent);
@@ -174,6 +181,34 @@ export const ChatSidebarContent = ({
     sendPendingMessageRef.current?.();
   }, [isRuntimeConnected, scopeKey]);
 
+  // A started run (or a thread switch) makes a previous start failure stale.
+  useEffect(() => {
+    if (agent.isRunning) {
+      setRunStartError(null);
+    }
+  }, [agent.isRunning]);
+
+  useEffect(() => {
+    setRunStartError(null);
+  }, [activeThreadId]);
+
+  // The failed run never reached the agent, so the triggering user message is
+  // still the last message in the thread — re-running is enough to retry it.
+  const retryRun = useCallback(async () => {
+    setIsRetryingRun(true);
+    setRunStartError(null);
+
+    await runAgentSafely(
+      () => copilotkitRef.current.runAgent({ agent: agentRef.current }),
+      (error) => {
+        setRunStartError(RUN_START_FAILED_MESSAGE);
+        console.error("Failed to retry agent run", error);
+      },
+    );
+
+    setIsRetryingRun(false);
+  }, []);
+
   const suggestionBar = (
     <SuggestionBar
       suggestions={suggestions}
@@ -228,7 +263,14 @@ export const ChatSidebarContent = ({
               if (isStopRelatedAgentError(error, code, context)) {
                 return;
               }
-            
+
+              // Lock acquisition failed, so the run never started. Offer a
+              // retry instead of leaving the message stranded.
+              if (isThreadLockedAgentError(error, code)) {
+                setRunStartError(RUN_START_FAILED_MESSAGE);
+                return;
+              }
+
               console.error(error);
             }}
             // CopilotChat always injects autoSuggestions into scrollView when the
@@ -275,6 +317,14 @@ export const ChatSidebarContent = ({
                   data-chat-footer
                   className="shrink-0 border-t border-white/5 bg-[#0a0a0a]"
                 >
+                  {runStartError ? (
+                    <ChatRunErrorNotice
+                      message={runStartError}
+                      isRetrying={isRetryingRun}
+                      onRetry={retryRun}
+                      onDismiss={() => setRunStartError(null)}
+                    />
+                  ) : null}
                   {suggestionBar}
                   {input}
                 </div>

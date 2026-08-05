@@ -13,12 +13,12 @@ import type {
 } from "@/features/room/types";
 import {
   buildFindRoomTitle,
-  syncRoomListToStore,
+  markAgentRoomSearch,
 } from "@/features/room/utils";
 
 /**
  * Renders find_room tool output in chat: skeleton while loading, room cards when done.
- * Also syncs matches to the home room grid so the page matches the chat cards.
+ * Results stay inside chat — the page room grid is never mutated from here.
  *
  * @param props - CopilotKit tool render status and result
  */
@@ -26,7 +26,7 @@ export const FindRoomNotice = ({
   status,
   result,
 }: FindRoomToolProps) => {
-  const lastSyncedKeyRef = useRef<string | null>(null);
+  const lastMarkedKeyRef = useRef<string | null>(null);
 
   const parsed =
     status === ToolCallStatus.Complete
@@ -41,13 +41,13 @@ export const FindRoomNotice = ({
       return;
     }
 
-    const syncKey = `${title}:${roomIdsKey}`;
-    if (lastSyncedKeyRef.current === syncKey) {
+    const searchKey = `${title}:${roomIdsKey}`;
+    if (lastMarkedKeyRef.current === searchKey) {
       return;
     }
 
-    lastSyncedKeyRef.current = syncKey;
-    syncRoomListToStore(rooms, title);
+    lastMarkedKeyRef.current = searchKey;
+    markAgentRoomSearch();
   }, [status, rooms, title, roomIdsKey]);
 
   if (

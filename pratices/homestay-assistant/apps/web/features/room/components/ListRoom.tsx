@@ -1,7 +1,7 @@
 "use client";
 
 import { EmptyMessages } from "@repo/components";
-import { Room } from "@/features/room/components/Room";
+import { Room, type RoomSelectPayload } from "@/features/room/components/Room";
 import {
   useOpenRoomOnPage,
   useRequestRoomBookingForm,
@@ -14,6 +14,10 @@ type ListRoomProps = {
   title?: string;
   compact?: boolean;
   className?: string;
+  /** Overrides the default "open room detail on the page" behaviour. */
+  onSelectRoom?: (payload: RoomSelectPayload) => void;
+  /** Overrides the default "start the booking form" behaviour. */
+  onBookRoom?: (payload: RoomSelectPayload) => void;
 };
 
 export const ListRoom = ({
@@ -21,9 +25,13 @@ export const ListRoom = ({
   title,
   compact = false,
   className,
+  onSelectRoom,
+  onBookRoom,
 }: ListRoomProps) => {
   const openRoomOnPage = useOpenRoomOnPage();
   const requestRoomBookingForm = useRequestRoomBookingForm();
+  const handleSelect = onSelectRoom ?? openRoomOnPage;
+  const handleBook = onBookRoom ?? requestRoomBookingForm;
 
   return (
     <section className={cn("space-y-4", className)}>
@@ -50,8 +58,8 @@ export const ListRoom = ({
                   key={room.id}
                   {...room}
                   compact={compact}
-                  onSelect={openRoomOnPage}
-                  onBook={requestRoomBookingForm}
+                  onSelect={handleSelect}
+                  onBook={handleBook}
                 />
               </div>
             ))}
