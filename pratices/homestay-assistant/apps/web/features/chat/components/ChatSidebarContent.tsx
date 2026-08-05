@@ -5,6 +5,7 @@ import {
   CopilotChat,
   CopilotChatAssistantMessage,
   CopilotChatUserMessage,
+  CopilotKitCoreErrorCode,
   useAgent,
   useCopilotKit,
 } from "@copilotkit/react-core/v2";
@@ -35,6 +36,22 @@ import {
 import { SuggestionBar } from "@/components/suggestions";
 import { ThreadLoadingStateView } from "@/features/threads/components";
 import { useChatSession } from "@/features/threads/hooks/useChatSession";
+
+type CopilotKitErrorPayload = {
+  error: Error;
+  code: CopilotKitCoreErrorCode;
+  context: { runtimeErrorCode?: string };
+};
+
+const isCopilotKitError = (
+  value: unknown,
+): value is CopilotKitErrorPayload => {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "error" in value
+  );
+}
 
 export const ChatSidebarContent = ({
   className,
@@ -202,16 +219,17 @@ export const ChatSidebarContent = ({
             // The prop type merges the DOM div onError with CopilotKit's own
             // handler, so narrow to the CopilotKit payload before using it.
             onError={(event) => {
-              if (!("error" in event)) {
+              if (!isCopilotKitError(event)) {
                 return;
               }
-
+            
               const { error, code, context } = event;
+            
               if (isStopRelatedAgentError(error, code, context)) {
                 return;
               }
-
-              console.error("[CopilotChat]", code, error);
+            
+              console.error(error);
             }}
             // CopilotChat always injects autoSuggestions into scrollView when the
             // chat has messages. Hide that built-in strip — we render SuggestionBar
