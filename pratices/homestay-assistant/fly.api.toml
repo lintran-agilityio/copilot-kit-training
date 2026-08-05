@@ -1,26 +1,37 @@
-app = "homestay-api-1"
-primary_region = "sin"
+# fly.toml app configuration file generated for homestay-api on 2026-08-05T15:36:53Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'homestay-api'
+primary_region = 'sin'
 
 [build]
-dockerfile = "Dockerfile.api"
-
-[env]
-NODE_ENV = "production"
-PORT = "5001"
+  dockerfile = 'Dockerfile.api'
 
 [deploy]
-release_command = "sh -c 'cd /repo/apps/api && pnpm db:migrate && pnpm db:seed'"
+  release_command = "sh -c 'cd /repo/apps/api && pnpm db:migrate && pnpm db:seed'"
+
+[env]
+  NODE_ENV = 'production'
+  PORT = '5001'
 
 [http_service]
-internal_port = 5001
-force_https = true
-auto_start_machines = true
-auto_stop_machines = "stop"
-min_machines_running = 0
+  internal_port = 5001
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
 
-[[http_service.checks]]
-grace_period = "20s"
-interval = "15s"
-timeout = "5s"
-method = "GET"
-path = "/"
+  [[http_service.checks]]
+    interval = '15s'
+    timeout = '5s'
+    grace_period = '20s'
+    method = 'GET'
+    path = '/'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
