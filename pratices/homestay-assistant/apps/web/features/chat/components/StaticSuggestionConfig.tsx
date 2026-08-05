@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import {
   useAgent,
@@ -30,8 +30,9 @@ export const StaticSuggestionConfig = ({
     agentId,
     updates: [...CHAT_SUGGESTIONS_AGENT_UPDATES],
   });
-  const { user } = useUser();
-  const userId = user?.id;
+  // isSignedIn flips false on sign-out before userId is cleared; gating on both
+  // stops /api/bookings from firing against a dead Clerk session (browser 401).
+  const { userId, isLoaded, isSignedIn } = useAuth();
   const wasRunningRef = useRef(agent.isRunning);
 
   const focusRoomId = context.focus?.type === "room" ? context.focus.id : null;
@@ -50,8 +51,11 @@ export const StaticSuggestionConfig = ({
 
   const { data: bookings = [] } = useQuery({
     queryKey: ["bookings", userId],
-    queryFn: () => getMyBookings({ via: PREFIX_URL.WEB, userId }),
-    enabled: Boolean(userId),
+    queryFn: ({ signal }) =>
+      getMyBookings({ via: PREFIX_URL.WEB, userId: userId ?? undefined, signal }),
+    enabled: Boolean(isLoaded && isSignedIn && userId),
+    // Auth loss is not transient — retries only spam more 401s during sign-out.
+    retry: false,
   });
 
   const hasActiveBookings = useMemo(

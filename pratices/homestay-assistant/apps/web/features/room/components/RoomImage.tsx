@@ -52,13 +52,15 @@ export function RoomImage({
 
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3">
         <div className="flex items-center justify-between w-full">
-          <span
-            className="h-4 w-1 rounded-full"
-            style={{ backgroundColor: levelColor }}
-          />
-          <span className="text-[11px] font-medium tracking-[0.15em] text-white/90">
-            LEVEL {level}
-          </span>
+          <div className="flex gap-1">
+            <span
+              className="h-4 w-1 rounded-full"
+              style={{ backgroundColor: levelColor }}
+            />
+            <span className="text-[11px] font-medium tracking-[0.15em] text-white/90">
+              LEVEL {level}
+            </span>
+          </div>
           <div className="flex shrink-0 items-center gap-1.5 text-zinc-400">
             <Users className="size-3.5 text-emerald-300" />
             <span className="text-xs text-emerald-300">{capacity}</span>

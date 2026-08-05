@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 
 import { PREFIX_URL } from "@repo/types";
@@ -14,13 +15,17 @@ type BookingsPageClientProps = {
 };
 
 export const BookingsPageClient = ({ userId }: BookingsPageClientProps) => {
+  const { isLoaded, isSignedIn } = useAuth();
   const {
     data: bookings = [],
     isLoading,
     error,
   } = useQuery({
     queryKey: ["bookings", userId],
-    queryFn: () => getMyBookings({ via: PREFIX_URL.WEB, userId }),
+    queryFn: ({ signal }) =>
+      getMyBookings({ via: PREFIX_URL.WEB, userId, signal }),
+    enabled: Boolean(isLoaded && isSignedIn && userId),
+    retry: false,
   });
 
   return (

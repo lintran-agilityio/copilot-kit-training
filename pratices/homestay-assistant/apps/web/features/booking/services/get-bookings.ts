@@ -6,11 +6,13 @@ import { ROUTES } from "@repo/constants";
 type GetMyBookingsProps = {
   via?: PREFIX_URL;
   userId?: string;
+  signal?: AbortSignal;
 };
 
 export const getMyBookings = async ({
   via = PREFIX_URL.BACKEND,
   userId,
+  signal,
 }: GetMyBookingsProps = {}): Promise<BookingResponse[]> => {
   const path =
     via === PREFIX_URL.WEB
@@ -20,6 +22,7 @@ export const getMyBookings = async ({
 
   const response = await fetch(`${baseUrl}${path}`, {
     cache: "no-store",
+    signal,
   });
 
   if (!response.ok) {

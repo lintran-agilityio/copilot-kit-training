@@ -1,4 +1,4 @@
-app = "homestay-api"
+app = "homestay-api-1"
 primary_region = "sin"
 
 [build]
@@ -9,7 +9,7 @@ NODE_ENV = "production"
 PORT = "5001"
 
 [deploy]
-release_command = "sh -c 'cd /repo/apps/api && pnpm db:migrate && pnpm db:seed'"
+release_command = "pnpm db:migrate && pnpm db:seed"
 
 [http_service]
 internal_port = 5001
@@ -17,3 +17,10 @@ force_https = true
 auto_start_machines = true
 auto_stop_machines = "stop"
 min_machines_running = 0
+
+[[http_service.checks]]
+grace_period = "20s"
+interval = "15s"
+timeout = "5s"
+method = "GET"
+path = "/"
