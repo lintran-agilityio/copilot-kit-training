@@ -127,3 +127,53 @@ export const getBusinessDates = (now = new Date()) => {
     timezone: BUSINESS_TIME_ZONE,
   };
 };
+
+const pad2 = (value: number) => String(value).padStart(2, "0");
+
+const toYmd = (year: number, month: number, day: number): string | null => {
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+
+  const ymd = `${year}-${pad2(month)}-${pad2(day)}`;
+  const parsed = new Date(`${ymd}T00:00:00`);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() + 1 !== month ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return ymd;
+};
+
+/**
+ * Resolves a month/day (optional year) to the next on-or-after `today` (YYYY-MM-DD).
+ * Shared by create-booking draft extraction and modify stated-change parsing.
+ */
+export const resolveCalendarDate = (
+  today: string,
+  month: number,
+  day: number,
+  year?: number,
+): string | null => {
+  if (year != null) {
+    return toYmd(year, month, day);
+  }
+
+  const todayYear = Number(today.slice(0, 4));
+  const candidate = toYmd(todayYear, month, day);
+
+  if (!candidate) {
+    return null;
+  }
+
+  if (candidate >= today) {
+    return candidate;
+  }
+
+  return toYmd(todayYear + 1, month, day);
+};

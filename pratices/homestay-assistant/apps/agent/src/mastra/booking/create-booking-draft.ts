@@ -1,23 +1,26 @@
-import { addDaysYmd } from "@repo/utils/date";
-
-import { resolveCalendarDate } from "./stated-modify-changes.ts";
+import { addDaysYmd, resolveCalendarDate } from "@repo/utils/date";
 
 /**
- * Where a create-booking draft field came from.
- * Priority when merging: user > draft > booking-context > previous-search.
+ * Provenance for a populated draft field.
+ *
+ * Priority (strongest → weakest):
+ * user > ui > draft > structured-booking-context >
+ * structured-search-context > default
  */
 export type DraftFieldSource =
   | "user"
+  | "ui"
   | "draft"
-  | "booking-context"
-  | "previous-search";
+  | "structured-booking-context"
+  | "structured-search-context"
+  | "default";
 
 export type ProvenancedValue<T> = {
   value: T;
   source: DraftFieldSource;
 };
 
-/** Flat create-booking draft — no pricing. Unknown guests stay null. */
+/** Flat booking draft values — no pricing. Unknown guests stay null. */
 export type CreateBookingDraftValues = {
   roomId: string | null;
   roomName: string | null;
@@ -35,7 +38,7 @@ export type ProvenancedCreateBookingDraft = {
 };
 
 export type CreateBookingDraftMissingField =
-  | "room"
+  | "roomId"
   | "checkIn"
   | "checkOut"
   | "guests";
@@ -48,31 +51,47 @@ export type CreateBookingDraftPartial = {
   guests?: number | null;
 };
 
-/** Last find_room filters — weakest source; never overwrites stronger fields. */
-export type PreviousSearchContext = {
+/**
+ * Structured Search Context — last find_room filters only.
+ * Never inferred from free-form chat history.
+ */
+export type StructuredSearchContext = {
   /** Search stay date — becomes check-in only when check-in is still unknown. */
   date?: string | null;
   guests?: number | null;
 };
 
 export type MergeCreateBookingDraftInput = {
+  /** Latest user message fields (strongest). */
   user?: CreateBookingDraftPartial;
+  /** Selected UI entity — Book button, Room Card, Room Detail. */
+  ui?: CreateBookingDraftPartial;
+  /** Existing booking draft from prior turns. */
   draft?: CreateBookingDraftPartial;
-  bookingContext?: CreateBookingDraftPartial;
-  previousSearch?: PreviousSearchContext;
+  /** Structured Booking Context — prior structured stay/booking state. */
+  structuredBookingContext?: CreateBookingDraftPartial;
+  /** Structured Search Context — last find_room args only. */
+  structuredSearchContext?: StructuredSearchContext;
+  /**
+   * Safe defaults only. Never invent guests (do not pass guests: 1 here).
+   * Dates/room defaults are allowed when product policy defines them.
+   */
+  defaults?: CreateBookingDraftPartial;
 };
 
 export type MergeCreateBookingDraftResult = {
   draft: CreateBookingDraftValues;
   provenanced: ProvenancedCreateBookingDraft;
-  missing: CreateBookingDraftMissingField[];
+  missingFields: CreateBookingDraftMissingField[];
 };
 
 const SOURCE_PRIORITY: readonly DraftFieldSource[] = [
   "user",
+  "ui",
   "draft",
-  "booking-context",
-  "previous-search",
+  "structured-booking-context",
+  "structured-search-context",
+  "default",
 ] as const;
 
 const EMPTY_DRAFT: CreateBookingDraftValues = {
@@ -134,25 +153,32 @@ const pickProvenancedGuests = (
   return null;
 };
 
-const listMissing = (
-  draft: CreateBookingDraftValues,
+/**
+ * Deterministic missing-field list for HITL / step-machine routing.
+ * Never invent values — absence means missing.
+ */
+export const getMissingBookingFields = (
+  draft: Pick<
+    CreateBookingDraftValues,
+    "roomId" | "checkInDate" | "checkOutDate" | "guests"
+  >,
 ): CreateBookingDraftMissingField[] => {
-  const missing: CreateBookingDraftMissingField[] = [];
+  const missingFields: CreateBookingDraftMissingField[] = [];
 
-  if (!draft.roomId) {
-    missing.push("room");
+  if (!asNonEmptyString(draft.roomId)) {
+    missingFields.push("roomId");
   }
-  if (!draft.checkInDate) {
-    missing.push("checkIn");
+  if (!asNonEmptyString(draft.checkInDate)) {
+    missingFields.push("checkIn");
   }
-  if (!draft.checkOutDate) {
-    missing.push("checkOut");
+  if (!asNonEmptyString(draft.checkOutDate)) {
+    missingFields.push("checkOut");
   }
-  if (draft.guests == null) {
-    missing.push("guests");
+  if (asPositiveInt(draft.guests) == null) {
+    missingFields.push("guests");
   }
 
-  return missing;
+  return missingFields;
 };
 
 /**
@@ -164,41 +190,76 @@ export const mergeCreateBookingDraft = (
   input: MergeCreateBookingDraftInput,
 ): MergeCreateBookingDraftResult => {
   const user = input.user ?? {};
+  const ui = input.ui ?? {};
   const draft = input.draft ?? {};
-  const bookingContext = input.bookingContext ?? {};
-  const previousSearch = input.previousSearch ?? {};
+  const structuredBookingContext = input.structuredBookingContext ?? {};
+  const structuredSearchContext = input.structuredSearchContext ?? {};
+  const defaults = input.defaults ?? {};
 
   const roomId = pickProvenancedString([
     { source: "user", value: user.roomId },
+    { source: "ui", value: ui.roomId },
     { source: "draft", value: draft.roomId },
-    { source: "booking-context", value: bookingContext.roomId },
+    {
+      source: "structured-booking-context",
+      value: structuredBookingContext.roomId,
+    },
+    { source: "default", value: defaults.roomId },
   ]);
 
   const roomName = pickProvenancedString([
     { source: "user", value: user.roomName },
+    { source: "ui", value: ui.roomName },
     { source: "draft", value: draft.roomName },
-    { source: "booking-context", value: bookingContext.roomName },
+    {
+      source: "structured-booking-context",
+      value: structuredBookingContext.roomName,
+    },
+    { source: "default", value: defaults.roomName },
   ]);
 
   const checkInDate = pickProvenancedString([
     { source: "user", value: user.checkInDate },
+    { source: "ui", value: ui.checkInDate },
     { source: "draft", value: draft.checkInDate },
-    { source: "booking-context", value: bookingContext.checkInDate },
+    {
+      source: "structured-booking-context",
+      value: structuredBookingContext.checkInDate,
+    },
     // Search date is check-in only — never check-out, never overwrites stronger.
-    { source: "previous-search", value: previousSearch.date },
+    {
+      source: "structured-search-context",
+      value: structuredSearchContext.date,
+    },
+    { source: "default", value: defaults.checkInDate },
   ]);
 
   const checkOutDate = pickProvenancedString([
     { source: "user", value: user.checkOutDate },
+    { source: "ui", value: ui.checkOutDate },
     { source: "draft", value: draft.checkOutDate },
-    { source: "booking-context", value: bookingContext.checkOutDate },
+    {
+      source: "structured-booking-context",
+      value: structuredBookingContext.checkOutDate,
+    },
+    { source: "default", value: defaults.checkOutDate },
   ]);
 
   const guests = pickProvenancedGuests([
     { source: "user", value: user.guests },
+    { source: "ui", value: ui.guests },
     { source: "draft", value: draft.guests },
-    { source: "booking-context", value: bookingContext.guests },
-    { source: "previous-search", value: previousSearch.guests },
+    {
+      source: "structured-booking-context",
+      value: structuredBookingContext.guests,
+    },
+    {
+      source: "structured-search-context",
+      value: structuredSearchContext.guests,
+    },
+    // defaults.guests intentionally omitted from inventing guests=1 —
+    // only apply when caller passes an explicit safe default policy.
+    { source: "default", value: defaults.guests },
   ]);
 
   const provenanced: ProvenancedCreateBookingDraft = {
@@ -220,7 +281,7 @@ export const mergeCreateBookingDraft = (
   return {
     draft: merged,
     provenanced,
-    missing: listMissing(merged),
+    missingFields: getMissingBookingFields(merged),
   };
 };
 
@@ -291,7 +352,7 @@ export type ExtractCreateBookingUserFieldsResult = {
   fields: CreateBookingDraftPartial;
   /**
    * Wall-clock time from the message when present (e.g. "20:00", "8PM").
-   * Availability and booking ignore this — date-only stays.
+   * Conversational metadata only — availability and booking ignore this.
    */
   requestedTime: string | null;
 };
@@ -307,7 +368,7 @@ const getYmdWeekday = (ymd: string): number => {
 
 /**
  * Resolves an upcoming weekday. "next Friday" is strictly after today
- * (today Friday → +7). Bare "Friday" is on-or-after today.
+ * when today is already that weekday (+7); otherwise the upcoming day.
  */
 export const resolveWeekdayDate = (
   today: string,
@@ -414,7 +475,6 @@ export const extractRequestedTime = (message: string): string | null => {
     hour = 0;
   }
 
-  // 24h clock already past 12 with a pm suffix (e.g. 20:00PM) — keep as-is.
   if (hour > 23) {
     return null;
   }
@@ -478,7 +538,7 @@ const extractGuestsFromMessage = (message: string): number | null => {
 
 /**
  * Extracts create-booking fields stated in the latest user message.
- * Room identity is left to the caller (book_resolve / roomId tags).
+ * Room identity is left to the caller (book_resolve / UI selection).
  * Clock times are returned separately and must not drive availability.
  */
 export const extractCreateBookingUserFields = (
@@ -527,7 +587,6 @@ export const extractCreateBookingUserFields = (
     fields.checkInDate = checkInCue;
   }
 
-  // "at 19 Aug" / "on Aug 19" / "Aug 18 at 8PM" — stay date, not clock.
   if (!fields.checkInDate) {
     const atOnDate = new RegExp(
       `\\b(?:at|on)\\s+(${DATE_TOKEN})`,
@@ -578,3 +637,6 @@ export const extractCreateBookingUserFields = (
 export const emptyCreateBookingDraft = (): CreateBookingDraftValues => ({
   ...EMPTY_DRAFT,
 });
+
+/** @deprecated Use StructuredSearchContext — same shape. */
+export type PreviousSearchContext = StructuredSearchContext;

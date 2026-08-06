@@ -5,6 +5,7 @@ import {
   emptyCreateBookingDraft,
   extractCreateBookingUserFields,
   extractRequestedTime,
+  getMissingBookingFields,
   mergeCreateBookingDraft,
   resolveWeekdayDate,
 } from "./create-booking-draft.ts";
@@ -26,8 +27,8 @@ describe("mergeCreateBookingDraft", () => {
     const result = mergeCreateBookingDraft({});
 
     assert.deepEqual(result.draft, emptyCreateBookingDraft());
-    assert.deepEqual(result.missing, [
-      "room",
+    assert.deepEqual(result.missingFields, [
+      "roomId",
       "checkIn",
       "checkOut",
       "guests",
@@ -35,7 +36,7 @@ describe("mergeCreateBookingDraft", () => {
     assert.equal(result.provenanced.guests, null);
   });
 
-  it("prefers user check-in over previous search date (tomorrow vs next Friday)", () => {
+  it("prefers user check-in over structured search date", () => {
     const nextFriday = "2026-08-14";
 
     const result = mergeCreateBookingDraft({
@@ -44,7 +45,7 @@ describe("mergeCreateBookingDraft", () => {
         roomName: "Bamboo Family Suite",
         checkInDate: nextFriday,
       },
-      previousSearch: {
+      structuredSearchContext: {
         date: TOMORROW,
         guests: 3,
       },
@@ -53,14 +54,49 @@ describe("mergeCreateBookingDraft", () => {
     assert.equal(result.draft.checkInDate, nextFriday);
     assert.equal(result.provenanced.checkInDate?.source, "user");
     assert.equal(result.draft.guests, 3);
-    assert.equal(result.provenanced.guests?.source, "previous-search");
-    assert.deepEqual(result.missing, ["checkOut"]);
+    assert.equal(
+      result.provenanced.guests?.source,
+      "structured-search-context",
+    );
+    assert.deepEqual(result.missingFields, ["checkOut"]);
   });
 
-  it("never lets previous search overwrite an explicit user guest count", () => {
+  it("attributes Book-button room selection to ui, not user", () => {
+    const result = mergeCreateBookingDraft({
+      ui: {
+        roomId: "bamboo-1",
+        roomName: "Bamboo Family Suite",
+      },
+      structuredSearchContext: {
+        date: TOMORROW,
+        guests: 3,
+      },
+    });
+
+    assert.equal(result.draft.roomId, "bamboo-1");
+    assert.equal(result.provenanced.roomId?.source, "ui");
+    assert.equal(result.provenanced.roomName?.source, "ui");
+    assert.equal(result.draft.checkInDate, TOMORROW);
+    assert.equal(
+      result.provenanced.checkInDate?.source,
+      "structured-search-context",
+    );
+  });
+
+  it("lets latest user message beat ui room selection", () => {
+    const result = mergeCreateBookingDraft({
+      user: { roomId: "misty-1", roomName: "Misty Pavilion" },
+      ui: { roomId: "bamboo-1", roomName: "Bamboo Family Suite" },
+    });
+
+    assert.equal(result.draft.roomId, "misty-1");
+    assert.equal(result.provenanced.roomId?.source, "user");
+  });
+
+  it("never lets structured search overwrite an explicit user guest count", () => {
     const result = mergeCreateBookingDraft({
       user: { guests: 2 },
-      previousSearch: { guests: 5 },
+      structuredSearchContext: { guests: 5 },
     });
 
     assert.equal(result.draft.guests, 2);
@@ -74,7 +110,7 @@ describe("mergeCreateBookingDraft", () => {
         roomName: "Bamboo Family Suite",
         checkInDate: "2026-08-19",
       },
-      previousSearch: {
+      structuredSearchContext: {
         date: TOMORROW,
         guests: 3,
       },
@@ -89,9 +125,12 @@ describe("mergeCreateBookingDraft", () => {
     });
     assert.equal(result.provenanced.roomId?.source, "user");
     assert.equal(result.provenanced.checkInDate?.source, "user");
-    assert.equal(result.provenanced.guests?.source, "previous-search");
+    assert.equal(
+      result.provenanced.guests?.source,
+      "structured-search-context",
+    );
     assert.equal(result.provenanced.checkOutDate, null);
-    assert.deepEqual(result.missing, ["checkOut"]);
+    assert.deepEqual(result.missingFields, ["checkOut"]);
   });
 
   it("keeps guests null when no source states an explicit guest count", () => {
@@ -102,39 +141,40 @@ describe("mergeCreateBookingDraft", () => {
         checkOutDate: "2026-08-20",
       },
       draft: { guests: null },
-      previousSearch: { guests: null },
+      structuredSearchContext: { guests: null },
     });
 
     assert.equal(result.draft.guests, null);
-    assert.ok(result.missing.includes("guests"));
+    assert.ok(result.missingFields.includes("guests"));
   });
 
   it("ignores invalid guest values (0, negative, non-integer)", () => {
     const result = mergeCreateBookingDraft({
       user: { guests: 0 },
       draft: { guests: -1 },
-      previousSearch: { guests: 1.5 as unknown as number },
+      structuredSearchContext: { guests: 1.5 as unknown as number },
     });
 
     assert.equal(result.draft.guests, null);
   });
 
-  it("applies source priority: user > draft > booking-context > previous-search", () => {
+  it("applies full source priority including ui and structured contexts", () => {
     const result = mergeCreateBookingDraft({
       user: { checkInDate: "2026-08-20" },
+      ui: { roomId: "ui-room", roomName: "UI Room" },
       draft: {
         checkInDate: "2026-08-15",
         checkOutDate: "2026-08-16",
         guests: 2,
       },
-      bookingContext: {
+      structuredBookingContext: {
         checkInDate: "2026-08-10",
         checkOutDate: "2026-08-11",
         guests: 4,
         roomId: "ctx-room",
         roomName: "Context Room",
       },
-      previousSearch: {
+      structuredSearchContext: {
         date: TOMORROW,
         guests: 6,
       },
@@ -146,18 +186,21 @@ describe("mergeCreateBookingDraft", () => {
     assert.equal(result.provenanced.checkOutDate?.source, "draft");
     assert.equal(result.draft.guests, 2);
     assert.equal(result.provenanced.guests?.source, "draft");
-    assert.equal(result.draft.roomId, "ctx-room");
-    assert.equal(result.provenanced.roomId?.source, "booking-context");
-    assert.deepEqual(result.missing, []);
+    assert.equal(result.draft.roomId, "ui-room");
+    assert.equal(result.provenanced.roomId?.source, "ui");
+    assert.deepEqual(result.missingFields, []);
   });
 
-  it("uses previous-search date only when check-in is otherwise unknown", () => {
+  it("uses structured search date only when check-in is otherwise unknown", () => {
     const result = mergeCreateBookingDraft({
-      previousSearch: { date: TOMORROW, guests: 3 },
+      structuredSearchContext: { date: TOMORROW, guests: 3 },
     });
 
     assert.equal(result.draft.checkInDate, TOMORROW);
-    assert.equal(result.provenanced.checkInDate?.source, "previous-search");
+    assert.equal(
+      result.provenanced.checkInDate?.source,
+      "structured-search-context",
+    );
     assert.equal(result.draft.checkOutDate, null);
   });
 
@@ -172,16 +215,40 @@ describe("mergeCreateBookingDraft", () => {
     assert.equal(result.provenanced.roomId?.source, "draft");
   });
 
-  it("prefers draft over booking-context when user is silent", () => {
+  it("prefers draft over structured booking context when user/ui are silent", () => {
     const result = mergeCreateBookingDraft({
       draft: { guests: 3, checkOutDate: "2026-08-21" },
-      bookingContext: { guests: 5, checkOutDate: "2026-08-22" },
+      structuredBookingContext: { guests: 5, checkOutDate: "2026-08-22" },
     });
 
     assert.equal(result.draft.guests, 3);
     assert.equal(result.provenanced.guests?.source, "draft");
     assert.equal(result.draft.checkOutDate, "2026-08-21");
     assert.equal(result.provenanced.checkOutDate?.source, "draft");
+  });
+
+  it("applies safe defaults only when stronger sources are empty", () => {
+    const result = mergeCreateBookingDraft({
+      defaults: { checkInDate: TODAY },
+    });
+
+    assert.equal(result.draft.checkInDate, TODAY);
+    assert.equal(result.provenanced.checkInDate?.source, "default");
+    assert.equal(result.draft.guests, null);
+  });
+});
+
+describe("getMissingBookingFields", () => {
+  it("lists only absent required fields", () => {
+    assert.deepEqual(
+      getMissingBookingFields({
+        roomId: "r1",
+        checkInDate: "2026-08-19",
+        checkOutDate: null,
+        guests: 3,
+      }),
+      ["checkOut"],
+    );
   });
 });
 
@@ -213,7 +280,6 @@ describe("extractCreateBookingUserFields", () => {
       BUSINESS_DATES,
     );
 
-    // Upcoming Friday is tomorrow; only same-weekday "next Friday" jumps +7.
     assert.equal(extracted.fields.checkInDate, "2026-08-07");
     assert.equal(extracted.requestedTime, null);
   });
@@ -254,8 +320,7 @@ describe("extractCreateBookingUserFields", () => {
     assert.equal(extracted.fields.checkOutDate, "2026-08-12");
   });
 
-  it("feeds extracted user fields into merge ahead of previous search", () => {
-    // Explicit calendar date must beat a weaker "tomorrow" search filter.
+  it("feeds extracted user fields into merge ahead of structured search", () => {
     const extracted = extractCreateBookingUserFields(
       "Book Bamboo Suite Aug 14",
       BUSINESS_DATES,
@@ -267,7 +332,7 @@ describe("extractCreateBookingUserFields", () => {
         roomId: "bamboo-1",
         roomName: "Bamboo Family Suite",
       },
-      previousSearch: {
+      structuredSearchContext: {
         date: TOMORROW,
         guests: 3,
       },
@@ -276,7 +341,7 @@ describe("extractCreateBookingUserFields", () => {
     assert.equal(result.draft.checkInDate, "2026-08-14");
     assert.equal(result.provenanced.checkInDate?.source, "user");
     assert.equal(result.draft.guests, 3);
-    assert.deepEqual(result.missing, ["checkOut"]);
+    assert.deepEqual(result.missingFields, ["checkOut"]);
   });
 });
 
@@ -289,10 +354,8 @@ describe("extractRequestedTime / resolveWeekdayDate", () => {
   });
 
   it("resolves bare/next Friday: upcoming day, or +7 when today is that weekday", () => {
-    // TODAY is Thursday 2026-08-06 — upcoming Friday is Aug 7 either way.
     assert.equal(resolveWeekdayDate(TODAY, 5, false), "2026-08-07");
     assert.equal(resolveWeekdayDate(TODAY, 5, true), "2026-08-07");
-    // On Friday, "next Friday" skips to the following week.
     assert.equal(resolveWeekdayDate("2026-08-07", 5, true), "2026-08-14");
     assert.equal(resolveWeekdayDate("2026-08-07", 5, false), "2026-08-07");
   });
