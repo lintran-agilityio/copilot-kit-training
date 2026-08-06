@@ -1,9 +1,13 @@
 import type { MastraDBMessage } from "@mastra/core/agent";
 import type { Processor } from "@mastra/core/processors";
-import { isBlockedMessageMetadata } from "@repo/constants";
+import {
+  isBlockedUserMessage,
+  normalizeBlockedMessageIds,
+} from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 
+/** Mastra stores message metadata under content.metadata — keep nesting here. */
 const readMessageMetadata = (message: MastraDBMessage) => {
   const content = message.content;
 
@@ -18,21 +22,6 @@ const readMessageMetadata = (message: MastraDBMessage) => {
   return undefined;
 };
 
-const isBlockedUserDbMessage = (
-  message: MastraDBMessage,
-  blockedIds: ReadonlySet<string>,
-) => {
-  if (message.role !== "user") {
-    return false;
-  }
-
-  if (typeof message.id === "string" && blockedIds.has(message.id)) {
-    return true;
-  }
-
-  return isBlockedMessageMetadata(readMessageMetadata(message));
-};
-
 export class ExcludeBlockedMessagesProcessor implements Processor {
   id = "exclude-blocked-messages";
 
@@ -45,13 +34,10 @@ export class ExcludeBlockedMessagesProcessor implements Processor {
     messages: MastraDBMessage[];
     requestContext?: { get: (key: string) => unknown };
   }) {
-    const fromContext = requestContext?.get(
-      REQUEST_CONTEXT_KEYS.BLOCKED_MESSAGE_IDS,
-    );
-    const blockedIds = new Set<string>(
-      Array.isArray(fromContext)
-        ? fromContext.filter((value): value is string => typeof value === "string")
-        : [],
+    const blockedIds = new Set(
+      normalizeBlockedMessageIds(
+        requestContext?.get(REQUEST_CONTEXT_KEYS.BLOCKED_MESSAGE_IDS),
+      ),
     );
 
     if (blockedIds.size === 0) {
@@ -59,7 +45,15 @@ export class ExcludeBlockedMessagesProcessor implements Processor {
     }
 
     const filtered = messages.filter(
-      (message) => !isBlockedUserDbMessage(message, blockedIds),
+      (message) =>
+        !isBlockedUserMessage(
+          {
+            id: message.id,
+            role: message.role,
+            metadata: readMessageMetadata(message),
+          },
+          blockedIds,
+        ),
     );
 
     return filtered.length === messages.length ? messages : filtered;

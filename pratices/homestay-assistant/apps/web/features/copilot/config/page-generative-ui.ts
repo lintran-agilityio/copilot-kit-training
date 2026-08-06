@@ -11,7 +11,6 @@ import {
   TOOL_KEYS,
 } from "@repo/constants";
 import { getUiActionPromptDisplayText } from "@repo/utils";
-import type { CopilotChatAssistantMessageProps } from "@copilotkit/react-core/v2";
 
 import { getLatestFindRoomToolCallIdInCurrentTurn } from "@/features/room/utils";
 
@@ -76,43 +75,34 @@ export const CHAT_VISIBLE_GENERATIVE_TOOLS = new Set([
   ...RENDER_BACKEND_TOOLS,
 ]);
 
-/**
- * Tools whose card fully replaces the assistant's text reply.
- * The agent is still required to speak (see "Never silent" in the prompt);
- * we drop that text in the UI only once the card actually rendered.
- */
-export const CHAT_TEXT_SUPPRESSED_TOOLS = new Set<string>([
-  BOOKING.CREATE_BOOKING,
-  BOOKING.CANCEL,
-  BOOKING.UPDATE_BOOKING,
-  BOOKING.CHECK_ROOM_AVAILABILITY,
-]);
-
 export { PAGE_ROOMS_PROMPT_PREFIX };
 
 export const isPageOnlyGenerativeTool = (toolName: string) =>
   CHAT_HIDDEN_TOOLS.has(toolName);
 
-type ToolCall = NonNullable<
-  CopilotChatAssistantMessageProps["message"]["toolCalls"]
->[number];
+/** Minimal tool-call shape shared by chat rendering and text suppression. */
+export type ChatVisibleToolCall = {
+  id?: string;
+  function?: { name?: string; arguments?: unknown };
+};
 
 type ChatMessageForToolVisibility = {
   id?: string;
   role?: string;
-  toolCalls?: ToolCall[];
+  toolCalls?: ChatVisibleToolCall[];
 };
 
 /**
- * Filters toolCalls for chat rendering.
+ * Filters toolCalls for chat rendering (and text-suppression parity).
  * When `messages` is provided, keeps only the latest `find_room` in the
- * current turn (walk back to last user message) so continuations that replay
- * find_room with a new toolCallId do not stack duplicate cards.
+ * current turn (`getCurrentTurn` via `getLatestFindRoomToolCallIdInCurrentTurn`)
+ * so continuations that replay find_room with a new toolCallId do not stack
+ * duplicate cards.
  */
-export const getChatVisibleToolCalls = (
-  toolCalls?: ToolCall[],
+export const getChatVisibleToolCalls = <T extends ChatVisibleToolCall>(
+  toolCalls?: T[],
   messages?: ChatMessageForToolVisibility[],
-) => {
+): T[] => {
   if (!toolCalls?.length) {
     return [];
   }

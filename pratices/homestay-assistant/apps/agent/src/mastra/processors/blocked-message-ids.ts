@@ -1,5 +1,6 @@
 import type { RequestContext } from "@mastra/core/request-context";
 import { THREAD_METADATA_BLOCKED_MESSAGE_IDS } from "@repo/constants";
+import { normalizeBlockedMessageIds } from "@repo/utils";
 
 type MemoryLike = {
   getThreadById?: (args: { threadId: string }) => Promise<{
@@ -15,15 +16,8 @@ type MastraAgentLike = {
 
 export const readBlockedMessageIdsFromMetadata = (
   metadata: Record<string, unknown> | undefined,
-) => {
-  const blocked = metadata?.[THREAD_METADATA_BLOCKED_MESSAGE_IDS];
-
-  if (!Array.isArray(blocked)) {
-    return [] as string[];
-  }
-
-  return blocked.filter((value): value is string => typeof value === "string");
-};
+) =>
+  normalizeBlockedMessageIds(metadata?.[THREAD_METADATA_BLOCKED_MESSAGE_IDS]);
 
 export async function loadBlockedMessageIdsForThread({
   mastraAgent,

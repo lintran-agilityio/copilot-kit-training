@@ -34,6 +34,7 @@
     "@mastra/memory": "^1.20.5",
     "@mastra/observability": "^1.14.3",
     "@repo/constants": "workspace:*",
+    "@repo/schemas": "workspace:*",
     "@repo/types": "workspace:*",
     "@repo/utils": "workspace:*",
     "zod": "^3.25.76"

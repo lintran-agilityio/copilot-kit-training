@@ -2,7 +2,8 @@ import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { sanitizeBookingId } from "@repo/utils";
-import { bookingSchema, cancelBookingInputSchema } from "@/mastra/schemas/booking";
+import { cancelBookingInputSchema } from "@repo/schemas";
+import { bookingSchema } from "@/mastra/schemas/booking";
 import {
   assertOwnedActiveBooking,
   cancelBooking,

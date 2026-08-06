@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const updateBookingSchema = z.object({
+export const updateBookingInputSchema = z.object({
   bookingId: z
     .string()
     .describe(
@@ -19,4 +19,4 @@ export const updateBookingSchema = z.object({
     .describe("Updated guest count"),
 });
 
-export type UpdateBookingSchema = z.infer<typeof updateBookingSchema>;
+export type UpdateBookingInput = z.infer<typeof updateBookingInputSchema>;

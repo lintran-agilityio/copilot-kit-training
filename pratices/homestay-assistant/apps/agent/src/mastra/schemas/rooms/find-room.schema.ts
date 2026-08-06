@@ -1,9 +1,11 @@
 import { z } from "zod";
+import {
+  findRoomInputSchema as findRoomInputBaseSchema,
+  roomSchema,
+} from "@repo/schemas";
 
-// Direct path — avoid `@/mastra/utils` barrel (it re-exports find-room.ts which
-// imports this schema; that cycle makes Zod infer `name` as `{}`).
-import { sanitizeFindRoomName } from "@/mastra/utils/sanitize-find-room-name";
-import { roomSchema } from "./room.schema";
+// Direct paths — avoid `@/mastra/utils` barrel (cycle with find-room.ts).
+import { sanitizeFindRoomDate, sanitizeFindRoomName } from "@/mastra/utils";
 
 /**
  * Validation safety net: calendar/category words are stripped from `name`
@@ -17,29 +19,21 @@ const findRoomNameSchema = z
   )
   .transform((value): string | undefined => sanitizeFindRoomName(value));
 
-export const findRoomInputSchema = z.object({
-  name: findRoomNameSchema,
-  date: z
-    .string()
-    .optional()
-    .describe("Check-in date to filter availability (YYYY-MM-DD)"),
-  guests: z
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .describe(
-      "Party size (guest count). Matches rooms with capacity >= guests — NOT exact capacity equality. Pass the party size as stated; never require capacity === guests.",
-    ),
-  level: z
-    .number()
-    .int()
-    .min(0)
-    .optional()
-    .describe(
-      "Room floor level. Use level: 4 for luxury / premium / top-floor / penthouse requests — do not put those words in name.",
-    ),
-});
+/**
+ * Relative words (today/weekend) → absolute YYYY-MM-DD. API rejects non-YMD.
+ */
+const findRoomDateSchema = z
+  .string()
+  .optional()
+  .describe(
+    "Check-in date as absolute YYYY-MM-DD only. Resolve today/tonight/tomorrow/weekend from CURRENT DATE before calling — never pass those words.",
+  )
+  .transform((value): string | undefined => sanitizeFindRoomDate(value));
+
+/** Mastra inputSchema — shared base + name/date sanitize transforms. */
+export const findRoomInputSchema = findRoomInputBaseSchema
+  .omit({ name: true, date: true })
+  .extend({ name: findRoomNameSchema, date: findRoomDateSchema });
 
 export type FindRoomInput = z.infer<typeof findRoomInputSchema>;
 

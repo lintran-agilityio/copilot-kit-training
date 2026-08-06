@@ -1,4 +1,5 @@
 import { TOOL_KEYS } from "@repo/constants";
+import { getCurrentTurn } from "@repo/utils";
 
 type ToolCallLike = {
   id?: string;
@@ -13,20 +14,6 @@ type MessageLike = {
 };
 
 const FIND_ROOM = TOOL_KEYS.GET.FIND_ROOM;
-
-/**
- * Index of the last user message — start of the current agent turn.
- * Falls back to 0 when the transcript has no user message yet.
- */
-export const getCurrentTurnStartIndex = (messages: MessageLike[]): number => {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index]?.role === "user") {
-      return index;
-    }
-  }
-
-  return 0;
-};
 
 /**
  * True when this turn already invoked `find_room` (cards render via
@@ -44,9 +31,7 @@ export const hasFindRoomInCurrentTurn = (
     return false;
   }
 
-  const turn = messages.slice(getCurrentTurnStartIndex(messages));
-
-  return turn.some((message) =>
+  return getCurrentTurn(messages).some((message) =>
     message.toolCalls?.some(
       (toolCall) => toolCall.function?.name === FIND_ROOM,
     ),
@@ -68,10 +53,9 @@ export const getLatestFindRoomToolCallIdInCurrentTurn = (
     return undefined;
   }
 
-  const turn = messages.slice(getCurrentTurnStartIndex(messages));
   let lastId: string | undefined;
 
-  for (const message of turn) {
+  for (const message of getCurrentTurn(messages)) {
     for (const toolCall of message.toolCalls ?? []) {
       if (toolCall.function?.name === FIND_ROOM && toolCall.id) {
         lastId = toolCall.id;

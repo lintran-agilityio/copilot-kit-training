@@ -102,9 +102,8 @@ Mastra Studio: [http://localhost:4111](http://localhost:4111)
 
 ```
 src/
-  ag-ui/                 # stop latch + stream/tripwire bridge
-  copilotkit.ts          # AG-UI agent export for web
-  handle-processor-tripwire.ts  # shim → ag-ui
+  ag-ui/                 # abort controllers, transcript filters, tripwire, stream-patch, stop latch
+  copilotkit.ts          # AG-UI agent export for web (+ ThreadMemoryPort inject)
   mastra/
     agents/              # manage-agent
     booking/             # step-machine (prepareStep state machine)
@@ -122,7 +121,7 @@ src/
 
 | Concept | Canonical name | Deprecated alias |
 | --- | --- | --- |
-| Forced tool hops | `enforceBookingStep` / `booking/step-machine.ts` | `enforceBookingWorkflowStep` |
+| Forced tool hops | `enforceBookingStep` / `booking/step-machine.ts` |
 | LLM instruction sections | intent playbook / `PLAYBOOK_*` | `WORKFLOW_*` section keys (wording unchanged) |
 | Web suggestion state | UI focus stack (`uiFocusEntries`, `pushUiFocus`) | `workflowEntries`, `pushWorkflow` |
 | Report HITL focus | `useReportHomestayAgentUiFocus` | `useReportHomestayAgentWorkflow` |

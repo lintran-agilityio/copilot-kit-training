@@ -1,8 +1,10 @@
+import { THREAD_METADATA_BLOCKED_MESSAGE_IDS } from "@repo/constants";
+
 export const REQUEST_CONTEXT_KEYS = {
   AUTH: "auth",
   REQUEST_ID: "requestId",
   AGENT_ID: "agentId",
-  BLOCKED_MESSAGE_IDS: "blockedMessageIds",
+  BLOCKED_MESSAGE_IDS: THREAD_METADATA_BLOCKED_MESSAGE_IDS,
   /**
    * Candidate stay from edit_modify_booking confirmed:true — used to override
    * check_room_availability args when the model fills stale dates.

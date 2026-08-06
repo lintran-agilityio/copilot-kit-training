@@ -17,6 +17,7 @@
     "@copilotkit/runtime": "^1.62.2",
     "@repo/components": "workspace:*",
     "@repo/constants": "workspace:*",
+    "@repo/schemas": "workspace:*",
     "@repo/types": "workspace:*",
     "@repo/utils": "workspace:*",
     "@tanstack/react-query": "^5.101.2",

@@ -53,7 +53,6 @@ const isResponseToHiddenPrompt = (
 
 const ChatToolCallsView = ({
   message,
-
   messages,
 }: CopilotChatToolCallsViewProps) => {
   const visibleToolCalls = getChatVisibleToolCalls(message.toolCalls, messages);

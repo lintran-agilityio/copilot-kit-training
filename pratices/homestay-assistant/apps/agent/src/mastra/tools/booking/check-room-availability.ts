@@ -3,7 +3,6 @@ import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import {
-  checkRoomAvailabilityInputSchema,
   checkRoomAvailabilityOutputSchema,
   type CheckRoomAvailabilityOutput,
 } from "@/mastra/schemas/booking";
@@ -18,6 +17,7 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
+import { checkRoomAvailabilityInputSchema } from "@repo/schemas";
 
 export const checkRoomAvailabilityTool = createTool({
   id: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,

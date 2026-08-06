@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-import { roomSchema } from "./room.schema";
+import { roomSchema } from "@repo/schemas";
 
 export const getRoomsInputSchema = z.object({});
 

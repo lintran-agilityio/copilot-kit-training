@@ -4,6 +4,12 @@ import { useHumanInTheLoop, useRenderTool } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import {
+  cancelBookingInputSchema,
+  checkRoomAvailabilityInputSchema,
+  createBookingInputSchema,
+  updateBookingInputSchema,
+} from "@repo/schemas";
+import {
   CancelBookingByRoomModal,
   CancelBookingNotice,
   BookingUnavailableNotice,
@@ -23,15 +29,11 @@ import {
   cancelBookingByRoomSchema,
   confirmBookingSchema,
   confirmModifyBookingSchema,
-  checkRoomAvailabilityInputSchema,
-  createBookingInputSchema,
   editModifyBookingSchema,
-  updateBookingInputSchema,
   type CancelBookingByRoomArgs,
   type ConfirmBookingArgs,
   type ConfirmModifyBookingArgs,
   type EditModifyBookingArgs,
-  cancelBookingInputSchema,
 } from "@/features/booking/schemas";
 
 export const BookingToolsProvider = () => {

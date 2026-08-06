@@ -7,9 +7,14 @@ export const ROOM_LEVEL_CATEGORY_WORD =
 export const ROOM_LEVEL_CATEGORY_WORD_GLOBAL =
   /\b(?:luxury|premium|top[-\s]?floor|penthouse)\b/gi;
 
-/** Filler words the model may paste into `name` from the guest message. */
+/**
+ * Filler words the model may paste into `name` from the guest message.
+ * Include date-phrase glue ("at weekend", "on Monday", "from today") so
+ * residual crumbs like "at" do not become a literal room-name LIKE filter
+ * (API returns [] for `name=at`).
+ */
 export const ROOM_NAME_FILLER =
-  /\b(?:show|find|search|look|for|your|the|me|a|an|our|available|matching|rooms?|suites?)\b/gi;
+  /\b(?:show|find|search|look|for|your|the|me|a|an|our|available|matching|rooms?|suites?|at|on|in|from|this|next|by|with|to)\b/gi;
 
 /**
  * Weekdays, months, and relative date words — date expression parts, never room titles.

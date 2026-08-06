@@ -1,9 +1,9 @@
 import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
+import { getRoomByIdInputSchema } from "@repo/schemas";
 import { getRoom } from "@/mastra/services";
 import {
-  getRoomDetailInputSchema,
   getRoomDetailOutputSchema,
   type GetRoomDetailOutput,
 } from "@/mastra/schemas/rooms";
@@ -41,7 +41,7 @@ export const getRoomByIdTool = createTool({
   id: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID,
   description:
     "Fetch the complete room object by its unique roomId. Use only when the guest explicitly requests room details or when roomId is provided. Never use for search/filter requests. After calling: reply with ONE short sentence inviting the guest to select dates and tap 'Book this room'. Do NOT echo previous find_room or search responses.",
-  inputSchema: getRoomDetailInputSchema,
+  inputSchema: getRoomByIdInputSchema,
   outputSchema: getRoomDetailOutputSchema,
   execute: async (inputData, context) => {
     throwIfAborted(context.abortSignal);

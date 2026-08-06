@@ -3,13 +3,15 @@ import { z } from "zod";
 import { BookingStatus } from "@repo/types";
 import { sanitizeBookingId } from "@repo/utils";
 import {
+  type CheckRoomAvailabilityInput,
+  type CreateBookingInput,
+  type UpdateBookingInput,
+} from "@repo/schemas";
+import {
   bookingSchema,
   checkRoomAvailabilityResponseSchema,
   type Booking,
-  type CheckRoomAvailabilityInput,
-  type CreateBookingPayload,
   type FindBookingByIdOutput,
-  type UpdateBookingSchema,
 } from "@/mastra/schemas/booking";
 import { ROUTES } from "@repo/constants";
 import { get, post, del, update } from "@/mastra/services/common";
@@ -20,6 +22,8 @@ export type ServiceContext = {
   requestContext?: RequestContext;
   abortSignal?: AbortSignal;
 };
+
+export type CreateBookingPayload = CreateBookingInput & { userId: string };
 
 export type GetBookingsParams = {
   userId?: string;
@@ -66,7 +70,7 @@ export const checkRoomAvailability = async (
   });
 
 export const updateBooking = async (
-  input: UpdateBookingSchema,
+  input: UpdateBookingInput,
   serviceContext?: ServiceContext,
 ): Promise<Booking> => {
   const bookingId = sanitizeBookingId(input.bookingId);

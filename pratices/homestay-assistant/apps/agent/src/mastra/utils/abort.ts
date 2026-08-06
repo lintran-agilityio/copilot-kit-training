@@ -7,6 +7,7 @@
  */
 
 import type { RequestContext } from "@mastra/core/request-context";
+import { RUN_STOPPED_BY_USER_MESSAGE } from "@repo/utils";
 
 export const isAbortSignalAborted = (
   signal: AbortSignal | null | undefined,
@@ -15,7 +16,7 @@ export const isAbortSignalAborted = (
 /** Throw a standard AbortError when the run was stopped. */
 export const throwIfAborted = (
   signal: AbortSignal | null | undefined,
-  message = "Run stopped by user",
+  message: string = RUN_STOPPED_BY_USER_MESSAGE,
 ): void => {
   if (!isAbortSignalAborted(signal)) {
     return;

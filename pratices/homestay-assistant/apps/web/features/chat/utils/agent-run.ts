@@ -14,10 +14,18 @@
  * - Recent-stop window (Intelligence lock TTL can keep follow-up runs at 409)
  *
  * Does not own: AG-UI abortSignal injection / server latch (apps/agent/ag-ui).
- * TTL is shared with the server latch via `@repo/constants` `STOP_RECENT_TTL_MS`.
+ * Stop TTLs: client uses `STOP_RECENT_TTL_MS` (20s); server latch is
+ * `STOP_LATCH_TTL_MS` (10s) — one contract in `@repo/constants` `stop-timing`.
  */
 
 import { STOP_RECENT_TTL_MS } from "@repo/constants";
+import {
+  isAbortError,
+  isAbortLikeErrorMessage,
+  isAgUiStopErrorCode,
+} from "@repo/utils";
+
+export { isAbortError } from "@repo/utils";
 
 type RuntimeAgentStopRequest = {
   runtimeUrl: string;
@@ -42,8 +50,8 @@ type StoppableAgent<TMessage extends AgentMessageLike> = {
 };
 
 /**
- * Silent-409 window after Stop. Same clock as the server stop latch
- * (`STOP_RECENT_TTL_MS` in `@repo/constants`).
+ * Silent-409 window after Stop. Client half of the Stop timing contract
+ * (`STOP_RECENT_TTL_MS` in `@repo/constants`; review with `STOP_LATCH_TTL_MS`).
  *
  * @deprecated Prefer `STOP_RECENT_TTL_MS` from `@repo/constants`.
  */
@@ -96,25 +104,6 @@ export const threadIdFromLockedError = (
   return error.message.match(THREAD_LOCKED_ID_RE)?.[1];
 };
 
-/** True when the error is an intentional abort (user Stop / reset). */
-export const isAbortError = (error: unknown): boolean => {
-  if (error instanceof DOMException || error instanceof Error) {
-    if (error.name === "AbortError") {
-      return true;
-    }
-
-    return (
-      error.message === "Fetch is aborted" ||
-      error.message === "signal is aborted without reason" ||
-      error.message === "Runner connection dropped" ||
-      error.message === "Run stopped by user" ||
-      error.message === "Human-in-the-loop interaction aborted"
-    );
-  }
-
-  return false;
-};
-
 /** True for Intelligence RUN_ERROR events that mean Stop / runner teardown. */
 export const isStopRelatedRunErrorEvent = (
   event: { code?: string; message?: string } | null | undefined,
@@ -123,14 +112,12 @@ export const isStopRelatedRunErrorEvent = (
     return false;
   }
 
-  if (event.code === "RUNNER_CONNECTION_DROPPED" || event.code === "STOPPED") {
+  if (isAgUiStopErrorCode(event.code)) {
     return true;
   }
 
-  return (
-    event.message === "Runner connection dropped" ||
-    event.message === "Run stopped by user"
-  );
+  // Same message contract as `isAbortError` — classify by shape, not a second list.
+  return isAbortLikeErrorMessage(event.message);
 };
 
 /**
@@ -143,10 +130,7 @@ export const isStopRelatedAgentError = (
   context?: { runtimeErrorCode?: string } | null,
 ): boolean => {
   if (code === "agent_run_error_event") {
-    if (
-      context?.runtimeErrorCode === "RUNNER_CONNECTION_DROPPED" ||
-      context?.runtimeErrorCode === "STOPPED"
-    ) {
+    if (isAgUiStopErrorCode(context?.runtimeErrorCode)) {
       return true;
     }
   }

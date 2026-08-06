@@ -211,6 +211,3 @@ export const getPriorityStaticSuggestions = (
 
   return source.slice(0, MAX_SUGGESTION_PILLS);
 };
-
-/** @deprecated Prefer `getUiFocusStaticSuggestions`. */
-export const getWorkflowStaticSuggestions = getUiFocusStaticSuggestions;

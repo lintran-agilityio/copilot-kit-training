@@ -4,6 +4,7 @@ import type {
 } from "@mastra/core/processors";
 
 import { TOOL_KEYS } from "@repo/constants";
+import { getCurrentTurn } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import {
@@ -181,8 +182,10 @@ const getLastToolResultFromMessages = (
     return null;
   }
 
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
+  const turn = getCurrentTurn(messages);
+
+  for (let index = turn.length - 1; index >= 0; index -= 1) {
+    const message = turn[index];
 
     if (message?.role === "user") {
       return null;
@@ -394,6 +397,3 @@ export type BookingWorkflowTransition = BookingStepTransition;
 
 /** @deprecated Prefer `resolveBookingStepTransition`. */
 export const resolveBookingWorkflowTransition = resolveBookingStepTransition;
-
-/** @deprecated Prefer `enforceBookingStep`. */
-export const enforceBookingWorkflowStep = enforceBookingStep;

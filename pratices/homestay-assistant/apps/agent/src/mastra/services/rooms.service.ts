@@ -1,10 +1,9 @@
 import { ROUTES } from "@repo/constants";
+import { roomSchema, type Room } from "@repo/schemas";
 import {
   roomsListResponseSchema,
-  roomSchema,
   type FindRoomInput,
   type FindRoomOutput,
-  type Room,
 } from "@/mastra/schemas/rooms";
 import { get, type ApiRequestContext } from "@/mastra/services/common";
 

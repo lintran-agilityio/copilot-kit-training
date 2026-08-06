@@ -11,4 +11,3 @@ export * from "./ChatRunErrorNotice";
 export * from "./StaticSuggestionConfig";
 export * from "./ConversationItem";
 export * from "./EmbeddedWidget";
-export * from "./ChatGenerativeUILayout";

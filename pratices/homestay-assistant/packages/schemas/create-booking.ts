@@ -1,7 +1,7 @@
-import { z } from "zod";
 import { BookingStatus } from "@repo/types";
+import { z } from "zod";
 
-export const createBookingSchema = z.object({
+export const createBookingInputSchema = z.object({
   roomId: z.string().describe("Room ID to book"),
   checkInDate: z.string().describe("Check-in date (YYYY-MM-DD)"),
   checkOutDate: z.string().describe("Check-out date (YYYY-MM-DD)"),
@@ -12,6 +12,4 @@ export const createBookingSchema = z.object({
     .describe("Booking status; defaults to CONFIRMED after user approval"),
 });
 
-export type CreateBookingSchema = z.infer<typeof createBookingSchema>;
-
-export type CreateBookingPayload = CreateBookingSchema & { userId: string };
+export type CreateBookingInput = z.infer<typeof createBookingInputSchema>;

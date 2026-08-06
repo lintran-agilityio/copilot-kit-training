@@ -1,9 +1,7 @@
 import { TOOL_KEYS } from "@repo/constants";
+import { getCurrentTurn } from "@repo/utils";
 
-import {
-  CHAT_TEXT_SUPPRESSED_TOOLS,
-  CHAT_VISIBLE_GENERATIVE_TOOLS,
-} from "@/features/copilot/config";
+import { getChatVisibleToolCalls } from "@/features/copilot/config";
 import {
   canRenderBookingUnavailableCard,
   isCancelBookingSuccess,
@@ -16,6 +14,9 @@ const { BOOKING } = TOOL_KEYS;
 /**
  * Mirrors each notice component's own "do I render?" check, so text is only
  * hidden when a card is actually on screen.
+ *
+ * Visibility of which tool calls count is owned solely by
+ * {@link getChatVisibleToolCalls} — do not add a second name allowlist here.
  */
 const TOOL_CARD_PREDICATES: Record<string, (result: string) => boolean> = {
   [BOOKING.CREATE_BOOKING]: isCreateBookingSuccess,
@@ -26,7 +27,7 @@ const TOOL_CARD_PREDICATES: Record<string, (result: string) => boolean> = {
 
 type ChatToolCallLike = {
   id?: string;
-  function?: { name?: string };
+  function?: { name?: string; arguments?: unknown };
 };
 
 type ChatMessageLike = {
@@ -54,7 +55,9 @@ const didRenderCard = (
   toolCall: ChatToolCallLike,
 ) => {
   const toolName = toolCall.function?.name;
-  if (!toolName || !CHAT_TEXT_SUPPRESSED_TOOLS.has(toolName)) {
+  const predicate = toolName ? TOOL_CARD_PREDICATES[toolName] : undefined;
+  if (!predicate) {
+    // Visible tools without a full-answer card (e.g. find_room) keep text.
     return false;
   }
 
@@ -64,14 +67,8 @@ const didRenderCard = (
     return false;
   }
 
-  return Boolean(TOOL_CARD_PREDICATES[toolName]?.(result));
+  return predicate(result);
 };
-
-const getVisibleToolCalls = (message: ChatMessageLike) =>
-  message.toolCalls?.filter((toolCall) => {
-    const toolName = toolCall.function?.name;
-    return Boolean(toolName && CHAT_VISIBLE_GENERATIVE_TOOLS.has(toolName));
-  }) ?? [];
 
 /**
  * The agent must always reply in text, but some cards (booking success,
@@ -79,9 +76,10 @@ const getVisibleToolCalls = (message: ChatMessageLike) =>
  * Hide the duplicate sentence in that case.
  *
  * The follow-up sentence usually streams as its own message, so we walk back
- * through the current turn. Only the most recent card-bearing tool call
- * decides — otherwise a later reply (e.g. a `find_room` summary offering
- * alternatives) would be swallowed by an earlier card.
+ * through the current turn (`getCurrentTurn` on the prefix through this
+ * message). Only the most recent card-bearing tool call decides — otherwise
+ * a later reply (e.g. a `find_room` summary offering alternatives) would be
+ * swallowed by an earlier card.
  */
 export const isSupersededByToolCard = (
   messages: ChatMessageLike[] | undefined,
@@ -96,8 +94,11 @@ export const isSupersededByToolCard = (
     return false;
   }
 
-  for (let cursor = index; cursor >= 0; cursor -= 1) {
-    const message = messages[cursor];
+  // Turn containing this message = last user at or before it (prefix scan).
+  const turn = getCurrentTurn(messages.slice(0, index + 1));
+
+  for (let cursor = turn.length - 1; cursor >= 0; cursor -= 1) {
+    const message = turn[cursor];
     if (!message) {
       continue;
     }
@@ -107,7 +108,11 @@ export const isSupersededByToolCard = (
       return false;
     }
 
-    const visibleToolCalls = getVisibleToolCalls(message);
+    // Same filter as chat card rendering (page-only + find_room latest-only).
+    const visibleToolCalls = getChatVisibleToolCalls(
+      message.toolCalls,
+      messages,
+    );
     if (!visibleToolCalls.length) {
       continue;
     }

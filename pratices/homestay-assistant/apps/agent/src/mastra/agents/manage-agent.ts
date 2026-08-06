@@ -54,7 +54,6 @@ export const manageAgent = new Agent({
         parallelToolCalls: false,
       },
     },
-    // Booking step machine (forced tool transitions). Alias: enforceBookingWorkflowStep.
     prepareStep: enforceBookingStep,
   },
   tools: {

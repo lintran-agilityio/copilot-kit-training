@@ -66,6 +66,9 @@ importers:
       '@repo/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@repo/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -230,6 +233,9 @@ importers:
       '@repo/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@repo/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -395,6 +401,22 @@ importers:
         specifier: ^8.50.0
         version: 8.50.0(eslint@9.39.1(jiti@2.7.0))(typescript@5.9.2)
 
+  packages/schemas:
+    dependencies:
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../types
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+
   packages/types:
     devDependencies:
       '@repo/typescript-config':
@@ -408,6 +430,9 @@ importers:
 
   packages/utils:
     dependencies:
+      '@repo/constants':
+        specifier: workspace:*
+        version: link:../constants
       clsx:
         specifier: ^2.1.1
         version: 2.1.1

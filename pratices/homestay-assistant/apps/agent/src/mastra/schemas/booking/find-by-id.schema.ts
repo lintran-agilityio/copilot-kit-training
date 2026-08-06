@@ -1,6 +1,6 @@
 import { z } from "zod";
+import { roomSchema } from "@repo/schemas";
 
-import { roomSchema } from "@/mastra/schemas/rooms/room.schema";
 import { cancellationBookingSchema } from "./cancel.schema";
 
 export const findBookingByIdInputSchema = z.object({

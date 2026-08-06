@@ -1,0 +1,99 @@
+import { getCurrentTurn, isBlockedUserMessage } from "@repo/utils";
+
+import type { AgUiMessage } from "./types";
+
+export const trailingUserMessageId = (
+  messages: AgUiMessage[],
+): string | undefined => {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === "user" && typeof message.id === "string") {
+      return message.id;
+    }
+  }
+
+  return undefined;
+};
+
+/**
+ * Mastra memory owns completed turns. Send only the latest user turn from the
+ * AG-UI transcript so browser-side message ids from older turns cannot be
+ * mistaken for new messages. Messages after that user message are retained for
+ * frontend-tool continuations that run without adding another user message.
+ *
+ * Canonical implementation: `@repo/utils` `getCurrentTurn`.
+ */
+export const selectLatestUserTurn = <T extends AgUiMessage>(
+  messages: T[],
+): T[] => getCurrentTurn(messages);
+
+const hasText = (content: unknown) =>
+  typeof content === "string" ? content.trim().length > 0 : content != null;
+
+/**
+ * The AG-UI transcript replays the assistant tool calls of the turn in flight
+ * on every frontend-tool continuation. Mastra merges those replayed calls into
+ * the turn's stored assistant message, so a tool call memory already resolved
+ * gets written again and comes back duplicated on later recalls. Forward only
+ * the calls memory does not own yet; the tool result of a resolved call is
+ * dropped with it so no result is left orphaned.
+ */
+export const excludeResolvedToolCalls = <T extends AgUiMessage>(
+  messages: T[],
+  resolvedToolCallIds: ReadonlySet<string>,
+): T[] => {
+  if (resolvedToolCallIds.size === 0) {
+    return messages;
+  }
+
+  const filtered: T[] = [];
+
+  for (const message of messages) {
+    if (message.role === "tool") {
+      if (message.toolCallId && resolvedToolCallIds.has(message.toolCallId)) {
+        continue;
+      }
+
+      filtered.push(message);
+      continue;
+    }
+
+    if (message.role !== "assistant" || !message.toolCalls?.length) {
+      filtered.push(message);
+      continue;
+    }
+
+    const toolCalls = message.toolCalls.filter(
+      (toolCall) => !toolCall.id || !resolvedToolCallIds.has(toolCall.id),
+    );
+
+    if (toolCalls.length === message.toolCalls.length) {
+      filtered.push(message);
+      continue;
+    }
+
+    if (toolCalls.length === 0 && !hasText(message.content)) {
+      continue;
+    }
+
+    filtered.push({ ...message, toolCalls });
+  }
+
+  return filtered;
+};
+
+export const findLatestUnblockedUserMessageId = (messages: AgUiMessage[]) => {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+
+    if (
+      message?.role === "user" &&
+      typeof message.id === "string" &&
+      !isBlockedUserMessage(message)
+    ) {
+      return message.id;
+    }
+  }
+
+  return undefined;
+};

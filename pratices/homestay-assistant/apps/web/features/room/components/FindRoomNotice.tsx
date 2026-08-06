@@ -16,6 +16,49 @@ import {
   markAgentRoomSearch,
 } from "@/features/room/utils";
 
+type ToolErrorResult = {
+  error: true;
+  message?: string;
+};
+
+const getFindRoomToolError = (
+  result: FindRoomToolProps["result"],
+): string | null => {
+  if (typeof result === "string" && result.trim()) {
+    // Mastra may return a plain error string; avoid treating JSON payloads as errors.
+    if (result.trimStart().startsWith("{")) {
+      try {
+        const parsed = JSON.parse(result) as ToolErrorResult | FindRoomResult;
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          "error" in parsed &&
+          parsed.error === true
+        ) {
+          return parsed.message?.trim() || "Room search failed.";
+        }
+        return null;
+      } catch {
+        return result.trim();
+      }
+    }
+    return result.trim();
+  }
+
+  if (
+    result &&
+    typeof result === "object" &&
+    "error" in result &&
+    (result as ToolErrorResult).error === true
+  ) {
+    return (
+      (result as ToolErrorResult).message?.trim() || "Room search failed."
+    );
+  }
+
+  return null;
+};
+
 /**
  * Renders find_room tool output in chat: skeleton while loading, room cards when done.
  * Results stay inside chat — the page room grid is never mutated from here.
@@ -28,8 +71,10 @@ export const FindRoomNotice = ({
 }: FindRoomToolProps) => {
   const lastMarkedKeyRef = useRef<string | null>(null);
 
+  const toolError =
+    status === ToolCallStatus.Complete ? getFindRoomToolError(result) : null;
   const parsed =
-    status === ToolCallStatus.Complete
+    status === ToolCallStatus.Complete && !toolError
       ? parseToolResult<FindRoomResult>(result)
       : null;
   const rooms = parsed?.rooms ?? [];
@@ -63,6 +108,14 @@ export const FindRoomNotice = ({
 
   if (status !== ToolCallStatus.Complete) {
     return null;
+  }
+
+  if (toolError) {
+    return (
+      <EmbeddedWidget className="px-3.5 py-3 text-zinc-400">
+        Could not search rooms. {toolError}
+      </EmbeddedWidget>
+    );
   }
 
   if (!rooms.length) {

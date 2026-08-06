@@ -2,10 +2,8 @@ import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { sanitizeBookingId } from "@repo/utils";
-import {
-  bookingSchema,
-  updateBookingSchema,
-} from "@/mastra/schemas/booking";
+import { updateBookingInputSchema } from "@repo/schemas";
+import { bookingSchema } from "@/mastra/schemas/booking";
 import {
   assertOwnedActiveBooking,
   updateBooking,
@@ -32,7 +30,7 @@ export const updateBookingTool = createTool({
     - Do NOT call get_bookings — the UI shows ConfirmSuccess and refreshes the bookings list automatically.
     - Never call this before confirm_modify_booking returns confirmed: true.
     - Only the signed-in owner's active (non-past) bookings can be updated.`,
-  inputSchema: updateBookingSchema,
+  inputSchema: updateBookingInputSchema,
   outputSchema: bookingSchema,
   execute: async ({ bookingId, checkInDate, checkOutDate, guests }, context) => {
     throwIfAborted(context.abortSignal);

@@ -10,8 +10,8 @@ import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import {
   findRoomInputSchema,
   getRoomByIdInputSchema,
-  updateRoomListSchema,
-} from "@/features/room/schemas";
+} from "@repo/schemas";
+import { updateRoomListSchema } from "@/features/room/schemas";
 import {
   formatRoomListSyncResult,
   hasFindRoomInCurrentTurn,

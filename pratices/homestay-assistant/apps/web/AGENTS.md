@@ -9,7 +9,7 @@ Transcript and memory correctness belong upstream:
 | Layer | Path | Owns |
 | --- | --- | --- |
 | CopilotKit v2 UI | `apps/web` | Presentation, Stop UX, HITL render |
-| AG-UI bridge | `apps/agent/src/ag-ui` | Stream adapt, abort inject, transcript filters (`stream-patch.ts`) |
+| AG-UI bridge | `apps/agent/src/ag-ui` | Stream adapt, abort inject, transcript filters (`abort-controllers`, `transcript-filters`, `tripwire`, `stream-patch`) |
 | Mastra | `apps/agent/src/mastra` | Agent, tools, processors, memory |
 
 ### Presentation vs temporary data workarounds
@@ -27,4 +27,4 @@ Transcript and memory correctness belong upstream:
 - `update_room_list` no-op after `find_room` when the model still double-emits
 - Re-trim loops that fight Intelligence reconnect replaying a stopped turn
 
-Do not add new long-term transcript fixes in the UI. Prefer AG-UI (`stream-patch.ts`) or Mastra memory/processors.
+Do not add new long-term transcript fixes in the UI. Prefer AG-UI (`stream-patch` / transcript filters) or Mastra memory/processors.

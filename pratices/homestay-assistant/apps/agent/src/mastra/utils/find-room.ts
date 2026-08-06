@@ -1,5 +1,6 @@
 import { LUXURY_ROOM_LEVEL } from "@/mastra/constants";
 import type { FindRoomInput, FindRoomOutput } from "@/mastra/schemas/rooms";
+import { sanitizeFindRoomDate } from "./sanitize-find-room-date";
 import {
   isCalendarOnlyRoomName,
   isRoomLevelCategoryName,
@@ -13,29 +14,38 @@ export {
   sanitizeFindRoomName,
 } from "./sanitize-find-room-name";
 
+export { sanitizeFindRoomDate } from "./sanitize-find-room-date";
+
 /**
- * Remaps mistaken `name` values (weekdays/calendar words, luxury category)
- * so soft-book / search filters hit the rooms API correctly.
+ * Remaps mistaken `name` / relative `date` values so search hits the rooms API.
  *
  * @param input - Raw find_room tool args from the model
  * @returns Filters safe to send to the rooms API
  */
 export const normalizeFindRoomInput = (input: FindRoomInput): FindRoomInput => {
   const rawName = input.name?.trim();
+  const date = sanitizeFindRoomDate(input.date);
+
   if (!rawName) {
-    return input;
+    return date === input.date ? input : { ...input, date };
   }
 
   const wasCategory = isRoomLevelCategoryName(rawName);
   const name = sanitizeFindRoomName(rawName);
 
-  if (name === rawName && !wasCategory && !isCalendarOnlyRoomName(rawName)) {
+  if (
+    name === rawName &&
+    date === input.date &&
+    !wasCategory &&
+    !isCalendarOnlyRoomName(rawName)
+  ) {
     return input;
   }
 
   return {
     ...input,
     name,
+    date,
     ...(wasCategory ? { level: input.level ?? LUXURY_ROOM_LEVEL } : {}),
   };
 };
