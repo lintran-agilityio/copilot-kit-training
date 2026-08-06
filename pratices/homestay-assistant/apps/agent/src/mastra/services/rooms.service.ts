@@ -44,13 +44,15 @@ export const findRooms = async (
   filters: FindRoomInput = {},
   serviceContext?: RoomServiceContext,
 ): Promise<FindRoomOutput> => {
-  const { name, date, guests, level } = filters;
+  const { name, date, guests, level, purpose } = filters;
+  // purpose is UI/agent metadata only — never send it to the rooms API.
   const applied = {
     name: name?.trim() || undefined,
     date: date?.trim() || undefined,
     guests,
     level,
   };
+  const withPurpose = { ...applied, purpose };
 
   try {
     const rooms = await get(`${ROUTES.ROOMS}`, roomsListResponseSchema, {
@@ -61,7 +63,7 @@ export const findRooms = async (
 
     return {
       rooms: rooms || [],
-      ...applied,
+      ...withPurpose,
     };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
@@ -70,7 +72,7 @@ export const findRooms = async (
     // Older API returned 404 "No rooms found" for empty filters — treat as empty.
     const message = error instanceof Error ? error.message : String(error);
     if (/no rooms found/i.test(message)) {
-      return { rooms: [], ...applied };
+      return { rooms: [], ...withPurpose };
     }
     throw error;
   }

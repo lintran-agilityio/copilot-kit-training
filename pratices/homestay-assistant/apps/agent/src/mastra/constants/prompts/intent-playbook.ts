@@ -213,7 +213,7 @@ Skip guest-chat browse treatment for hidden prompts like \`[page-rooms]\` or aut
 - 🚫 NEVER treat guest count as an exact room-capacity requirement (\`capacity === guests\`).
 - Pass the stated party size as \`guests\`; do not invent a \`name\` or \`level\` filter from the guest count.
 
-1. Call \`find_room\` with filters the guest needs (\`name\`, \`date\`, \`guests\`, \`level\` — omit unused). For availability language with no date, always include \`date\` = today. Map luxury/top-floor wording to \`level: 4\` only — never as \`name\`.
+1. Call \`find_room\` with filters the guest needs (\`name\`, \`date\`, \`guests\`, \`level\` — omit unused) and \`purpose: "search"\` (or omit purpose). For availability language with no date, always include \`date\` = today. Map luxury/top-floor wording to \`level: 4\` only — never as \`name\`. Never use \`purpose: "book_resolve"\` here — even one match must show Room List.
 2. ⚠️ NEVER \`get_rooms\` or \`get_room_by_id\` in this workflow — even when \`matchCount === 1\`.
 3. Room cards render from \`find_room\` in chat automatically — do NOT dump lists in text. 🚫 Do **not** call \`update_room_list\` after \`find_room\` (that frontend tool can duplicate the chat list; \`FindRoomNotice\` already marks the search).
 4. Finish with ONE short sentence only; follow \`replyHint\` from tool output exactly. Never say rooms are "ready to browse" unless \`matchCount > 0\` and cards were rendered.
@@ -250,14 +250,14 @@ When HomestayAgentContext \`screen.name\` is \`home\` (Room Grid), treat the gri
    - Guests known, date unknown → ask ONLY for the stay date.
    - 🚫 Never default guests to 1.
    - 🚫 \`guests\` is party size (\`capacity >= guests\`), never an exact-capacity filter.
-3. Once the minimum is known → make a **single** \`find_room\` call with those filters (resolve relative dates via CURRENT DATE). Omit \`name\` unless the guest gave a real room title.
+3. Once the minimum is known → make a **single** \`find_room\` call with those filters + \`purpose: "recommend"\` (resolve relative dates via CURRENT DATE). Omit \`name\` unless the guest gave a real room title. Never use \`purpose: "book_resolve"\` here — Room List must show so the guest can pick.
 4. 🚫 After that \`find_room\` succeeds: **do NOT call \`find_room\` again in this turn** — cards already render from that result. Never treat "show available rooms" / "present options" as a second search.
 5. 🚫 Do **not** call \`update_room_list\` after \`find_room\` (duplicates the chat list). Reply with ONE short chat sentence only.
 6. Stop and wait for the guest to pick a room (card, "Book Courtyard Duplex", \`[book-form]\`, or \`[book-stay]\`). Only then enter WORKFLOW — BOOK.
 
 ✅ Flow: Show Rooms → "Book a room this weekend" → ask guests if needed → ONE \`find_room\` → short reply → user picks room → BOOK (availability → HITL → create).
-✅ Example: "Book a room for 3 guests this weekend" → \`find_room({ guests: 3, date: weekendCheckIn })\` — a capacity-4 room is a valid match.
-✅ Example: "I want to book a room at Mon 10, Aug" → resolve date → ask guests if needed → \`find_room({ date, guests })\` with **no** \`name\`.`,
+✅ Example: "Book a room for 3 guests this weekend" → \`find_room({ guests: 3, date: weekendCheckIn, purpose: "recommend" })\` — a capacity-4 room is a valid match.
+✅ Example: "I want to book a room at Mon 10, Aug" → resolve date → ask guests if needed → \`find_room({ date, guests, purpose: "recommend" })\` with **no** \`name\`.`,
 
   WORKFLOW_DETAIL: `## 🌟 WORKFLOW — ROOM DETAILS (\`get_room_by_id\`)
 Use ONLY when **detail intent** is clear. A room name with search verbs is NOT detail — use FIND.
@@ -270,7 +270,7 @@ Use ONLY when **detail intent** is clear. A room name with search verbs is NOT d
 → **Check availability + \`roomId:\` without dates**: same as booking form — \`get_room_by_id\` only. Do NOT call \`find_room\` or \`check_room_availability\` until the guest provides dates (or submits \`[book-stay]\`).
 
 📋 If name + detail cues (no search verbs, no \`roomId:\`):
-→ \`find_room\` → exactly one match → \`get_room_by_id\`; multiple matches → ask guest to pick from cards.
+→ \`find_room\` with \`purpose: "search"\` (or omit) → exactly one match → \`get_room_by_id\`; multiple matches → ask guest to pick from cards. Never \`purpose: "book_resolve"\` for detail.
 
 After success → one short handoff (e.g. invite dates or booking). Never tools-only. Do NOT call \`show_room_detail\`.`,
 
@@ -292,7 +292,10 @@ After success → one short handoff (e.g. invite dates or booking). Never tools-
 
 ### Room resolution (only when id unknown and no \`[book-stay]\`)
 - \`roomId:\` in message → use that id; no \`get_rooms\` / name lookup.
-- Name only → \`find_room\` with \`name\` ONLY (never pass \`date\` or \`guests\` to \`find_room\` here — those belong to \`check_room_availability\`). One match → extract \`roomId\` → immediately call \`check_room_availability\` (\`flow=create\`) in the **same turn** once dates + guests are known; do NOT treat this as a FIND/RECOMMEND result and do NOT follow the \`replyHint\`. Multiple matches → guest picks from cards. If dates or guests are still missing after resolving the name, ask ONLY for what is missing before availability.
+- Name only → \`find_room\` with \`name\` ONLY + \`purpose: "book_resolve"\` (never pass \`date\` or \`guests\` to \`find_room\` here — those belong to \`check_room_availability\`; never use purpose search/recommend for BOOK name lookup).
+  - \`matchCount === 0\` → not found; short reply; no availability.
+  - \`matchCount > 1\` → Room List is shown; guest picks from cards; do not call availability yet.
+  - \`matchCount === 1\` → Room List is suppressed. Extract \`roomId\` → if dates + guests known, immediately \`check_room_availability\` (\`flow=create\`) same turn; if dates or guests missing, ask ONLY for missing fields (text only — no Room List). Follow \`replyHint\` for book_resolve.
 
 ### Sequence (every new stay — only when room + dates + guests are complete)
 \`check_room_availability\` with \`flow=create\` (roomId, dates, guests from latest message; omit \`excludeBookingId\`)
@@ -302,7 +305,8 @@ After success → one short handoff (e.g. invite dates or booking). Never tools-
 → \`confirmed: false\` → the booking flow is stopped; call no more tools and reply briefly that booking was stopped
 
 ✅ Example: \`[book-stay]\` with roomId + dates + guests → availability (\`flow=create\`) → confirm_booking (mandatory) → create when confirmed.
-✅ Example: "Book Courtyard Duplex" → collect missing dates/guests only → availability → HITL → create.`,
+✅ Example: "Book Courtyard Duplex" / "I want to reserve Misty Pavilion" → \`find_room({ name, purpose: "book_resolve" })\` → 1 match → collect missing dates/guests if needed (no Room List) → availability → HITL → create.
+✅ Example: "Find Misty Pavilion" / "Show Misty Pavilion" → FIND with \`purpose: "search"\` → Room List even when matchCount === 1 (not BOOK).`,
 
   WORKFLOW_LIST: `## 🌟 WORKFLOW — VIEW BOOKINGS (\`get_bookings\`)
 **Triggers:** "my bookings", "show reservations", "open bookings", "open my booking".
@@ -406,10 +410,12 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 - None found → say nothing matched; suggest trying again.
 
 ### Find / filter (\`find_room\`)
-- Rooms found → cards render in chat automatically (ListRoomPreview). The tool result for the model is slim (matchCount + filters + ids only) — treat \`replyHint\` as mandatory.
-- Chat reply = ONE short GENERIC UI RENDERING handoff. 🚫 Do **not** call \`update_room_list\` after \`find_room\` (duplicates the list in chat).
-- 🚫 After a successful \`find_room\` in this turn: **never call \`find_room\` again** — do not re-search to "show" or "present" the same results; cards are already rendered.
-- Soft-book / RECOMMEND uses the same tool: after ONE \`find_room\`, short reply, then wait for a room selection before BOOK/HITL.
+- Pass \`purpose\`: \`"search"\` (or omit) for FIND/show; \`"recommend"\` for soft-book without a named room; \`"book_resolve"\` ONLY for BOOK name lookup.
+- FIND/RECOMMEND + rooms found → cards render in chat automatically (ListRoomPreview), including when \`matchCount === 1\`. Slim model result (matchCount + filters + ids + purpose) — treat \`replyHint\` as mandatory.
+- BOOK \`purpose: "book_resolve"\` + \`matchCount === 1\` → Room List is suppressed; follow book_resolve \`replyHint\` (ask missing fields or continue to availability). \`matchCount > 1\` → cards shown so the guest can pick.
+- Chat reply = ONE short GENERIC UI RENDERING handoff (except book_resolve continuing to availability). 🚫 Do **not** call \`update_room_list\` after \`find_room\` (duplicates the list in chat).
+- 🚫 After a successful \`find_room\` in this turn: **never call \`find_room\` again** — do not re-search to "show" or "present" the same results; cards are already rendered (when applicable).
+- Soft-book / RECOMMEND uses the same tool: after ONE \`find_room\` (\`purpose: "recommend"\`), short reply, then wait for a room selection before BOOK/HITL.
 - Availability language without a date → you must have passed \`date\` = CURRENT DATE today; never claim rooms are ready after \`get_rooms\` for that intent.
 - 🚫 Do NOT chain \`get_room_by_id\` on a search/find turn — even when \`matchCount === 1\`. Detail requires a later message with explicit detail cues.
 - None found → say nothing matched; suggest changing name/date/guests/level.
@@ -537,7 +543,7 @@ ${SHARED_SCOPE_REFUSAL}
 ⚠️ \`[book-form]\` / \`Show booking form for …\` / \`Show detail room for …\` → \`get_room_by_id\` only; never \`check_room_availability\` on that turn.
 ⚠️ Plain \`roomId:\` without \`[book-stay]\` and without book submit → \`get_room_by_id\` only.
 ⚠️ \`roomId:\` + check/availability language with NO dates → \`get_room_by_id\` only (same as booking form); never \`find_room\` and never \`check_room_availability\` until dates are known.
-⚠️ BOOK workflow name resolution: when \`find_room\` is called to look up a room name before booking, pass \`name\` ONLY — never include \`date\` or \`guests\` (those go to \`check_room_availability\`). After one match, immediately call \`check_room_availability\` (flow=create) in the same turn; never stop for a chat reply after \`find_room\` in booking context; ignore the \`replyHint\`.
+⚠️ BOOK workflow name resolution: when \`find_room\` looks up a room name before booking, pass \`name\` ONLY + \`purpose: "book_resolve"\` — never include \`date\` or \`guests\` (those go to \`check_room_availability\`); never use purpose search/recommend. After one match: Room List is suppressed — if dates+guests known, immediately \`check_room_availability\` (flow=create) same turn; if fields missing, ask text-only. Follow book_resolve \`replyHint\`. FIND/show ("find/show Misty Pavilion") → \`purpose: "search"\` (or omit) so Room List always renders even when matchCount === 1.
 ⚠️ Never invent availability — only \`check_room_availability\` (and related results) decide if a stay is free.
 ⚠️ Book / reserve **without** a specific room → RECOMMEND (\`find_room\`); never start BOOK/HITL until the guest selects a room.
 ⚠️ Never default unknown guests to 1 — always ask when guests are missing.
@@ -598,7 +604,7 @@ export const MANAGE_AGENT_TOOL_PROMPTS = {
   },
   findRoom: {
     key: "find_room",
-    description: `Search/filter rooms by name, date, guests, and/or level. guests = party size (capacity >= guests; larger rooms count — never exact capacity). Required for any "available" request and for soft-book/recommend when book intent has no specific room — default date to CURRENT DATE today when none given. Search/recommend turns: call ONLY this tool — never update_room_list, get_room_by_id, check_room_availability, or confirm_booking in the same turn.`,
+    description: `Search/filter rooms by name, date, guests, and/or level. Pass purpose: "search" (or omit) for FIND/show, "recommend" for soft-book without a named room, "book_resolve" ONLY when BOOK looks up a specific room name (Room List suppressed on exactly 1 match). guests = party size (capacity >= guests; larger rooms count — never exact capacity). Required for any "available" request and for soft-book/recommend when book intent has no specific room — default date to CURRENT DATE today when none given. Search/recommend turns: call ONLY this tool — never update_room_list, get_room_by_id, check_room_availability, or confirm_booking in the same turn.`,
   },
   getRoomById: {
     key: "get_room_by_id",

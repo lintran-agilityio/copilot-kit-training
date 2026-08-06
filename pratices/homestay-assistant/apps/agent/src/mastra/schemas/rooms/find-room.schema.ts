@@ -43,6 +43,8 @@ export const findRoomOutputSchema = z.object({
   date: z.string().optional(),
   guests: z.number().optional(),
   level: z.number().optional(),
+  /** Echoed from input — FE uses this to skip Room List on book_resolve + 1 match. */
+  purpose: findRoomInputBaseSchema.shape.purpose,
 });
 
 export type FindRoomOutput = z.infer<typeof findRoomOutputSchema>;

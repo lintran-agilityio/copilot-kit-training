@@ -60,14 +60,26 @@ const getFindRoomToolError = (
 };
 
 /**
+ * True when BOOK name-resolve should skip Room List (exactly one match).
+ * FIND/RECOMMEND always show the list when matches exist.
+ */
+const shouldSuppressRoomList = (
+  purpose: FindRoomResult["purpose"] | undefined,
+  roomCount: number,
+) => purpose === "book_resolve" && roomCount === 1;
+
+/**
  * Renders find_room tool output in chat: skeleton while loading, room cards when done.
  * Results stay inside chat — the page room grid is never mutated from here.
  *
- * @param props - CopilotKit tool render status and result
+ * Book resolve + exactly one match → no Room List (text / availability / Confirm only).
+ *
+ * @param props - CopilotKit tool render status, result, and optional streaming args
  */
 export const FindRoomNotice = ({
   status,
   result,
+  parameters,
 }: FindRoomToolProps) => {
   const lastMarkedKeyRef = useRef<string | null>(null);
 
@@ -78,11 +90,15 @@ export const FindRoomNotice = ({
       ? parseToolResult<FindRoomResult>(result)
       : null;
   const rooms = parsed?.rooms ?? [];
+  const purpose = parsed?.purpose ?? parameters?.purpose;
   const title = parsed ? buildFindRoomTitle(parsed) : "Room results";
   const roomIdsKey = rooms.map((room) => room.id).join(",");
+  const suppressList = shouldSuppressRoomList(purpose, rooms.length);
+  // book_resolve loads toward Confirm / ask-fields — avoid Room List skeleton flash.
+  const suppressLoadingSkeleton = parameters?.purpose === "book_resolve";
 
   useEffect(() => {
-    if (status !== ToolCallStatus.Complete || !rooms.length) {
+    if (status !== ToolCallStatus.Complete || !rooms.length || suppressList) {
       return;
     }
 
@@ -93,12 +109,16 @@ export const FindRoomNotice = ({
 
     lastMarkedKeyRef.current = searchKey;
     markAgentRoomSearch();
-  }, [status, rooms, title, roomIdsKey]);
+  }, [status, rooms, title, roomIdsKey, suppressList]);
 
   if (
     status === ToolCallStatus.Executing ||
     status === ToolCallStatus.InProgress
   ) {
+    if (suppressLoadingSkeleton) {
+      return null;
+    }
+
     return (
       <EmbeddedWidget className="p-3.5">
         <RoomListSkeleton itemCount={3} className="max-w-full" />
@@ -124,6 +144,10 @@ export const FindRoomNotice = ({
         No rooms matched that search.
       </EmbeddedWidget>
     );
+  }
+
+  if (suppressList) {
+    return null;
   }
 
   return (
