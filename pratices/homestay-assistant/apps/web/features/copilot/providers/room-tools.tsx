@@ -59,7 +59,7 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
       description:
-        "Acknowledge the rooms you just found (IDs only — get_rooms result.roomIds or find_room result.rooms[].id). Chat cards already render from find_room / get_rooms — this tool does not draw another list and never changes the page the guest is browsing. After this succeeds, always send one short guest-facing chat reply summarizing that rooms are ready. Do not call find_room again just to present the same results.",
+        "Use ONLY after get_rooms (plain catalog browse). Pass roomIds from get_rooms result.roomIds (IDs only). Do NOT call after find_room — ListRoomPreview already renders search results and calling this can duplicate the room list in chat. This tool does not change the page the guest is browsing. After this succeeds, always send one short guest-facing chat reply.",
       parameters: updateRoomListSchema,
       handler: async ({ roomIds, title }) => {
         const rooms = await resolveRoomsByIds(roomIds);

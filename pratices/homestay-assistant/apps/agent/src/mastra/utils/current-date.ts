@@ -17,7 +17,8 @@ export const buildCurrentDateInstructions = (now = new Date()): string => {
     "This weekend" / "the weekend" / "cuối tuần" is ALWAYS check-in ${weekendCheckIn}, check-out ${weekendCheckOut}. Copy these two values verbatim — never compute a weekend yourself and never use ${tomorrow} for a weekend request.
     When the guest says relative dates (today, tomorrow, next Friday, in 3 days), convert them using these values.
     Examples: "tomorrow" → ${tomorrow}; "today" → ${today}; "this weekend" → ${weekendCheckIn} to ${weekendCheckOut}.
-    Never derive a day of the week yourself — only ${todayWeekday} (today) and the weekend dates above are trustworthy.
+    Weekday words in the guest message (Mon, Monday, Tue, Friday, Sat, …) are part of a date expression — resolve to YYYY-MM-DD for date fields; never pass them as find_room.name.
+    Do not invent which weekday a YYYY-MM-DD falls on — only ${todayWeekday} (today) and the weekend dates above are precomputed.
     When the guest asks for available rooms without naming a date, use today (${today}) as find_room.date.
     Never invent years or dates from training data (e.g. never use 2023). Pass only absolute YYYY-MM-DD to date tools.
     If working memory or earlier turns have a different check-in/out, overwrite them when the latest message uses relative dates.

@@ -148,7 +148,6 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
     <CopilotKitProvider
       credentials="include"
       runtimeUrl={AGENT_URLS.MANAGE_ASSISTANT}
-      publicApiKey={process.env.NEXT_PUBLIC_COPILOTKIT_API_KEY}
       headers={{ [CLERK_TOKEN_HEADER]: clerkToken }}
       // Intelligence thread routes (/threads*) require REST transport.
       // Single-endpoint /info always reports threadEndpoints.list=false.

@@ -102,8 +102,7 @@ export const getChatVisibleToolCalls = (toolCalls?: ToolCall[]) => {
   }
 
   const seen = new Set<string>();
-
-  return toolCalls.filter((toolCall) => {
+  const visible = toolCalls.filter((toolCall) => {
     const toolName = toolCall.function?.name;
 
     if (!toolName || toolCall.function?.arguments === undefined) {
@@ -125,6 +124,24 @@ export const getChatVisibleToolCalls = (toolCalls?: ToolCall[]) => {
     seen.add(toolCall.id);
     return true;
   });
+
+  // Soft-book / find continuations can replay find_room with a new toolCallId
+  // after update_room_list — keep only the last find_room card per message.
+  let lastFindRoomId: string | undefined;
+  for (const toolCall of visible) {
+    if (toolCall.function?.name === GET.FIND_ROOM && toolCall.id) {
+      lastFindRoomId = toolCall.id;
+    }
+  }
+
+  if (!lastFindRoomId) {
+    return visible;
+  }
+
+  return visible.filter(
+    (toolCall) =>
+      toolCall.function?.name !== GET.FIND_ROOM || toolCall.id === lastFindRoomId,
+  );
 };
 
 export const isHiddenAgentPrompt = (content: string) =>
