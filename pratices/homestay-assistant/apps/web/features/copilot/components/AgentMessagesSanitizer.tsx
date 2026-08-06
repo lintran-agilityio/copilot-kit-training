@@ -17,10 +17,14 @@ import { normalizeMessages } from "@/features/chat/utils";
 
 export const AgentMessagesSanitizer = () => {
   const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
-  const isSanitizingRef = useRef(false);
+  // Fingerprint of the last sanitized snapshot we wrote. Clears the
+  // setMessages ↔ normalizeMessages oscillation that hits React's
+  // "Maximum update depth exceeded" when the runtime reintroduces a shape
+  // normalizeMessages rewrites (empty toolCalls, object args, etc.).
+  const lastAppliedFingerprintRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (isSanitizingRef.current || typeof agent.setMessages !== "function") {
+    if (typeof agent.setMessages !== "function") {
       return;
     }
 
@@ -29,16 +33,16 @@ export const AgentMessagesSanitizer = () => {
     const after = JSON.stringify(sanitized);
 
     if (before === after) {
+      lastAppliedFingerprintRef.current = after;
       return;
     }
 
-    isSanitizingRef.current = true;
-
-    try {
-      agent.setMessages(sanitized);
-    } finally {
-      isSanitizingRef.current = false;
+    if (lastAppliedFingerprintRef.current === after) {
+      return;
     }
+
+    lastAppliedFingerprintRef.current = after;
+    agent.setMessages(sanitized);
   }, [agent, agent.messages]);
 
   return null;

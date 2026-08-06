@@ -22,6 +22,11 @@ export type CheckRoomAvailabilityResult = {
   checkInDate?: string;
   checkOutDate?: string;
   guests?: number;
+  /** Present on modify availability — booking being updated. */
+  bookingId?: string;
+  originalCheckInDate?: string;
+  originalCheckOutDate?: string;
+  originalGuests?: number;
 };
 
 export type CheckRoomAvailabilityToolProps =

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import {
@@ -125,6 +125,14 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
     };
   }, [getToken, isLoaded, isSignedIn]);
 
+  // Stable reference — CopilotKitProvider's effect depends on `headers` and
+  // re-runs setHeaders when the object identity changes every render.
+  const headers = useMemo(
+    () =>
+      clerkToken ? { [CLERK_TOKEN_HEADER]: clerkToken } : null,
+    [clerkToken],
+  );
+
   // Login has no Copilot hooks. Keep QueryClient for any shared client pages.
   if (isLoginRoute(pathname)) {
     return <AppProvider withCopilot={false}>{children}</AppProvider>;
@@ -133,7 +141,7 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
   // MainLayout / chat children call useCopilotKit() unconditionally.
   // Wait for Clerk session AND the first JWT so /api/copilotkit/info is not
   // fired unauthenticated (which leaves the registry empty → "agent not found").
-  if (!isLoaded || !isSignedIn || !clerkToken) {
+  if (!isLoaded || !isSignedIn || !clerkToken || !headers) {
     return (
       <AppProvider withCopilot={false}>
         <AuthLoadingFallback />
@@ -149,7 +157,7 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
     <CopilotKitProvider
       credentials="include"
       runtimeUrl={AGENT_URLS.MANAGE_ASSISTANT}
-      headers={{ [CLERK_TOKEN_HEADER]: clerkToken }}
+      headers={headers}
       // Intelligence thread routes (/threads*) require REST transport.
       // Single-endpoint /info always reports threadEndpoints.list=false.
       useSingleEndpoint={false}

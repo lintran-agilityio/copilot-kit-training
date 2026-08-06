@@ -25,7 +25,7 @@ export const checkRoomAvailabilityInputSchema = z
     flow: bookingAvailabilityFlowSchema
       .optional()
       .describe(
-        "create = new booking (omit excludeBookingId). modify = after edit_modify_booking confirmed:true (require excludeBookingId=bookingId). If omitted: inferred as modify when excludeBookingId is set, otherwise create.",
+        "create = new booking (omit excludeBookingId). modify = after edit_modify_booking confirmed:true, OR when the guest already stated the new dates/guests and the edit form was skipped (require excludeBookingId=bookingId). If omitted: inferred as modify when excludeBookingId is set, otherwise create.",
       ),
     excludeBookingId: z
       .string()

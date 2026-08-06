@@ -11,6 +11,7 @@ import {
   parseConfirmedStay,
   type ConfirmedStay,
 } from "@/mastra/utils/confirmed-stay";
+import { tryEnforceStatedModifyFastPath } from "@/mastra/booking/stated-modify-fast-path";
 
 type ToolResultLike = {
   toolName?: string;
@@ -353,7 +354,9 @@ export const enforceBookingStep = (
   const source = resolveBookingStepSource(args);
 
   if (!source) {
-    return undefined;
+    // NL stated change after find_booking_by_id / single get_bookings:
+    // pin merged stay and force availability so edit_modify_booking never opens.
+    return tryEnforceStatedModifyFastPath(args);
   }
 
   const { toolResult: lastToolResult, transition } = source;

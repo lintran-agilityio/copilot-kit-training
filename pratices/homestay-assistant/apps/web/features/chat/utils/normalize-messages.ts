@@ -114,12 +114,24 @@ const normalizeToolCall = (toolCall: unknown): CopilotKitToolCall | null => {
     const fn = candidate.function as Record<string, unknown>;
 
     if (typeof fn.name === "string") {
+      const argumentsValue = sanitizeToolArguments(fn.arguments);
+
+      // Already in AG-UI shape — keep the original reference so repeated
+      // normalize passes do not churn object identity / JSON key order.
+      if (
+        candidate.type === "function" &&
+        typeof fn.arguments === "string" &&
+        fn.arguments === argumentsValue
+      ) {
+        return toolCall as CopilotKitToolCall;
+      }
+
       return {
         id,
         type: "function",
         function: {
           name: fn.name,
-          arguments: sanitizeToolArguments(fn.arguments),
+          arguments: argumentsValue,
         },
       };
     }
@@ -150,15 +162,29 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
     return message;
   }
 
+  // AG-UI often materializes `toolCalls: []`. Deleting that key made
+  // AgentMessagesSanitizer fight the runtime (setMessages → empty array
+  // restored → normalize again → Maximum update depth exceeded).
+  if (candidate.toolCalls.length === 0) {
+    return message;
+  }
+
   const toolCalls = candidate.toolCalls
     .map(normalizeToolCall)
     .filter((toolCall): toolCall is CopilotKitToolCall => toolCall !== null);
 
   if (toolCalls.length === 0) {
-    const rest = { ...candidate };
-    delete rest.toolCalls;
+    return message;
+  }
 
-    return rest as TMessage;
+  const unchanged =
+    toolCalls.length === candidate.toolCalls.length &&
+    toolCalls.every(
+      (toolCall, index) => toolCall === candidate.toolCalls[index],
+    );
+
+  if (unchanged) {
+    return message;
   }
 
   return {

@@ -35,6 +35,30 @@ export const checkRoomAvailabilityOutputSchema =
     flow: bookingAvailabilityFlowSchema.describe(
       "Echo of the resolved flow — create never routes to confirm_modify_booking; modify never routes to confirm_booking.",
     ),
+    bookingId: z
+      .string()
+      .optional()
+      .describe(
+        "Set for flow=modify — the booking being updated (excludeBookingId). Pass to confirm_modify_booking.",
+      ),
+    originalCheckInDate: z
+      .string()
+      .optional()
+      .describe(
+        "Pre-change check-in for flow=modify — pass to confirm_modify_booking so the UI can show old → new.",
+      ),
+    originalCheckOutDate: z
+      .string()
+      .optional()
+      .describe(
+        "Pre-change check-out for flow=modify — pass to confirm_modify_booking so the UI can show old → new.",
+      ),
+    originalGuests: z
+      .number()
+      .optional()
+      .describe(
+        "Pre-change guests for flow=modify — pass to confirm_modify_booking so the UI can show old → new.",
+      ),
   });
 
 export type CheckRoomAvailabilityResponse = z.infer<
