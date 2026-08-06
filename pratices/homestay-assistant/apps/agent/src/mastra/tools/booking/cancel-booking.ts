@@ -18,6 +18,7 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
+import { clearBookingWorkflowDraftState } from "@/mastra/booking/booking-draft-context";
 
 export const cancelBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CANCEL,
@@ -59,6 +60,11 @@ export const cancelBookingTool = createTool({
     // Side-effect: re-check immediately before committing the cancellation.
     throwIfAborted(context.abortSignal);
 
-    return await cancelBooking(id, serviceContext);
+    const booking = await cancelBooking(id, serviceContext);
+
+    // Cancel is terminal for any in-flight draft on this thread.
+    clearBookingWorkflowDraftState(context.requestContext);
+
+    return booking;
   },
 });

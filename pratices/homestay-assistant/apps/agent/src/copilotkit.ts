@@ -8,6 +8,10 @@ import {
   type ThreadMemoryPort,
 } from "./ag-ui";
 import { loadBlockedMessageIdsForThread } from "@/mastra/processors/blocked-message-ids";
+import {
+  hydrateBookingDraftIntoRequestContext,
+  persistBookingDraftToThread,
+} from "@/mastra/processors/booking-draft-thread";
 import { runtimeMastra } from "@/mastra/runtime";
 import { loadResolvedToolCallIdsForThread } from "@/mastra/utils";
 
@@ -24,6 +28,8 @@ type GetCopilotkitAgentsInput = {
 const threadMemoryPort: ThreadMemoryPort = {
   loadBlockedMessageIds: loadBlockedMessageIdsForThread,
   loadResolvedToolCallIds: loadResolvedToolCallIdsForThread,
+  hydrateBookingDraft: hydrateBookingDraftIntoRequestContext,
+  persistBookingDraft: persistBookingDraftToThread,
 };
 
 /**

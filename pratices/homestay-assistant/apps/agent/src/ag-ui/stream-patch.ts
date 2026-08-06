@@ -297,6 +297,13 @@ const patchAgUiAgent = (
       blockedMessageIds,
     });
 
+    // Resume progressive Booking Draft across clarification / HITL turns.
+    await memoryPort.hydrateBookingDraft({
+      mastraAgent: aguiAgent.agent,
+      threadId: input.threadId,
+      requestContext: aguiAgent.requestContext,
+    });
+
     const blockedUserMessageId = findLatestUnblockedUserMessageId(
       input.messages,
     );
@@ -309,20 +316,29 @@ const patchAgUiAgent = (
       requestContext: aguiAgent.requestContext,
     });
 
-    return tripwireHandlingContext.run(
-      {
+    try {
+      return await tripwireHandlingContext.run(
+        {
+          threadId: input.threadId,
+          blockedUserMessageId,
+        },
+        () =>
+          originalStreamMastraAgent(
+            {
+              ...input,
+              messages: excludeResolvedToolCalls(latestTurn, resolvedToolCallIds),
+            },
+            callbacks,
+          ),
+      );
+    } finally {
+      // Mirror request-context draft to thread so the next user message resumes it.
+      await memoryPort.persistBookingDraft({
+        mastraAgent: aguiAgent.agent,
         threadId: input.threadId,
-        blockedUserMessageId,
-      },
-      () =>
-        originalStreamMastraAgent(
-          {
-            ...input,
-            messages: excludeResolvedToolCalls(latestTurn, resolvedToolCallIds),
-          },
-          callbacks,
-        ),
-    );
+        requestContext: aguiAgent.requestContext,
+      });
+    }
   };
 };
 
