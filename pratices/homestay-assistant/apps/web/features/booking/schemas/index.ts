@@ -4,3 +4,4 @@ export * from "./show-booking-unavailable-schema";
 export * from "./confirm-booking-schema";
 export * from "./confirm-modify-booking-schema";
 export * from "./edit-modify-booking-schema";
+export * from "./booking-draft-schema";

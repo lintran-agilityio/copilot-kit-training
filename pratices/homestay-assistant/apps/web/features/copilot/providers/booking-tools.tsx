@@ -18,6 +18,7 @@ import {
   ConfirmBookingModal,
   EditModifyBookingModal,
   ConfirmModifyBookingModal,
+  BookingDraftHitlModal,
 } from "@/features/booking/components";
 import {
   CancelBookingToolProps,
@@ -30,13 +31,34 @@ import {
   confirmBookingSchema,
   confirmModifyBookingSchema,
   editModifyBookingSchema,
+  bookingDraftSchema,
   type CancelBookingByRoomArgs,
   type ConfirmBookingArgs,
   type ConfirmModifyBookingArgs,
   type EditModifyBookingArgs,
+  type BookingDraftArgs,
 } from "@/features/booking/schemas";
 
 export const BookingToolsProvider = () => {
+  useHumanInTheLoop(
+    {
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      name: TOOL_KEYS.ACTION.BOOKING_DRAFT,
+      description:
+        "Required for CREATE booking when the Booking Draft is INCOMPLETE (missing check-in, check-out, and/or guests). Pass the current draft fields (mode=CREATE, status, roomId/roomName/room, dates, guests, missingFields). Do NOT ask for missing fields in chat text — this HITL collects them. Do NOT call check_room_availability until this returns confirmed:true with a complete stay. If confirmed:false, stop the create booking flow. Never use this for MODIFY (use edit_modify_booking).",
+      parameters: bookingDraftSchema,
+      render: ({ status, args, respond, result }) => (
+        <BookingDraftHitlModal
+          status={status}
+          args={args as Partial<BookingDraftArgs>}
+          respond={respond}
+          result={result}
+        />
+      ),
+    },
+    [],
+  );
+
   useHumanInTheLoop(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,

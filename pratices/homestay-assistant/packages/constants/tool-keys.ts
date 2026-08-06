@@ -27,6 +27,11 @@ export const TOOL_KEYS = {
     /** Frontend HITL — confirm booking draft after check_room_availability succeeds. */
     CONFIRM_BOOKING: "confirm_booking",
     /**
+     * Frontend HITL — progressive CREATE booking draft (missing dates/guests).
+     * Forced by the step machine when Booking Draft status is INCOMPLETE.
+     */
+    BOOKING_DRAFT: "booking_draft",
+    /**
      * Frontend HITL — edit form with room detail + current dates/guests.
      * Call after find_booking_by_id for modify, before check_room_availability.
      */
