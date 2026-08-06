@@ -10,6 +10,10 @@ import {
   getBookings,
   type GetBookingsParams,
 } from "@/mastra/services";
+import {
+  serviceContextFromTool,
+  throwIfAborted,
+} from "@/mastra/utils/abort";
 
 const getBookingsInputSchema = z.object({
   roomId: z.string().optional().describe("Filter by room ID"),
@@ -53,6 +57,8 @@ export const getBookingsTool = createTool({
   inputSchema: getBookingsInputSchema,
   outputSchema: getBookingsOutputSchema,
   execute: async (params, context) => {
+    throwIfAborted(context.abortSignal);
+
     const userId = getAuthUserId(
       context,
       "Authentication required to fetch bookings",
@@ -64,7 +70,7 @@ export const getBookingsTool = createTool({
         roomId: params.roomId,
         status: params.status as GetBookingsParams["status"],
       },
-      { requestContext: context.requestContext },
+      serviceContextFromTool(context),
     );
 
     return { bookings };

@@ -14,6 +14,10 @@ import {
   clearPinnedStay,
   readPinnedStay,
 } from "@/mastra/utils/resolve-pinned-stay";
+import {
+  serviceContextFromTool,
+  throwIfAborted,
+} from "@/mastra/utils/abort";
 
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE_BOOKING,
@@ -22,6 +26,8 @@ export const createBookingTool = createTool({
   inputSchema: createBookingSchema,
   outputSchema: bookingSchema,
   execute: async (params, context) => {
+    throwIfAborted(context.abortSignal);
+
     const userId = getAuthUserId(
       context,
       "Authentication required to create a booking",
@@ -42,6 +48,9 @@ export const createBookingTool = createTool({
       REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY,
     );
 
+    // Side-effect: re-check immediately before committing the booking.
+    throwIfAborted(context.abortSignal);
+
     const booking = await createBooking(
       {
         roomId,
@@ -51,7 +60,7 @@ export const createBookingTool = createTool({
         guests,
         status: params.status ?? BookingStatus.CONFIRMED,
       },
-      { requestContext: context.requestContext },
+      serviceContextFromTool(context),
     );
     return booking;
   },

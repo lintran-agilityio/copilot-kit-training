@@ -9,6 +9,22 @@ Load the `mastra` skill BEFORE any Mastra work. Never rely on cached knowledge �
 - Register all agents, tools, workflows, and scorers in `src/mastra/index.ts`
 - Use the `dev` and `build` scripts from `package.json` instead of running `mastra dev` / `mastra build` directly
 
+## Stack ownership (CopilotKit v2 + AG-UI + Mastra)
+
+| Layer | Path | Owns |
+| --- | --- | --- |
+| CopilotKit v2 UI | `apps/web` | Chat UI, HITL tools, Stop click / idle, presentation state |
+| AG-UI bridge | `apps/agent/src/ag-ui` | Adapt Mastra ↔ CopilotRuntime; inject `abortSignal` on Stop; transcript/stream compatibility (`stream-patch.ts`) |
+| Mastra | `apps/agent/src/mastra` | Agent, tools, processors, memory; honor `abortSignal` |
+
+Stop must propagate `AbortSignal` into `agent.stream()` and tool `execute` / Nest `fetch({ signal })`. Do not treat Stop as “close the browser socket only.”
+
+### UI: presentation vs transcript data
+
+The UI must **not** be the long-term home for transcript/memory data fixes. Client workarounds such as `AgentMessagesSanitizer` (normalize/dedupe) or `update_room_list` guards after `find_room` are **temporary compatibility layers**. Phase them out once AG-UI/Mastra memory replay is correct, or once `stream-patch.ts` (or upstream) fixes the issue at the source.
+
+The UI **does** own presentation state: animations, optimistic rendering, streaming bubbles, dismissing/dimming an incomplete message on Stop, and deriving blocked styling at render from transcript markers (without rewriting `agent.messages`).
+
 ## Resources
 
 - [Mastra Documentation](https://mastra.ai/llms.txt)

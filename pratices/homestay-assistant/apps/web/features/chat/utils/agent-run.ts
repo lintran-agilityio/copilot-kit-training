@@ -1,8 +1,23 @@
 /**
- * Abort / stop helpers for CopilotKit agent runs.
+ * Client Stop surface for CopilotKit v2 + Intelligence.
  *
- * Stop is expected behavior — never surface AbortError as a user-facing failure.
+ * Ideal AbortSignal flow (this app's mapping):
+ * 1. UI Stop → stopAgent + abortRun + HTTP /stop → chat idle / no new tokens
+ * 2. Runtime (AG-UI bridge) → AbortController.abort() on the Mastra run signal
+ *    (not merely closing the browser socket)
+ * 3. Mastra → abortSignal between steps / tools
+ * 4. Tools → honor abortSignal before Nest side effects
+ *
+ * Owns:
+ * - Stop orchestration (client stop → discard turn → HTTP /stop)
+ * - Error classification (abort, STOPPED, post-Stop thread lock)
+ * - Recent-stop window (Intelligence lock TTL can keep follow-up runs at 409)
+ *
+ * Does not own: AG-UI abortSignal injection / server latch (apps/agent/ag-ui).
+ * TTL is shared with the server latch via `@repo/constants` `STOP_RECENT_TTL_MS`.
  */
+
+import { STOP_RECENT_TTL_MS } from "@repo/constants";
 
 type RuntimeAgentStopRequest = {
   runtimeUrl: string;
@@ -24,6 +39,61 @@ type AgentMessageLike = {
 type StoppableAgent<TMessage extends AgentMessageLike> = {
   messages: TMessage[];
   setMessages: (messages: TMessage[]) => void;
+};
+
+/**
+ * Silent-409 window after Stop. Same clock as the server stop latch
+ * (`STOP_RECENT_TTL_MS` in `@repo/constants`).
+ *
+ * @deprecated Prefer `STOP_RECENT_TTL_MS` from `@repo/constants`.
+ */
+export const RECENT_STOP_TTL_MS = STOP_RECENT_TTL_MS;
+
+const recentlyStoppedAtByThreadId = new Map<string, number>();
+
+const THREAD_LOCKED_ID_RE =
+  /Thread\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s+is\s+locked/i;
+
+/** Record that the user stopped this thread (call at Stop click time). */
+export const markThreadRecentlyStopped = (threadId: string): void => {
+  if (!threadId) {
+    return;
+  }
+
+  recentlyStoppedAtByThreadId.set(threadId, Date.now());
+};
+
+/** True while post-Stop follow-up runs may still hit Intelligence 409. */
+export const wasThreadRecentlyStopped = (
+  threadId: string | null | undefined,
+): boolean => {
+  if (!threadId) {
+    return false;
+  }
+
+  const stoppedAt = recentlyStoppedAtByThreadId.get(threadId);
+
+  if (stoppedAt == null) {
+    return false;
+  }
+
+  if (Date.now() - stoppedAt >= STOP_RECENT_TTL_MS) {
+    recentlyStoppedAtByThreadId.delete(threadId);
+    return false;
+  }
+
+  return true;
+};
+
+/** Parse thread id from `AgentThreadLockedError` message when callers omit it. */
+export const threadIdFromLockedError = (
+  error: unknown,
+): string | undefined => {
+  if (!(error instanceof Error)) {
+    return undefined;
+  }
+
+  return error.message.match(THREAD_LOCKED_ID_RE)?.[1];
 };
 
 /** True when the error is an intentional abort (user Stop / reset). */
@@ -63,7 +133,10 @@ export const isStopRelatedRunErrorEvent = (
   );
 };
 
-/** True when a CopilotKit onError payload is stop-related (not a real failure). */
+/**
+ * True when a CopilotKit onError payload is stop-related (not a real failure).
+ * Prefer `isExpectedAgentError` at UI boundaries — that also covers post-Stop 409.
+ */
 export const isStopRelatedAgentError = (
   error: unknown,
   code?: string,
@@ -89,7 +162,8 @@ export const isStopRelatedAgentError = (
  * and `@copilotkit/core` turns any 409 on a run into `AgentThreadLockedError`.
  * So this covers a genuine concurrent run *and* connectivity failures to the
  * Intelligence platform (observed: UND_ERR_CONNECT_TIMEOUT after 10s). Retry is
- * the right response to both — the platform lock TTL is 20s.
+ * the right response outside a recent Stop window — see
+ * `INTELLIGENCE_THREAD_LOCK_TTL_MS` / `STOP_RECENT_TTL_MS` in `@repo/constants`.
  *
  * CopilotKit emits the same failure twice, once as `agent_thread_locked` from
  * `onRunFailed` and once as `agent_run_failed`, so match on the error name too.
@@ -102,6 +176,29 @@ export const isThreadLockedAgentError = (
     code === "agent_thread_locked" ||
     (error instanceof Error && error.name === "AgentThreadLockedError")
   );
+};
+
+/**
+ * Single UI/provider gate: Stop teardown noise + post-Stop thread-lock races.
+ * Genuine concurrent-run locks (no recent Stop) return false so Retry can show.
+ */
+export const isExpectedAgentError = (
+  error: unknown,
+  code?: string,
+  context?: { runtimeErrorCode?: string } | null,
+  threadId?: string | null,
+): boolean => {
+  if (isStopRelatedAgentError(error, code, context)) {
+    return true;
+  }
+
+  if (!isThreadLockedAgentError(error, code)) {
+    return false;
+  }
+
+  const lockedThreadId = threadId ?? threadIdFromLockedError(error);
+
+  return wasThreadRecentlyStopped(lockedThreadId);
 };
 
 /**
@@ -134,12 +231,6 @@ const postRuntimeAgentStop = async ({
 
   try {
     const body = (await response.json()) as { stopped?: boolean };
-    // TEMP: remove once first-click Stop is confirmed fixed.
-    console.info("[StopDebug] POST /stop response", {
-      threadId,
-      status: response.status,
-      stopped: body.stopped,
-    });
     return body.stopped === true;
   } catch {
     // Non-JSON 200 — treat as best-effort success.
@@ -156,7 +247,7 @@ export const requestRuntimeAgentStop = async (
     return;
   }
 
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  await new Promise((resolve) => setTimeout(resolve, 250));
   await postRuntimeAgentStop(request);
 };
 
@@ -181,6 +272,9 @@ export const getTrailingAssistantMessageId = (
  * Drop the in-flight assistant message and anything after it (tool error
  * stubs from aborting HITL, partial follow-up text, etc.). Prior turns and
  * the triggering user message stay intact.
+ *
+ * Presentation: clears the incomplete Stop'd bubble from the chat surface.
+ * Not a transcript/memory authority — durable history belongs upstream.
  */
 export const discardInFlightAssistantTurn = <TMessage extends AgentMessageLike>(
   agent: StoppableAgent<TMessage>,
@@ -201,6 +295,15 @@ export const discardInFlightAssistantTurn = <TMessage extends AgentMessageLike>(
   agent.setMessages(agent.messages.slice(0, assistantIndex));
 };
 
+type StopGenerationOptions = {
+  stop: () => void;
+  fallbackAbort?: () => void;
+  runtimeStop?: () => void | Promise<void>;
+  onStopped?: () => void;
+  /** Marks the recent-stop window so post-Stop 409 lock errors stay silent. */
+  threadId?: string;
+};
+
 /**
  * Abort the in-flight agent run (HTTP stream + frontend tool follow-ups).
  * Conversation messages already received are preserved unless `onStopped`
@@ -209,21 +312,18 @@ export const discardInFlightAssistantTurn = <TMessage extends AgentMessageLike>(
  * Stops the client immediately, then fires the runtime stop endpoint in
  * parallel when `runtimeStop` is provided (Intelligence skips HTTP stop in
  * `agent.abortRun`).
- *
- * @example
- * stopGeneration(
- *   () => copilotkit.stopAgent({ agent }),
- *   () => agent.abortRun(),
- *   () => requestRuntimeAgentStop({ ... }),
- *   () => discardInFlightAssistantTurn(agent, assistantId),
- * );
  */
-export const stopGeneration = (
-  stop: () => void,
-  fallbackAbort?: () => void,
-  runtimeStop?: () => void | Promise<void>,
-  onStopped?: () => void,
-): void => {
+export const stopGeneration = ({
+  stop,
+  fallbackAbort,
+  runtimeStop,
+  onStopped,
+  threadId,
+}: StopGenerationOptions): void => {
+  if (threadId) {
+    markThreadRecentlyStopped(threadId);
+  }
+
   // Stop the client immediately so the first click clears isRunning / the
   // Stop button. Await-server-first made the UI keep streaming until a
   // second click. Server stop runs in parallel; abortSignal + takeUntilAborted
@@ -255,22 +355,17 @@ export const stopGeneration = (
 };
 
 /**
- * Run an agent and treat AbortError as a normal stop (no error logging/toast).
- *
- * @example
- * await runAgentSafely(
- *   () => copilotkit.runAgent({ agent }),
- *   (error) => console.error("Failed", error),
- * );
+ * Run an agent and treat expected Stop / post-Stop lock errors as normal.
  */
 export const runAgentSafely = async (
   run: () => Promise<unknown>,
   onUnexpectedError?: (error: unknown) => void,
+  threadId?: string | null,
 ): Promise<void> => {
   try {
     await run();
   } catch (error) {
-    if (isAbortError(error)) {
+    if (isExpectedAgentError(error, undefined, undefined, threadId)) {
       return;
     }
 

@@ -13,6 +13,8 @@ import {
 import { getUiActionPromptDisplayText } from "@repo/utils";
 import type { CopilotChatAssistantMessageProps } from "@copilotkit/react-core/v2";
 
+import { getLatestFindRoomToolCallIdInCurrentTurn } from "@/features/room/utils";
+
 const { ACTION, BOOKING, GET } = TOOL_KEYS;
 
 /** Mastra backend tools — LLM registration keys. */
@@ -66,7 +68,6 @@ export const CHAT_HIDDEN_TOOLS = new Set([
   ),
 ]);
 
-export const PAGE_ONLY_GENERATIVE_TOOLS = CHAT_HIDDEN_TOOLS;
 export const CHAT_VISIBLE_GENERATIVE_TOOLS = new Set([
   ACTION.CONFIRM_BOOKING,
   ACTION.EDIT_MODIFY_BOOKING,
@@ -90,13 +91,28 @@ export const CHAT_TEXT_SUPPRESSED_TOOLS = new Set<string>([
 export { PAGE_ROOMS_PROMPT_PREFIX };
 
 export const isPageOnlyGenerativeTool = (toolName: string) =>
-  PAGE_ONLY_GENERATIVE_TOOLS.has(toolName);
+  CHAT_HIDDEN_TOOLS.has(toolName);
 
 type ToolCall = NonNullable<
   CopilotChatAssistantMessageProps["message"]["toolCalls"]
 >[number];
 
-export const getChatVisibleToolCalls = (toolCalls?: ToolCall[]) => {
+type ChatMessageForToolVisibility = {
+  id?: string;
+  role?: string;
+  toolCalls?: ToolCall[];
+};
+
+/**
+ * Filters toolCalls for chat rendering.
+ * When `messages` is provided, keeps only the latest `find_room` in the
+ * current turn (walk back to last user message) so continuations that replay
+ * find_room with a new toolCallId do not stack duplicate cards.
+ */
+export const getChatVisibleToolCalls = (
+  toolCalls?: ToolCall[],
+  messages?: ChatMessageForToolVisibility[],
+) => {
   if (!toolCalls?.length) {
     return [];
   }
@@ -125,14 +141,13 @@ export const getChatVisibleToolCalls = (toolCalls?: ToolCall[]) => {
     return true;
   });
 
-  // Soft-book / find continuations can replay find_room with a new toolCallId
-  // after update_room_list — keep only the last find_room card per message.
-  let lastFindRoomId: string | undefined;
-  for (const toolCall of visible) {
-    if (toolCall.function?.name === GET.FIND_ROOM && toolCall.id) {
-      lastFindRoomId = toolCall.id;
-    }
-  }
+  // Soft-book / find continuations can replay find_room with a new toolCallId —
+  // keep only the last find_room card in the current turn (or this message).
+  const lastFindRoomId =
+    getLatestFindRoomToolCallIdInCurrentTurn(messages) ??
+    [...visible]
+      .reverse()
+      .find((toolCall) => toolCall.function?.name === GET.FIND_ROOM)?.id;
 
   if (!lastFindRoomId) {
     return visible;

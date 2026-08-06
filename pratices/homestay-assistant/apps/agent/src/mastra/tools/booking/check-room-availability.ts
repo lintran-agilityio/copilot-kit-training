@@ -14,6 +14,10 @@ import {
   readPinnedStay,
 } from "@/mastra/utils/resolve-pinned-stay";
 import { getBusinessDates } from "@repo/utils/date";
+import {
+  serviceContextFromTool,
+  throwIfAborted,
+} from "@/mastra/utils/abort";
 
 export const checkRoomAvailabilityTool = createTool({
   id: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
@@ -22,6 +26,8 @@ export const checkRoomAvailabilityTool = createTool({
   inputSchema: checkRoomAvailabilityInputSchema,
   outputSchema: checkRoomAvailabilityOutputSchema,
   execute: async (input, context) => {
+    throwIfAborted(context.abortSignal);
+
     const { today } = getBusinessDates();
 
     // After edit_modify_booking, prepareStep pins the guest-selected stay so
@@ -74,15 +80,20 @@ export const checkRoomAvailabilityTool = createTool({
       );
     }
 
-    const result = await checkRoomAvailability({
-      roomId: resolved.roomId,
-      checkInDate: resolved.checkInDate,
-      checkOutDate: resolved.checkOutDate,
-      guests: resolved.guests,
-      ...(isModify && resolved.excludeBookingId
-        ? { excludeBookingId: resolved.excludeBookingId }
-        : {}),
-    });
+    throwIfAborted(context.abortSignal);
+
+    const result = await checkRoomAvailability(
+      {
+        roomId: resolved.roomId,
+        checkInDate: resolved.checkInDate,
+        checkOutDate: resolved.checkOutDate,
+        guests: resolved.guests,
+        ...(isModify && resolved.excludeBookingId
+          ? { excludeBookingId: resolved.excludeBookingId }
+          : {}),
+      },
+      serviceContextFromTool(context),
+    );
 
     const nextAction: CheckRoomAvailabilityOutput["nextAction"] =
       result.available && result.guestsWithinCapacity

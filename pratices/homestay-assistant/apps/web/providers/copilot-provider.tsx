@@ -11,7 +11,7 @@ import {
 
 import { AGENT_URLS } from "@repo/constants";
 import { ROUTES } from "@/constants";
-import { isStopRelatedAgentError } from "@/features/chat/utils/agent-run";
+import { isExpectedAgentError } from "@/features/chat/utils/agent-run";
 import { AppProvider } from "@/providers/app-provider";
 import { AuthLoadingFallback } from "@/components/fallback";
 
@@ -33,10 +33,11 @@ const isLoginRoute = (pathname: string) =>
  * Replaces CopilotKit's built-in fallback logger so Stop / thread reset does
  * not log as a failure. Aborting a pending human-in-the-loop card rejects its
  * handler, which CopilotKit emits as `tool_handler_failed` — expected, not an
- * error. Everything else keeps the library's original console format.
+ * error. Post-Stop Intelligence 409 (thread locked) is also expected until the
+ * platform lock TTL expires. Everything else keeps the library's original format.
  */
 const handleCopilotError = (event: CopilotErrorEvent) => {
-  if (isStopRelatedAgentError(event.error, event.code, event.context)) {
+  if (isExpectedAgentError(event.error, event.code, event.context)) {
     return;
   }
 

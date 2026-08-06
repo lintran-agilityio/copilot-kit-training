@@ -5,6 +5,8 @@ import {
   type CopilotChatToolCallsViewProps,
 } from "@copilotkit/react-core/v2";
 
+import { isProcessorBlockAssistantContent } from "@repo/constants";
+
 import {
   getChatVisibleToolCalls,
   getMessageTextContent,
@@ -16,6 +18,7 @@ import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
 import { ConversationItem } from "@/features/chat/components/ConversationItem";
 
 import {
+  getAssistantDisplayContent,
   getMessageTopSpacing,
   isSupersededByToolCard,
 } from "@/features/chat/utils";
@@ -53,7 +56,7 @@ const ChatToolCallsView = ({
 
   messages,
 }: CopilotChatToolCallsViewProps) => {
-  const visibleToolCalls = getChatVisibleToolCalls(message.toolCalls);
+  const visibleToolCalls = getChatVisibleToolCalls(message.toolCalls, messages);
 
   if (!visibleToolCalls.length) {
     return null;
@@ -82,9 +85,12 @@ export const ChatAssistantMessage = ({
     return null;
   }
 
-  const chatToolCalls = getChatVisibleToolCalls(message.toolCalls);
+  const chatToolCalls = getChatVisibleToolCalls(message.toolCalls, messages);
 
-  const rawTextContent = message.content?.trim() ?? "";
+  const rawTextContent = getMessageTextContent(message.content).trim();
+  const displayTextContent = isProcessorBlockAssistantContent(message.content)
+    ? getAssistantDisplayContent(message.content).trim()
+    : rawTextContent;
 
   const hasHiddenToolCalls = message.toolCalls?.some((toolCall) => {
     const toolName = toolCall.function?.name;
@@ -96,7 +102,7 @@ export const ChatAssistantMessage = ({
 
   const textContent = isSupersededByToolCard(messages, message.id)
     ? ""
-    : rawTextContent;
+    : displayTextContent;
 
   const hasVisibleContent = Boolean(textContent) || chatToolCalls.length > 0;
 
@@ -108,10 +114,15 @@ export const ChatAssistantMessage = ({
 
   const hasWidgets = chatToolCalls.length > 0;
 
+  const displayMessage =
+    textContent && textContent !== rawTextContent
+      ? { ...message, content: textContent }
+      : message;
+
   return (
     <CopilotChatAssistantMessage
       {...props}
-      message={message}
+      message={displayMessage}
       messages={messages}
       toolbarVisible={toolbarVisible}
       className={cn("!bg-transparent p-0", className)}

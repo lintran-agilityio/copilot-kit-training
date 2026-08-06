@@ -3,7 +3,10 @@
 import { useEffect } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 
-import { isStopRelatedRunErrorEvent } from "@/features/chat/utils/agent-run";
+import {
+  isExpectedAgentError,
+  isStopRelatedRunErrorEvent,
+} from "@/features/chat/utils/agent-run";
 
 type UseSilenceStopRunErrorsOptions = {
   agentId: string;
@@ -22,6 +25,7 @@ type AgentErrorSubscriber = {
 };
 
 type PatchableAgent = {
+  threadId?: string;
   connectAgent?: (
     params: unknown,
     subscriber?: AgentErrorSubscriber,
@@ -56,9 +60,10 @@ const wrapErrorSubscriber = (
 };
 
 /**
- * Filters stop/disconnect RUN_ERROR events out of CopilotKit's error
- * subscriber so Stop (and reconnect replay of a prior Stop) does not open
- * the red error banner or spam `[CopilotKit] Agent error`.
+ * Filters expected Stop / post-Stop errors out of CopilotKit's agent methods
+ * so Stop does not open the red error banner or spam console failures.
+ *
+ * Part of the client Stop surface owned by `features/chat/utils/agent-run.ts`.
  */
 export const useSilenceStopRunErrors = ({
   agentId,
@@ -76,8 +81,30 @@ export const useSilenceStopRunErrors = ({
     }
 
     if (originalRunAgent) {
-      patchable.runAgent = (params, subscriber) =>
-        originalRunAgent(params, wrapErrorSubscriber(subscriber));
+      patchable.runAgent = async (params, subscriber) => {
+        try {
+          return await originalRunAgent(
+            params,
+            wrapErrorSubscriber(subscriber),
+          );
+        } catch (error) {
+          // Follow-up run after Stop often hits Intelligence 409 while the
+          // old lock is still held. Swallow so AbstractAgent's "Agent
+          // execution failed" path does not leave a user-facing failure.
+          if (
+            isExpectedAgentError(
+              error,
+              undefined,
+              undefined,
+              patchable.threadId,
+            )
+          ) {
+            return undefined;
+          }
+
+          throw error;
+        }
+      };
     }
 
     return () => {

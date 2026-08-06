@@ -5,7 +5,12 @@
  * continuation / retry). Aborting only the active run leaves the chain alive;
  * a Stop in the gap between runs aborts nothing. While latched, non-user /
  * non-HITL-resume runs abort before they stream.
+ *
+ * TTL is shared with the client silent-409 window via
+ * `@repo/constants` `STOP_RECENT_TTL_MS` (Stop timing contract).
  */
+
+import { STOP_RECENT_TTL_MS } from "@repo/constants";
 
 export type StopLatchEntry = {
   latchedAt: number;
@@ -17,8 +22,8 @@ const stopLatchByThreadId = new Map<string, StopLatchEntry>();
 /** Newest user message id seen per thread — identifies the turn a Stop belongs to. */
 const lastUserMessageIdByThreadId = new Map<string, string>();
 
-/** Long enough to swallow the follow-up chain, short enough not to eat a real next turn. */
-export const STOP_LATCH_TTL_MS = 10_000;
+/** @deprecated Prefer `STOP_RECENT_TTL_MS` from `@repo/constants`. */
+export const STOP_LATCH_TTL_MS = STOP_RECENT_TTL_MS;
 
 /**
  * Record that the user stopped this thread.
@@ -57,4 +62,4 @@ export const clearStopLatch = (threadId: string): void => {
 
 export const isStopLatchLive = (
   latch: StopLatchEntry | undefined,
-): boolean => !!latch && Date.now() - latch.latchedAt < STOP_LATCH_TTL_MS;
+): boolean => !!latch && Date.now() - latch.latchedAt < STOP_RECENT_TTL_MS;

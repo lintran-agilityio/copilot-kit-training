@@ -4,13 +4,16 @@ import type { RequestContext } from "@mastra/core/request-context";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import type { MastraAuthContext } from "@/mastra/middleware/types";
+import { throwIfAborted } from "@/mastra/utils/abort";
 
 export const getApiUrl = () => process.env.API_URL ?? "http://localhost:5001";
 
 type SearchParams = Record<string, string | number | boolean | undefined>;
 
-type ApiRequestContext = {
+export type ApiRequestContext = {
   requestContext?: RequestContext;
+  /** Propagated from Mastra tool / agent abortSignal on Stop. */
+  abortSignal?: AbortSignal;
 };
 
 const getAuthFromContext = (
@@ -76,8 +79,16 @@ const request = async <T>(
   init: RequestInit,
   schema: z.ZodType<T>,
   errorMessage: string,
+  abortSignal?: AbortSignal,
 ): Promise<T> => {
-  const response = await fetch(url, init);
+  throwIfAborted(abortSignal);
+
+  const response = await fetch(url, {
+    ...init,
+    signal: abortSignal,
+  });
+
+  throwIfAborted(abortSignal);
 
   if (!response.ok) {
     const apiMessage = await parseApiErrorMessage(response);
@@ -105,6 +116,7 @@ export const get = async <T>(
     },
     schema,
     options?.errorMessage ?? `Failed to fetch ${path}`,
+    options?.abortSignal,
   );
 
 export const post = async <T>(
@@ -126,6 +138,7 @@ export const post = async <T>(
     },
     schema,
     errorMessage ?? `Failed to post ${path}`,
+    apiContext?.abortSignal,
   );
 
 export const update = async <T>(
@@ -147,6 +160,7 @@ export const update = async <T>(
     },
     schema,
     errorMessage ?? `Failed to update ${path}`,
+    apiContext?.abortSignal,
   );
 
 export const del = async <T>(
@@ -163,4 +177,5 @@ export const del = async <T>(
     },
     schema,
     errorMessage ?? `Failed to delete ${path}`,
+    apiContext?.abortSignal,
   );

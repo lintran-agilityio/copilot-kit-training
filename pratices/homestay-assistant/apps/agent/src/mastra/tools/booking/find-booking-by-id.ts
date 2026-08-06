@@ -8,6 +8,10 @@ import {
 } from "@/mastra/schemas/booking";
 import { resolveAgentUserId } from "@/mastra/utils/resolve-agent-user-id";
 import { findBookingById } from "@/mastra/services";
+import {
+  serviceContextFromTool,
+  throwIfAborted,
+} from "@/mastra/utils/abort";
 
 export const findBookingByIdTool = createTool({
   id: TOOL_KEYS.BOOKING.FIND_BY_ID,
@@ -16,13 +20,15 @@ export const findBookingByIdTool = createTool({
   inputSchema: findBookingByIdInputSchema,
   outputSchema: findBookingByIdOutputSchema,
   execute: async ({ bookingId }, context) => {
+    throwIfAborted(context.abortSignal);
+
     const userId = resolveAgentUserId(
       context,
       "Authentication required to find bookings",
     );
 
     return await findBookingById(userId, sanitizeBookingId(bookingId), {
-      requestContext: context.requestContext,
+      ...serviceContextFromTool(context),
     });
   },
 });

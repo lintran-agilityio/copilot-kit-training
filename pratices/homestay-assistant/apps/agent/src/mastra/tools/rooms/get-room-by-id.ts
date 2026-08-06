@@ -7,6 +7,10 @@ import {
   getRoomDetailOutputSchema,
   type GetRoomDetailOutput,
 } from "@/mastra/schemas/rooms";
+import {
+  serviceContextFromTool,
+  throwIfAborted,
+} from "@/mastra/utils/abort";
 
 /**
  * Slim payload for the model: only the fields needed for tool chaining.
@@ -39,9 +43,10 @@ export const getRoomByIdTool = createTool({
     "Fetch the complete room object by its unique roomId. Use only when the guest explicitly requests room details or when roomId is provided. Never use for search/filter requests. After calling: reply with ONE short sentence inviting the guest to select dates and tap 'Book this room'. Do NOT echo previous find_room or search responses.",
   inputSchema: getRoomDetailInputSchema,
   outputSchema: getRoomDetailOutputSchema,
-  execute: async (inputData) => {
+  execute: async (inputData, context) => {
+    throwIfAborted(context.abortSignal);
     const { roomId } = inputData;
-    const room = await getRoom(roomId);
+    const room = await getRoom(roomId, serviceContextFromTool(context));
     return { room };
   },
   toModelOutput: toGetRoomByIdModelOutput,

@@ -13,6 +13,10 @@ import {
   clearPinnedStay,
   readPinnedBookingId,
 } from "@/mastra/utils/resolve-pinned-stay";
+import {
+  serviceContextFromTool,
+  throwIfAborted,
+} from "@/mastra/utils/abort";
 
 export const cancelBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CANCEL,
@@ -27,11 +31,13 @@ export const cancelBookingTool = createTool({
   inputSchema: cancelBookingInputSchema,
   outputSchema: bookingSchema,
   execute: async ({ bookingId }, context) => {
+    throwIfAborted(context.abortSignal);
+
     const userId = getAuthUserId(
       context,
       "Authentication required to cancel a booking",
     );
-    const serviceContext = { requestContext: context.requestContext };
+    const serviceContext = serviceContextFromTool(context);
 
     // Prefer the id pinned by prepareStep from the cancel dialog — the model
     // often reuses a stale booking id when toolChoice forces this call.
@@ -48,6 +54,10 @@ export const cancelBookingTool = createTool({
     const id = sanitizeBookingId(pinnedBookingId ?? bookingId);
 
     await assertOwnedActiveBooking(userId, id, serviceContext);
+
+    // Side-effect: re-check immediately before committing the cancellation.
+    throwIfAborted(context.abortSignal);
+
     return await cancelBooking(id, serviceContext);
   },
 });

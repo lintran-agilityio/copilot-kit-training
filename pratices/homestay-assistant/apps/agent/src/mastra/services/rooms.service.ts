@@ -6,21 +6,29 @@ import {
   type FindRoomOutput,
   type Room,
 } from "@/mastra/schemas/rooms";
-import { get } from "@/mastra/services/common";
+import { get, type ApiRequestContext } from "@/mastra/services/common";
+
+export type RoomServiceContext = ApiRequestContext;
 
 /**
  * Fetches all rooms from the API, falling back to today's availability on failure.
  *
  * @returns All rooms, or rooms available today when the unfiltered call fails
  */
-export const getRooms = async (): Promise<Room[]> => {
+export const getRooms = async (
+  serviceContext?: RoomServiceContext,
+): Promise<Room[]> => {
   try {
     return await get(`${ROUTES.ROOMS}`, roomsListResponseSchema, {
       errorMessage: "Failed to fetch rooms",
+      abortSignal: serviceContext?.abortSignal,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
     const today = new Date().toISOString().slice(0, 10);
-    const { rooms } = await findRooms({ date: today });
+    const { rooms } = await findRooms({ date: today }, serviceContext);
     return rooms;
   }
 };
@@ -35,6 +43,7 @@ export const getRooms = async (): Promise<Room[]> => {
  */
 export const findRooms = async (
   filters: FindRoomInput = {},
+  serviceContext?: RoomServiceContext,
 ): Promise<FindRoomOutput> => {
   const { name, date, guests, level } = filters;
   const applied = {
@@ -48,6 +57,7 @@ export const findRooms = async (
     const rooms = await get(`${ROUTES.ROOMS}`, roomsListResponseSchema, {
       searchParams: applied,
       errorMessage: "Failed to find rooms",
+      abortSignal: serviceContext?.abortSignal,
     });
 
     return {
@@ -55,6 +65,9 @@ export const findRooms = async (
       ...applied,
     };
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
     // Older API returned 404 "No rooms found" for empty filters — treat as empty.
     const message = error instanceof Error ? error.message : String(error);
     if (/no rooms found/i.test(message)) {
@@ -70,7 +83,11 @@ export const findRooms = async (
  * @param roomId - Room identifier
  * @returns Room detail
  */
-export const getRoom = async (roomId: string): Promise<Room> =>
+export const getRoom = async (
+  roomId: string,
+  serviceContext?: RoomServiceContext,
+): Promise<Room> =>
   get(`${ROUTES.ROOMS}/${roomId}`, roomSchema, {
     errorMessage: "Failed to fetch room",
+    abortSignal: serviceContext?.abortSignal,
   });

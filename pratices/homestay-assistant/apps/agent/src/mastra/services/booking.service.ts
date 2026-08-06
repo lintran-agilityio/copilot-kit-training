@@ -16,8 +16,9 @@ import { get, post, del, update } from "@/mastra/services/common";
 import type { RequestContext } from "@mastra/core/request-context";
 import { getRoom } from "@/mastra/services/rooms.service";
 
-type ServiceContext = {
+export type ServiceContext = {
   requestContext?: RequestContext;
+  abortSignal?: AbortSignal;
 };
 
 export type GetBookingsParams = {
@@ -46,6 +47,7 @@ export const getBookings = async (
     searchParams: params,
     errorMessage: "Failed to fetch bookings",
     requestContext: serviceContext?.requestContext,
+    abortSignal: serviceContext?.abortSignal,
   });
 
 export type CheckRoomAvailabilityApiInput = Omit<
@@ -55,10 +57,12 @@ export type CheckRoomAvailabilityApiInput = Omit<
 
 export const checkRoomAvailability = async (
   input: CheckRoomAvailabilityApiInput,
+  serviceContext?: ServiceContext,
 ) =>
   get(ROUTES.BOOKING_AVAILABILITY, checkRoomAvailabilityResponseSchema, {
     searchParams: input,
     errorMessage: "Failed to check room availability",
+    abortSignal: serviceContext?.abortSignal,
   });
 
 export const updateBooking = async (
@@ -143,9 +147,13 @@ export const assertOwnedActiveBooking = async (
       {
         errorMessage: "Failed to load booking",
         requestContext: serviceContext?.requestContext,
+        abortSignal: serviceContext?.abortSignal,
       },
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
     throw new Error("Booking not found");
   }
 
@@ -174,6 +182,7 @@ export const findBookingById = async (
       {
         errorMessage: "Failed to find booking by id",
         requestContext: serviceContext?.requestContext,
+        abortSignal: serviceContext?.abortSignal,
       },
     );
 
@@ -182,7 +191,7 @@ export const findBookingById = async (
     }
 
     const summary = toCancellationSummary(booking);
-    const room = await getRoom(booking.roomId);
+    const room = await getRoom(booking.roomId, serviceContext);
 
     return {
       bookings: [summary],
@@ -190,7 +199,10 @@ export const findBookingById = async (
       queryName: summary.roomName,
       room,
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
     return { bookings: [], bookingId: id, queryName: "" };
   }
 };

@@ -47,10 +47,10 @@ export const useResetThread = ({
     if (agent.isRunning) {
       const threadId = agent.threadId;
 
-      stopGeneration(
-        () => copilotkit.stopAgent({ agent }),
-        () => agent.abortRun(),
-        threadId
+      stopGeneration({
+        stop: () => copilotkit.stopAgent({ agent }),
+        fallbackAbort: () => agent.abortRun(),
+        runtimeStop: threadId
           ? () =>
               requestRuntimeAgentStop({
                 runtimeUrl: AGENT_URLS.MANAGE_ASSISTANT,
@@ -59,7 +59,8 @@ export const useResetThread = ({
                 headers: copilotkit.headers,
               })
           : undefined,
-      );
+        threadId,
+      });
     }
 
     createThread();

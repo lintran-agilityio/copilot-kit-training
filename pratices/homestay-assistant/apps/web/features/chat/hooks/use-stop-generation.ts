@@ -22,6 +22,10 @@ const STOPPED_TURN_SUPPRESS_MS = 5_000;
  * Stop the current agent generation (Square button in CopilotChat input).
  * Cancels only this thread's in-flight run and drops the incomplete assistant
  * turn so the chat is not left with a mid-stream fragment.
+ *
+ * Discarding/dimming the in-flight bubble on Stop is presentation state (UI-
+ * owned). The brief re-trim after Intelligence reconnect replay is temporary
+ * compatibility — remove when upstream stops replaying stopped turns.
  */
 export const useStopGeneration = ({ agentId }: UseStopGenerationOptions) => {
   const { agent } = useAgent({ agentId });
@@ -81,21 +85,13 @@ export const useStopGeneration = ({ agentId }: UseStopGenerationOptions) => {
     const threadId = agent.threadId;
     const inFlightAssistantId = getTrailingAssistantMessageId(agent.messages);
 
-    // TEMP: remove once first-click Stop is confirmed fixed.
-    console.info("[StopDebug] click", {
-      threadId,
-      isRunning: agent.isRunning,
-      inFlightAssistantId,
-      messageCount: agent.messages.length,
-    });
-
     // Do not gate on agent.isRunning: CopilotChat can keep the Stop affordance
     // visible across brief isRunning flickers (tool gaps / reconnect). An
     // early return made the first click a no-op and required a second click.
-    stopGeneration(
-      () => copilotkit.stopAgent({ agent }),
-      () => agent.abortRun(),
-      threadId
+    stopGeneration({
+      stop: () => copilotkit.stopAgent({ agent }),
+      fallbackAbort: () => agent.abortRun(),
+      runtimeStop: threadId
         ? () =>
             requestRuntimeAgentStop({
               runtimeUrl: AGENT_URLS.MANAGE_ASSISTANT,
@@ -104,8 +100,9 @@ export const useStopGeneration = ({ agentId }: UseStopGenerationOptions) => {
               headers: copilotkit.headers,
             })
         : undefined,
-      () => suppressAssistantTurn(inFlightAssistantId),
-    );
+      onStopped: () => suppressAssistantTurn(inFlightAssistantId),
+      threadId,
+    });
   }, [agent, agentId, copilotkit, suppressAssistantTurn]);
 
   return {

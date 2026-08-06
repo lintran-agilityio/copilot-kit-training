@@ -100,6 +100,81 @@ const streamPatchedMastraAgents = new WeakSet<object>();
 /** Per CopilotKit/Intelligence runId — abortSignal injected into Mastra stream(). */
 const abortControllersByRunId = new Map<string, AbortController>();
 
+/**
+ * Maps threadId → live runIds so abortRun can cancel every in-flight controller
+ * for a thread, even when Intelligence calls abort on a clone whose
+ * `activeRunId` is stale or empty (first-click Stop miss).
+ */
+const runIdsByThreadId = new Map<string, Set<string>>();
+
+const registerRunAbortController = (
+  threadId: string | undefined,
+  runId: string,
+  controller: AbortController,
+) => {
+  abortControllersByRunId.set(runId, controller);
+
+  if (!threadId) {
+    return;
+  }
+
+  const runIds = runIdsByThreadId.get(threadId) ?? new Set<string>();
+  runIds.add(runId);
+  runIdsByThreadId.set(threadId, runIds);
+};
+
+const unregisterRunAbortController = (
+  threadId: string | undefined,
+  runId: string,
+) => {
+  abortControllersByRunId.delete(runId);
+
+  if (!threadId) {
+    return;
+  }
+
+  const runIds = runIdsByThreadId.get(threadId);
+
+  if (!runIds) {
+    return;
+  }
+
+  runIds.delete(runId);
+
+  if (runIds.size === 0) {
+    runIdsByThreadId.delete(threadId);
+  }
+};
+
+const abortControllersForThread = (
+  threadId: string | undefined,
+  preferredRunId?: string,
+): { runIds: string[]; controllers: AbortController[] } => {
+  const runIds = new Set<string>();
+
+  if (preferredRunId) {
+    runIds.add(preferredRunId);
+  }
+
+  if (threadId) {
+    for (const runId of runIdsByThreadId.get(threadId) ?? []) {
+      runIds.add(runId);
+    }
+  }
+
+  const controllers: AbortController[] = [];
+
+  for (const runId of runIds) {
+    const controller = abortControllersByRunId.get(runId);
+
+    if (controller) {
+      controllers.push(controller);
+    }
+  }
+
+  return { runIds: [...runIds], controllers };
+};
+
 const trailingUserMessageId = (messages: AgUiMessage[]): string | undefined => {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
@@ -439,6 +514,14 @@ async function* interceptTripwireStream(
  * Installs stop/abort wiring, transcript filters, and tripwire interception
  * on one agent.
  *
+ * Stop contract (AbortSignal):
+ * - `run()` creates an AbortController per Intelligence runId and registers it
+ *   by thread so abortRun can cancel every in-flight controller.
+ * - `ensureMastraStreamAbortInjection` passes that signal into Mastra `stream()`.
+ * - Mastra then checks the signal between steps and forwards it to tools.
+ * - `abortRun` + stop latch abort the signal without detachActiveRun (which
+ *   would drop the Phoenix socket and surface RUNNER_CONNECTION_DROPPED).
+ *
  * These are instance-level overrides, and CopilotKit's run/connect handlers
  * call `agent.clone()` per request. `MastraAgent.clone()` rebuilds the instance
  * from its config, so it keeps none of them — leaving every request on the
@@ -487,7 +570,7 @@ const patchAgUiAgent = (aguiAgent: AgUiMastraAgent) => {
         : [];
 
       if (activeRunId && activeRunId !== runId) {
-        abortControllersByRunId.delete(activeRunId);
+        unregisterRunAbortController(activeThreadId, activeRunId);
       }
 
       activeRunId = runId;
@@ -501,12 +584,14 @@ const patchAgUiAgent = (aguiAgent: AgUiMastraAgent) => {
       const controller = new AbortController();
 
       if (runId) {
-        abortControllersByRunId.set(runId, controller);
+        registerRunAbortController(threadId, runId, controller);
       }
 
       // A run starting while the thread is latched is part of the chain the
       // user just stopped — unless it is an explicit new user action (new user
       // message, or a HITL resume). Abort before the model streams anything.
+      // FE-tool continuations keep the same trailing user message id, so they
+      // stay blocked while the latch is live (do not treat them as a new turn).
       const latch = threadId ? getStopLatch(threadId) : undefined;
       const isLatchLive = isStopLatchLive(latch);
       const isResume =
@@ -526,24 +611,18 @@ const patchAgUiAgent = (aguiAgent: AgUiMastraAgent) => {
         controller.abort();
       }
 
-      // TEMP: remove once first-click Stop is confirmed fixed.
-      console.info("[StopDebug] run() start", {
-        threadId,
-        runId,
-        controllerCount: abortControllersByRunId.size,
-        lastMessageRole: messages.at(-1)?.role,
-        messageCount: messages.length,
-        userMessageId: activeUserMessageId,
-        isResume,
-        isLatchLive,
-        blockedByStop,
-      });
-
       // Bound map growth if clones are discarded without abort/complete.
       if (abortControllersByRunId.size > 64) {
         const oldest = abortControllersByRunId.keys().next().value;
         if (oldest && oldest !== runId) {
-          abortControllersByRunId.delete(oldest);
+          let oldestThreadId: string | undefined;
+          for (const [mappedThreadId, runIds] of runIdsByThreadId) {
+            if (runIds.has(oldest)) {
+              oldestThreadId = mappedThreadId;
+              break;
+            }
+          }
+          unregisterRunAbortController(oldestThreadId, oldest);
         }
       }
 
@@ -558,36 +637,28 @@ const patchAgUiAgent = (aguiAgent: AgUiMastraAgent) => {
   // RUNNER_CONNECTION_DROPPED as a user-facing agent error.
   aguiAgent.abortRun = () => {
     const runId = activeRunId;
-    const controller = runId ? abortControllersByRunId.get(runId) : undefined;
+    const threadId = activeThreadId;
 
     // Latch the thread so the follow-up run the client starts right after this
     // abort does not keep the generation alive (the reason Stop needed a
     // second click).
-    if (activeThreadId) {
-      latchThreadStop(activeThreadId);
+    if (threadId) {
+      latchThreadStop(threadId);
     }
 
-    // TEMP: remove once first-click Stop is confirmed fixed.
-    console.info("[StopDebug] abortRun() called", {
-      runId,
-      threadId: activeThreadId,
-      hasController: !!controller,
-      alreadyAborted: controller?.signal.aborted,
-    });
+    // Abort every live controller for this thread — not only this clone's
+    // activeRunId. Intelligence may call abort on a clone that never saw run().
+    const { runIds, controllers } = abortControllersForThread(threadId, runId);
 
-    // Abort only — keep the controller in the map until the run Observable
-    // unwinds. Deleting here races processFullStream/stream() startup and
-    // can leave a still-running generation without an abortSignal.
-    if (runId) {
-      controller?.abort();
+    for (const controller of controllers) {
+      controller.abort();
     }
 
     try {
-      if (
-        runId &&
-        typeof aguiAgent.agent?.abortRunStream === "function"
-      ) {
-        aguiAgent.agent.abortRunStream(runId);
+      if (typeof aguiAgent.agent?.abortRunStream === "function") {
+        for (const id of runIds) {
+          aguiAgent.agent.abortRunStream(id);
+        }
       }
     } catch (error) {
       console.error(
@@ -623,33 +694,10 @@ const patchAgUiAgent = (aguiAgent: AgUiMastraAgent) => {
       ? abortControllersByRunId.get(runId)?.signal
       : undefined;
 
-    // TEMP: remove once first-click Stop is confirmed fixed.
-    console.info("[StopDebug] processFullStream() start", {
-      runId,
-      hasSignal: !!signal,
-      alreadyAborted: signal?.aborted,
-    });
-
-    let chunkCount = 0;
     let effectiveStream: AsyncIterable<unknown> = takeUntilAborted(
       stream,
       signal,
     );
-    if (signal) {
-      const countedSource = effectiveStream;
-      effectiveStream = (async function* () {
-        for await (const chunk of countedSource) {
-          chunkCount += 1;
-          yield chunk;
-        }
-        // TEMP: remove once first-click Stop is confirmed fixed.
-        console.info("[StopDebug] processFullStream() stream ended", {
-          runId,
-          chunkCount,
-          aborted: signal.aborted,
-        });
-      })();
-    }
 
     const tripwireContext = tripwireHandlingContext.getStore();
 

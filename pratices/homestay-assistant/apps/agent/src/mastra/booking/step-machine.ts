@@ -339,6 +339,14 @@ const stashConfirmedCancelBookingId = (
 export const enforceBookingStep = (
   args: ProcessInputStepArgs,
 ): ProcessInputStepResult | undefined => {
+  // Stop: do not force the next tool once the run abortSignal is set.
+  if (args.abortSignal?.aborted) {
+    return {
+      activeTools: [],
+      toolChoice: "none",
+    };
+  }
+
   const source = resolveBookingStepSource(args);
 
   if (!source) {

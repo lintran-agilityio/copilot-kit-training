@@ -16,6 +16,10 @@ import {
   clearPinnedStay,
   readPinnedStay,
 } from "@/mastra/utils/resolve-pinned-stay";
+import {
+  serviceContextFromTool,
+  throwIfAborted,
+} from "@/mastra/utils/abort";
 
 export const updateBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
@@ -31,11 +35,13 @@ export const updateBookingTool = createTool({
   inputSchema: updateBookingSchema,
   outputSchema: bookingSchema,
   execute: async ({ bookingId, checkInDate, checkOutDate, guests }, context) => {
+    throwIfAborted(context.abortSignal);
+
     const userId = getAuthUserId(
       context,
       "Authentication required to update a booking",
     );
-    const serviceContext = { requestContext: context.requestContext };
+    const serviceContext = serviceContextFromTool(context);
 
     // Prefer the HITL confirm result pinned by prepareStep — the model often
     // reuses stale draft/original dates when toolChoice forces this call.
@@ -56,6 +62,10 @@ export const updateBookingTool = createTool({
     );
 
     await assertOwnedActiveBooking(userId, resolvedBookingId, serviceContext);
+
+    // Side-effect: re-check immediately before committing the update.
+    throwIfAborted(context.abortSignal);
+
     return await updateBooking(
       {
         bookingId: resolvedBookingId,

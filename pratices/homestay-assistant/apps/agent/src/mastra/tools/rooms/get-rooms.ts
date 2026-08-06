@@ -7,6 +7,10 @@ import {
   getRoomsOutputSchema,
   type GetRoomsOutput,
 } from "@/mastra/schemas/rooms";
+import {
+  serviceContextFromTool,
+  throwIfAborted,
+} from "@/mastra/utils/abort";
 
 /**
  * Slim payload for the model: ids only, mirroring find_room. Re-emitting full
@@ -39,8 +43,9 @@ export const getRoomsTool = createTool({
     'Fetch all rooms for plain catalog browse only ("show all rooms" / "browse all" — no name/date/guest/level filters and no "available" wording). Do NOT use for search/filter, "available rooms", or date availability — use find_room with date (default today) instead. After calling: (1) pass result.roomIds to update_room_list (IDs only — never rebuild room objects), (2) always reply in chat with one short sentence that rooms are ready on the grid — never end the turn with tools only. Never claim rooms are ready if you skipped update_room_list.',
   inputSchema: getRoomsInputSchema,
   outputSchema: getRoomsOutputSchema,
-  execute: async () => {
-    const rooms = await getRooms();
+  execute: async (_input, context) => {
+    throwIfAborted(context.abortSignal);
+    const rooms = await getRooms(serviceContextFromTool(context));
     return { rooms };
   },
   toModelOutput: toGetRoomsModelOutput,

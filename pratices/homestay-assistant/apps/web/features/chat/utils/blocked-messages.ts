@@ -1,94 +1,66 @@
+/**
+ * Presentation helpers for security-blocked turns.
+ *
+ * Do not mutate `agent.messages` to stamp blocked metadata — derive UI state
+ * from transcript shape (processor-block assistant after the user) or from
+ * metadata already present on the message. Durable blocked ids belong in
+ * AG-UI/Mastra (`stream-patch` + thread metadata).
+ */
+
 import {
   getProcessorBlockAssistantDisplayText,
   isBlockedMessageMetadata,
   isProcessorBlockAssistantContent,
 } from "@repo/constants";
 
-type MessageWithMetadata = {
-  id: string;
+type MessageLike = {
+  id?: string;
   role?: string;
   content?: unknown;
   metadata?: unknown;
 };
 
-export const markBlockedMessages = <T extends MessageWithMetadata>(
-  messages: T[],
-  blockedMessageIds: readonly string[] = [],
-): T[] => {
-  const blockedIds = new Set(blockedMessageIds);
-
-  for (let index = 0; index < messages.length; index += 1) {
-    const message = messages[index];
-
-    if (!message) {
-      continue;
-    }
-
-    if (
-      message.role === "assistant" &&
-      isProcessorBlockAssistantContent(message.content)
-    ) {
-      const previous = messages[index - 1];
-
-      if (previous?.role === "user" && typeof previous.id === "string") {
-        blockedIds.add(previous.id);
-      }
-    }
+/**
+ * True when this user message should render as blocked: explicit metadata, or
+ * the following assistant reply is a processor-block marker from stream-patch.
+ */
+export const isUserMessageBlockedInTranscript = (
+  messages: readonly MessageLike[] | undefined,
+  messageId: string,
+): boolean => {
+  if (!messages?.length) {
+    return false;
   }
 
-  let changed = false;
+  const index = messages.findIndex((message) => message.id === messageId);
 
-  const marked = messages.map((message) => {
-    if (message.role !== "user" || !blockedIds.has(message.id)) {
-      return message;
-    }
+  if (index < 0) {
+    return false;
+  }
 
-    if (isBlockedMessageMetadata(message.metadata)) {
-      return message;
-    }
+  const message = messages[index];
 
-    changed = true;
+  if (message?.role !== "user") {
+    return false;
+  }
 
-    return {
-      ...message,
-      metadata: {
-        ...(typeof message.metadata === "object" && message.metadata
-          ? message.metadata
-          : {}),
-        blocked: true,
-      },
-    };
-  });
+  if (isBlockedMessageMetadata(message.metadata)) {
+    return true;
+  }
 
-  return changed ? marked : messages;
+  const next = messages[index + 1];
+
+  return (
+    next?.role === "assistant" &&
+    isProcessorBlockAssistantContent(next.content)
+  );
 };
 
-export const stripProcessorBlockAssistantPrefix = <T extends MessageWithMetadata>(
-  messages: T[],
-): T[] => {
-  let changed = false;
+/** Strip the durable `@@processor-block@@` marker for assistant bubble text. */
+export const getAssistantDisplayContent = (content: unknown): string => {
+  if (!isProcessorBlockAssistantContent(content)) {
+    return typeof content === "string" ? content : "";
+  }
 
-  const sanitized = messages.map((message) => {
-    if (
-      message.role !== "assistant" ||
-      !isProcessorBlockAssistantContent(message.content)
-    ) {
-      return message;
-    }
-
-    changed = true;
-
-    return {
-      ...message,
-      content: getProcessorBlockAssistantDisplayText(String(message.content)),
-    };
-  });
-
-  return changed ? sanitized : messages;
+  return getProcessorBlockAssistantDisplayText(String(content));
 };
-
-export const applyBlockedMessageMetadata = <T extends MessageWithMetadata>(
-  messages: T[],
-  blockedMessageIds: readonly string[] = [],
-): T[] =>
-  stripProcessorBlockAssistantPrefix(markBlockedMessages(messages, blockedMessageIds));

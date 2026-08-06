@@ -7,7 +7,6 @@ import {
   useCopilotChatConfiguration,
 } from "@copilotkit/react-core/v2";
 import {
-  isBlockedMessageMetadata,
   isBookingFormPrompt,
   parseBookingFormArtifactId,
 } from "@repo/constants";
@@ -16,7 +15,10 @@ import { cn } from "@repo/utils";
 import { ConversationItem } from "@/features/chat/components/ConversationItem";
 import { useArtifactStore } from "@/features/chat/stores/artifact-store";
 import { isArtifactTerminal } from "@/features/chat/types/artifact";
-import { getMessageTopSpacing } from "@/features/chat/utils";
+import {
+  getMessageTopSpacing,
+  isUserMessageBlockedInTranscript,
+} from "@/features/chat/utils";
 import {
   getMessageTextContent,
   getUserVisibleMessageContent,
@@ -47,8 +49,9 @@ export const ChatUserMessage = ({
   }
 
   const displayContent = getUserVisibleMessageContent(rawContent);
-  const isBlocked = isBlockedMessageMetadata(
-    (message as { metadata?: unknown }).metadata,
+  const isBlocked = isUserMessageBlockedInTranscript(
+    agent.messages,
+    message.id,
   );
   const isBookingFormDisabled = isArtifactTerminal(bookingFormStatus);
 

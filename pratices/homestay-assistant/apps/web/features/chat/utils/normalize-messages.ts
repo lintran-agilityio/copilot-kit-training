@@ -175,14 +175,32 @@ const getMessageContent = (message: { content?: unknown }) => {
   return "";
 };
 
-const mergeAssistantDuplicates = <TMessage extends { id: string; role?: string; content?: unknown; toolCalls?: unknown }>(
+const hasToolCalls = (message: { toolCalls?: unknown }) =>
+  Array.isArray(message.toolCalls) && message.toolCalls.length > 0;
+
+export const normalize = (value: string) => {
+  return value.trim().replace(/[^\w\s]/g, "").toLocaleLowerCase();
+};
+
+const mergeAssistantDuplicates = <
+  TMessage extends {
+    id: string;
+    role?: string;
+    content?: unknown;
+    toolCalls?: unknown;
+  },
+>(
   existing: TMessage,
   incoming: TMessage,
 ): TMessage => {
   const existingContent = getMessageContent(existing).trim();
   const incomingContent = getMessageContent(incoming).trim();
   // Prefer non-empty text so hydration/live races do not wipe a finished reply.
-  const content = incomingContent || existingContent || getMessageContent(incoming) || getMessageContent(existing);
+  const content =
+    incomingContent ||
+    existingContent ||
+    getMessageContent(incoming) ||
+    getMessageContent(existing);
 
   const existingToolCalls = Array.isArray(existing.toolCalls)
     ? existing.toolCalls
@@ -203,12 +221,109 @@ const mergeAssistantDuplicates = <TMessage extends { id: string; role?: string; 
 };
 
 /**
+ * Collapse same-id rows (stream + reconnect/hydration can append a duplicate
+ * with the same id). Assistant pairs keep the richer content/toolCalls.
+ * Preserves first-seen order.
+ */
+export const dedupeMessagesById = <
+  TMessage extends {
+    id?: string;
+    role?: string;
+    content?: unknown;
+    toolCalls?: unknown;
+  },
+>(
+  messages: TMessage[],
+): TMessage[] => {
+  const result: TMessage[] = [];
+  const indexById = new Map<string, number>();
+
+  for (const message of messages) {
+    if (typeof message.id !== "string" || !message.id) {
+      result.push(message);
+      continue;
+    }
+
+    const existingIndex = indexById.get(message.id);
+
+    if (existingIndex === undefined) {
+      indexById.set(message.id, result.length);
+      result.push(message);
+      continue;
+    }
+
+    const existing = result[existingIndex]!;
+
+    if (message.role === "assistant" && existing.role === "assistant") {
+      result[existingIndex] = mergeAssistantDuplicates(
+        existing as TMessage & { id: string },
+        message as TMessage & { id: string },
+      );
+      continue;
+    }
+
+    result[existingIndex] = message;
+  }
+
+  return result;
+};
+
+/**
+ * Drop consecutive assistant text twins (stream split / replay) that share the
+ * same normalized text and have no toolCalls. Distinct tool turns stay intact.
+ */
+export const collapseConsecutiveIdenticalAssistants = <
+  TMessage extends {
+    role?: string;
+    content?: unknown;
+    toolCalls?: unknown;
+  },
+>(
+  messages: TMessage[],
+): TMessage[] => {
+  if (messages.length < 2) {
+    return messages;
+  }
+
+  const result: TMessage[] = [];
+
+  for (const message of messages) {
+    const previous = result.at(-1);
+
+    if (
+      previous?.role === "assistant" &&
+      message.role === "assistant" &&
+      !hasToolCalls(previous) &&
+      !hasToolCalls(message)
+    ) {
+      const previousText = normalize(getMessageContent(previous));
+      const nextText = normalize(getMessageContent(message));
+
+      if (previousText.length > 0 && previousText === nextText) {
+        // Keep the later row (usually the completed stream).
+        result[result.length - 1] = message;
+        continue;
+      }
+    }
+
+    result.push(message);
+  }
+
+  return result;
+};
+
+/**
  * Merge live agent messages with hydrated thread history.
  * Same-id assistant rows keep the richer content/toolCalls instead of
  * letting an empty hydration payload overwrite a finished reply.
  */
 export const mergeHydratedMessages = <
-  TMessage extends { id: string; role?: string; content?: unknown; toolCalls?: unknown },
+  TMessage extends {
+    id: string;
+    role?: string;
+    content?: unknown;
+    toolCalls?: unknown;
+  },
 >(
   liveMessages: TMessage[],
   hydratedMessages: TMessage[],
@@ -258,10 +373,16 @@ export const mergeHydratedMessages = <
   return orderedIds.map((id) => byId.get(id)!);
 };
 
-export const normalizeMessages = <TMessage extends { role?: string; content?: unknown }>(
+export const normalizeMessages = <
+  TMessage extends {
+    id?: string;
+    role?: string;
+    content?: unknown;
+    toolCalls?: unknown;
+  },
+>(
   messages: TMessage[],
-): TMessage[] => messages.map(normalizeMessage);
-
-export const normalize = (value: string) => {
-  return value.trim().replace(/[^\w\s]/g, "").toLocaleLowerCase();
-};
+): TMessage[] =>
+  collapseConsecutiveIdenticalAssistants(
+    dedupeMessagesById(messages.map(normalizeMessage)),
+  );

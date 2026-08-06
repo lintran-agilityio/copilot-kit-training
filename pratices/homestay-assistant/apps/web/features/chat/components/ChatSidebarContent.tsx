@@ -34,7 +34,7 @@ import {
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
 import {
-  isStopRelatedAgentError,
+  isExpectedAgentError,
   isThreadLockedAgentError,
   runAgentSafely,
 } from "@/features/chat/utils/agent-run";
@@ -167,6 +167,7 @@ export const ChatSidebarContent = ({
       (error) => {
         console.error("Failed to send pending message", error);
       },
+      activeThreadId,
     );
   };
 
@@ -204,6 +205,7 @@ export const ChatSidebarContent = ({
         setRunStartError(RUN_START_FAILED_MESSAGE);
         console.error("Failed to retry agent run", error);
       },
+      agentRef.current.threadId,
     );
 
     setIsRetryingRun(false);
@@ -257,15 +259,15 @@ export const ChatSidebarContent = ({
               if (!isCopilotKitError(event)) {
                 return;
               }
-            
+
               const { error, code, context } = event;
-            
-              if (isStopRelatedAgentError(error, code, context)) {
+
+              // Stop teardown + post-Stop Intelligence 409 — not user failures.
+              if (isExpectedAgentError(error, code, context, activeThreadId)) {
                 return;
               }
 
-              // Lock acquisition failed, so the run never started. Offer a
-              // retry instead of leaving the message stranded.
+              // Lock acquisition failed outside a Stop window — offer retry.
               if (isThreadLockedAgentError(error, code)) {
                 setRunStartError(RUN_START_FAILED_MESSAGE);
                 return;
