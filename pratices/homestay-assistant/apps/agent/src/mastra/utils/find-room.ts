@@ -63,7 +63,7 @@ const buildFindRoomReplyHint = (
       return "No room matched that booking name. Reply with ONE short sentence that nothing matched; suggest a different room name. Do NOT invent rooms. Do NOT call check_room_availability.";
     }
     if (matchCount === 1) {
-      return "Room resolved for booking — Room List is suppressed (do NOT say cards were shown). Extract roomId from rooms[0].id. The booking step machine merges the Booking Draft and will force booking_draft (if fields are missing) or check_room_availability (if complete). Do NOT ask for missing fields in chat text. Never list room details in text.";
+      return "Room resolved for booking — Room List is suppressed (do NOT say cards were shown). Extract roomId from rooms[0].id. If check-in, check-out, and guests are already known → immediately call check_room_availability (flow=create) in this same turn. If dates or guests are missing → ask ONLY for the missing field(s) in ONE short sentence; do NOT call check_room_availability yet. Never list room details in text.";
     }
     return `Multiple rooms matched (${matchCount}) — Room cards are rendered so the guest can pick one. Do NOT call check_room_availability until a specific room is selected. Reply with ONE short sentence asking them to choose. Never list room names in text.`;
   }

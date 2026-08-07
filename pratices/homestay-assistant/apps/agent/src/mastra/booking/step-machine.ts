@@ -12,17 +12,6 @@ import {
   type ConfirmedStay,
 } from "@/mastra/utils/confirmed-stay";
 import { tryEnforceStatedModifyFastPath } from "@/mastra/booking/stated-modify-fast-path";
-import {
-  applyBookingDraftHitlResult,
-  tryEnforceCreateBookingDraftPath,
-} from "@/mastra/booking/create-booking-fast-path";
-import {
-  resolveBookingStepTransition,
-  type BookingStepTransition,
-} from "@/mastra/booking/booking-step-transitions";
-
-export type { BookingStepTransition };
-export { resolveBookingStepTransition };
 
 type ToolResultLike = {
   toolName?: string;
@@ -30,6 +19,17 @@ type ToolResultLike = {
   output?: unknown;
 };
 
+export type BookingStepTransition =
+  | { type: "call"; toolName: string }
+  | { type: "stop" }
+  | null;
+
+/**
+ * Narrows unknown JSON-like values to a plain object record.
+ *
+ * @param value - Raw tool input/output
+ * @returns Record when parseable, otherwise null
+ */
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -49,6 +49,102 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
   }
 };
 
+/**
+ * Resolves the next booking step-machine transition from the latest tool result.
+ *
+ * @param toolResult - Last tool name/input/output from the agent step
+ * @returns Forced next tool, stop, or null when no transition applies
+ */
+export const resolveBookingStepTransition = ({
+  toolName,
+  input,
+  output,
+}: ToolResultLike): BookingStepTransition => {
+  const result = asRecord(output);
+
+  if (!toolName || !result) {
+    return null;
+  }
+
+  if (toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
+    const nextAction = result.nextAction;
+
+    if (
+      nextAction === TOOL_KEYS.ACTION.CONFIRM_BOOKING ||
+      nextAction === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
+    ) {
+      return { type: "call", toolName: nextAction };
+    }
+
+    if (nextAction === "stop_booking") {
+      return { type: "stop" };
+    }
+
+    const isAvailable =
+      result.available === true && result.guestsWithinCapacity === true;
+
+    if (!isAvailable) {
+      return { type: "stop" };
+    }
+
+    const availabilityInput = asRecord(input);
+    const flow = result.flow ?? availabilityInput?.flow;
+    const isModify =
+      flow === "modify" ||
+      typeof availabilityInput?.excludeBookingId === "string";
+
+    return {
+      type: "call",
+      toolName: isModify
+        ? TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
+        : TOOL_KEYS.ACTION.CONFIRM_BOOKING,
+    };
+  }
+
+  if (toolName === TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING) {
+    return result.confirmed === true
+      ? {
+          type: "call",
+          toolName: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
+        }
+      : { type: "stop" };
+  }
+
+  if (toolName === TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM) {
+    return result.confirmed === true
+      ? { type: "call", toolName: TOOL_KEYS.BOOKING.CANCEL }
+      : { type: "stop" };
+  }
+
+  if (toolName === TOOL_KEYS.ACTION.CONFIRM_BOOKING) {
+    return result.confirmed === true
+      ? { type: "call", toolName: TOOL_KEYS.BOOKING.CREATE_BOOKING }
+      : { type: "stop" };
+  }
+
+  if (toolName === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING) {
+    return result.confirmed === true
+      ? { type: "call", toolName: TOOL_KEYS.BOOKING.UPDATE_BOOKING }
+      : { type: "stop" };
+  }
+
+  if (
+    toolName === TOOL_KEYS.BOOKING.CREATE_BOOKING ||
+    toolName === TOOL_KEYS.BOOKING.UPDATE_BOOKING ||
+    toolName === TOOL_KEYS.BOOKING.CANCEL
+  ) {
+    return { type: "stop" };
+  }
+
+  return null;
+};
+
+/**
+ * Reads the last tool result from the most recent agent step.
+ *
+ * @param steps - Agent step results from prepareStep
+ * @returns Last tool result, or null when none exist
+ */
 const getLastToolResult = (
   steps: ProcessInputStepArgs["steps"],
 ): ToolResultLike | null => {
@@ -69,6 +165,17 @@ type ToolInvocationLike = {
   result?: unknown;
 };
 
+/**
+ * Reads the newest completed tool result from the current turn's messages.
+ *
+ * CopilotKit frontend HITL tools run in the browser, so their results arrive as
+ * message parts and never appear in `steps[].toolResults`. Reading the messages
+ * keeps the HITL -> server-tool hop deterministic. The scan stops at the latest
+ * user message so a finished booking flow cannot force a transition on a new turn.
+ *
+ * @param messages - Messages for the current step
+ * @returns Last tool result of this turn, or null when none exist
+ */
 const getLastToolResultFromMessages = (
   messages: ProcessInputStepArgs["messages"] | undefined,
 ): ToolResultLike | null => {
@@ -122,6 +229,13 @@ type BookingStepSource = {
   transition: Exclude<BookingStepTransition, null>;
 };
 
+/**
+ * Picks the tool result that decides this step, preferring the agent's own steps
+ * and falling back to the messages for browser-executed HITL results.
+ *
+ * @param args - prepareStep args
+ * @returns Deciding tool result with its transition, or null when none applies
+ */
 const resolveBookingStepSource = (
   args: ProcessInputStepArgs,
 ): BookingStepSource | null => {
@@ -145,6 +259,13 @@ const resolveBookingStepSource = (
   return null;
 };
 
+/**
+ * Stores a confirmed HITL stay on request context for the next forced tool.
+ *
+ * @param args - prepareStep args (needs requestContext)
+ * @param toolName - Previous tool that produced the stay
+ * @param stay - Parsed confirmed stay
+ */
 const stashConfirmedStayForNextTool = (
   args: ProcessInputStepArgs,
   toolName: string | undefined,
@@ -171,6 +292,15 @@ const stashConfirmedStayForNextTool = (
   }
 };
 
+/**
+ * Pins the booking id the guest just confirmed in the cancel dialog, so
+ * cancel_booking uses it instead of a stale id the model may carry over from an
+ * earlier turn in the same thread.
+ *
+ * @param args - prepareStep args (needs requestContext)
+ * @param toolName - Previous tool that produced the confirmation
+ * @param output - Raw HITL tool output
+ */
 const stashConfirmedCancelBookingId = (
   args: ProcessInputStepArgs,
   toolName: string | undefined,
@@ -198,12 +328,22 @@ const stashConfirmedCancelBookingId = (
 };
 
 /**
- * Booking step machine: deterministic tool hops for CREATE (draft-driven) and
- * existing MODIFY/cancel flows. Wired as Mastra `prepareStep`.
+ * Booking step machine: makes tool transitions deterministic inside an agent run.
+ * Wired as Mastra `prepareStep`, but this is a state machine — not a generic prepare hook.
+ * Forces the next required tool after availability/HITL results and pins the
+ * confirmed stay onto request context so server tools ignore stale LLM args.
+ *
+ * Important: when there is no forced transition, return undefined so CopilotKit
+ * frontend HITL tools (confirm/edit/cancel dialogs) stay available. An
+ * activeTools allowlist of server tools only would hide those HITL tools.
+ *
+ * @param args - Mastra prepareStep / processInputStep arguments
+ * @returns Tool-choice override for the next step, or undefined
  */
 export const enforceBookingStep = (
   args: ProcessInputStepArgs,
 ): ProcessInputStepResult | undefined => {
+  // Stop: do not force the next tool once the run abortSignal is set.
   if (args.abortSignal?.aborted) {
     return {
       activeTools: [],
@@ -214,19 +354,12 @@ export const enforceBookingStep = (
   const source = resolveBookingStepSource(args);
 
   if (!source) {
-    const createRoute = tryEnforceCreateBookingDraftPath(args);
-    if (createRoute) {
-      return createRoute;
-    }
-
+    // NL stated change after find_booking_by_id / single get_bookings:
+    // pin merged stay and force availability so edit_modify_booking never opens.
     return tryEnforceStatedModifyFastPath(args);
   }
 
   const { toolResult: lastToolResult, transition } = source;
-
-  if (lastToolResult.toolName === TOOL_KEYS.ACTION.BOOKING_DRAFT) {
-    applyBookingDraftHitlResult(args, lastToolResult.output);
-  }
 
   if (transition.type === "stop") {
     return {
@@ -245,6 +378,7 @@ export const enforceBookingStep = (
     stashConfirmedStayForNextTool(args, lastToolResult.toolName, stay);
   }
 
+  // The cancel dialog result carries no dates, so parseConfirmedStay skips it.
   stashConfirmedCancelBookingId(
     args,
     lastToolResult.toolName,
@@ -260,7 +394,8 @@ export const enforceBookingStep = (
   };
 };
 
-/** @deprecated Prefer `BookingStepTransition`. */
+
+/** @deprecated Prefer `BookingStepTransition` — identical type. */
 export type BookingWorkflowTransition = BookingStepTransition;
 
 /** @deprecated Prefer `resolveBookingStepTransition`. */

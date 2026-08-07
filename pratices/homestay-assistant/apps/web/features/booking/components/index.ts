@@ -12,4 +12,3 @@ export * from "./EditModifyBookingModal";
 export * from "./ConfirmModifyBookingModal";
 export * from "./HitlDecisionStatusBadge";
 export * from "./HitlDecisionUserMessage";
-export * from "./BookingDraftHitlModal";
