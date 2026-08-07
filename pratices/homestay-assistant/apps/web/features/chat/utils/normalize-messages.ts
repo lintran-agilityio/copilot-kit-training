@@ -157,19 +157,20 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
   }
 
   const candidate = message as Record<string, unknown>;
+  const rawToolCalls = candidate.toolCalls;
 
-  if (candidate.role !== "assistant" || !Array.isArray(candidate.toolCalls)) {
+  if (candidate.role !== "assistant" || !Array.isArray(rawToolCalls)) {
     return message;
   }
 
   // AG-UI often materializes `toolCalls: []`. Deleting that key made
   // AgentMessagesSanitizer fight the runtime (setMessages → empty array
   // restored → normalize again → Maximum update depth exceeded).
-  if (candidate.toolCalls.length === 0) {
+  if (rawToolCalls.length === 0) {
     return message;
   }
 
-  const toolCalls = candidate.toolCalls
+  const toolCalls = rawToolCalls
     .map(normalizeToolCall)
     .filter((toolCall): toolCall is CopilotKitToolCall => toolCall !== null);
 
@@ -178,9 +179,9 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
   }
 
   const unchanged =
-    toolCalls.length === candidate.toolCalls.length &&
+    toolCalls.length === rawToolCalls.length &&
     toolCalls.every(
-      (toolCall, index) => toolCall === candidate.toolCalls[index],
+      (toolCall, index) => toolCall === rawToolCalls[index],
     );
 
   if (unchanged) {

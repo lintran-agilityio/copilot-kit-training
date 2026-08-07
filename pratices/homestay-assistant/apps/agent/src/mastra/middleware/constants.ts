@@ -11,6 +11,11 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   PENDING_MODIFY_CANDIDATE: "pendingModifyCandidate",
   /**
+   * Pre-change stay for stated-modify fast path — bookingId plus original
+   * checkInDate / checkOutDate / guests so confirm UI can show old → new.
+   */
+  PENDING_MODIFY_ORIGINAL: "pendingModifyOriginal",
+  /**
    * Confirmed stay from confirm_modify_booking confirmed:true — used to override
    * update_booking args when the model fills stale dates.
    */
