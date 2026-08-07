@@ -7,10 +7,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./booking-draft": {
-      "types": "./dist/booking-draft.d.ts",
-      "default": "./dist/booking-draft.js"
     }
   },
   "scripts": {

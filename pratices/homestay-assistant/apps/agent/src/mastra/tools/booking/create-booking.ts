@@ -16,7 +16,6 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
-import { clearBookingWorkflowDraftState } from "@/mastra/booking/booking-draft-context";
 
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE_BOOKING,
@@ -61,10 +60,6 @@ export const createBookingTool = createTool({
       },
       serviceContextFromTool(context),
     );
-
-    // Terminal create — drop authoritative draft (thread mirror cleared on stream persist).
-    clearBookingWorkflowDraftState(context.requestContext);
-
     return booking;
   },
 });

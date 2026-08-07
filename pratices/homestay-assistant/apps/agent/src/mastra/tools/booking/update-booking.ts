@@ -18,7 +18,6 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
-import { clearBookingWorkflowDraftState } from "@/mastra/booking/booking-draft-context";
 
 export const updateBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
@@ -65,7 +64,7 @@ export const updateBookingTool = createTool({
     // Side-effect: re-check immediately before committing the update.
     throwIfAborted(context.abortSignal);
 
-    const booking = await updateBooking(
+    return await updateBooking(
       {
         bookingId: resolvedBookingId,
         checkInDate: resolvedCheckIn,
@@ -74,9 +73,5 @@ export const updateBookingTool = createTool({
       },
       serviceContext,
     );
-
-    clearBookingWorkflowDraftState(context.requestContext);
-
-    return booking;
   },
 });

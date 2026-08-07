@@ -14,7 +14,6 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
-import { writeStructuredSearchContext } from "@/mastra/booking/booking-draft-context";
 
 export const findRoomTool = createTool({
   id: TOOL_KEYS.GET.FIND_ROOM,
@@ -24,19 +23,10 @@ export const findRoomTool = createTool({
   outputSchema: findRoomOutputSchema,
   execute: async (inputData, context) => {
     throwIfAborted(context.abortSignal);
-    const normalized = normalizeFindRoomInput(inputData);
-    const result = await findRooms(
-      normalized,
+    return findRooms(
+      normalizeFindRoomInput(inputData),
       serviceContextFromTool(context),
     );
-
-    // Structured Search Context — merge input for Booking Draft only.
-    writeStructuredSearchContext(context.requestContext, {
-      date: normalized.date ?? null,
-      guests: normalized.guests ?? null,
-    });
-
-    return result;
   },
   toModelOutput: toFindRoomModelOutput,
 });
