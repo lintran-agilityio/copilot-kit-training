@@ -130,7 +130,7 @@ export const getBusinessDates = (now = new Date()) => {
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
 
-const toYmd = (year: number, month: number, day: number): string | null => {
+export const toYmd = (year: number, month: number, day: number): string | null => {
   if (month < 1 || month > 12 || day < 1 || day > 31) {
     return null;
   }
