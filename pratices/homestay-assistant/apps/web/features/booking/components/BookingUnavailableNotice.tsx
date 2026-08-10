@@ -19,7 +19,7 @@ import {
 
 /**
  * On successful modify availability, stash the proposed stay + originals so
- * confirm_modify_booking can render old → new diffs even when the model omits
+ * CONFIRM_MODIFY_BOOKING can render old → new diffs even when the model omits
  * original* args (stated-change path never opens the edit form).
  */
 const useStashPendingModifyFromAvailability = (

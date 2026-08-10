@@ -60,10 +60,17 @@ export type CancelBookingResult = {
   status?: string;
 };
 
-export type CancelBookingToolProps = ToolRendererProps<CancelBookingResult>;
+export type CancelBookingParameters = {
+  bookingId?: string;
+};
+
+export type CancelBookingToolProps = ToolRendererProps<CancelBookingResult> & {
+  parameters?: CancelBookingParameters;
+};
 
 export type CreateBookingResult = {
   id?: string;
+  roomId?: string;
   checkInDate?: string;
   checkOutDate?: string;
   guests?: number;
@@ -74,7 +81,16 @@ export type CreateBookingResult = {
   };
 };
 
-export type CreateBookingToolProps = ToolRendererProps<CreateBookingResult>;
+export type CreateBookingParameters = {
+  roomId?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+};
+
+export type CreateBookingToolProps = ToolRendererProps<CreateBookingResult> & {
+  parameters?: CreateBookingParameters;
+};
 
 export type UpdateBookingResult = {
   id?: string;
@@ -87,4 +103,13 @@ export type UpdateBookingResult = {
   status?: string;
 };
 
-export type UpdateBookingToolProps = ToolRendererProps<UpdateBookingResult>;
+export type UpdateBookingParameters = {
+  bookingId?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+};
+
+export type UpdateBookingToolProps = ToolRendererProps<UpdateBookingResult> & {
+  parameters?: UpdateBookingParameters;
+};

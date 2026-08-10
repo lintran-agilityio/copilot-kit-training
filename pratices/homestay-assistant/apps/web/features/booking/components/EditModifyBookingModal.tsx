@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { CalendarCheck } from "lucide-react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 import {
@@ -11,7 +11,10 @@ import { parseToolResult } from "@repo/utils";
 
 import { Button } from "@/components/ui/button";
 import { EmbeddedWidget } from "@/features/chat/components";
-import { HitlDecisionUserMessage } from "@/features/booking/components/HitlDecisionUserMessage";
+import {
+  useReportHomestayAgentUiFocus,
+  useSupersedeHitlOnNewInteraction,
+} from "@/features/chat/hooks";
 import {
   HITL_DECISION_STATUS,
   isHitlDecisionTerminal,
@@ -32,7 +35,6 @@ import {
   RoomBookingGuests,
   RoomBookingPreviewCard,
 } from "@/features/room/components";
-import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
 import { useRoomBookingEstimate } from "@/features/room/hooks";
 import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
 
@@ -41,6 +43,7 @@ type EditModifyBookingModalProps = {
   args: Partial<EditModifyBookingArgs>;
   respond?: (result: EditModifyBookingResult) => Promise<void>;
   result?: unknown;
+  toolCallId?: string;
 };
 
 const hasRequiredArgs = (args: Partial<EditModifyBookingArgs>) =>
@@ -101,6 +104,7 @@ export const EditModifyBookingModal = ({
   args,
   respond,
   result,
+  toolCallId,
 }: EditModifyBookingModalProps) => {
   const { respondOnce, canRespond: canRespondHitl } =
     useHitlRespondOnce<EditModifyBookingResult>(respond);
@@ -108,11 +112,27 @@ export const EditModifyBookingModal = ({
     (state) => state.setPendingModifyStay,
   );
 
+  const supersedeDismiss = useCallback(() => {
+    setPendingModifyStay(null);
+    void respondOnce({ confirmed: false });
+  }, [respondOnce, setPendingModifyStay]);
+
+  const { isActionable, expiredBySupersede } = useSupersedeHitlOnNewInteraction({
+    toolCallId,
+    canRespond: canRespondHitl,
+    onSupersede: supersedeDismiss,
+  });
+
   const hasArgs = hasRequiredArgs(args);
-  const decisionStatus = resolveHitlDecisionStatus(status, result);
+  const decisionStatus = expiredBySupersede
+    ? HITL_DECISION_STATUS.EXPIRED
+    : resolveHitlDecisionStatus(status, result);
   const isComplete = isHitlDecisionTerminal(decisionStatus);
   const ready =
-    isHitlToolRespondable(status, respond) && hasArgs && !isComplete;
+    isHitlToolRespondable(status, respond) &&
+    hasArgs &&
+    !isComplete &&
+    isActionable;
 
   const bookingId = args.bookingId ?? "";
   const parsedResult = parseToolResult<EditModifyBookingResult>(
@@ -231,7 +251,7 @@ export const EditModifyBookingModal = ({
     setErrorMessage(null);
 
     try {
-      // Persist the guest-selected stay + originals so confirm_modify_booking
+      // Persist the guest-selected stay + originals so CONFIRM_MODIFY_BOOKING
       // can render before→after diffs without trusting stale LLM args.
       setPendingModifyStay({
         bookingId,
@@ -268,15 +288,14 @@ export const EditModifyBookingModal = ({
   const settled = isComplete ? getSettledCopy(decisionStatus, room.name) : null;
 
   return (
-    <>
-      <EmbeddedWidget>
-        <div className="space-y-3 p-3.5 text-zinc-100">
-          <div className="space-y-1">
-            <h3 className="text-sm font-medium text-white">
-              {settled?.title ?? "Modify your booking"}
-            </h3>
-            <p className="text-xs text-zinc-400">
-              {settled?.description ?? (
+    <EmbeddedWidget>
+      <div className="space-y-3 p-3.5 text-zinc-100">
+        <div className="space-y-1">
+          <h3 className="text-sm font-medium text-white">
+            {settled?.title ?? "Modify your booking"}
+          </h3>
+          <p className="text-xs text-zinc-400">
+            {settled?.description ?? (
                 <>
                   Update check-in, check-out, or guests for{" "}
                   <span className="font-medium text-zinc-200">{room.name}</span>
@@ -345,11 +364,5 @@ export const EditModifyBookingModal = ({
           )}
         </div>
       </EmbeddedWidget>
-      <HitlDecisionUserMessage
-        decisionStatus={decisionStatus}
-        confirmLabel="Continue"
-        cancelLabel="Keep current booking"
-      />
-    </>
   );
 };

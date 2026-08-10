@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 import {
   HOMESTAY_AGENT_TASK_STATUS,
@@ -10,7 +10,10 @@ import { parseToolResult } from "@repo/utils";
 
 import { Button } from "@/components/ui/button";
 import { EmbeddedWidget } from "@/features/chat/components";
-import { HitlDecisionUserMessage } from "@/features/booking/components/HitlDecisionUserMessage";
+import {
+  useReportHomestayAgentUiFocus,
+  useSupersedeHitlOnNewInteraction,
+} from "@/features/chat/hooks";
 import {
   HITL_DECISION_STATUS,
   isHitlDecisionTerminal,
@@ -24,7 +27,7 @@ import type {
   CancelBookingByRoomResult,
 } from "@/features/booking/schemas";
 import type { BookingDetails } from "@/features/booking/types";
-import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
+import { CONFIRM_CANCEL_BOOKING } from "@/features/booking/constants";
 import { ConfirmCancelBookingModal } from "./ConfirmCancelBookingModal";
 
 type CancelBookingByRoomModalProps = {
@@ -32,6 +35,7 @@ type CancelBookingByRoomModalProps = {
   args: Partial<CancelBookingByRoomArgs>;
   respond?: (result: CancelBookingByRoomResult) => Promise<void>;
   result?: unknown;
+  toolCallId?: string;
 };
 
 type BookingItem = CancelBookingByRoomArgs["bookings"][number];
@@ -58,18 +62,33 @@ export const CancelBookingByRoomModal = ({
   args,
   respond,
   result,
+  toolCallId,
 }: CancelBookingByRoomModalProps) => {
   const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(
     null,
   );
-  const { respondOnce, canRespond } =
+  const { respondOnce, canRespond: canRespondHitl } =
     useHitlRespondOnce<CancelBookingByRoomResult>(respond);
+
+  const supersedeDismiss = useCallback(() => {
+    void respondOnce({ confirmed: false, reason: "declined" });
+  }, [respondOnce]);
+
+  const { isActionable, expiredBySupersede } = useSupersedeHitlOnNewInteraction({
+    toolCallId,
+    canRespond: canRespondHitl,
+    onSupersede: supersedeDismiss,
+  });
+
+  const canRespond = canRespondHitl && isActionable;
 
   const bookings = (args.bookings ?? []).filter(hasValidBooking);
   const hasArgs = bookings.length > 0;
   const decisionStatus = resolveHitlDecisionStatus(status, result);
-  const isComplete = isHitlDecisionTerminal(decisionStatus);
-  const isAwaitingCancel = isHitlToolAwaitingUser(status) && !isComplete;
+  const isComplete =
+    isHitlDecisionTerminal(decisionStatus) || expiredBySupersede;
+  const isAwaitingCancel =
+    isHitlToolAwaitingUser(status) && !isComplete && isActionable;
   const parsedResult = parseToolResult<CancelBookingByRoomResult>(
     result as CancelBookingByRoomResult | string | null | undefined,
   );
@@ -122,52 +141,51 @@ export const CancelBookingByRoomModal = ({
           status={status}
           bookingItem={toBookingDetails(completedBooking)}
           result={result}
+          toolCallId={toolCallId}
+          forceExpired={expiredBySupersede}
         />
       );
     }
 
     return (
-      <>
-        <EmbeddedWidget>
-          <div className="space-y-3 p-3.5 text-zinc-100">
-            <div className="space-y-1">
-              <h3 className="text-sm font-medium text-white">
-                {decisionStatus === HITL_DECISION_STATUS.REJECTED
+      <EmbeddedWidget>
+        <div className="space-y-3 p-3.5 text-zinc-100">
+          <div className="space-y-1">
+            <h3 className="text-sm font-medium text-white">
+              {expiredBySupersede
+                ? CONFIRM_CANCEL_BOOKING.title.expired
+                : decisionStatus === HITL_DECISION_STATUS.REJECTED
                   ? "Cancelled by you"
                   : decisionStatus === HITL_DECISION_STATUS.APPROVED
                     ? "Confirmed by you"
-                    : "Confirmation expired"}
-              </h3>
-              <p className="text-xs text-zinc-400">
-                {decisionStatus === HITL_DECISION_STATUS.REJECTED
+                    : CONFIRM_CANCEL_BOOKING.title.expired}
+            </h3>
+            <p className="text-xs text-zinc-400">
+              {expiredBySupersede
+                ? `This cancellation confirmation for “${args.queryName}” is no longer available.`
+                : decisionStatus === HITL_DECISION_STATUS.REJECTED
                   ? `You kept all bookings matching “${args.queryName}”.`
                   : `Multiple bookings match “${args.queryName}”.`}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              {bookings.map((booking) => (
-                <div
-                  key={booking.bookingId}
-                  className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs"
-                >
-                  <span className="font-medium text-zinc-100">
-                    {booking.roomName}
-                  </span>
-                  <span className="text-zinc-400">
-                    {booking.checkInDate} → {booking.checkOutDate}
-                  </span>
-                </div>
-              ))}
-            </div>
+            </p>
           </div>
-        </EmbeddedWidget>
-        <HitlDecisionUserMessage
-          decisionStatus={decisionStatus}
-          confirmLabel="Cancel booking"
-          cancelLabel="Keep bookings"
-        />
-      </>
+
+          <div className="space-y-2">
+            {bookings.map((booking) => (
+              <div
+                key={booking.bookingId}
+                className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs"
+              >
+                <span className="font-medium text-zinc-100">
+                  {booking.roomName}
+                </span>
+                <span className="text-zinc-400">
+                  {booking.checkInDate} → {booking.checkOutDate}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </EmbeddedWidget>
     );
   }
 
@@ -178,6 +196,7 @@ export const CancelBookingByRoomModal = ({
         bookingItem={toBookingDetails(bookings[0])}
         respond={confirmRespond(toBookingDetails(bookings[0]))}
         result={result}
+        toolCallId={toolCallId}
       />
     );
   }
@@ -189,6 +208,7 @@ export const CancelBookingByRoomModal = ({
         bookingItem={selectedBooking}
         respond={confirmRespond(selectedBooking)}
         result={result}
+        toolCallId={toolCallId}
       />
     );
   }

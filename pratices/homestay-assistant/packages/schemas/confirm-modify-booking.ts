@@ -1,7 +1,7 @@
 import { roomSchema } from "./room.js";
 import { z } from "zod";
 
-/** HITL confirm_modify_booking params — shared by FE useHumanInTheLoop. */
+/** HITL CONFIRM_MODIFY_BOOKING params — shared by FE useHumanInTheLoop. */
 export const confirmModifyBookingSchema = z.object({
   bookingId: z
     .string()

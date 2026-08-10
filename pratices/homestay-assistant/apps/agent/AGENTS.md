@@ -17,6 +17,13 @@ Load the `mastra` skill BEFORE any Mastra work. Never rely on cached knowledge �
 | AG-UI bridge | `apps/agent/src/ag-ui` | Adapt Mastra ↔ CopilotRuntime; inject `abortSignal` on Stop; transcript/stream compatibility (`abort-controllers`, `transcript-filters`, `tripwire`, `stream-patch`) |
 | Mastra | `apps/agent/src/mastra` | Agent, tools, processors, memory; honor `abortSignal` |
 
+### Feature flow order (booking-like)
+
+1. **Mastra** — tool chain + playbook (`HITL confirm → mutation`); keep schemas stable; update descriptions when UI owns success/failure on the same card
+2. **CopilotKit HITL** — confirm/cancel UI + `respond()`
+3. **CopilotKit mutation render** — headless notice bridges status into presentation phase store (no second success card)
+4. **AG-UI** — only for stream/abort/transcript bridge issues
+
 Stop must propagate `AbortSignal` into `agent.stream()` and tool `execute` / Nest `fetch({ signal })`. Do not treat Stop as “close the browser socket only.”
 
 ### UI: presentation vs transcript data

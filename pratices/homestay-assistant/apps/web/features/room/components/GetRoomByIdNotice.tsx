@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { EmbeddedWidget } from "@/features/chat/components";
+import { useGenericUiInteraction } from "@/features/chat/hooks";
 import { useArtifactStore } from "@/features/chat/stores/artifact-store";
+import {
+  ARTIFACT_STATUS,
+  isArtifactInteractive,
+} from "@/features/chat/types/artifact";
 import { RoomDetail } from "@/features/room/components";
 import { ROOM_DETAIL_VARIANT } from "@/features/room/constants/room-detail";
 import type {
@@ -41,9 +46,7 @@ export const GetRoomByIdNotice = ({
     return null;
   }
 
-  return (
-    <GetRoomByIdBookingForm room={room} toolCallId={toolCallId} />
-  );
+  return <GetRoomByIdBookingForm room={room} toolCallId={toolCallId} />;
 };
 
 const GetRoomByIdBookingForm = ({
@@ -59,6 +62,12 @@ const GetRoomByIdBookingForm = ({
   const [fallbackArtifactId, setFallbackArtifactId] = useState<string | null>(
     null,
   );
+  const { isActionable } = useGenericUiInteraction(toolCallId);
+  const setArtifactStatus = useArtifactStore((state) => state.setStatus);
+  const artifactStatus = useArtifactStore((state) => {
+    const id = boundArtifactId ?? fallbackArtifactId;
+    return id ? state.artifacts[id]?.status : undefined;
+  });
 
   useEffect(() => {
     if (toolCallId) {
@@ -79,6 +88,17 @@ const GetRoomByIdBookingForm = ({
   }, [fallbackArtifactId, room.id, toolCallId]);
 
   const artifactId = boundArtifactId ?? fallbackArtifactId ?? undefined;
+
+  // New user request → lock prior booking-form actions (informational stay).
+  useEffect(() => {
+    if (!artifactId || isActionable) {
+      return;
+    }
+
+    if (isArtifactInteractive(artifactStatus)) {
+      setArtifactStatus(artifactId, ARTIFACT_STATUS.EXPIRED);
+    }
+  }, [artifactId, artifactStatus, isActionable, setArtifactStatus]);
 
   return (
     <EmbeddedWidget unframed>

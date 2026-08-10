@@ -51,13 +51,14 @@ export const RoomToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.GET.FIND_ROOM,
       parameters: findRoomInputSchema,
-      render: ({ status, result, parameters }) => (
+      render: ({ status, result, parameters, toolCallId }) => (
         <FindRoomNotice
           status={status}
           result={result as FindRoomResult | string | null}
           parameters={
             parameters as { purpose?: FindRoomResult["purpose"] } | undefined
           }
+          toolCallId={toolCallId}
         />
       ),
     },

@@ -10,6 +10,11 @@ import {
 } from "@repo/constants";
 import { enforceBookingStep } from "@/mastra/booking/step-machine";
 import {
+  stopAfterBookingFormIteration,
+  stopWhenBookingFormRendered,
+  stopWhenStepLimitReached,
+} from "@/mastra/booking/stop-after-booking-form";
+import {
   manageAgentPrompt,
   withCurrentDateInstructions,
 } from "@/mastra/utils";
@@ -40,7 +45,12 @@ export const manageAgent = new Agent({
   // Rate-limit responses are transient; Mastra applies bounded backoff retries.
   maxRetries: 2,
   defaultOptions: {
-    maxSteps: AGENT_STEP_LIMIT,
+    // Do NOT set maxSteps here — Mastra replaces custom stopWhen with
+    // stepCountIs(maxSteps) only. Keep the limit via stopWhen + processor.
+    stopWhen: [
+      stopWhenStepLimitReached(AGENT_STEP_LIMIT),
+      stopWhenBookingFormRendered,
+    ],
     modelSettings: {
       maxOutputTokens: AGENT_MAX_OUTPUT_TOKEN_LIMIT,
     },
@@ -55,6 +65,10 @@ export const manageAgent = new Agent({
       },
     },
     prepareStep: enforceBookingStep,
+    // Successful get_room_by_id / create_booking → BookingForm or HITL success
+    // card is the response. Stop before a follow-up LLM confirmation text step.
+    // Failures still continue so the model can send an error sentence.
+    onIterationComplete: stopAfterBookingFormIteration,
   },
   tools: {
     [TOOL_KEYS.GET.ROOMS]: getRoomsTool,

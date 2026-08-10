@@ -16,7 +16,7 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   PENDING_MODIFY_ORIGINAL: "pendingModifyOriginal",
   /**
-   * Confirmed stay from confirm_modify_booking confirmed:true — used to override
+   * Confirmed stay from CONFIRM_MODIFY_BOOKING confirmed:true — used to override
    * update_booking args when the model fills stale dates.
    */
   PENDING_UPDATE_STAY: "pendingUpdateStay",

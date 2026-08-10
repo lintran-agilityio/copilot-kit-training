@@ -16,8 +16,11 @@ type ListRoomProps = {
   className?: string;
   /** Overrides the default "open room detail on the page" behaviour. */
   onSelectRoom?: (payload: RoomSelectPayload) => void;
-  /** Overrides the default "start the booking form" behaviour. */
-  onBookRoom?: (payload: RoomSelectPayload) => void;
+  /**
+   * Overrides the default "start the booking form" behaviour.
+   * Pass `false` to hide Book (e.g. superseded Generic UI interaction).
+   */
+  onBookRoom?: ((payload: RoomSelectPayload) => void) | false;
 };
 
 export const ListRoom = ({
@@ -31,7 +34,10 @@ export const ListRoom = ({
   const openRoomOnPage = useOpenRoomOnPage();
   const requestRoomBookingForm = useRequestRoomBookingForm();
   const handleSelect = onSelectRoom ?? openRoomOnPage;
-  const handleBook = onBookRoom ?? requestRoomBookingForm;
+  const handleBook =
+    onBookRoom === false
+      ? undefined
+      : (onBookRoom ?? requestRoomBookingForm);
 
   return (
     <section className={cn("space-y-4", className)}>

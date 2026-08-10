@@ -8,3 +8,5 @@ export * from "./use-silence-stop-run-errors";
 export * from "./use-stop-generation";
 export * from "./use-thread-messages";
 export * from "./use-report-homestay-agent-ui-focus";
+export * from "./use-generic-ui-interaction";
+export * from "./use-supersede-hitl-on-new-interaction";

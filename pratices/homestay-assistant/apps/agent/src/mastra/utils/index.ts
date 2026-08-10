@@ -2,6 +2,7 @@ export * from "./building-instruction";
 export * from "./confirmed-stay";
 export * from "./current-date";
 export * from "./find-room";
+export * from "./generic-ui-reply-hints";
 export * from "./resolve-agent-user-id";
 export * from "./resolve-pinned-stay";
 export * from "./resolved-tool-call-ids";
