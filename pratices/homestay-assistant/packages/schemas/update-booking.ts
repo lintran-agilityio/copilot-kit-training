@@ -4,7 +4,7 @@ export const updateBookingInputSchema = z.object({
   bookingId: z
     .string()
     .describe(
-      "Booking ID to update — from confirm_modify_booking result. Never pass a roomId.",
+      "Booking ID to update — from CONFIRM_MODIFY_BOOKING result. Never pass a roomId.",
     ),
   checkInDate: z
     .string()

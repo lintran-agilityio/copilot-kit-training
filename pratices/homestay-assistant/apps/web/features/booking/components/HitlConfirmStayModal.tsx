@@ -1,23 +1,47 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ToolCallStatus } from "@copilotkit/react-core/v2";
+import { useRouter } from "next/navigation";
+import { useAgent, ToolCallStatus } from "@copilotkit/react-core/v2";
 import {
+  AGENT_KEYS,
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
 
 import {
-  ConfirmBookingDialog,
-  ConfirmModifyBookingDialog,
+  ConfirmCreateHitlCard,
+  ConfirmModifyHitlCard,
 } from "@/components/confirm-modal";
 import { EmbeddedWidget } from "@/features/chat/components";
-import { HitlDecisionUserMessage } from "@/features/booking/components/HitlDecisionUserMessage";
-import { useHitlConfirmDialog } from "@/features/booking/hooks";
+import {
+  BOOKINGS_PAGE_PATH,
+  CONFIRM_BOOKING,
+  CONFIRM_MODIFY_BOOKING,
+  HITL_CARD_PHASE,
+} from "@/features/booking/constants";
+import {
+  useHitlConfirmDialog,
+  useRetryCreateBooking,
+  useRetryModifyBooking,
+} from "@/features/booking/hooks";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
+import { useCreateBookingCardStore } from "@/features/booking/stores/create-booking-card-store";
+import { useModifyBookingCardStore } from "@/features/booking/stores/modify-booking-card-store";
 import { useArtifactStore } from "@/features/chat/stores/artifact-store";
 import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks/use-report-homestay-agent-ui-focus";
-import { shouldRenderHitlCard } from "@/features/booking/utils";
+import {
+  buildCreateStayCorrelationKey,
+  buildModifyStayCorrelationKey,
+  coalesceBookingCardOutcome,
+  deriveCreateBookingOutcomeFromMessages,
+  deriveModifyBookingOutcomeFromMessages,
+  hasRequiredCreateArgs,
+  hasRequiredModifyArgs,
+  resolveHitlCardPhase,
+  resolveOriginalStay,
+  shouldRenderHitlCard,
+} from "@/features/booking/utils";
 import type {
   ConfirmBookingArgs,
   ConfirmBookingResult,
@@ -26,73 +50,11 @@ import type {
   ConfirmModifyBookingArgs,
   ConfirmModifyBookingResult,
 } from "@/features/booking/schemas";
-import type { ModifyStaySnapshot } from "@/features/booking/types/booking";
-
-const hasRoomStayFields = (
-  args: Partial<{
-    room?: {
-      id?: string;
-      name?: string;
-      pricePerNight?: number;
-    };
-    checkInDate?: string;
-    checkOutDate?: string;
-    guests?: number;
-  }>,
-) =>
-  Boolean(
-    args.room?.id?.trim() &&
-      args.room?.name?.trim() &&
-      typeof args.room?.pricePerNight === "number" &&
-      args.checkInDate?.trim() &&
-      args.checkOutDate?.trim() &&
-      typeof args.guests === "number" &&
-      args.guests > 0,
-  );
-
-const hasRequiredCreateArgs = (
-  args: Partial<ConfirmBookingArgs>,
-): args is ConfirmBookingArgs => hasRoomStayFields(args);
-
-const hasRequiredModifyArgs = (
-  args: Partial<ConfirmModifyBookingArgs>,
-): args is ConfirmModifyBookingArgs =>
-  Boolean(args.bookingId?.trim()) && hasRoomStayFields(args);
-
-const resolveOriginalStay = (
-  pending:
-    | {
-        bookingId: string;
-        original: ModifyStaySnapshot;
-      }
-    | null
-    | undefined,
-  bookingId: string,
-  args: ConfirmModifyBookingArgs,
-): ModifyStaySnapshot | null => {
-  if (pending?.bookingId === bookingId) {
-    return pending.original;
-  }
-
-  if (
-    args.originalCheckInDate?.trim() &&
-    args.originalCheckOutDate?.trim() &&
-    typeof args.originalGuests === "number" &&
-    args.originalGuests > 0
-  ) {
-    return {
-      checkInDate: args.originalCheckInDate,
-      checkOutDate: args.originalCheckOutDate,
-      guests: args.originalGuests,
-    };
-  }
-
-  return null;
-};
 
 type HitlConfirmStayModalProps = {
   status: ToolCallStatus;
   result?: unknown;
+  toolCallId?: string;
 } & (
   | {
       variant: "create";
@@ -111,30 +73,65 @@ const HitlConfirmCreateStayModal = ({
   args,
   respond,
   result,
+  toolCallId,
 }: {
   status: ToolCallStatus;
   args: Partial<ConfirmBookingArgs>;
   respond?: (result: ConfirmBookingResult) => Promise<void>;
   result?: unknown;
+  toolCallId?: string;
 }) => {
+  const router = useRouter();
   const resetBooking = useBookingStore((state) => state.resetBooking);
   const finalizeBookingForms = useArtifactStore(
     (state) => state.finalizeBookingForms,
   );
+  const markSubmitting = useCreateBookingCardStore(
+    (state) => state.markSubmitting,
+  );
+  const { retryCreateBooking, isRetrying } = useRetryCreateBooking();
   const {
     shouldRender,
     isSubmitting,
     errorMessage,
     canRespond,
+    isActionable,
+    expiredBySupersede,
     decisionStatus,
     handleDismiss,
     confirm,
   } = useHitlConfirmDialog(
     status,
     respond,
-    "Failed to confirm booking",
+    CONFIRM_BOOKING.error.confirm,
     result,
+    toolCallId,
   );
+
+  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const hasArgs = hasRequiredCreateArgs(args);
+  const correlationKey = hasArgs
+    ? buildCreateStayCorrelationKey({
+        roomId: args.room.id,
+        checkInDate: args.checkInDate,
+        checkOutDate: args.checkOutDate,
+        guests: args.guests,
+      })
+    : null;
+  const storeCreateOutcome = useCreateBookingCardStore((state) =>
+    correlationKey ? (state.outcomesByCorrelationKey[correlationKey] ?? null) : null,
+  );
+  const createOutcome = coalesceBookingCardOutcome(
+    storeCreateOutcome,
+    deriveCreateBookingOutcomeFromMessages(agent.messages, correlationKey),
+  );
+  const createPhase = expiredBySupersede
+    ? HITL_CARD_PHASE.EXPIRED
+    : resolveHitlCardPhase({
+        status: decisionStatus,
+        isHitlSubmitting: isSubmitting,
+        outcome: createOutcome,
+      });
 
   const handleCancel = () => {
     finalizeBookingForms("cancelled");
@@ -142,7 +139,30 @@ const HitlConfirmCreateStayModal = ({
     handleDismiss();
   };
 
-  const hasArgs = hasRequiredCreateArgs(args);
+  const handleConfirm = () => {
+    if (!hasArgs || !correlationKey) {
+      return;
+    }
+
+    markSubmitting(correlationKey);
+    void confirm({
+      confirmed: true,
+      roomId: args.room.id,
+      checkInDate: args.checkInDate,
+      checkOutDate: args.checkOutDate,
+      guests: args.guests,
+    });
+  };
+
+  const handleRetry = () => {
+    if (!correlationKey || isRetrying || !isActionable) {
+      return;
+    }
+
+    markSubmitting(correlationKey);
+    retryCreateBooking();
+  };
+
   useReportHomestayAgentUiFocus(
     shouldRender && hasArgs && canRespond,
     "confirm-booking",
@@ -160,36 +180,33 @@ const HitlConfirmCreateStayModal = ({
   const { room, checkInDate, checkOutDate, guests } = args;
 
   return (
-    <>
-      <EmbeddedWidget>
-        <ConfirmBookingDialog
-          roomName={room.name}
-          checkInDate={checkInDate}
-          checkOutDate={checkOutDate}
-          guests={guests}
-          pricePerNight={room.pricePerNight}
-          isSubmitting={isSubmitting}
-          canRespond={canRespond}
-          decisionStatus={decisionStatus}
-          errorMessage={errorMessage}
-          onCancel={handleCancel}
-          onConfirm={() =>
-            void confirm({
-              confirmed: true,
-              roomId: room.id,
-              checkInDate,
-              checkOutDate,
-              guests,
-            })
-          }
-        />
-      </EmbeddedWidget>
-      <HitlDecisionUserMessage
+    <EmbeddedWidget>
+      <ConfirmCreateHitlCard
+        roomName={room.name}
+        checkInDate={checkInDate}
+        checkOutDate={checkOutDate}
+        guests={guests}
+        pricePerNight={room.pricePerNight}
+        title={CONFIRM_BOOKING.title.review}
+        confirmLabel={CONFIRM_BOOKING.label.confirm}
+        submittingLabel={CONFIRM_BOOKING.label.submitting}
+        isSubmitting={
+          isSubmitting || createPhase === HITL_CARD_PHASE.SUBMITTING
+        }
+        canRespond={canRespond}
         decisionStatus={decisionStatus}
-        confirmLabel="Confirm booking"
-        cancelLabel="Cancel booking"
+        createPhase={createPhase}
+        failureReason={createOutcome?.errorMessage}
+        totalPriceOverride={createOutcome?.totalPrice}
+        errorMessage={errorMessage}
+        onCancel={handleCancel}
+        onConfirm={handleConfirm}
+        onViewBookings={
+          isActionable ? () => router.push(BOOKINGS_PAGE_PATH) : undefined
+        }
+        onRetry={isActionable ? handleRetry : undefined}
       />
-    </>
+    </EmbeddedWidget>
   );
 };
 
@@ -198,32 +215,80 @@ const HitlConfirmModifyStayModal = ({
   args,
   respond,
   result,
+  toolCallId,
 }: {
   status: ToolCallStatus;
   args: Partial<ConfirmModifyBookingArgs>;
   respond?: (result: ConfirmModifyBookingResult) => Promise<void>;
   result?: unknown;
+  toolCallId?: string;
 }) => {
+  const router = useRouter();
   const pendingModifyStay = useBookingStore((state) => state.pendingModifyStay);
   const setPendingModifyStay = useBookingStore(
     (state) => state.setPendingModifyStay,
   );
+  const markSubmitting = useModifyBookingCardStore(
+    (state) => state.markSubmitting,
+  );
+  const { retryModifyBooking, isRetrying } = useRetryModifyBooking();
+  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
   const {
     shouldRender,
     isSubmitting,
     errorMessage,
     canRespond,
+    isActionable,
+    expiredBySupersede,
     decisionStatus,
     handleDismiss,
     confirm,
   } = useHitlConfirmDialog(
     status,
     respond,
-    "Failed to confirm booking changes",
+    CONFIRM_MODIFY_BOOKING.error.confirm,
     result,
+    toolCallId,
   );
 
   const hasArgs = hasRequiredModifyArgs(args);
+  // Prefer dates/guests the guest chose in edit_modify_booking over tool args
+  // the model may fill with stale working-memory or pre-edit values.
+  const stayFromEdit =
+    hasArgs && pendingModifyStay?.bookingId === args.bookingId
+      ? pendingModifyStay
+      : null;
+  const checkInDate = hasArgs
+    ? (stayFromEdit?.checkInDate ?? args.checkInDate)
+    : "";
+  const checkOutDate = hasArgs
+    ? (stayFromEdit?.checkOutDate ?? args.checkOutDate)
+    : "";
+  const guests = hasArgs ? (stayFromEdit?.guests ?? args.guests) : 0;
+  const correlationKey =
+    hasArgs
+      ? buildModifyStayCorrelationKey({
+          bookingId: args.bookingId,
+          checkInDate,
+          checkOutDate,
+          guests,
+        })
+      : null;
+  const storeModifyOutcome = useModifyBookingCardStore((state) =>
+    correlationKey ? (state.outcomesByCorrelationKey[correlationKey] ?? null) : null,
+  );
+  const modifyOutcome = coalesceBookingCardOutcome(
+    storeModifyOutcome,
+    deriveModifyBookingOutcomeFromMessages(agent.messages, correlationKey),
+  );
+  const modifyPhase = expiredBySupersede
+    ? HITL_CARD_PHASE.EXPIRED
+    : resolveHitlCardPhase({
+        status: decisionStatus,
+        isHitlSubmitting: isSubmitting,
+        outcome: modifyOutcome,
+      });
+
   useReportHomestayAgentUiFocus(
     shouldRender && hasArgs && canRespond,
     "confirm-modify-booking",
@@ -239,13 +304,6 @@ const HitlConfirmModifyStayModal = ({
   }
 
   const { bookingId, room } = args;
-  // Prefer dates/guests the guest chose in edit_modify_booking over tool args
-  // the model may fill with stale working-memory or pre-edit values.
-  const stayFromEdit =
-    pendingModifyStay?.bookingId === bookingId ? pendingModifyStay : null;
-  const checkInDate = stayFromEdit?.checkInDate ?? args.checkInDate;
-  const checkOutDate = stayFromEdit?.checkOutDate ?? args.checkOutDate;
-  const guests = stayFromEdit?.guests ?? args.guests;
   const original = resolveOriginalStay(pendingModifyStay, bookingId, args);
   const description: ReactNode = (
     <>
@@ -261,73 +319,86 @@ const HitlConfirmModifyStayModal = ({
   };
 
   const handleConfirm = () => {
+    if (!correlationKey) {
+      return;
+    }
+
+    markSubmitting(correlationKey);
     void confirm({
       confirmed: true,
       bookingId,
       checkInDate,
       checkOutDate,
       guests,
-    }).then(() => {
-      setPendingModifyStay(null);
     });
   };
+
+  const handleRetry = () => {
+    if (!correlationKey || isRetrying || !isActionable) {
+      return;
+    }
+
+    markSubmitting(correlationKey);
+    retryModifyBooking();
+  };
+
+  const isPhaseSubmitting =
+    isSubmitting || modifyPhase === HITL_CARD_PHASE.SUBMITTING;
+  const viewBookings = isActionable
+    ? () => router.push(BOOKINGS_PAGE_PATH)
+    : undefined;
+  const retry = isActionable ? handleRetry : undefined;
 
   // Without originals we cannot render before→after diffs — fall back to the
   // create-style summary of the proposed stay only.
   if (!original) {
     return (
-      <>
-        <EmbeddedWidget>
-          <ConfirmBookingDialog
-            roomName={room.name}
-            checkInDate={checkInDate}
-            checkOutDate={checkOutDate}
-            guests={guests}
-            pricePerNight={room.pricePerNight}
-            title="Modify booking"
-            description={description}
-            confirmLabel="Confirm Changes"
-            submittingLabel="Updating…"
-            isSubmitting={isSubmitting}
-            canRespond={canRespond}
-            decisionStatus={decisionStatus}
-            errorMessage={errorMessage}
-            onCancel={clearPendingAndDismiss}
-            onConfirm={handleConfirm}
-          />
-        </EmbeddedWidget>
-        <HitlDecisionUserMessage
+      <EmbeddedWidget>
+        <ConfirmCreateHitlCard
+          roomName={room.name}
+          checkInDate={checkInDate}
+          checkOutDate={checkOutDate}
+          guests={guests}
+          pricePerNight={room.pricePerNight}
+          title={CONFIRM_MODIFY_BOOKING.title.review}
+          description={description}
+          confirmLabel={CONFIRM_MODIFY_BOOKING.label.confirm}
+          submittingLabel={CONFIRM_MODIFY_BOOKING.label.submitting}
+          isSubmitting={isPhaseSubmitting}
+          canRespond={canRespond}
           decisionStatus={decisionStatus}
-          confirmLabel="Confirm Changes"
-          cancelLabel="Cancel"
+          modifyPhase={modifyPhase}
+          failureReason={modifyOutcome?.errorMessage}
+          errorMessage={errorMessage}
+          onCancel={clearPendingAndDismiss}
+          onConfirm={handleConfirm}
+          onViewBookings={viewBookings}
+          onRetry={retry}
         />
-      </>
+      </EmbeddedWidget>
     );
   }
 
   return (
-    <>
-      <EmbeddedWidget>
-        <ConfirmModifyBookingDialog
-          roomName={room.name}
-          pricePerNight={room.pricePerNight}
-          original={original}
-          next={{ checkInDate, checkOutDate, guests }}
-          description={description}
-          isSubmitting={isSubmitting}
-          canRespond={canRespond}
-          decisionStatus={decisionStatus}
-          errorMessage={errorMessage}
-          onCancel={clearPendingAndDismiss}
-          onConfirm={handleConfirm}
-        />
-      </EmbeddedWidget>
-      <HitlDecisionUserMessage
+    <EmbeddedWidget>
+      <ConfirmModifyHitlCard
+        roomName={room.name}
+        pricePerNight={room.pricePerNight}
+        original={original}
+        next={{ checkInDate, checkOutDate, guests }}
+        description={description}
+        isSubmitting={isPhaseSubmitting}
+        canRespond={canRespond}
         decisionStatus={decisionStatus}
-        confirmLabel="Confirm Changes"
-        cancelLabel="Cancel"
+        modifyPhase={modifyPhase}
+        failureReason={modifyOutcome?.errorMessage}
+        errorMessage={errorMessage}
+        onCancel={clearPendingAndDismiss}
+        onConfirm={handleConfirm}
+        onViewBookings={viewBookings}
+        onRetry={retry}
       />
-    </>
+    </EmbeddedWidget>
   );
 };
 
@@ -339,6 +410,7 @@ export const HitlConfirmStayModal = (props: HitlConfirmStayModalProps) => {
         args={props.args}
         respond={props.respond}
         result={props.result}
+        toolCallId={props.toolCallId}
       />
     );
   }
@@ -349,6 +421,7 @@ export const HitlConfirmStayModal = (props: HitlConfirmStayModalProps) => {
       args={props.args}
       respond={props.respond}
       result={props.result}
+      toolCallId={props.toolCallId}
     />
   );
 };

@@ -22,7 +22,7 @@ import { checkRoomAvailabilityInputSchema } from "@repo/schemas";
 export const checkRoomAvailabilityTool = createTool({
   id: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
   description:
-    "Check room dates and guest capacity before booking. Always pass flow: use flow=create for a NEW stay (omit excludeBookingId); use flow=modify for an existing booking and always pass excludeBookingId=bookingId. CREATE: use absolute YYYY-MM-DD dates and guests from the latest message. MODIFY: use checkInDate, checkOutDate, and guests from the edit_modify_booking confirmed:true result — or, when the guest already stated the new dates/guests and the edit form was skipped, those stated values merged over the resolved booking's current stay. Never use the original booking dates unchanged or a working-memory draft. The result includes mandatory nextAction + flow: call confirm_booking only for create, confirm_modify_booking only for modify, or stop when stop_booking. Never answer only that the room is available and never call create_booking/update_booking before confirmation.",
+    "Check room dates and guest capacity before booking. Always pass flow: use flow=create for a NEW stay (omit excludeBookingId); use flow=modify for an existing booking and always pass excludeBookingId=bookingId. CREATE: use absolute YYYY-MM-DD dates and guests from the latest message. MODIFY: use checkInDate, checkOutDate, and guests from the edit_modify_booking confirmed:true result — or, when the guest already stated the new dates/guests and the edit form was skipped, those stated values merged over the resolved booking's current stay. Never use the original booking dates unchanged or a working-memory draft. The result includes mandatory nextAction + flow: call confirm_booking only for create, CONFIRM_MODIFY_BOOKING only for modify, or stop when stop_booking. Never answer only that the room is available and never call create_booking/update_booking before confirmation.",
   inputSchema: checkRoomAvailabilityInputSchema,
   outputSchema: checkRoomAvailabilityOutputSchema,
   execute: async (input, context) => {
@@ -98,7 +98,7 @@ export const checkRoomAvailabilityTool = createTool({
     const nextAction: CheckRoomAvailabilityOutput["nextAction"] =
       result.available && result.guestsWithinCapacity
         ? isModify
-          ? "confirm_modify_booking"
+          ? "CONFIRM_MODIFY_BOOKING"
           : "confirm_booking"
         : "stop_booking";
 

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
+import { useSupersedeHitlOnNewInteraction } from "@/features/chat/hooks";
 import {
   isHitlToolFinished,
   isHitlToolRespondable,
@@ -20,10 +21,12 @@ export const useHitlConfirmDialog = <
   respond: ((result: TResult) => Promise<void>) | undefined,
   defaultErrorMessage: string,
   result?: unknown,
+  toolCallId?: string,
 ) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { respondOnce, canRespond } = useHitlRespondOnce<TResult>(respond);
+  const { respondOnce, canRespond: canRespondHitl } =
+    useHitlRespondOnce<TResult>(respond);
 
   const isAwaiting = isHitlToolRespondable(status, respond);
   const isFinished = isHitlToolFinished(status);
@@ -32,6 +35,18 @@ export const useHitlConfirmDialog = <
     status,
     result,
   );
+
+  const supersedeDismiss = useCallback(() => {
+    void respondOnce({ confirmed: false } as TResult);
+  }, [respondOnce]);
+
+  const { isActionable, expiredBySupersede } = useSupersedeHitlOnNewInteraction({
+    toolCallId,
+    canRespond: canRespondHitl,
+    onSupersede: supersedeDismiss,
+  });
+
+  const canRespond = canRespondHitl && isActionable;
 
   const handleDismiss = () => {
     if (!canRespond) {
@@ -67,6 +82,8 @@ export const useHitlConfirmDialog = <
     isSubmitting,
     errorMessage,
     canRespond,
+    isActionable,
+    expiredBySupersede,
     decisionStatus,
     handleDismiss,
     confirm,

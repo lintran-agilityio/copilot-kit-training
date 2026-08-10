@@ -16,11 +16,12 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
+import { CREATE_BOOKING_CONFIRMATION_REPLY_REQUIREMENT } from "@/mastra/utils/generic-ui-reply-hints";
 
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE_BOOKING,
   description:
-    "Create a confirmed room booking after confirm_booking returns confirmed: true. Use roomId, checkInDate, checkOutDate, and guests from the confirm_booking result. ConfirmSuccess renders automatically from this tool result (like cancel_booking). After success, send one short guest-facing chat confirmation. The signed-in user is always taken from the server session — never pass a userId.",
+    `Create a confirmed room booking after confirm_booking returns confirmed: true. Use roomId, checkInDate, checkOutDate, and guests from the confirm_booking result. The confirm HITL card updates in place from this tool result (success or failure). ${CREATE_BOOKING_CONFIRMATION_REPLY_REQUIREMENT} The signed-in user is always taken from the server session — never pass a userId.`,
   inputSchema: createBookingInputSchema,
   outputSchema: bookingSchema,
   execute: async (params, context) => {

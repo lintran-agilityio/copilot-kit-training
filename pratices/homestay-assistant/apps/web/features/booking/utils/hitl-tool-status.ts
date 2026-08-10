@@ -9,8 +9,10 @@ import { useCallback, useRef, useState } from "react";
  * (`InProgress` and `Complete` get `respond: undefined`). HITL cards must
  * gate interactive actions on `Executing`, not `InProgress` (backend
  * `useRenderTool` UIs often treat both as in-flight — that pattern must not
- * be copied here). Completed HITL cards stay mounted; create/modify
- * confirm UI shows Confirmed/Cancelled by you from the respond payload.
+ * be copied here). Completed HITL cards stay mounted; create/cancel/modify
+ * confirm UI owns the lifecycle via same-card phases (review → submitting →
+ * success | failed | cancelled | expired) derived from respond payload +
+ * mutation outcome — not a separate success card.
  */
 export const isHitlToolInProgress = (status: ToolCallStatus) =>
   status === ToolCallStatus.InProgress;

@@ -23,7 +23,7 @@ type RoomChatDetailProps = {
 };
 
 /**
- * Read-only room detail sized for the chat sidebar (~340px card).
+ * Read-only room detail sized for the chat sidebar (~420px card).
  * Single column, condensed typography, and no page state — booking is handed
  * off to the existing booking-form flow.
  */
@@ -36,7 +36,7 @@ export const RoomChatDetail = ({
   const {
     id,
     name,
-    description,
+    description,  
     capacity,
     level,
     levelColor,

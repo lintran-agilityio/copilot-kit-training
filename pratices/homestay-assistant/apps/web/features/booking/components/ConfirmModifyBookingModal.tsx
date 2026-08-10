@@ -13,6 +13,7 @@ type ConfirmModifyBookingModalProps = {
   args: Partial<ConfirmModifyBookingArgs>;
   respond?: (result: ConfirmModifyBookingResult) => Promise<void>;
   result?: unknown;
+  toolCallId?: string;
 };
 
 export const ConfirmModifyBookingModal = ({
@@ -20,6 +21,7 @@ export const ConfirmModifyBookingModal = ({
   args,
   respond,
   result,
+  toolCallId,
 }: ConfirmModifyBookingModalProps) => (
   <HitlConfirmStayModal
     variant="modify"
@@ -27,5 +29,6 @@ export const ConfirmModifyBookingModal = ({
     args={args}
     respond={respond}
     result={result}
+    toolCallId={toolCallId}
   />
 );

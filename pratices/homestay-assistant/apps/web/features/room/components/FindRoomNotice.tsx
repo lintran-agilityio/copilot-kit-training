@@ -80,6 +80,7 @@ export const FindRoomNotice = ({
   status,
   result,
   parameters,
+  toolCallId,
 }: FindRoomToolProps) => {
   const lastMarkedKeyRef = useRef<string | null>(null);
 
@@ -120,7 +121,7 @@ export const FindRoomNotice = ({
     }
 
     return (
-      <EmbeddedWidget className="p-3.5">
+      <EmbeddedWidget className="max-w-[min(100%,420px)] p-3.5">
         <RoomListSkeleton itemCount={3} className="max-w-full" />
       </EmbeddedWidget>
     );
@@ -151,8 +152,8 @@ export const FindRoomNotice = ({
   }
 
   return (
-    <EmbeddedWidget unframed>
-      <ListRoomPreview rooms={rooms} title={title} />
+    <EmbeddedWidget unframed className="max-w-[min(100%,420px)]">
+      <ListRoomPreview rooms={rooms} title={title} toolCallId={toolCallId} />
     </EmbeddedWidget>
   );
 };

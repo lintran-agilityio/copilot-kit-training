@@ -13,7 +13,7 @@ export const TOOL_KEYS = {
     CANCEL: "cancel_booking",
     /** Mastra createTool id + registration / useRenderTool name — create booking after confirm_booking returns confirmed: true. */
     CREATE_BOOKING: "create_booking",
-    /** Mastra createTool id + registration / useRenderTool name — update booking after confirm_modify_booking returns confirmed: true. */
+    /** Mastra createTool id + registration / useRenderTool name — update booking after CONFIRM_MODIFY_BOOKING returns confirmed: true. */
     UPDATE_BOOKING: "update_booking",
     /** Mastra registration key — fetch room for detail; FE renders via useRenderTool. */
     GET_ROOM_BY_ID: "get_room_by_id",
@@ -32,7 +32,7 @@ export const TOOL_KEYS = {
      */
     EDIT_MODIFY_BOOKING: "edit_modify_booking",
     /** Frontend HITL — confirm booking modification after availability check with excludeBookingId. */
-    CONFIRM_MODIFY_BOOKING: "confirm_modify_booking",
+    CONFIRM_MODIFY_BOOKING: "CONFIRM_MODIFY_BOOKING",
     UPDATE_ROOM_LIST: "update_room_list",
   },
 };

@@ -11,6 +11,11 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
+import {
+  buildGetRoomByIdReplyHint,
+} from "@/mastra/utils/generic-ui-reply-hints";
+
+export { buildGetRoomByIdReplyHint } from "@/mastra/utils/generic-ui-reply-hints";
 
 /**
  * Slim payload for the model: only the fields needed for tool chaining.
@@ -19,7 +24,7 @@ import {
  * RoomDetail card. An explicit replyHint overrides any stale context-window
  * pattern (e.g. a previous find_room response).
  */
-const toGetRoomByIdModelOutput = (output: GetRoomDetailOutput) => {
+export const toGetRoomByIdModelOutput = (output: GetRoomDetailOutput) => {
   const { room } = output;
 
   return {
@@ -28,11 +33,7 @@ const toGetRoomByIdModelOutput = (output: GetRoomDetailOutput) => {
       roomId: room.id,
       name: room.name,
       capacity: room.capacity,
-      replyHint:
-        `Room detail / booking form is now open in the UI for "${room.name}". ` +
-        `Reply with ONE short sentence only — invite the guest to select their dates and tap "Book this room". ` +
-        `Do NOT repeat or reference any previous room list, find_room result, or search response. ` +
-        `Do NOT list price, amenities, description, or any other room field — the UI already shows them.`,
+      replyHint: buildGetRoomByIdReplyHint(room.name),
     },
   };
 };
@@ -40,7 +41,7 @@ const toGetRoomByIdModelOutput = (output: GetRoomDetailOutput) => {
 export const getRoomByIdTool = createTool({
   id: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID,
   description:
-    "Fetch the complete room object by its unique roomId. Use only when the guest explicitly requests room details or when roomId is provided. Never use for search/filter requests. After calling: reply with ONE short sentence inviting the guest to select dates and tap 'Book this room'. Do NOT echo previous find_room or search responses.",
+    "Fetch the complete room object by its unique roomId. Use only when the guest explicitly requests room details or when roomId is provided. Never use for search/filter requests. After calling: the Booking Form / Room Detail Generic UI is the response — do NOT send instructional chat that the form is open or how to use it (tools-only allowed). Still send short text for errors or clarifications the UI cannot collect. Do NOT echo previous find_room or search responses.",
   inputSchema: getRoomByIdInputSchema,
   outputSchema: getRoomDetailOutputSchema,
   execute: async (inputData, context) => {

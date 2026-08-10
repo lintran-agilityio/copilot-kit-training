@@ -1,5 +1,3 @@
-import { PAGE_ROOMS_PROMPT_PREFIX } from "@/features/copilot/config/page-generative-ui";
-
 export type StaticSuggestion = {
   title: string;
   message: string;
@@ -22,22 +20,22 @@ export const SUGGESTION = {
   },
 
   viewBooking: {
-    title: "View booking",
+    title: "View bookings",
     message: "Show my bookings.",
   },
 
   findWeekendRooms: {
-    title: "This weekend",
+    title: "Rooms this weekend",
     message: "Find available rooms for this weekend.",
   },
 
   availableToday: {
-    title: "Available today",
+    title: "Rooms available today",
     message: "Show rooms available today.",
   },
 
   availableTomorrow: {
-    title: "Tomorrow",
+    title: "Show room tomorrow",
     message: "Show rooms available tomorrow.",
   },
 
@@ -52,7 +50,7 @@ export const SUGGESTION = {
   },
 
   luxuryRooms: {
-    title: "Luxury suites",
+    title: "Luxury suites rooms",
     message: "Show your premium and luxury rooms",
   },
 
@@ -62,7 +60,7 @@ export const SUGGESTION = {
   },
 
   roomAmenities: {
-    title: "Amenities",
+    title: "Room amenities",
     message: "What amenities do your rooms include?",
   },
 
