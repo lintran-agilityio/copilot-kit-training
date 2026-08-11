@@ -18,6 +18,7 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
+import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/utils/generic-ui-reply-hints";
 
 export const updateBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
@@ -26,7 +27,7 @@ export const updateBookingTool = createTool({
     - Use bookingId, checkInDate, checkOutDate, and guests from the CONFIRM_MODIFY_BOOKING result.
     - Never change the room — roomId is not updatable.
     - Never call this to create a new booking.
-    - After success, send one short guest-facing chat confirmation.
+    - ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT}
     - Do NOT call get_bookings — the same HITL card updates to success/failed and refreshes the bookings list automatically.
     - Never call this before CONFIRM_MODIFY_BOOKING returns confirmed: true.
     - Only the signed-in owner's active (non-past) bookings can be updated.`,

@@ -1,16 +1,15 @@
-import type {
-  ChunkType,
-  ProcessOutputStreamArgs,
-} from "@mastra/core/processors";
+import type { ProcessOutputStreamArgs } from "@mastra/core/processors";
+import type { ChunkType } from "@mastra/core/stream";
 
 import { applyBookingFormHandoffStreamFilter } from "../booking/stop-after-booking-form";
 
 /**
- * After a successful get_room_by_id tool-result chunk, drop later assistant
- * text chunks in this run. That prevents the AG-UI continuation bubble
- * ("form is now open…") even when a follow-up LLM step still runs.
+ * After a successful get_room_by_id or mutation (create/update/cancel)
+ * tool-result chunk, drop later assistant text chunks in this run. That
+ * prevents the AG-UI continuation bubble ("booking cancelled…") even when a
+ * follow-up LLM step still runs.
  *
- * Structural (tool name + room payload) — not chat-copy matching.
+ * Structural (tool name + success payload) — not chat-copy matching.
  */
 export class SuppressBookingFormHandoffTextProcessor {
   id = "suppress-booking-form-handoff-text";

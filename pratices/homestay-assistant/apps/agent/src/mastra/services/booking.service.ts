@@ -29,6 +29,8 @@ export type GetBookingsParams = {
   userId?: string;
   roomId?: string;
   status?: BookingStatus;
+  /** YYYY-MM-DD — stays where checkIn <= onDate < checkOut */
+  onDate?: string;
 };
 
 export const createBooking = async (

@@ -33,6 +33,13 @@ export class BookingRepository {
       query.andWhere('booking.status = :status', { status: filters.status });
     }
 
+    // Stay covers onDate: checkIn <= onDate AND checkOut > onDate (exclusive checkout).
+    if (filters.onDate) {
+      query
+        .andWhere('booking.checkInDate <= :onDate', { onDate: filters.onDate })
+        .andWhere('booking.checkOutDate > :onDate', { onDate: filters.onDate });
+    }
+
     return query.getMany();
   }
 

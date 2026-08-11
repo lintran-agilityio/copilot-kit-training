@@ -177,3 +177,59 @@ export const resolveCalendarDate = (
 
   return toYmd(todayYear + 1, month, day);
 };
+
+/**
+ * True when an active stay covers `onDate` (inclusive check-in, exclusive check-out).
+ * Example: Aug 15→17 includes Aug 15 and Aug 16, not Aug 17.
+ */
+export const bookingStayIncludesDate = (
+  checkInDate: string,
+  checkOutDate: string,
+  onDate: string,
+): boolean => checkInDate <= onDate && checkOutDate > onDate;
+
+/**
+ * Resolves a bare day-of-month (e.g. "15", "15th") against `today`'s month/year
+ * using {@link resolveCalendarDate} (next on-or-after today in business TZ).
+ */
+export const resolveDayOfMonthDate = (
+  today: string,
+  day: number,
+): string | null => {
+  if (!Number.isInteger(day) || day < 1 || day > 31) {
+    return null;
+  }
+
+  const month = Number(today.slice(5, 7));
+  return resolveCalendarDate(today, month, day);
+};
+
+const MONTH_ALIASES: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+export const parseMonthName = (value: string): number | null =>
+  MONTH_ALIASES[value.trim().toLowerCase()] ?? null;

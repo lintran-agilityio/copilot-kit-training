@@ -13,6 +13,8 @@ export const residualRoomName = (name: string): string =>
     .replace(ROOM_LEVEL_CATEGORY_WORD_GLOBAL, " ")
     .replace(ROOM_NAME_FILLER, " ")
     .replace(/\d+/g, " ")
+    // Ordinal crumbs left after digit strip ("16th" → "th") must not become LIKE filters.
+    .replace(/\b(?:st|nd|rd|th)\b/gi, " ")
     .replace(/[^\w\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();

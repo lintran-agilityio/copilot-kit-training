@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --import tsx --test src/mastra/utils/sanitize-find-room-date.test.ts",
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start"
@@ -42,6 +42,7 @@
   "devDependencies": {
     "@types/node": "^25.9.3",
     "mastra": "^1.14.0",
+    "tsx": "^4.22.4",
     "typescript": "5.9.2"
   }
 }

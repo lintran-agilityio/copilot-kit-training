@@ -72,5 +72,7 @@ export type MastraStreamChunk = {
   payload?: {
     reason?: string;
     processorId?: string;
+    retry?: boolean;
+    metadata?: Record<string, unknown>;
   };
 };

@@ -22,11 +22,15 @@ export { buildFindRoomReplyHint } from "./generic-ui-reply-hints";
  * Remaps mistaken `name` / relative `date` values so search hits the rooms API.
  *
  * @param input - Raw find_room tool args from the model
+ * @param options.today - Optional YYYY-MM-DD for deterministic date resolution in tests
  * @returns Filters safe to send to the rooms API
  */
-export const normalizeFindRoomInput = (input: FindRoomInput): FindRoomInput => {
+export const normalizeFindRoomInput = (
+  input: FindRoomInput,
+  options?: { today?: string },
+): FindRoomInput => {
   const rawName = input.name?.trim();
-  const date = sanitizeFindRoomDate(input.date);
+  const date = sanitizeFindRoomDate(input.date, options?.today);
 
   if (!rawName) {
     return date === input.date ? input : { ...input, date };

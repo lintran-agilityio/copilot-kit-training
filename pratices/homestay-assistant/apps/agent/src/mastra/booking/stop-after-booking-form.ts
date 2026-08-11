@@ -77,6 +77,26 @@ export const isSuccessfulGetRoomByIdToolResult = (
   return typeof roomId === "string" && roomId.trim().length > 0;
 };
 
+const nestedBookingPayload = (
+  toolResult: IterationToolResultLike,
+): Record<string, unknown> | null => {
+  const payload = asRecord(payloadOf(toolResult));
+  if (!payload) {
+    return null;
+  }
+  return asRecord(payload.value) ?? payload;
+};
+
+const bookingIdFromPayload = (
+  nested: Record<string, unknown>,
+): string | null => {
+  const bookingId = nested.id;
+  if (typeof bookingId !== "string" || bookingId.trim().length === 0) {
+    return null;
+  }
+  return bookingId;
+};
+
 /**
  * True when create_booking returned a booking id (PENDING/CONFIRMED or status omitted).
  * The HITL confirm card already shows success — no chat confirmation text.
@@ -92,14 +112,8 @@ export const isSuccessfulCreateBookingToolResult = (
     return false;
   }
 
-  const payload = asRecord(payloadOf(toolResult));
-  if (!payload) {
-    return false;
-  }
-
-  const nested = asRecord(payload.value) ?? payload;
-  const bookingId = nested.id;
-  if (typeof bookingId !== "string" || bookingId.trim().length === 0) {
+  const nested = nestedBookingPayload(toolResult);
+  if (!nested || !bookingIdFromPayload(nested)) {
     return false;
   }
 
@@ -113,12 +127,70 @@ export const isSuccessfulCreateBookingToolResult = (
   return status === "confirmed" || status === "pending";
 };
 
-/** BookingForm open OR confirm-HITL success — Generic UI is the response. */
+/**
+ * True when update_booking returned a booking id (still active).
+ * The modify HITL card already shows success — no chat confirmation text.
+ */
+export const isSuccessfulUpdateBookingToolResult = (
+  toolResult: IterationToolResultLike | null | undefined,
+): boolean => {
+  if (!toolResult || toolResult.error || toolResult.isError) {
+    return false;
+  }
+
+  if (toolNameOf(toolResult) !== TOOL_KEYS.BOOKING.UPDATE_BOOKING) {
+    return false;
+  }
+
+  const nested = nestedBookingPayload(toolResult);
+  if (!nested || !bookingIdFromPayload(nested)) {
+    return false;
+  }
+
+  const status =
+    typeof nested.status === "string" ? nested.status.toLowerCase() : "";
+
+  if (!status) {
+    return true;
+  }
+
+  return status !== "cancelled";
+};
+
+/**
+ * True when cancel_booking returned a cancelled booking id.
+ * The cancel HITL card already shows success — no chat confirmation text.
+ */
+export const isSuccessfulCancelBookingToolResult = (
+  toolResult: IterationToolResultLike | null | undefined,
+): boolean => {
+  if (!toolResult || toolResult.error || toolResult.isError) {
+    return false;
+  }
+
+  if (toolNameOf(toolResult) !== TOOL_KEYS.BOOKING.CANCEL) {
+    return false;
+  }
+
+  const nested = nestedBookingPayload(toolResult);
+  if (!nested || !bookingIdFromPayload(nested)) {
+    return false;
+  }
+
+  const status =
+    typeof nested.status === "string" ? nested.status.toLowerCase() : "";
+
+  return status === "cancelled";
+};
+
+/** BookingForm open OR mutation HITL success — Generic UI is the response. */
 export const isActionableBookingUiToolSuccess = (
   toolResult: IterationToolResultLike | null | undefined,
 ): boolean =>
   isSuccessfulGetRoomByIdToolResult(toolResult) ||
-  isSuccessfulCreateBookingToolResult(toolResult);
+  isSuccessfulCreateBookingToolResult(toolResult) ||
+  isSuccessfulUpdateBookingToolResult(toolResult) ||
+  isSuccessfulCancelBookingToolResult(toolResult);
 
 export const shouldStopAfterActionableBookingUi = (
   context: BookingFormStopIterationContext,
@@ -130,8 +202,8 @@ export const shouldStopAfterSuccessfulGetRoomById =
   shouldStopAfterActionableBookingUi;
 
 /**
- * stopWhen: halt after BookingForm or create_booking success so no follow-up
- * LLM step emits redundant chat text the HITL/Generic UI already shows.
+ * stopWhen: halt after BookingForm or mutation HITL success (create/update/cancel)
+ * so no follow-up LLM step emits redundant chat text the Generic UI already shows.
  */
 export const stopWhenBookingFormRendered = ({
   steps,
@@ -163,7 +235,7 @@ export const stopWhenStepLimitReached = (limit: number) => {
 };
 
 /**
- * Mastra onIterationComplete: halt after BookingForm / create success.
+ * Mastra onIterationComplete: halt after BookingForm / mutation HITL success.
  */
 export const stopAfterBookingFormIteration = (context: {
   toolResults?: IterationToolResultLike[];
@@ -182,23 +254,30 @@ const isAssistantTextChunkType = (type: string) =>
 
 type StreamChunkLike = {
   type: string;
-  payload?: {
-    toolName?: string;
-    result?: unknown;
-    isError?: boolean;
-  };
+  payload?: unknown;
 };
 
+type ToolResultPayloadLike = {
+  toolName?: string;
+  result?: unknown;
+  isError?: boolean;
+};
+
+const asToolResultPayload = (payload: unknown): ToolResultPayloadLike =>
+  payload && typeof payload === "object"
+    ? (payload as ToolResultPayloadLike)
+    : {};
+
 /**
- * After successful get_room_by_id or create_booking tool-result, drop later
- * assistant text chunks (BookingForm / confirm-success HITL is the response).
+ * After successful get_room_by_id or mutation (create/update/cancel) tool-result,
+ * drop later assistant text chunks (BookingForm / HITL success is the response).
  */
 export const applyBookingFormHandoffStreamFilter = (
   part: StreamChunkLike,
   state: Record<string, unknown>,
 ): { emit: boolean } => {
   if (part.type === "tool-result") {
-    const payload = part.payload ?? {};
+    const payload = asToolResultPayload(part.payload);
     if (
       isActionableBookingUiToolSuccess({
         name: payload.toolName,

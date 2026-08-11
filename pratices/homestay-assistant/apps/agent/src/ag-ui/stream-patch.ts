@@ -1,6 +1,9 @@
 import {
+  formatOtherTripwireAssistantContent,
   formatProcessorBlockAssistantContent,
+  formatTokenLimitAssistantContent,
   THREAD_METADATA_BLOCKED_MESSAGE_IDS,
+  TRIPWIRE_KIND,
 } from "@repo/constants";
 import {
   excludeBlockedUserMessages,
@@ -224,7 +227,7 @@ const patchAgUiAgent = (
     if (tripwireContext) {
       effectiveStream = interceptTripwireStream(
         effectiveStream,
-        async (chunk) => {
+        async (chunk, kind) => {
           const onTextPart = callbacks.onTextPart as
             | ((text: string) => void)
             | undefined;
@@ -232,35 +235,65 @@ const patchAgUiAgent = (
             | (() => void)
             | undefined;
 
-          onTextPart?.(formatProcessorBlockAssistantContent());
-          onFinishMessagePart?.();
+          const reason = chunk.payload?.reason ?? "(no reason)";
+          const userMessageId =
+            tripwireContext.blockedUserMessageId ?? "unknown";
 
-          if (tripwireContext.blockedUserMessageId) {
-            await persistBlockedMessageId({
-              mastraAgent: aguiAgent.agent,
-              threadId: tripwireContext.threadId,
-              messageId: tripwireContext.blockedUserMessageId,
-              requestContext: aguiAgent.requestContext,
-            });
+          if (kind === TRIPWIRE_KIND.SECURITY) {
+            onTextPart?.(formatProcessorBlockAssistantContent());
+            onFinishMessagePart?.();
 
-            const currentBlocked = aguiAgent.requestContext?.get(
-              THREAD_METADATA_BLOCKED_MESSAGE_IDS,
-            );
-            const blockedSet = new Set<string>(
-              normalizeBlockedMessageIds(currentBlocked),
-            );
-            blockedSet.add(tripwireContext.blockedUserMessageId);
-            await syncBlockedMessageIdsToRequestContext({
-              requestContext: aguiAgent.requestContext,
-              blockedMessageIds: [...blockedSet],
-            });
-          }
+            if (tripwireContext.blockedUserMessageId) {
+              await persistBlockedMessageId({
+                mastraAgent: aguiAgent.agent,
+                threadId: tripwireContext.threadId,
+                messageId: tripwireContext.blockedUserMessageId,
+                requestContext: aguiAgent.requestContext,
+              });
 
-          if (chunk.payload?.reason) {
+              const currentBlocked = aguiAgent.requestContext?.get(
+                THREAD_METADATA_BLOCKED_MESSAGE_IDS,
+              );
+              const blockedSet = new Set<string>(
+                normalizeBlockedMessageIds(currentBlocked),
+              );
+              blockedSet.add(tripwireContext.blockedUserMessageId);
+              await syncBlockedMessageIdsToRequestContext({
+                requestContext: aguiAgent.requestContext,
+                blockedMessageIds: [...blockedSet],
+              });
+            }
+
             console.info(
-              `[ProcessorTripwire] Blocked message ${tripwireContext.blockedUserMessageId ?? "unknown"}: ${chunk.payload.reason}`,
+              `[ProcessorTripwire] Security block for message ${userMessageId}: ${reason}`,
             );
+            return;
           }
+
+          // Token-limit and other tripwires: guest-facing copy, no security
+          // marker, and do NOT persist blocked-message security state.
+          if (kind === TRIPWIRE_KIND.TOKEN_LIMIT) {
+            onTextPart?.(formatTokenLimitAssistantContent());
+            onFinishMessagePart?.();
+            console.info(
+              `[ProcessorTripwire] Token-limit tripwire (not security) for message ${userMessageId}: ${reason}`,
+              {
+                metadata: chunk.payload?.metadata,
+                processorId: chunk.payload?.processorId,
+              },
+            );
+            return;
+          }
+
+          onTextPart?.(formatOtherTripwireAssistantContent());
+          onFinishMessagePart?.();
+          console.info(
+            `[ProcessorTripwire] Other tripwire (not security) for message ${userMessageId}: ${reason}`,
+            {
+              metadata: chunk.payload?.metadata,
+              processorId: chunk.payload?.processorId,
+            },
+          );
         },
       );
     }
