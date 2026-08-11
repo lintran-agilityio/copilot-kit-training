@@ -11,6 +11,8 @@ import {
   parseConfirmedStay,
   type ConfirmedStay,
 } from "@/mastra/utils/confirmed-stay";
+import { resolveListMyBookingsStep } from "@/mastra/booking/list-my-bookings-fast-path";
+import { tryEnforceSearchTerminalStep } from "@/mastra/booking/search-terminal-fast-path";
 import { tryEnforceStatedModifyFastPath } from "@/mastra/booking/stated-modify-fast-path";
 
 type ToolResultLike = {
@@ -354,6 +356,20 @@ export const enforceBookingStep = (
   const source = resolveBookingStepSource(args);
 
   if (!source) {
+    // Mastra prepareStep only: LIST_MY_BOOKINGS (same layer as stated-modify).
+    // force → get_bookings hop; narrate → toolChoice none (no re-get_bookings).
+    const listDecision = resolveListMyBookingsStep(args);
+    if (listDecision.kind === "force" || listDecision.kind === "narrate") {
+      return listDecision.step;
+    }
+
+    // FIND / BROWSE terminal: block re-search after find_room / get_rooms.
+    // book_resolve×1 keeps non-search tools so availability can continue.
+    const searchTerminal = tryEnforceSearchTerminalStep(args);
+    if (searchTerminal) {
+      return searchTerminal;
+    }
+
     // NL stated change after find_booking_by_id / single get_bookings:
     // pin merged stay and force availability so edit_modify_booking never opens.
     return tryEnforceStatedModifyFastPath(args);

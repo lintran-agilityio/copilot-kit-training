@@ -2,14 +2,16 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import type { RequestContext } from "@mastra/core/request-context";
 import {
-  AGENT_STEP_LIMIT_PROCESSOR_ID,
   THREAD_METADATA_BLOCKED_MESSAGE_IDS,
+  TRIPWIRE_KIND,
+  type TripwireKind,
 } from "@repo/constants";
 import {
   isBlockedUserMessage,
   normalizeBlockedMessageIds,
 } from "@repo/utils";
 
+import { classifyTripwire } from "./classify-tripwire";
 import type { ThreadMemoryPort } from "./thread-memory-port";
 import type { AgUiMessage, MastraAgentLike, MastraStreamChunk } from "./types";
 
@@ -116,18 +118,24 @@ export const persistBlockedMessageId = async ({
 
 export async function* interceptTripwireStream(
   stream: AsyncIterable<unknown>,
-  onTripwire: (chunk: MastraStreamChunk) => Promise<void>,
+  onTripwire: (
+    chunk: MastraStreamChunk,
+    kind: TripwireKind,
+  ) => Promise<void>,
 ) {
   for await (const chunk of stream) {
     const typedChunk = chunk as MastraStreamChunk;
 
     if (typedChunk?.type === "tripwire") {
-      if (typedChunk.payload?.processorId === AGENT_STEP_LIMIT_PROCESSOR_ID) {
+      const kind = classifyTripwire(typedChunk.payload);
+
+      // Step-limit tripwires stay on the stream (existing behavior).
+      if (kind === TRIPWIRE_KIND.STEP_LIMIT) {
         yield chunk;
         continue;
       }
 
-      await onTripwire(typedChunk);
+      await onTripwire(typedChunk, kind);
       return;
     }
 

@@ -4,6 +4,7 @@ import {
   IsString,
   IsOptional,
   IsEnum,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { BookingStatus } from '../../../types/enum';
@@ -37,4 +38,15 @@ export class ListBookingsQueryDto {
   @IsEnum(BookingStatus)
   @IsOptional()
   status?: BookingStatus;
+
+  @ApiProperty({
+    description:
+      'Return active bookings whose stay includes this date (checkIn <= onDate < checkOut). YYYY-MM-DD.',
+    required: false,
+    example: '2026-08-15',
+  })
+  @IsOptional()
+  @IsString()
+  @IsDateString()
+  onDate?: string;
 }

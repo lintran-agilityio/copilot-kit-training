@@ -18,13 +18,14 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
+import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/utils/generic-ui-reply-hints";
 
 export const cancelBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CANCEL,
   description:
     `Cancel a booking by ID after show_cancel_dialog_confirm returns confirmed: true.
     - Use bookingId from the confirm booking dialog result.
-    - After success, send one short guest-facing chat confirmation.
+    - ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT}
     - Do NOT call get_bookings or show_cancellation_success — the same HITL card updates to success/failed and refreshes the bookings list automatically.
     - Never call this before show_cancel_dialog_confirm returns confirmed: true.
     - Only the signed-in owner's active (non-past) bookings can be cancelled.`,

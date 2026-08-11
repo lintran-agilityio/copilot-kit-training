@@ -30,6 +30,16 @@ export const REQUEST_CONTEXT_KEYS = {
    * cancel_booking args when the model fills a stale id from an earlier turn.
    */
   PENDING_CANCEL_BOOKING_ID: "pendingCancelBookingId",
+  /**
+   * Deterministic LIST_MY_BOOKINGS override is active for this turn — get_bookings
+   * must ignore focused roomId and cancel/modify pins.
+   */
+  LIST_MY_BOOKINGS_ACTIVE: "listMyBookingsActive",
+  /**
+   * Optional YYYY-MM-DD pinned for get_bookings.onDate when LIST_MY_BOOKINGS
+   * parsed a date cue (e.g. "at 15" → 2026-08-15). Null/undefined = no date filter.
+   */
+  LIST_MY_BOOKINGS_ON_DATE: "listMyBookingsOnDate",
 } as const;
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";

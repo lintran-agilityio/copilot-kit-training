@@ -65,9 +65,9 @@ export const manageAgent = new Agent({
       },
     },
     prepareStep: enforceBookingStep,
-    // Successful get_room_by_id / create_booking → BookingForm or HITL success
-    // card is the response. Stop before a follow-up LLM confirmation text step.
-    // Failures still continue so the model can send an error sentence.
+    // Successful get_room_by_id / create|update|cancel_booking → BookingForm or
+    // HITL success card is the response. Stop before a follow-up LLM confirmation
+    // text step. Failures still continue so the model can send an error sentence.
     onIterationComplete: stopAfterBookingFormIteration,
   },
   tools: {
