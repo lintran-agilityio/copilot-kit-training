@@ -27,7 +27,8 @@ import {
 import type {
   EditModifyBookingArgs,
   EditModifyBookingResult,
-} from "@/features/booking/schemas";
+} from "@repo/schemas";
+import type { HitlToolResult } from "@/features/booking/types";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import {
   RoomBookingDates,
@@ -42,7 +43,7 @@ type EditModifyBookingModalProps = {
   status: ToolCallStatus;
   args: Partial<EditModifyBookingArgs>;
   respond?: (result: EditModifyBookingResult) => Promise<void>;
-  result?: unknown;
+  result?: HitlToolResult<EditModifyBookingResult>;
   toolCallId?: string;
 };
 

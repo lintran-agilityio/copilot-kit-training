@@ -1,3 +1,5 @@
+import type { MessageLike, ToolCallLike } from "@/features/chat/types";
+
 type CopilotKitToolCall = {
   id: string;
   type: "function";
@@ -23,7 +25,7 @@ const toArgumentsString = (value: unknown) => {
   return "{}";
 };
 
-const extractFirstJsonObject = (args: string) => {
+const extractFirstJsonObject = (args: string): string => {
   const start = args.indexOf("{");
 
   if (start === -1) {
@@ -34,24 +36,21 @@ const extractFirstJsonObject = (args: string) => {
   let inString = false;
   let isEscaped = false;
 
-  for (let index = start; index < args.length; index += 1) {
+  for (let index = start; index < args.length; index++) {
     const char = args[index];
 
+    if (inString && char === '"' && !isEscaped) {
+      inString = false;
+      continue;
+    }
+
+    if (inString && char === "\\" && !isEscaped) {
+      isEscaped = true;
+      continue;
+    }
+
     if (inString) {
-      if (isEscaped) {
-        isEscaped = false;
-        continue;
-      }
-
-      if (char === "\\") {
-        isEscaped = true;
-        continue;
-      }
-
-      if (char === '"') {
-        inString = false;
-      }
-
+      isEscaped = false;
       continue;
     }
 
@@ -60,16 +59,10 @@ const extractFirstJsonObject = (args: string) => {
       continue;
     }
 
-    if (char === "{") {
-      depth += 1;
-    }
+    depth += char === "{" ? 1 : char === "}" ? -1 : 0;
 
-    if (char === "}") {
-      depth -= 1;
-
-      if (depth === 0) {
-        return args.slice(start, index + 1);
-      }
+    if (depth === 0) {
+      return args.slice(start, index + 1);
     }
   }
 
@@ -98,20 +91,21 @@ const sanitizeToolArguments = (value: unknown) => {
   }
 };
 
-const normalizeToolCall = (toolCall: unknown): CopilotKitToolCall | null => {
+const normalizeToolCall = (
+  toolCall: ToolCallLike | null | undefined,
+): CopilotKitToolCall | null => {
   if (!toolCall || typeof toolCall !== "object") {
     return null;
   }
 
-  const candidate = toolCall as Record<string, unknown>;
-  const id = candidate.id;
+  const id = toolCall.id;
 
   if (typeof id !== "string") {
     return null;
   }
 
-  if (candidate.function && typeof candidate.function === "object") {
-    const fn = candidate.function as Record<string, unknown>;
+  if (toolCall.function && typeof toolCall.function === "object") {
+    const fn = toolCall.function;
 
     if (typeof fn.name === "string") {
       const argumentsValue = sanitizeToolArguments(fn.arguments);
@@ -119,7 +113,7 @@ const normalizeToolCall = (toolCall: unknown): CopilotKitToolCall | null => {
       // Already in AG-UI shape — keep the original reference so repeated
       // normalize passes do not churn object identity / JSON key order.
       if (
-        candidate.type === "function" &&
+        toolCall.type === "function" &&
         typeof fn.arguments === "string" &&
         fn.arguments === argumentsValue
       ) {
@@ -137,13 +131,15 @@ const normalizeToolCall = (toolCall: unknown): CopilotKitToolCall | null => {
     }
   }
 
-  if (typeof candidate.name === "string") {
+  if (typeof toolCall.name === "string") {
     return {
       id,
       type: "function",
       function: {
-        name: candidate.name,
-        arguments: sanitizeToolArguments(candidate.args),
+        name: toolCall.name,
+        arguments: sanitizeToolArguments(
+          toolCall.arguments ?? toolCall.args,
+        ),
       },
     };
   }
@@ -156,7 +152,7 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
     return message;
   }
 
-  const candidate = message as Record<string, unknown>;
+  const candidate = message as MessageLike & Record<string, unknown>;
   const rawToolCalls = candidate.toolCalls;
 
   if (candidate.role !== "assistant" || !Array.isArray(rawToolCalls)) {
@@ -174,7 +170,7 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
     .map(normalizeToolCall)
     .filter((toolCall): toolCall is CopilotKitToolCall => toolCall !== null);
 
-  if (toolCalls.length === 0) {
+  if (!toolCalls.length) {
     return message;
   }
 

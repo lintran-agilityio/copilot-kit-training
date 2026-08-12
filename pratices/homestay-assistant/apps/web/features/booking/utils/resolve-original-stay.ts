@@ -1,4 +1,4 @@
-import type { ConfirmModifyBookingArgs } from "@/features/booking/schemas";
+import type { ConfirmModifyBookingArgs } from "@repo/schemas";
 import type {
   ModifyStaySnapshot,
   PendingModifyStay,

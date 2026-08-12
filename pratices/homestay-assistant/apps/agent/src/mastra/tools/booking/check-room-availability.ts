@@ -30,11 +30,16 @@ export const checkRoomAvailabilityTool = createTool({
 
     const { today } = getBusinessDates();
 
-    // After edit_modify_booking, prepareStep pins the guest-selected stay so
-    // stale LLM args (original booking / working memory) cannot win.
+    // After edit_modify_booking / stated-modify, prepareStep pins the guest-
+    // selected stay so stale LLM args (original booking / working memory)
+    // cannot win. PENDING_MODIFY_ORIGINAL carries pre-change stay for diffs.
     const pinned = readPinnedStay(
       context.requestContext,
       REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE,
+    );
+    const pinnedOriginal = readPinnedStay(
+      context.requestContext,
+      REQUEST_CONTEXT_KEYS.PENDING_MODIFY_ORIGINAL,
     );
     const pinnedRoomId = pinned?.roomId;
     const pinnedBookingId = pinned?.bookingId;
@@ -56,6 +61,10 @@ export const checkRoomAvailabilityTool = createTool({
       clearPinnedStay(
         context.requestContext,
         REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE,
+      );
+      clearPinnedStay(
+        context.requestContext,
+        REQUEST_CONTEXT_KEYS.PENDING_MODIFY_ORIGINAL,
       );
     }
 
@@ -102,10 +111,28 @@ export const checkRoomAvailabilityTool = createTool({
           : "confirm_booking"
         : "stop_booking";
 
+    const modifyBookingId =
+      (typeof resolved.excludeBookingId === "string"
+        ? resolved.excludeBookingId.trim()
+        : "") ||
+      (typeof pinnedBookingId === "string" ? pinnedBookingId.trim() : "");
+
     return {
       ...result,
       nextAction,
       flow,
+      ...(isModify && modifyBookingId
+        ? {
+            bookingId: modifyBookingId,
+            ...(pinnedOriginal
+              ? {
+                  originalCheckInDate: pinnedOriginal.checkInDate,
+                  originalCheckOutDate: pinnedOriginal.checkOutDate,
+                  originalGuests: pinnedOriginal.guests,
+                }
+              : {}),
+          }
+        : {}),
     };
   },
 });

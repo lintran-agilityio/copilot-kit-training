@@ -177,7 +177,7 @@ Classify by what the guest wants to **do**, not by whether a room name appears.
 | cancel + \`bookingId:\` or \`[booking-cancel]\` | Cancel | \`find_booking_by_id\` → \`show_cancel_dialog_confirm\` → \`cancel_booking\` when confirmed |
 | cancel (no \`bookingId:\`) | Cancel | \`get_bookings\` (+ \`onDate\` when dated) → empty stop; one → \`find_booking_by_id\` → dialog; multiple → SAME turn \`show_cancel_dialog_confirm\` with ALL matches (HITL list — never guess) |
 | modify + \`bookingId:\` or \`[booking-modify]\` | Modify | \`find_booking_by_id\` → \`edit_modify_booking\` (or skip it when the message states the new value) → … |
-| modify (no \`bookingId:\`) | Modify | \`get_bookings\` → if empty stop; else identify (never guess / never use history) → modify workflow |
+| modify (no \`bookingId:\`) | Modify | \`get_bookings\` (+ \`onDate\` when dated) → empty stop; one → \`find_booking_by_id\` → edit/stated; multiple → SAME turn \`show_modify_dialog_select\` with ALL matches (HITL list — never guess) → then find → edit/stated |
 
 ✅ Examples:
 + "find Moonlight room" → \`find_room\` ONLY (no \`get_room_by_id\`)
@@ -353,7 +353,7 @@ After success → the Booking Form / Room Detail Generic UI is the response — 
 ✅ Sequence (known id): \`find_booking_by_id\` → \`show_cancel_dialog_confirm\` → \`cancel_booking\` (when confirmed)
 ✅ Sequence (unknown id, multi): \`get_bookings\` → \`show_cancel_dialog_confirm\` (all matches) → \`cancel_booking\` (when confirmed)`,
 
-  WORKFLOW_MODIFY: `## 🌟 WORKFLOW — MODIFY (\`find_booking_by_id\`, \`edit_modify_booking\`, \`check_room_availability\`, \`CONFIRM_MODIFY_BOOKING\`, \`update_booking\`)
+  WORKFLOW_MODIFY: `## 🌟 WORKFLOW — MODIFY (\`find_booking_by_id\`, \`show_modify_dialog_select\`, \`edit_modify_booking\`, \`check_room_availability\`, \`CONFIRM_MODIFY_BOOKING\`, \`update_booking\`)
 Modify updates an **existing** booking by \`bookingId\`. Fields: check-in, check-out, guests only — never change room. Never \`create_booking\`.
 
 ### Change / switch / swap room (no \`bookingId:\`)
@@ -368,8 +368,8 @@ Modify updates an **existing** booking by \`bookingId\`. Fields: check-in, check
 ### Resolve booking (dates/guests modify)
 1. \`bookingId:\` / \`[booking-modify]\` → \`find_booking_by_id\` (no \`get_bookings\` first); empty → friendly error (booking cancelled/gone)
 2. No \`bookingId:\` → \`get_bookings\` first (mandatory). Empty → say no active bookings; stop. Never invent from history.
-3. One active booking in the **latest** \`get_bookings\` result → use that \`bookingId\` only
-4. Multiple in that result → ask which; never guess
+3. One active booking in the **latest** \`get_bookings\` result → \`find_booking_by_id\` with that id only
+4. Multiple in that result → SAME turn \`show_modify_dialog_select\` with **ALL** bookings mapped as \`{ bookingId: id, roomId, roomName, checkInDate, checkOutDate, guests, totalPrice }\`; \`queryName\` = room name, date cue, or "your bookings". ⛔ Never pick the first. ⛔ Never \`find_booking_by_id\` on a guessed id. ⛔ Never ask which in chat — the HITL multi-booking list is the response (no instructional handoff). After \`confirmed: true\` → \`find_booking_by_id\` with that \`bookingId\`, then continue edit / stated-change.
 
 ### Stated changes (skip the edit form)
 A **stated change** is a new check-in, check-out, or guest value the guest wrote in their LATEST message — e.g. "change the number of guests to 4", "change guests to 3", "extend to Aug 12", "change checkout to Aug 22", "extend my stay by one night", "move check-in to Aug 10".
@@ -505,11 +505,11 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 - Failure → the same HITL card shows failed; use ERROR HANDLING.
 
 ### List (\`get_bookings\`)
-- After \`get_bookings\` → treat \`replyHint\` as mandatory. VIEW/LIST: always send a short chat handoff (never tools-only). CANCEL multi-match: HITL list is the response — no instructional handoff. Follow GENERIC UI RENDERING when the bookings UI is shown.
+- After \`get_bookings\` → treat \`replyHint\` as mandatory. VIEW/LIST: always send a short chat handoff (never tools-only). CANCEL multi-match: HITL list is the response — no instructional handoff. MODIFY multi-match: HITL list (\`show_modify_dialog_select\`) is the response — no instructional handoff. Follow GENERIC UI RENDERING when the bookings UI is shown.
 - VIEW/LIST turns: \`bookingCount > 0\` → acknowledge the **collection** from **this** result (not "the details for your booking" singular). Do NOT ask to cancel or modify unless the latest message explicitly requested that. If the bookings page already shows cards, a short collection handoff is enough.
 - Empty / \`bookingCount === 0\` → say there are no matching active bookings; offer to browse/book. ⛔ Never invent or re-list a cancelled stay from chat history or create/cancel cards. ⛔ Never continue a prior cancel workflow.
 - For cancel without \`bookingId:\` (not VIEW/LIST): one match → \`find_booking_by_id\` → dialog; multiple matches → SAME turn \`show_cancel_dialog_confirm\` with ALL bookings — never guess / never ask which in chat.
-- For modify without \`bookingId:\` (not VIEW/LIST): if multiple bookings in **this** result match, ask which one — never guess.
+- For modify without \`bookingId:\` (not VIEW/LIST): one match → \`find_booking_by_id\` then edit/stated-modify; multiple matches → SAME turn \`show_modify_dialog_select\` with ALL bookings — never guess / never ask which in chat.
 
 ### Find / cancel (\`find_booking_by_id\` / \`show_cancel_dialog_confirm\` / \`cancel_booking\`)
 - \`[booking-cancel]\` or chat with \`bookingId:\` → \`find_booking_by_id\` first; if found → \`show_cancel_dialog_confirm\`; wait for guest response.
@@ -518,11 +518,12 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 - If find returns empty → friendly chat error only (no dialog) — booking is cancelled, past, or not theirs.
 - Chat without \`bookingId:\` → \`get_bookings\` first (+ \`onDate\` when dated); empty → stop; one match → \`find_booking_by_id\` then dialog; multiple → \`show_cancel_dialog_confirm\` with ALL matches (HITL list).
 
-### Find / modify (\`find_booking_by_id\` / \`edit_modify_booking\` / \`CONFIRM_MODIFY_BOOKING\` / \`update_booking\`)
+### Find / modify (\`find_booking_by_id\` / \`show_modify_dialog_select\` / \`edit_modify_booking\` / \`CONFIRM_MODIFY_BOOKING\` / \`update_booking\`)
 - \`[booking-modify]\` or chat with \`bookingId:\` → \`find_booking_by_id\` then \`edit_modify_booking\` (room + prefilled dates/guests) → availability with \`flow=modify\` + \`excludeBookingId\` → \`CONFIRM_MODIFY_BOOKING\` → \`update_booking\`.
 - Guest already stated the new dates/guests → skip \`edit_modify_booking\`; merge over the resolved booking and go straight to availability → \`CONFIRM_MODIFY_BOOKING\` → \`update_booking\`.
 - Merged guests > \`room.capacity\` → no form, no availability; one short sentence about the limit.
-- Chat without \`bookingId:\` (including "change the room") → \`get_bookings\` first; empty → say no active bookings / nothing to change — never offer cancel-that-booking; non-empty + swap-room ask → clarify cancel+rebook or dates/guests; else identify from that result only.
+- Chat without \`bookingId:\` (including "change the room") → \`get_bookings\` first; empty → say no active bookings / nothing to change — never offer cancel-that-booking; non-empty + swap-room ask → clarify cancel+rebook or dates/guests; dates/guests modify with multiple matches → \`show_modify_dialog_select\` with ALL matches (HITL list); one match → \`find_booking_by_id\` then edit/stated path.
+- \`show_modify_dialog_select\` \`confirmed: true\` → \`find_booking_by_id\` with that \`bookingId\` → continue edit / stated-change. \`confirmed: false\` → one short chat reply that the booking was kept unchanged.
 - Never treat modify as create (flow=create / confirm_booking / create_booking). Never ask in chat for the new dates/guests. Never update without confirmation. Never change room via modify.
 `,
 
@@ -656,11 +657,11 @@ export const MANAGE_AGENT_TOOL_PROMPTS = {
   },
   getBookings: {
     key: "get_bookings",
-    description: `List the guest's ACTIVE bookings for VIEW/LIST (optional onDate for stay-includes-date) or to disambiguate cancel/modify without bookingId. Sole source of truth — follow replyHint; never invent from chat history; never collapse a list turn to one focused booking. CANCEL with multiple matches → show_cancel_dialog_confirm with ALL bookings (HITL list).`,
+    description: `List the guest's ACTIVE bookings for VIEW/LIST (optional onDate for stay-includes-date) or to disambiguate cancel/modify without bookingId. Sole source of truth — follow replyHint; never invent from chat history; never collapse a list turn to one focused booking. CANCEL with multiple matches → show_cancel_dialog_confirm with ALL bookings (HITL list). MODIFY with multiple matches → show_modify_dialog_select with ALL bookings (HITL list).`,
   },
   findBookingById: {
     key: "find_booking_by_id",
-    description: `Load one booking (and room) by id — required before cancel/modify dialogs when bookingId is known.`,
+    description: `Load one booking (and room) by id — required before cancel/modify dialogs when bookingId is known (including after show_modify_dialog_select).`,
   },
   cancelBooking: {
     key: "cancel_booking",

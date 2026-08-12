@@ -2,37 +2,12 @@ import type { ProcessInputStepArgs } from "@mastra/core/processors";
 
 import { getCurrentTurn } from "@repo/utils";
 
+import { asNonEmptyString, asRecord, type JsonValue } from "@/mastra/utils";
+
 export type StepToolResultLike = {
   toolName?: string;
-  input?: unknown;
-  output?: unknown;
-};
-
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-};
-
-const asNonEmptyString = (value: unknown): string | undefined => {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
+  input?: JsonValue;
+  output?: JsonValue;
 };
 
 /**
@@ -57,8 +32,8 @@ export const normalizeStepToolResult = (
 
   return {
     toolName,
-    input: record.input ?? record.args,
-    output: record.output ?? record.result,
+    input: (record.input ?? record.args) as JsonValue | undefined,
+    output: (record.output ?? record.result) as JsonValue | undefined,
   };
 };
 
@@ -121,8 +96,8 @@ export const getLastToolResultFromTurnMessages = (
 
       return {
         toolName: invocation.toolName,
-        input: invocation.args,
-        output: invocation.result,
+        input: invocation.args as JsonValue | undefined,
+        output: invocation.result as JsonValue | undefined,
       };
     }
   }

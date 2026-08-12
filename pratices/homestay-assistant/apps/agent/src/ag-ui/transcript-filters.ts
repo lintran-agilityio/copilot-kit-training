@@ -1,6 +1,6 @@
 import { getCurrentTurn, isBlockedUserMessage } from "@repo/utils";
 
-import type { AgUiMessage } from "./types";
+import type { AgUiMessage, AgUiMessageContent } from "./types";
 
 export const trailingUserMessageId = (
   messages: AgUiMessage[],
@@ -27,7 +27,7 @@ export const selectLatestUserTurn = <T extends AgUiMessage>(
   messages: T[],
 ): T[] => getCurrentTurn(messages);
 
-const hasText = (content: unknown) =>
+const hasText = (content: AgUiMessageContent) =>
   typeof content === "string" ? content.trim().length > 0 : content != null;
 
 /**

@@ -11,27 +11,44 @@ const ROOM_NAME_STOP_WORDS = new Set([
   "cancel",
   "cancelled",
   "cancellation",
+  "change",
+  "checkout",
+  "checkin",
+  "check",
+  "date",
+  "dates",
+  "extend",
   "for",
+  "guest",
+  "guests",
   "i",
+  "in",
+  "is",
   "me",
+  "modify",
   "my",
+  "number",
   "of",
+  "out",
   "please",
   "reservation",
   "reservations",
   "room",
   "rooms",
+  "shorten",
+  "stay",
   "the",
   "this",
   "that",
   "to",
+  "update",
   "want",
 ]);
 
 const tokenize = (value: string) =>
   normalizeRoomName(value)
     .split(/[^a-z0-9]+/)
-    .filter(Boolean);
+    .filter((token) => Boolean(token) && !/^\d+$/.test(token));
 
 /**
  * Strip cancel/booking filler from a free-text room mention.

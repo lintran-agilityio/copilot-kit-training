@@ -1,13 +1,4 @@
-type ChatMessageLike = {
-  id: string;
-  role?: string;
-  content?: unknown;
-  toolCallId?: string;
-  toolCalls?: Array<{
-    id?: string;
-    function?: { name?: string; arguments?: unknown };
-  }>;
-};
+import type { MessageLike } from "@/features/chat/types";
 
 /**
  * Formerly hid assistant text when a dedicated success/unavailable card already
@@ -19,6 +10,6 @@ type ChatMessageLike = {
  * sentences still render. Kept as a named hook for ChatAssistantMessage.
  */
 export const isSupersededByToolCard = (
-  _messages: ChatMessageLike[] | undefined,
+  _messages: MessageLike[] | undefined,
   _messageId: string,
 ) => false;

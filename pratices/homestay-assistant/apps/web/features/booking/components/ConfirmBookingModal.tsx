@@ -6,13 +6,14 @@ import { HitlConfirmStayModal } from "./HitlConfirmStayModal";
 import type {
   ConfirmBookingArgs,
   ConfirmBookingResult,
-} from "@/features/booking/schemas";
+} from "@repo/schemas";
+import type { HitlToolResult } from "@/features/booking/types";
 
 type ConfirmBookingModalProps = {
   status: ToolCallStatus;
   args: Partial<ConfirmBookingArgs>;
   respond?: (result: ConfirmBookingResult) => Promise<void>;
-  result?: unknown;
+  result?: HitlToolResult<ConfirmBookingResult>;
   toolCallId?: string;
 };
 

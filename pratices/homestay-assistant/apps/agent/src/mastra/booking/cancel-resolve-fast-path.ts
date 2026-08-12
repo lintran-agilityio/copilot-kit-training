@@ -10,53 +10,40 @@ import {
 } from "@repo/utils";
 
 import {
+  BOOKING_STEP_DECISION_KIND,
+  type BookingPrepareStepDecision,
+} from "@/mastra/booking/constants";
+import {
   countToolResultsInCurrentTurn,
   resolveLastToolResult,
 } from "@/mastra/booking/last-tool-result";
 import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
 import { extractLatestUserText } from "@/mastra/booking/stated-modify-fast-path";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
+import {
+  parseFindBookingByIdOutput,
+  parseGetBookingsOutput,
+} from "@/mastra/utils";
 
 /**
  * Mastra prepareStep outcome for CANCEL without bookingId.
  * Force get_bookings first; then branch on match count so the model cannot
  * guess bookings[0] when multiple stays match.
  */
-export type CancelResolveStepDecision =
-  | { kind: "force"; step: ProcessInputStepResult }
-  | { kind: "narrate"; step: ProcessInputStepResult }
-  | { kind: "none" };
-
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-};
+export type CancelResolveStepDecision = BookingPrepareStepDecision;
 
 /**
  * Counts bookings on get_bookings / find_booking_by_id tool output.
  */
 export const countBookingsInToolOutput = (output: unknown): number => {
-  const record = asRecord(output);
-  if (!record) {
-    return 0;
+  const getBookings = parseGetBookingsOutput(output);
+  if (getBookings) {
+    return getBookings.bookings.length;
   }
 
-  if (Array.isArray(record.bookings)) {
-    return record.bookings.length;
+  const findById = parseFindBookingByIdOutput(output);
+  if (findById) {
+    return findById.bookings.length;
   }
 
   return 0;
@@ -69,26 +56,19 @@ export const countBookingsInToolOutput = (output: unknown): number => {
 export const resolveSoleBookingIdFromToolOutput = (
   output: unknown,
 ): string | null => {
-  const record = asRecord(output);
-  const bookings = record?.bookings;
-
-  if (!Array.isArray(bookings) || bookings.length !== 1) {
-    return null;
+  const findById = parseFindBookingByIdOutput(output);
+  if (findById?.bookings.length === 1) {
+    const bookingId = findById.bookings[0]?.bookingId?.trim() ?? "";
+    return bookingId.length > 0 ? bookingId : null;
   }
 
-  const sole = asRecord(bookings[0]);
-  if (!sole) {
-    return null;
+  const getBookings = parseGetBookingsOutput(output);
+  if (getBookings?.bookings.length === 1) {
+    const bookingId = getBookings.bookings[0]?.id?.trim() ?? "";
+    return bookingId.length > 0 ? bookingId : null;
   }
 
-  const bookingId =
-    typeof sole.bookingId === "string"
-      ? sole.bookingId.trim()
-      : typeof sole.id === "string"
-        ? sole.id.trim()
-        : "";
-
-  return bookingId.length > 0 ? bookingId : null;
+  return null;
 };
 
 const pinCancelWithoutBookingId = (
@@ -133,14 +113,14 @@ export const resolveCancelWithoutBookingIdStep = (
   const text = extractLatestUserText(args.messages);
 
   if (/^generate a short title for this conversation\b/i.test(text)) {
-    return { kind: "none" };
+    return { kind: BOOKING_STEP_DECISION_KIND.NONE };
   }
 
   const today = getBusinessDates().today;
   const routing = detectCancelWithoutBookingIdIntent(text, today);
 
   if (!routing) {
-    return { kind: "none" };
+    return { kind: BOOKING_STEP_DECISION_KIND.NONE };
   }
 
   const cancelDialogCount = countToolResultsInCurrentTurn(
@@ -150,7 +130,7 @@ export const resolveCancelWithoutBookingIdStep = (
 
   // Dialog already opened this turn — HITL / booking step machine owns the rest.
   if (cancelDialogCount >= 1) {
-    return { kind: "none" };
+    return { kind: BOOKING_STEP_DECISION_KIND.NONE };
   }
 
   const getBookingsCount = countToolResultsInCurrentTurn(
@@ -165,7 +145,7 @@ export const resolveCancelWithoutBookingIdStep = (
   if (getBookingsCount === 0 && findByIdCount === 0) {
     pinCancelWithoutBookingId(args, routing.onDate);
     return {
-      kind: "force",
+      kind: BOOKING_STEP_DECISION_KIND.FORCE,
       step: forceTool(TOOL_KEYS.BOOKING.GET),
     };
   }
@@ -176,18 +156,22 @@ export const resolveCancelWithoutBookingIdStep = (
     const matchCount = countBookingsInToolOutput(lastToolResult.output);
 
     if (matchCount === 0) {
-      return { kind: "narrate", step: narrationOnlyStep() };
+      return { kind: BOOKING_STEP_DECISION_KIND.NARRATE, step: narrationOnlyStep() };
     }
 
     if (matchCount === 1) {
       return {
-        kind: "force",
+        kind: BOOKING_STEP_DECISION_KIND.FORCE,
         step: forceTool(TOOL_KEYS.BOOKING.FIND_BY_ID),
       };
     }
 
+    if (!args.tools?.[TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]) {
+      return { kind: BOOKING_STEP_DECISION_KIND.NONE };
+    }
+
     return {
-      kind: "force",
+      kind: BOOKING_STEP_DECISION_KIND.FORCE,
       step: forceTool(TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM),
     };
   }
@@ -196,14 +180,18 @@ export const resolveCancelWithoutBookingIdStep = (
     const matchCount = countBookingsInToolOutput(lastToolResult.output);
 
     if (matchCount === 0) {
-      return { kind: "narrate", step: narrationOnlyStep() };
+      return { kind: BOOKING_STEP_DECISION_KIND.NARRATE, step: narrationOnlyStep() };
+    }
+
+    if (!args.tools?.[TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]) {
+      return { kind: BOOKING_STEP_DECISION_KIND.NONE };
     }
 
     return {
-      kind: "force",
+      kind: BOOKING_STEP_DECISION_KIND.FORCE,
       step: forceTool(TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM),
     };
   }
 
-  return { kind: "none" };
+  return { kind: BOOKING_STEP_DECISION_KIND.NONE };
 };

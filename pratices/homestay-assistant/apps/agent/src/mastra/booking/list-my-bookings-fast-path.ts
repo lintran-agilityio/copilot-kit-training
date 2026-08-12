@@ -1,11 +1,12 @@
-import type {
-  ProcessInputStepArgs,
-  ProcessInputStepResult,
-} from "@mastra/core/processors";
+import type { ProcessInputStepArgs } from "@mastra/core/processors";
 
 import { TOOL_KEYS } from "@repo/constants";
 import { detectListMyBookingsIntent, getBusinessDates } from "@repo/utils";
 
+import {
+  BOOKING_STEP_DECISION_KIND,
+  type BookingPrepareStepDecision,
+} from "@/mastra/booking/constants";
 import {
   countToolResultsInCurrentTurn,
   resolveLastToolResult,
@@ -19,11 +20,7 @@ import { extractLatestUserText } from "@/mastra/booking/stated-modify-fast-path"
  * Mirrors stated-modify-fast-path: force a server tool only when required;
  * after a successful list fetch, lock tools for a narration-only hop.
  */
-export type ListMyBookingsStepDecision =
-  | { kind: "force"; step: ProcessInputStepResult }
-  /** Collection fetched — next LLM step must be text only (no re-get_bookings). */
-  | { kind: "narrate"; step: ProcessInputStepResult }
-  | { kind: "none" };
+export type ListMyBookingsStepDecision = BookingPrepareStepDecision;
 
 /**
  * Clears mutation pins so a fresh LIST_MY_BOOKINGS turn cannot inherit
@@ -37,6 +34,7 @@ const clearStaleMutationPins = (args: ProcessInputStepArgs) => {
   }
 
   requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_CANCEL_BOOKING_ID, undefined);
+  requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID, undefined);
   requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE, undefined);
   requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_ORIGINAL, undefined);
   requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY, undefined);
@@ -75,14 +73,14 @@ export const resolveListMyBookingsStep = (
   // Intelligence title-gen embeds the guest line ("…user: Show my bookings.")
   // — must not force get_bookings on that hidden run (proven TokenLimiter loop).
   if (/^generate a short title for this conversation\b/i.test(text)) {
-    return { kind: "none" };
+    return { kind: BOOKING_STEP_DECISION_KIND.NONE };
   }
 
   const today = getBusinessDates().today;
   const routing = detectListMyBookingsIntent(text, today);
 
   if (!routing) {
-    return { kind: "none" };
+    return { kind: BOOKING_STEP_DECISION_KIND.NONE };
   }
 
   const getBookingsCount = countToolResultsInCurrentTurn(
@@ -94,7 +92,7 @@ export const resolveListMyBookingsStep = (
   // guest-facing reply only. Message-part count is authoritative because
   // MessageMerger records each invocation even when steps[].toolResults is empty.
   if (getBookingsCount >= 1) {
-    return { kind: "narrate", step: narrationOnlyStep() };
+    return { kind: BOOKING_STEP_DECISION_KIND.NARRATE, step: narrationOnlyStep() };
   }
 
   const lastToolResult = resolveLastToolResult(args);
@@ -102,13 +100,13 @@ export const resolveListMyBookingsStep = (
   // Mid-turn after a different tool on an explicit list message — do not force
   // another get_bookings, and do not leave list tools open for a self-loop.
   if (lastToolResult?.toolName) {
-    return { kind: "narrate", step: narrationOnlyStep() };
+    return { kind: BOOKING_STEP_DECISION_KIND.NARRATE, step: narrationOnlyStep() };
   }
 
   pinListMyBookings(args, routing.onDate);
 
   return {
-    kind: "force",
+    kind: BOOKING_STEP_DECISION_KIND.FORCE,
     step: {
       activeTools: [TOOL_KEYS.BOOKING.GET],
       toolChoice: {

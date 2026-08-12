@@ -9,4 +9,5 @@ export * from "./confirm-booking.js";
 export * from "./edit-modify-booking.js";
 export * from "./confirm-modify-booking.js";
 export * from "./confirm-cancel-booking.js";
+export * from "./modify-booking-by-room.js";
 export * from "./booking-unavailable.js";

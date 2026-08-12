@@ -13,6 +13,10 @@ import {
 import { getUiActionPromptDisplayText } from "@repo/utils";
 
 import { getLatestFindRoomToolCallIdInCurrentTurn } from "@/features/room/utils";
+import type {
+  MessageLike,
+  ToolCallLike,
+} from "@/features/chat/types";
 
 const { ACTION, BOOKING, GET } = TOOL_KEYS;
 
@@ -72,6 +76,7 @@ export const CHAT_VISIBLE_GENERATIVE_TOOLS = new Set([
   ACTION.EDIT_MODIFY_BOOKING,
   ACTION.CONFIRM_MODIFY_BOOKING,
   BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
+  BOOKING.SHOW_MODIFY_DIALOG_SELECT,
   ...RENDER_BACKEND_TOOLS,
 ]);
 
@@ -81,16 +86,13 @@ export const isPageOnlyGenerativeTool = (toolName: string) =>
   CHAT_HIDDEN_TOOLS.has(toolName);
 
 /** Minimal tool-call shape shared by chat rendering and text suppression. */
-export type ChatVisibleToolCall = {
-  id?: string;
-  function?: { name?: string; arguments?: unknown };
-};
+export type ChatVisibleToolCall = ToolCallLike;
 
-type ChatMessageForToolVisibility = {
-  id?: string;
-  role?: string;
-  toolCalls?: ChatVisibleToolCall[];
-};
+type ChatMessageForToolVisibility = Pick<
+  MessageLike,
+  "id" | "role" | "toolCalls"
+>;
+
 
 /**
  * Filters toolCalls for chat rendering (and text-suppression parity).
@@ -177,7 +179,7 @@ export const getMessageTextContent = (content?: unknown) => {
         return false;
       }
 
-      const candidate = part as { type?: unknown; text?: unknown };
+      const candidate = part as { type?: string; text?: string };
       return candidate.type === "text" && Boolean(candidate.text);
     })
     .map((part) => String((part as { text: string }).text))

@@ -25,8 +25,8 @@ import {
 import type {
   CancelBookingByRoomArgs,
   CancelBookingByRoomResult,
-} from "@/features/booking/schemas";
-import type { BookingDetails } from "@/features/booking/types";
+} from "@repo/schemas";
+import type { BookingDetails, HitlToolResult } from "@/features/booking/types";
 import { CONFIRM_CANCEL_BOOKING, CANCEL_BOOKING_PICKER } from "@/features/booking/constants";
 import { ConfirmCancelBookingModal } from "./ConfirmCancelBookingModal";
 
@@ -34,7 +34,7 @@ type CancelBookingByRoomModalProps = {
   status: ToolCallStatus;
   args: Partial<CancelBookingByRoomArgs>;
   respond?: (result: CancelBookingByRoomResult) => Promise<void>;
-  result?: unknown;
+  result?: HitlToolResult<CancelBookingByRoomResult>;
   toolCallId?: string;
 };
 

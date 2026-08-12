@@ -45,28 +45,28 @@ import {
 import type {
   ConfirmBookingArgs,
   ConfirmBookingResult,
-} from "@/features/booking/schemas";
-import type {
   ConfirmModifyBookingArgs,
   ConfirmModifyBookingResult,
-} from "@/features/booking/schemas";
+} from "@repo/schemas";
+import type { HitlToolResult } from "@/features/booking/types";
 
-type HitlConfirmStayModalProps = {
-  status: ToolCallStatus;
-  result?: unknown;
-  toolCallId?: string;
-} & (
+type HitlConfirmStayModalProps =
   | {
       variant: "create";
+      status: ToolCallStatus;
       args: Partial<ConfirmBookingArgs>;
       respond?: (result: ConfirmBookingResult) => Promise<void>;
+      result?: HitlToolResult<ConfirmBookingResult>;
+      toolCallId?: string;
     }
   | {
       variant: "modify";
+      status: ToolCallStatus;
       args: Partial<ConfirmModifyBookingArgs>;
       respond?: (result: ConfirmModifyBookingResult) => Promise<void>;
-    }
-);
+      result?: HitlToolResult<ConfirmModifyBookingResult>;
+      toolCallId?: string;
+    };
 
 const HitlConfirmCreateStayModal = ({
   status,
@@ -78,7 +78,7 @@ const HitlConfirmCreateStayModal = ({
   status: ToolCallStatus;
   args: Partial<ConfirmBookingArgs>;
   respond?: (result: ConfirmBookingResult) => Promise<void>;
-  result?: unknown;
+  result?: HitlToolResult<ConfirmBookingResult>;
   toolCallId?: string;
 }) => {
   const router = useRouter();
@@ -220,7 +220,7 @@ const HitlConfirmModifyStayModal = ({
   status: ToolCallStatus;
   args: Partial<ConfirmModifyBookingArgs>;
   respond?: (result: ConfirmModifyBookingResult) => Promise<void>;
-  result?: unknown;
+  result?: HitlToolResult<ConfirmModifyBookingResult>;
   toolCallId?: string;
 }) => {
   const router = useRouter();

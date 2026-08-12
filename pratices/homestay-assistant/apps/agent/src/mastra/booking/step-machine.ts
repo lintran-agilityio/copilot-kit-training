@@ -8,49 +8,36 @@ import { getCurrentTurn } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import {
+  asNonEmptyString,
+  asRecord,
   parseConfirmedStay,
   type ConfirmedStay,
-} from "@/mastra/utils/confirmed-stay";
+  type JsonValue,
+} from "@/mastra/utils";
 import { resolveCancelWithoutBookingIdStep } from "@/mastra/booking/cancel-resolve-fast-path";
+import {
+  BOOKING_STEP_TRANSITION_TYPE,
+  isActionableBookingStepDecision,
+} from "@/mastra/booking/constants";
 import { resolveListMyBookingsStep } from "@/mastra/booking/list-my-bookings-fast-path";
+import { resolveModifyWithoutBookingIdStep } from "@/mastra/booking/modify-resolve-fast-path";
 import { tryEnforceSearchTerminalStep } from "@/mastra/booking/search-terminal-fast-path";
 import { tryEnforceStatedModifyFastPath } from "@/mastra/booking/stated-modify-fast-path";
+import type {
+  CancelBookingByRoomResult,
+  ModifyBookingByRoomResult,
+} from "@repo/schemas";
 
 type ToolResultLike = {
   toolName?: string;
-  input?: unknown;
-  output?: unknown;
+  input?: JsonValue;
+  output?: JsonValue;
 };
 
 export type BookingStepTransition =
-  | { type: "call"; toolName: string }
-  | { type: "stop" }
+  | { type: typeof BOOKING_STEP_TRANSITION_TYPE.CALL; toolName: string }
+  | { type: typeof BOOKING_STEP_TRANSITION_TYPE.STOP }
   | null;
-
-/**
- * Narrows unknown JSON-like values to a plain object record.
- *
- * @param value - Raw tool input/output
- * @returns Record when parseable, otherwise null
- */
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-};
 
 /**
  * Resolves the next booking step-machine transition from the latest tool result.
@@ -58,6 +45,110 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
  * @param toolResult - Last tool name/input/output from the agent step
  * @returns Forced next tool, stop, or null when no transition applies
  */
+type TransitionHandler = (
+  input: unknown,
+  output: Record<string, unknown>,
+) => BookingStepTransition;
+
+const stop = (): BookingStepTransition => ({
+  type: BOOKING_STEP_TRANSITION_TYPE.STOP,
+});
+
+const call = (toolName: string): BookingStepTransition => ({
+  type: BOOKING_STEP_TRANSITION_TYPE.CALL,
+  toolName,
+});
+
+const callIfConfirmed = (
+  toolName: string,
+  output: Record<string, unknown>,
+): BookingStepTransition =>
+  output.confirmed === true ? call(toolName) : stop();
+
+const resolveAvailabilityTransition = (
+  input: unknown,
+  output: Record<string, unknown>,
+): BookingStepTransition => {
+  const nextAction = output.nextAction;
+
+  const nextActionTransitions: Record<string, BookingStepTransition> = {
+    [TOOL_KEYS.ACTION.CONFIRM_BOOKING]: call(
+      TOOL_KEYS.ACTION.CONFIRM_BOOKING,
+    ),
+    [TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING]: call(
+      TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
+    ),
+    stop_booking: stop(),
+  };
+
+  const explicitTransition = nextActionTransitions[nextAction as string];
+
+  if (explicitTransition) {
+    return explicitTransition;
+  }
+
+  const availabilityInput = asRecord(input);
+
+  const isAvailable =
+    output.available === true &&
+    output.guestsWithinCapacity === true;
+
+  if (!isAvailable) {
+    return stop();
+  }
+
+  const flow = output.flow ?? availabilityInput?.flow;
+
+  const isModify =
+    flow === "modify" ||
+    typeof availabilityInput?.excludeBookingId === "string";
+
+  return call(
+    isModify
+      ? TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
+      : TOOL_KEYS.ACTION.CONFIRM_BOOKING,
+  );
+};
+
+const transitionHandlers: Record<string, TransitionHandler> = {
+  [TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY]:
+    resolveAvailabilityTransition,
+
+  [TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING]: (_, output) =>
+    callIfConfirmed(
+      TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
+      output,
+    ),
+
+  [TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]: (_, output) =>
+    callIfConfirmed(
+      TOOL_KEYS.BOOKING.CANCEL,
+      output,
+    ),
+
+  [TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT]: (_, output) =>
+    callIfConfirmed(
+      TOOL_KEYS.BOOKING.FIND_BY_ID,
+      output,
+    ),
+
+  [TOOL_KEYS.ACTION.CONFIRM_BOOKING]: (_, output) =>
+    callIfConfirmed(
+      TOOL_KEYS.BOOKING.CREATE_BOOKING,
+      output,
+    ),
+
+  [TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING]: (_, output) =>
+    callIfConfirmed(
+      TOOL_KEYS.BOOKING.UPDATE_BOOKING,
+      output,
+    ),
+
+  [TOOL_KEYS.BOOKING.CREATE_BOOKING]: stop,
+  [TOOL_KEYS.BOOKING.UPDATE_BOOKING]: stop,
+  [TOOL_KEYS.BOOKING.CANCEL]: stop,
+};
+
 export const resolveBookingStepTransition = ({
   toolName,
   input,
@@ -69,77 +160,9 @@ export const resolveBookingStepTransition = ({
     return null;
   }
 
-  if (toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
-    const nextAction = result.nextAction;
+  const handler = transitionHandlers[toolName];
 
-    if (
-      nextAction === TOOL_KEYS.ACTION.CONFIRM_BOOKING ||
-      nextAction === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
-    ) {
-      return { type: "call", toolName: nextAction };
-    }
-
-    if (nextAction === "stop_booking") {
-      return { type: "stop" };
-    }
-
-    const isAvailable =
-      result.available === true && result.guestsWithinCapacity === true;
-
-    if (!isAvailable) {
-      return { type: "stop" };
-    }
-
-    const availabilityInput = asRecord(input);
-    const flow = result.flow ?? availabilityInput?.flow;
-    const isModify =
-      flow === "modify" ||
-      typeof availabilityInput?.excludeBookingId === "string";
-
-    return {
-      type: "call",
-      toolName: isModify
-        ? TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
-        : TOOL_KEYS.ACTION.CONFIRM_BOOKING,
-    };
-  }
-
-  if (toolName === TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING) {
-    return result.confirmed === true
-      ? {
-          type: "call",
-          toolName: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
-        }
-      : { type: "stop" };
-  }
-
-  if (toolName === TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM) {
-    return result.confirmed === true
-      ? { type: "call", toolName: TOOL_KEYS.BOOKING.CANCEL }
-      : { type: "stop" };
-  }
-
-  if (toolName === TOOL_KEYS.ACTION.CONFIRM_BOOKING) {
-    return result.confirmed === true
-      ? { type: "call", toolName: TOOL_KEYS.BOOKING.CREATE_BOOKING }
-      : { type: "stop" };
-  }
-
-  if (toolName === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING) {
-    return result.confirmed === true
-      ? { type: "call", toolName: TOOL_KEYS.BOOKING.UPDATE_BOOKING }
-      : { type: "stop" };
-  }
-
-  if (
-    toolName === TOOL_KEYS.BOOKING.CREATE_BOOKING ||
-    toolName === TOOL_KEYS.BOOKING.UPDATE_BOOKING ||
-    toolName === TOOL_KEYS.BOOKING.CANCEL
-  ) {
-    return { type: "stop" };
-  }
-
-  return null;
+  return handler ? handler(input, result) : null;
 };
 
 /**
@@ -218,8 +241,8 @@ const getLastToolResultFromMessages = (
 
       return {
         toolName: invocation.toolName,
-        input: invocation.args,
-        output: invocation.result,
+        input: invocation.args as JsonValue | undefined,
+        output: invocation.result as JsonValue | undefined,
       };
     }
   }
@@ -280,29 +303,98 @@ const stashConfirmedStayForNextTool = (
     return;
   }
 
-  if (toolName === TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING) {
-    requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE, stay);
-    return;
+  const { EDIT_MODIFY_BOOKING, CONFIRM_MODIFY_BOOKING, CONFIRM_BOOKING } = TOOL_KEYS.ACTION;
+
+  switch (toolName) {
+    case EDIT_MODIFY_BOOKING:
+      requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE, stay);
+      return;
+    case CONFIRM_MODIFY_BOOKING:
+      requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY, stay);
+      return;
+    case CONFIRM_BOOKING:
+      requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY, stay);
+      return;  
+    default:
+      break;
+  }
+};
+
+/**
+ * Parses cancel picker HITL output into CancelBookingByRoomResult.
+ */
+const parseCancelBookingByRoomResult = (
+  output: unknown,
+): CancelBookingByRoomResult | null => {
+  const result = asRecord(output);
+  if (!result) {
+    return null;
   }
 
-  if (toolName === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING) {
-    requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY, stay);
-    return;
+  if (result.confirmed === true) {
+    const bookingId = asNonEmptyString(result.bookingId);
+    if (!bookingId) {
+      return null;
+    }
+    // roomName is required on the shared type but may be omitted at runtime.
+    return {
+      confirmed: true,
+      bookingId,
+      roomName: asNonEmptyString(result.roomName) ?? "",
+    };
   }
 
-  if (toolName === TOOL_KEYS.ACTION.CONFIRM_BOOKING) {
-    requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY, stay);
+  if (result.confirmed === false) {
+    const reason =
+      result.reason === "declined" || result.reason === "not_found"
+        ? result.reason
+        : undefined;
+    return reason ? { confirmed: false, reason } : { confirmed: false };
   }
+
+  return null;
+};
+
+/**
+ * Parses modify picker HITL output into ModifyBookingByRoomResult.
+ */
+const parseModifyBookingByRoomResult = (
+  output: unknown,
+): ModifyBookingByRoomResult | null => {
+  const result = asRecord(output);
+  if (!result) {
+    return null;
+  }
+
+  const { confirmed, bookingId, roomName } = result;
+
+  if (confirmed) {
+    const bookingIdRes = asNonEmptyString(bookingId);
+    if (!bookingIdRes) {
+      return null;
+    }
+    return {
+      confirmed: true,
+      bookingId: bookingIdRes,
+      roomName: asNonEmptyString(roomName) ?? "",
+    };
+  }
+
+  if (!confirmed) {
+    const reason =
+      result.reason === "declined" || result.reason === "not_found"
+        ? result.reason
+        : undefined;
+    return reason ? { confirmed: false, reason } : { confirmed: false };
+  }
+
+  return null;
 };
 
 /**
  * Pins the booking id the guest just confirmed in the cancel dialog, so
  * cancel_booking uses it instead of a stale id the model may carry over from an
  * earlier turn in the same thread.
- *
- * @param args - prepareStep args (needs requestContext)
- * @param toolName - Previous tool that produced the confirmation
- * @param output - Raw HITL tool output
  */
 const stashConfirmedCancelBookingId = (
   args: ProcessInputStepArgs,
@@ -314,20 +406,42 @@ const stashConfirmedCancelBookingId = (
   }
 
   const requestContext = args.requestContext;
-  const result = asRecord(output);
+  const result = parseCancelBookingByRoomResult(output);
 
-  if (!requestContext || result?.confirmed !== true) {
+  if (!requestContext || !result || result.confirmed !== true) {
     return;
   }
 
-  const bookingId =
-    typeof result.bookingId === "string" ? result.bookingId.trim() : "";
+  requestContext.set(
+    REQUEST_CONTEXT_KEYS.PENDING_CANCEL_BOOKING_ID,
+    result.bookingId,
+  );
+};
 
-  if (!bookingId) {
+/**
+ * Pins the booking id the guest selected in the modify multi-match picker, so
+ * find_booking_by_id uses it instead of a stale id the model may guess.
+ */
+const stashConfirmedModifyBookingId = (
+  args: ProcessInputStepArgs,
+  toolName: string | undefined,
+  output: unknown,
+) => {
+  if (toolName !== TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT) {
     return;
   }
 
-  requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_CANCEL_BOOKING_ID, bookingId);
+  const requestContext = args.requestContext;
+  const result = parseModifyBookingByRoomResult(output);
+
+  if (!requestContext || !result || result.confirmed !== true) {
+    return;
+  }
+
+  requestContext.set(
+    REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID,
+    result.bookingId,
+  );
 };
 
 /**
@@ -360,15 +474,22 @@ export const enforceBookingStep = (
     // Mastra prepareStep only: LIST_MY_BOOKINGS (same layer as stated-modify).
     // force → get_bookings hop; narrate → toolChoice none (no re-get_bookings).
     const listDecision = resolveListMyBookingsStep(args);
-    if (listDecision.kind === "force" || listDecision.kind === "narrate") {
+    if (isActionableBookingStepDecision(listDecision)) {
       return listDecision.step;
     }
 
     // CANCEL without bookingId: force get_bookings → 0 narrate / 1 find / N>1 HITL list.
     // Runs after LIST so "show my bookings" never opens cancel dialog.
     const cancelDecision = resolveCancelWithoutBookingIdStep(args);
-    if (cancelDecision.kind === "force" || cancelDecision.kind === "narrate") {
+    if (isActionableBookingStepDecision(cancelDecision)) {
       return cancelDecision.step;
+    }
+
+    // MODIFY without bookingId: force get_bookings → 0 narrate / 1 find / N>1 HITL picker.
+    // Runs after CANCEL so cancel verbs never open the modify picker.
+    const modifyDecision = resolveModifyWithoutBookingIdStep(args);
+    if (isActionableBookingStepDecision(modifyDecision)) {
+      return modifyDecision.step;
     }
 
     // FIND / BROWSE terminal: block re-search after find_room / get_rooms.
@@ -384,8 +505,9 @@ export const enforceBookingStep = (
   }
 
   const { toolResult: lastToolResult, transition } = source;
+  const { toolName: lastToolName, output: lastToolOutput } = lastToolResult;
 
-  if (transition.type === "stop") {
+  if (transition.type === BOOKING_STEP_TRANSITION_TYPE.STOP) {
     return {
       activeTools: [],
       toolChoice: "none",
@@ -396,17 +518,24 @@ export const enforceBookingStep = (
     return undefined;
   }
 
-  const stay = parseConfirmedStay(lastToolResult.output);
+  const stay = parseConfirmedStay(lastToolOutput);
 
   if (stay) {
-    stashConfirmedStayForNextTool(args, lastToolResult.toolName, stay);
+    stashConfirmedStayForNextTool(args, lastToolName, stay);
   }
 
   // The cancel dialog result carries no dates, so parseConfirmedStay skips it.
   stashConfirmedCancelBookingId(
     args,
-    lastToolResult.toolName,
-    lastToolResult.output,
+    lastToolName,
+    lastToolOutput,
+  );
+
+  // The modify picker result carries no dates, so parseConfirmedStay skips it.
+  stashConfirmedModifyBookingId(
+    args,
+    lastToolName,
+    lastToolOutput,
   );
 
   return {
@@ -417,10 +546,3 @@ export const enforceBookingStep = (
     },
   };
 };
-
-
-/** @deprecated Prefer `BookingStepTransition` — identical type. */
-export type BookingWorkflowTransition = BookingStepTransition;
-
-/** @deprecated Prefer `resolveBookingStepTransition`. */
-export const resolveBookingWorkflowTransition = resolveBookingStepTransition;

@@ -2,6 +2,10 @@ import { useCallback, useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
 import { useSupersedeHitlOnNewInteraction } from "@/features/chat/hooks";
+import type {
+  HitlConfirmDialogResult,
+  HitlToolResult,
+} from "@/features/booking/types/hitl-result";
 import {
   isHitlToolFinished,
   isHitlToolRespondable,
@@ -10,9 +14,7 @@ import {
   type HitlDecisionStatus,
 } from "@/features/booking/utils";
 
-export type HitlConfirmDialogResult =
-  | { confirmed: false }
-  | { confirmed: true; [key: string]: unknown };
+export type { HitlConfirmDialogResult } from "@/features/booking/types/hitl-result";
 
 export const useHitlConfirmDialog = <
   TResult extends HitlConfirmDialogResult,
@@ -20,7 +22,7 @@ export const useHitlConfirmDialog = <
   status: ToolCallStatus,
   respond: ((result: TResult) => Promise<void>) | undefined,
   defaultErrorMessage: string,
-  result?: unknown,
+  result?: HitlToolResult<TResult>,
   toolCallId?: string,
 ) => {
   const [isSubmitting, setIsSubmitting] = useState(false);

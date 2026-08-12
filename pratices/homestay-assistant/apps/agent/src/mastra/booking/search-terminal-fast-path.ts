@@ -7,6 +7,8 @@ import { TOOL_KEYS } from "@repo/constants";
 
 import { resolveLastToolResult } from "@/mastra/booking/last-tool-result";
 import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
+import { parseFindRoomOutput } from "@/mastra/utils";
+import type { FindRoomPurpose } from "@repo/schemas";
 
 /**
  * Large list/search tools that must not re-run after a terminal search/browse hop.
@@ -35,47 +37,15 @@ const excludeSearchLoopTools = (
   };
 };
 
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-};
-
 const readFindRoomPurpose = (
   output: unknown,
-): "search" | "recommend" | "book_resolve" | undefined => {
-  const record = asRecord(output);
-  const purpose = record?.purpose;
-  if (
-    purpose === "search" ||
-    purpose === "recommend" ||
-    purpose === "book_resolve"
-  ) {
-    return purpose;
-  }
-  return undefined;
+): FindRoomPurpose | undefined => {
+  return parseFindRoomOutput(output)?.purpose;
 };
 
 const readFindRoomMatchCount = (output: unknown): number => {
-  const record = asRecord(output);
-  if (typeof record?.matchCount === "number") {
-    return record.matchCount;
-  }
-  const rooms = record?.rooms;
-  return Array.isArray(rooms) ? rooms.length : 0;
+  const parsed = parseFindRoomOutput(output);
+  return parsed?.rooms.length ?? 0;
 };
 
 /**
