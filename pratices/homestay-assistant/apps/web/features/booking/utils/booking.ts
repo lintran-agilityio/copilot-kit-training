@@ -1,7 +1,7 @@
 import { BookingStatus } from "@repo/types";
 import { parseToolResult } from "@repo/utils";
 import { CancelBookingResult, CheckRoomAvailabilityResult, CreateBookingResult, UpdateBookingResult } from "../types";
-import { BookingUnavailableReason } from "../schemas";
+import { BookingUnavailableReason } from "@repo/schemas";
 
 export type BookingStatusMeta = {
   label: string;
