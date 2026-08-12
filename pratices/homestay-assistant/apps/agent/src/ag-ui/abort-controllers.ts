@@ -82,6 +82,27 @@ export const abortControllersForThread = (
   return { runIds: [...runIds], controllers };
 };
 
+/**
+ * Abort every live AbortController for a thread.
+ *
+ * Used by HTTP `/stop` so Mastra is cancelled even when Intelligence
+ * `runner.stop()` returns false (no thread in the runner map). Idempotent:
+ * unknown / empty threadIds and threads with no controllers are no-ops.
+ */
+export const abortThreadRuns = (threadId: string | undefined): void => {
+  if (!threadId) {
+    return;
+  }
+
+  const { controllers } = abortControllersForThread(threadId);
+
+  for (const controller of controllers) {
+    if (!controller.signal.aborted) {
+      controller.abort();
+    }
+  }
+};
+
 export const getAbortControllerForRunId = (
   runId: string | undefined,
 ): AbortController | undefined =>

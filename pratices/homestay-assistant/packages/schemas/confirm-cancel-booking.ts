@@ -31,11 +31,13 @@ export const cancelBookingByRoomSchema = z.object({
   bookings: z
     .array(confirmCancelBookingSchema)
     .describe(
-      "Matching bookings from find_booking_by_id — only call this tool when length > 0",
+      "Matching bookings from find_booking_by_id (length 1) or multi-match get_bookings — map get_bookings.id → bookingId and include totalPrice. Only call when length > 0. When length > 1 the UI shows a selectable list.",
     ),
   queryName: z
     .string()
-    .describe("Room display name from find_booking_by_id — pass as-is"),
+    .describe(
+      "Room display name from find_booking_by_id, or a date cue / \"your bookings\" when disambiguating multiple get_bookings matches",
+    ),
 });
 
 export type CancelBookingByRoomArgs = z.infer<typeof cancelBookingByRoomSchema>;

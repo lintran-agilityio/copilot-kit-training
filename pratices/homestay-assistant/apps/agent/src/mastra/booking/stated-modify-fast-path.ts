@@ -13,39 +13,17 @@ import {
   resolveBookingFromLookupResult,
   type ModifyStayFields,
 } from "@/mastra/booking/stated-modify-changes";
-import type { ConfirmedStay } from "@/mastra/utils/confirmed-stay";
+import {
+  asNonEmptyString,
+  asRecord,
+  type ConfirmedStay,
+  type JsonValue,
+} from "@/mastra/utils";
 
 type ToolResultLike = {
   toolName?: string;
-  input?: unknown;
-  output?: unknown;
-};
-
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-};
-
-const asNonEmptyString = (value: unknown): string | undefined => {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
+  input?: JsonValue;
+  output?: JsonValue;
 };
 
 /**
@@ -80,12 +58,13 @@ export const extractLatestUserText = (
       }
     }
 
-    if (!text.trim() && typeof content?.content === "string") {
-      text = content.content;
-    }
-
-    if (!text.trim() && typeof message.content === "string") {
-      text = message.content;
+    if (!text.trim()) {
+      if (typeof content?.content === "string") {
+        text = content.content;
+      }
+      if (typeof message.content === "string") {
+        text = message.content;
+      }
     }
 
     return text.trim();
@@ -156,6 +135,8 @@ export const tryEnforceStatedModifyFastPath = (
   }
 
   // Guard: if this turn already ran availability / edit / confirm, do not re-pin.
+  // Do NOT bail on show_modify_dialog_select — that picker runs *before* find and
+  // stated-modify must still merge guests/dates after the guest picks a stay.
   for (const message of turn) {
     if (message?.role === "user") {
       continue;

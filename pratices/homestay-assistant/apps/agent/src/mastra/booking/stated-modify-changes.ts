@@ -7,7 +7,14 @@ import {
   PAGE_ROOMS_PROMPT_PREFIX,
   TOOL_KEYS,
 } from "@repo/constants";
-import { addDaysYmd, resolveCalendarDate, toYmd } from "@repo/utils"
+import { addDaysYmd, resolveCalendarDate, toYmd } from "@repo/utils";
+
+import {
+  asNonEmptyString,
+  asPositiveInt,
+  parseFindBookingByIdOutput,
+  parseGetBookingsOutput,
+} from "@/mastra/utils";
 
 /** Absolute stay fields the guest already stated in natural language. */
 export type StatedModifyChanges = {
@@ -211,9 +218,15 @@ export const extractStatedModifyChanges = (
   }
 
   const guestsMatch =
-    /\b(?:change\s+)?(?:the\s+)?(?:number\s+of\s+)?guests?\s*(?:to|=|:)\s*(\d+)\b/i.exec(
+    /\b(?:change\s+)?(?:the\s+)?(?:number\s+of\s+)?guests?\s*(?:to|=|:|is)\s*(\d+)\b/i.exec(
       text,
-    ) ?? /\bmake\s+(?:it\s+)?(\d+)\s+guests?\b/i.exec(text);
+    ) ??
+    /\bguest(?:s)?\s+number\b(?:[\s\S]*?)\bto\s+(\d+)\b/i.exec(text) ??
+    /\bmodify\s+guest(?:s)?\s*(?:number\s*)?(?:to|=|:|is)\s*(\d+)\b/i.exec(
+      text,
+    ) ??
+    /\b(?:to|=|:)\s*(\d+)\s+guests?\b/i.exec(text) ??
+    /\bmake\s+(?:it\s+)?(\d+)\s+guests?\b/i.exec(text);
 
   if (guestsMatch) {
     const guests = Number(guestsMatch[1]);
@@ -272,28 +285,6 @@ export const mergeStatedModifyStay = (
   return next;
 };
 
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
-};
-
-const asNonEmptyString = (value: unknown): string | undefined => {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-};
-
-const asPositiveInt = (value: unknown): number | undefined => {
-  const n = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
-    return undefined;
-  }
-  return n;
-};
 
 export type ResolvedBookingForStatedModify = {
   bookingId: string;
@@ -302,14 +293,12 @@ export type ResolvedBookingForStatedModify = {
   current: ModifyStayFields;
 };
 
-const parseStayFromBookingRecord = (
-  booking: Record<string, unknown>,
+const parseStayFromDates = (
+  checkInDate: string | undefined,
+  checkOutDate: string | undefined,
+  guests: number | undefined,
 ): ModifyStayFields | null => {
-  const checkInDate = asNonEmptyString(booking.checkInDate);
-  const checkOutDate = asNonEmptyString(booking.checkOutDate);
-  const guests = asPositiveInt(booking.guests);
-
-  if (!checkInDate || !checkOutDate || guests == null) {
+  if (!checkInDate || !checkOutDate || guests == null || guests <= 0) {
     return null;
   }
 
@@ -323,27 +312,27 @@ export const resolveBookingFromLookupResult = (
   toolName: string | undefined,
   output: unknown,
 ): ResolvedBookingForStatedModify | null => {
-  const result = asRecord(output);
-  if (!result || !Array.isArray(result.bookings)) {
-    return null;
-  }
-
   if (toolName === TOOL_KEYS.BOOKING.FIND_BY_ID) {
-    if (result.bookings.length === 0) {
+    const result = parseFindBookingByIdOutput(output);
+    if (!result || result.bookings.length === 0) {
       return null;
     }
 
-    const booking = asRecord(result.bookings[0]);
-    const room = asRecord(result.room);
+    const booking = result.bookings[0];
     if (!booking) {
       return null;
     }
 
-    const current = parseStayFromBookingRecord(booking);
+    const current = parseStayFromDates(
+      booking.checkInDate,
+      booking.checkOutDate,
+      booking.guests,
+    );
     const bookingId =
-      asNonEmptyString(booking.bookingId) ?? asNonEmptyString(result.bookingId);
+      asNonEmptyString(booking.bookingId) ??
+      asNonEmptyString(result.bookingId);
     const roomId =
-      asNonEmptyString(room?.id) ?? asNonEmptyString(booking.roomId);
+      asNonEmptyString(result.room?.id) ?? asNonEmptyString(booking.roomId);
 
     if (!current || !bookingId || !roomId) {
       return null;
@@ -352,25 +341,28 @@ export const resolveBookingFromLookupResult = (
     return {
       bookingId,
       roomId,
-      capacity: asPositiveInt(room?.capacity),
+      capacity: asPositiveInt(result.room?.capacity),
       current,
     };
   }
 
   if (toolName === TOOL_KEYS.BOOKING.GET) {
-    if (result.bookings.length !== 1) {
+    const result = parseGetBookingsOutput(output);
+    if (!result || result.bookings.length !== 1) {
       return null;
     }
 
-    const booking = asRecord(result.bookings[0]);
+    const booking = result.bookings[0];
     if (!booking) {
       return null;
     }
 
-    const current = parseStayFromBookingRecord(booking);
-    const bookingId =
-      asNonEmptyString(booking.id) ?? asNonEmptyString(booking.bookingId);
-    const room = asRecord(booking.room);
+    const current = parseStayFromDates(
+      booking.checkInDate,
+      booking.checkOutDate,
+      booking.guests,
+    );
+    const bookingId = asNonEmptyString(booking.id);
     const roomId = asNonEmptyString(booking.roomId);
 
     if (!current || !bookingId || !roomId) {
@@ -380,7 +372,7 @@ export const resolveBookingFromLookupResult = (
     return {
       bookingId,
       roomId,
-      capacity: asPositiveInt(room?.capacity),
+      capacity: asPositiveInt(booking.room?.capacity),
       current,
     };
   }

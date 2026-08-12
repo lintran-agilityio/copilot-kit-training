@@ -5,6 +5,7 @@ import {
   isHitlToolAwaitingUser,
   isHitlToolFinished,
 } from "@/features/booking/utils/hitl-tool-status";
+import type { HitlToolResult } from "@/features/booking/types/hitl-result";
 
 export const HITL_DECISION_STATUS = {
   PENDING: "pending",
@@ -28,21 +29,19 @@ type HitlConfirmPayload = {
  */
 export const resolveHitlDecisionStatus = (
   status: ToolCallStatus,
-  result?: unknown,
+  result?: HitlToolResult<HitlConfirmPayload>,
 ): HitlDecisionStatus => {
   if (!isHitlToolFinished(status)) {
     return HITL_DECISION_STATUS.PENDING;
   }
 
-  const parsed = parseToolResult<HitlConfirmPayload>(
-    result as HitlConfirmPayload | string | null | undefined,
-  );
-
-  if (parsed?.confirmed === true) {
+  const parsed = parseToolResult<HitlConfirmPayload>(result);
+  const { confirmed } = parsed || {};
+  if (confirmed) {
     return HITL_DECISION_STATUS.APPROVED;
   }
 
-  if (parsed?.confirmed === false) {
+  if (!confirmed) {
     return HITL_DECISION_STATUS.REJECTED;
   }
 

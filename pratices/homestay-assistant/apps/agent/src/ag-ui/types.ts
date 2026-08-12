@@ -4,11 +4,18 @@ export type AgUiToolCall = {
   id?: string;
 };
 
+/** Message content shapes we read in transcript filters. */
+export type AgUiMessageContent =
+  | string
+  | Array<{ type?: string; text?: string }>
+  | null
+  | undefined;
+
 export type AgUiMessage = {
   id?: string;
   role?: string;
   metadata?: unknown;
-  content?: unknown;
+  content?: AgUiMessageContent;
   toolCalls?: AgUiToolCall[];
   toolCallId?: string;
 };
@@ -37,6 +44,39 @@ export type MastraAgentLike = {
 export type AgUiRunInput = {
   runId?: string;
   threadId?: string;
+  messages?: AgUiMessage[];
+  /** Opaque AG-UI run bag — vendor fields beyond runId/threadId/messages. */
+  [key: string]: unknown;
+};
+
+export type AgUiStreamTextPartFn = (text: string) => void;
+export type AgUiStreamFinishMessagePartFn = () => void;
+export type AgUiStreamToolCallStartFn = (payload: {
+  toolCallId: string;
+  toolName: string;
+}) => void;
+export type AgUiStreamToolCallArgsFn = (payload: {
+  toolCallId: string;
+  argsTextDelta: string;
+}) => void;
+export type AgUiStreamToolCallEndFn = (payload: {
+  toolCallId: string;
+}) => void;
+export type AgUiStreamRunFinishedFn = (
+  traceId?: string,
+) => void | Promise<void>;
+
+/**
+ * Callbacks we read/patch on @ag-ui/mastra processFullStream / streamMastraAgent.
+ * Extra vendor callbacks remain allowed via index signature.
+ */
+export type AgUiStreamCallbacks = {
+  onTextPart?: AgUiStreamTextPartFn;
+  onFinishMessagePart?: AgUiStreamFinishMessagePartFn;
+  onToolCallStart?: AgUiStreamToolCallStartFn;
+  onToolCallArgs?: AgUiStreamToolCallArgsFn;
+  onToolCallEnd?: AgUiStreamToolCallEndFn;
+  onRunFinished?: AgUiStreamRunFinishedFn;
   [key: string]: unknown;
 };
 
@@ -46,7 +86,7 @@ export type AgUiMastraAgent = {
   agent?: MastraAgentLike | null;
   processFullStream?: (
     stream: AsyncIterable<unknown>,
-    callbacks: Record<string, unknown>,
+    callbacks: AgUiStreamCallbacks,
     excludedToolNames?: Set<string>,
     workingMemoryState?: Record<string, unknown>,
   ) => Promise<boolean>;
@@ -55,7 +95,7 @@ export type AgUiMastraAgent = {
       threadId: string;
       messages: AgUiMessage[];
     },
-    callbacks: Record<string, unknown>,
+    callbacks: AgUiStreamCallbacks,
   ) => Promise<unknown>;
   clone?: () => AgUiMastraAgent;
   run?: (input: AgUiRunInput) => unknown;
@@ -75,4 +115,17 @@ export type MastraStreamChunk = {
     retry?: boolean;
     metadata?: Record<string, unknown>;
   };
+};
+
+/**
+ * Type guard for Mastra fullStream tripwire chunks.
+ */
+export const isMastraTripwireChunk = (
+  chunk: unknown,
+): chunk is MastraStreamChunk & { type: "tripwire" } => {
+  if (!chunk || typeof chunk !== "object" || Array.isArray(chunk)) {
+    return false;
+  }
+
+  return (chunk as MastraStreamChunk).type === "tripwire";
 };

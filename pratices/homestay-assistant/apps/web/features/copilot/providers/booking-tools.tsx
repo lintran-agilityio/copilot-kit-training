@@ -8,33 +8,34 @@ import {
   checkRoomAvailabilityInputSchema,
   createBookingInputSchema,
   updateBookingInputSchema,
+  cancelBookingByRoomSchema,
+  modifyBookingByRoomSchema,
+  confirmBookingSchema,
+  confirmModifyBookingSchema,
+  editModifyBookingSchema,
+  type CancelBookingByRoomArgs,
+  type ModifyBookingByRoomArgs,
+  type ConfirmBookingArgs,
+  type EditModifyBookingArgs,
 } from "@repo/schemas";
 import {
   CancelBookingByRoomModal,
+  ModifyBookingByRoomModal,
   CancelBookingNotice,
   BookingUnavailableNotice,
   UpdateBookingNotice,
   CreateBookingNotice,
   ConfirmBookingModal,
   EditModifyBookingModal,
-  ConfirmModifyBookingModal,
 } from "@/features/booking/components";
 import {
   CancelBookingToolProps,
   CheckRoomAvailabilityResult,
-  CreateBookingResult,
+  CreateBookingToolProps,
   UpdateBookingToolProps,
 } from "@/features/booking/types";
-import {
-  cancelBookingByRoomSchema,
-  confirmBookingSchema,
-  confirmModifyBookingSchema,
-  editModifyBookingSchema,
-  type CancelBookingByRoomArgs,
-  type ConfirmBookingArgs,
-  type ConfirmModifyBookingArgs,
-  type EditModifyBookingArgs,
-} from "@/features/booking/schemas";
+import type { ToolRendererProps } from "@/features/copilot/types/tool-render-props";
+import { HitlConfirmStayModal } from "@/features/booking/components/HitlConfirmStayModal";
 
 export const BookingToolsProvider = () => {
   useHumanInTheLoop(
@@ -85,9 +86,17 @@ export const BookingToolsProvider = () => {
         "After check_room_availability succeeds for a MODIFY flow (flow=modify + excludeBookingId), show the read-only confirm modification modal with before→after diffs and recalculated total. Pass bookingId, result.room, and the SAME checkInDate, checkOutDate, and guests from check_room_availability.result (the values just validated — from edit_modify_booking confirmed:true, or the stated change merged over the booking when the edit form was skipped). Also pass originalCheckInDate, originalCheckOutDate, and originalGuests from check_room_availability.result when present (fallback: edit_modify_booking args or the resolved booking) so the UI can show only changed fields. Never put original booking dates into checkInDate/checkOutDate/guests. Do NOT call update_booking until CONFIRM_MODIFY_BOOKING returns confirmed: true. If confirmed: true, call update_booking with bookingId, checkInDate, checkOutDate, and guests from the result — the same HITL card then shows submitting/success/failed from update_booking (do not expect a separate ConfirmSuccess card); on success do NOT send chat confirmation text. If confirmed: false, reply that the booking was kept unchanged. Never use this for creating a new booking.",
       parameters: confirmModifyBookingSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
-        <ConfirmModifyBookingModal
+        // <ConfirmModifyBookingModal
+        //   status={status}
+        //   args={args as Partial<ConfirmModifyBookingArgs>}
+        //   respond={respond}
+        //   result={result}
+        //   toolCallId={toolCallId}
+        // />
+        <HitlConfirmStayModal
+          variant="modify"
           status={status}
-          args={args as Partial<ConfirmModifyBookingArgs>}
+          args={args}
           respond={respond}
           result={result}
           toolCallId={toolCallId}
@@ -117,17 +126,38 @@ export const BookingToolsProvider = () => {
     [],
   );
 
+  useHumanInTheLoop(
+    {
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      name: TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT,
+      description:
+        "After get_bookings returns multiple active bookings for a MODIFY without bookingId, show the selectable list. Pass ONLY { bookingIds: [all ids from get_bookings], queryName } — do NOT send full bookings[] rows (tool args truncate). The UI hydrates dates/prices from get_bookings. Do NOT pick the first booking. Do NOT ask which in chat — the HITL list is the response. When confirmed: true, call find_booking_by_id with bookingId from the result, then continue edit_modify_booking (or stated-change availability). When confirmed: false, reply that bookings were kept unchanged. Never call update_booking from this tool.",
+      parameters: modifyBookingByRoomSchema,
+      render: ({ status, args, respond, result, toolCallId }) => (
+        <ModifyBookingByRoomModal
+          status={status}
+          args={args as Partial<ModifyBookingByRoomArgs>}
+          respond={respond}
+          result={result}
+          toolCallId={toolCallId}
+        />
+      ),
+    },
+    [],
+  );
+
   useRenderTool(
     {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
       parameters: checkRoomAvailabilityInputSchema,
-      render: ({ status, result }) => (
-        <BookingUnavailableNotice
-          status={status}
-          result={result as CheckRoomAvailabilityResult | string | null}
-        />
-      ),
+      render: ({ status, result }) => {
+        const props: ToolRendererProps<CheckRoomAvailabilityResult> = {
+          status,
+          result: result as CheckRoomAvailabilityResult | string | null,
+        };
+        return <BookingUnavailableNotice {...props} />;
+      },
     },
     [],
   );
@@ -137,22 +167,14 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.BOOKING.CREATE_BOOKING,
       parameters: createBookingInputSchema,
-      render: ({ status, result, parameters }) => (
-        <CreateBookingNotice
-          status={status}
-          result={result as CreateBookingResult | string | null}
-          parameters={
-            parameters as
-              | {
-                  roomId?: string;
-                  checkInDate?: string;
-                  checkOutDate?: string;
-                  guests?: number;
-                }
-              | undefined
-          }
-        />
-      ),
+      render: ({ status, result, parameters }) => {
+        const props: CreateBookingToolProps = {
+          status,
+          result: result as CreateBookingToolProps["result"],
+          parameters: parameters as CreateBookingToolProps["parameters"],
+        };
+        return <CreateBookingNotice {...props} />;
+      },
     },
     [],
   );
@@ -162,22 +184,14 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
       parameters: updateBookingInputSchema,
-      render: ({ status, result, parameters }) => (
-        <UpdateBookingNotice
-          status={status}
-          result={result as UpdateBookingToolProps["result"]}
-          parameters={
-            parameters as
-              | {
-                  bookingId?: string;
-                  checkInDate?: string;
-                  checkOutDate?: string;
-                  guests?: number;
-                }
-              | undefined
-          }
-        />
-      ),
+      render: ({ status, result, parameters }) => {
+        const props: UpdateBookingToolProps = {
+          status,
+          result: result as UpdateBookingToolProps["result"],
+          parameters: parameters as UpdateBookingToolProps["parameters"],
+        };
+        return <UpdateBookingNotice {...props} />;
+      },
     },
     [],
   );
@@ -187,15 +201,14 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.BOOKING.CANCEL,
       parameters: cancelBookingInputSchema,
-      render: ({ status, result, parameters }) => (
-        <CancelBookingNotice
-          status={status}
-          result={result as CancelBookingToolProps["result"]}
-          parameters={
-            parameters as { bookingId?: string } | undefined
-          }
-        />
-      ),
+      render: ({ status, result, parameters }) => {
+        const props: CancelBookingToolProps = {
+          status,
+          result: result as CancelBookingToolProps["result"],
+          parameters: parameters as CancelBookingToolProps["parameters"],
+        };
+        return <CancelBookingNotice {...props} />;
+      },
     },
     [],
   );

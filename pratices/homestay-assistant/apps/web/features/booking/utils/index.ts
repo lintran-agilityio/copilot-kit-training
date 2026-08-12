@@ -11,5 +11,6 @@ export * from "./modify-booking-correlation-key";
 export * from "./hitl-card-phase";
 export * from "./get-booking-failure-message";
 export * from "./derive-mutation-outcome-from-messages";
+export * from "./resolve-modify-picker-bookings-from-messages";
 export * from "./prepare-booking-form-message";
 export * from "./build-modify-change-rows";

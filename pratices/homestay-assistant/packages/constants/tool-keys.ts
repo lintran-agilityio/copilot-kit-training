@@ -21,6 +21,12 @@ export const TOOL_KEYS = {
     CHECK_ROOM_AVAILABILITY: "check_room_availability",
     /** Frontend HITL — open cancel confirm dialog (only after find_booking_by_id returns bookings). */
     SHOW_CANCEL_DIALOG_CONFIRM: "show_cancel_dialog_confirm",
+    /**
+     * Frontend HITL — multi-booking picker when modify has no bookingId and
+     * get_bookings returns multiple matches. Guest selects one stay; then
+     * find_booking_by_id → edit / stated-modify chain.
+     */
+    SHOW_MODIFY_DIALOG_SELECT: "show_modify_dialog_select",
     FIND_BY_ID: "find_booking_by_id",
   },
   ACTION: {

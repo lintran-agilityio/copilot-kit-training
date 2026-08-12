@@ -4,8 +4,8 @@ import {
   roomSchema,
 } from "@repo/schemas";
 
-// Direct paths — avoid `@/mastra/utils` barrel (cycle with find-room.ts).
-import { sanitizeFindRoomDate, sanitizeFindRoomName } from "@/mastra/utils";
+import { sanitizeFindRoomDate } from "@/mastra/utils/sanitize-find-room-date";
+import { sanitizeFindRoomName } from "@/mastra/utils/sanitize-find-room-name";
 
 /**
  * Validation safety net: calendar/category words are stripped from `name`

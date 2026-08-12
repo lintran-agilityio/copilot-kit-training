@@ -2,7 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 
-import type { BookingUnavailableReason } from "@/features/booking/schemas";
+import type { BookingUnavailableReason } from "@repo/schemas";
 
 export type BookingUnavailableProps = {
   roomName: string;

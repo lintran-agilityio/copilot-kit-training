@@ -1,3 +1,8 @@
+import { z } from "zod";
+
+import { asNonEmptyString, asPositiveInt } from "./common";
+import { asRecord } from "./parse-json-record";
+
 /**
  * Parsed HITL stay payload used to override LLM tool args in booking flows.
  */
@@ -10,35 +15,18 @@ export type ConfirmedStay = {
 };
 
 /**
- * Coerces an unknown value into a non-empty trimmed string.
- *
- * @param value - Raw field from a tool result
- * @returns Trimmed string, or undefined when missing/blank
+ * Loose zod shape covering confirmed:true branches of
+ * ConfirmBookingResult | ConfirmModifyBookingResult | EditModifyBookingResult.
+ * Keeps optional bookingId/roomId so one parser covers create + modify HITL.
  */
-const asNonEmptyString = (value: unknown): string | undefined => {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-};
-
-/**
- * Coerces an unknown value into a positive guest count.
- *
- * @param value - Raw guests field from a tool result
- * @returns Positive integer, or undefined when invalid
- */
-const asPositiveGuests = (value: unknown): number | undefined => {
-  const guests = typeof value === "number" ? value : Number(value);
-
-  if (!Number.isFinite(guests) || guests <= 0 || !Number.isInteger(guests)) {
-    return undefined;
-  }
-
-  return guests;
-};
+const confirmedStayPayloadSchema = z.object({
+  confirmed: z.literal(true),
+  bookingId: z.string().optional(),
+  roomId: z.string().optional(),
+  checkInDate: z.string().min(1),
+  checkOutDate: z.string().min(1),
+  guests: z.number().int().positive(),
+});
 
 /**
  * Parses a confirmed HITL stay from edit/confirm tool output.
@@ -47,39 +35,29 @@ const asPositiveGuests = (value: unknown): number | undefined => {
  * @returns Confirmed stay fields, or null when the result is not usable
  */
 export const parseConfirmedStay = (output: unknown): ConfirmedStay | null => {
-  const result =
-    output && typeof output === "object" && !Array.isArray(output)
-      ? (output as Record<string, unknown>)
-      : typeof output === "string"
-        ? (() => {
-            try {
-              const parsed = JSON.parse(output) as unknown;
-              return parsed &&
-                typeof parsed === "object" &&
-                !Array.isArray(parsed)
-                ? (parsed as Record<string, unknown>)
-                : null;
-            } catch {
-              return null;
-            }
-          })()
-        : null;
-
-  if (!result || result.confirmed !== true) {
+  const record = asRecord(output);
+  if (!record) {
     return null;
   }
 
-  const checkInDate = asNonEmptyString(result.checkInDate);
-  const checkOutDate = asNonEmptyString(result.checkOutDate);
-  const guests = asPositiveGuests(result.guests);
+  const parsed = confirmedStayPayloadSchema.safeParse({
+    confirmed: record.confirmed,
+    bookingId: asNonEmptyString(record.bookingId),
+    roomId: asNonEmptyString(record.roomId),
+    checkInDate: asNonEmptyString(record.checkInDate),
+    checkOutDate: asNonEmptyString(record.checkOutDate),
+    guests: asPositiveInt(record.guests),
+  });
 
-  if (!checkInDate || !checkOutDate || guests == null) {
+  if (!parsed.success) {
     return null;
   }
+
+  const { bookingId, roomId, checkInDate, checkOutDate, guests } = parsed.data;
 
   return {
-    bookingId: asNonEmptyString(result.bookingId),
-    roomId: asNonEmptyString(result.roomId),
+    bookingId,
+    roomId,
     checkInDate,
     checkOutDate,
     guests,

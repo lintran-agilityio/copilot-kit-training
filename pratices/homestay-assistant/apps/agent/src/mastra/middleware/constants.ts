@@ -31,6 +31,11 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   PENDING_CANCEL_BOOKING_ID: "pendingCancelBookingId",
   /**
+   * Booking id from show_modify_dialog_select confirmed:true — used to override
+   * find_booking_by_id args when the model fills a stale id from an earlier turn.
+   */
+  PENDING_MODIFY_BOOKING_ID: "pendingModifyBookingId",
+  /**
    * Deterministic LIST_MY_BOOKINGS override is active for this turn — get_bookings
    * must ignore focused roomId and cancel/modify pins.
    */
@@ -40,6 +45,31 @@ export const REQUEST_CONTEXT_KEYS = {
    * parsed a date cue (e.g. "at 15" → 2026-08-15). Null/undefined = no date filter.
    */
   LIST_MY_BOOKINGS_ON_DATE: "listMyBookingsOnDate",
+  /**
+   * Deterministic CANCEL_WITHOUT_BOOKING_ID override is active — get_bookings
+   * should apply pinned onDate and cancel-disambiguation replyHint.
+   */
+  CANCEL_WITHOUT_BOOKING_ID_ACTIVE: "cancelWithoutBookingIdActive",
+  /**
+   * Optional YYYY-MM-DD pinned for get_bookings.onDate when cancel-without-id
+   * parsed a date cue (e.g. "cancel room at 15th" → 2026-08-15).
+   */
+  CANCEL_WITHOUT_BOOKING_ID_ON_DATE: "cancelWithoutBookingIdOnDate",
+  /**
+   * Deterministic MODIFY_WITHOUT_BOOKING_ID override is active — get_bookings
+   * should apply pinned onDate and modify-disambiguation replyHint.
+   */
+  MODIFY_WITHOUT_BOOKING_ID_ACTIVE: "modifyWithoutBookingIdActive",
+  /**
+   * Optional YYYY-MM-DD pinned for get_bookings.onDate when modify-without-id
+   * parsed a date cue (e.g. "modify room at 15th" → 2026-08-15).
+   */
+  MODIFY_WITHOUT_BOOKING_ID_ON_DATE: "modifyWithoutBookingIdOnDate",
+  /**
+   * Optional room-name query pinned for modify-without-id so get_bookings can
+   * filter to the named room (e.g. "Heritage Master Suite") before HITL.
+   */
+  MODIFY_WITHOUT_BOOKING_ID_ROOM_QUERY: "modifyWithoutBookingIdRoomQuery",
 } as const;
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";

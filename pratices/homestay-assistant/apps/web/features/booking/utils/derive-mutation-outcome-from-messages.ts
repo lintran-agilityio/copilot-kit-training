@@ -10,6 +10,7 @@ import type {
   CreateBookingResult,
   UpdateBookingResult,
 } from "@/features/booking/types";
+import type { MessageLike } from "@/features/chat/types";
 import { buildCancelBookingCorrelationKey } from "@/features/booking/utils/cancel-booking-correlation-key";
 import { buildCreateStayCorrelationKey } from "@/features/booking/utils/create-booking-correlation-key";
 import { buildModifyStayCorrelationKey } from "@/features/booking/utils/modify-booking-correlation-key";
@@ -23,18 +24,6 @@ import {
   getCreateBookingFailureMessage,
   getModifyBookingFailureMessage,
 } from "@/features/booking/utils/get-booking-failure-message";
-
-type ToolCallLike = {
-  id?: string;
-  function?: { name?: string; arguments?: unknown };
-};
-
-type MessageLike = {
-  role?: string;
-  content?: unknown;
-  toolCallId?: string;
-  toolCalls?: ToolCallLike[];
-};
 
 type MutationToolHit = {
   toolCallId: string;
@@ -87,16 +76,12 @@ const readToolResultContent = (
     (message) => message.role === "tool" && message.toolCallId === toolCallId,
   );
 
-  if (!toolMessage) {
+  if (!toolMessage || toolMessage.content == null) {
     return null;
   }
 
   if (typeof toolMessage.content === "string") {
     return toolMessage.content;
-  }
-
-  if (toolMessage.content == null) {
-    return null;
   }
 
   try {

@@ -14,6 +14,7 @@ import {
 import { classifyTripwire } from "./classify-tripwire";
 import type { ThreadMemoryPort } from "./thread-memory-port";
 import type { AgUiMessage, MastraAgentLike, MastraStreamChunk } from "./types";
+import { isMastraTripwireChunk } from "./types";
 
 export type TripwireHandlingContext = {
   threadId: string;
@@ -124,21 +125,21 @@ export async function* interceptTripwireStream(
   ) => Promise<void>,
 ) {
   for await (const chunk of stream) {
-    const typedChunk = chunk as MastraStreamChunk;
-
-    if (typedChunk?.type === "tripwire") {
-      const kind = classifyTripwire(typedChunk.payload);
-
-      // Step-limit tripwires stay on the stream (existing behavior).
-      if (kind === TRIPWIRE_KIND.STEP_LIMIT) {
-        yield chunk;
-        continue;
-      }
-
-      await onTripwire(typedChunk, kind);
-      return;
+    if (!isMastraTripwireChunk(chunk)) {
+      yield chunk;
+      continue;
     }
 
-    yield chunk;
+    const typedChunk = chunk;
+    const kind = classifyTripwire(typedChunk.payload);
+
+    // Step-limit tripwires stay on the stream (existing behavior).
+    if (kind === TRIPWIRE_KIND.STEP_LIMIT) {
+      yield chunk;
+      continue;
+    }
+
+    await onTripwire(typedChunk, kind);
+    return;
   }
 }

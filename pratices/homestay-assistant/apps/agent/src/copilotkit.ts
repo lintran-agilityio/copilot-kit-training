@@ -12,7 +12,7 @@ import { runtimeMastra } from "@/mastra/runtime";
 import { loadResolvedToolCallIdsForThread } from "@/mastra/utils";
 
 export { runtimeMastra as mastra } from "@/mastra/runtime";
-export { latchThreadStop } from "./ag-ui";
+export { abortThreadRuns, latchThreadStop } from "./ag-ui";
 
 type GetCopilotkitAgentsInput = {
   userId: string;

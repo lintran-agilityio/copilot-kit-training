@@ -1,7 +1,7 @@
 import type {
   ConfirmBookingArgs,
   ConfirmModifyBookingArgs,
-} from "@/features/booking/schemas";
+} from "@repo/schemas";
 
 type RoomStayFields = {
   room?: {

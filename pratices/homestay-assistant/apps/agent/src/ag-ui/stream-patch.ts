@@ -23,7 +23,7 @@ import {
 import {
   clearStopLatch,
   getStopLatch,
-  isStopLatchLive,
+  isRunBlockedByStopLatch,
   latchThreadStop,
   noteThreadUserMessage,
 } from "./stop-latch";
@@ -131,14 +131,14 @@ const patchAgUiAgent = (
       // FE-tool continuations keep the same trailing user message id, so they
       // stay blocked while the latch is live (do not treat them as a new turn).
       const latch = threadId ? getStopLatch(threadId) : undefined;
-      const isLatchLive = isStopLatchLive(latch);
       const isResume =
         (Array.isArray(input.resume) && input.resume.length > 0) ||
         !!(input.forwardedProps as { command?: unknown } | undefined)?.command;
-      const isNewUserTurn =
-        !!activeUserMessageId &&
-        activeUserMessageId !== latch?.stoppedUserMessageId;
-      const blockedByStop = isLatchLive && !isResume && !isNewUserTurn;
+      const blockedByStop = isRunBlockedByStopLatch({
+        latch,
+        isResume,
+        activeUserMessageId,
+      });
 
       // An expired latch, a resume, or a new user turn all release the thread.
       if (threadId && !blockedByStop) {
@@ -228,12 +228,8 @@ const patchAgUiAgent = (
       effectiveStream = interceptTripwireStream(
         effectiveStream,
         async (chunk, kind) => {
-          const onTextPart = callbacks.onTextPart as
-            | ((text: string) => void)
-            | undefined;
-          const onFinishMessagePart = callbacks.onFinishMessagePart as
-            | (() => void)
-            | undefined;
+          const onTextPart = callbacks.onTextPart;
+          const onFinishMessagePart = callbacks.onFinishMessagePart;
 
           const reason = chunk.payload?.reason ?? "(no reason)";
           const userMessageId =
@@ -342,6 +338,73 @@ const patchAgUiAgent = (
       requestContext: aguiAgent.requestContext,
     });
 
+    // Track open client-tool envelopes. @ag-ui/mastra emits TOOL_CALL_START on
+    // streaming-start for FE tools but does not close them on finish/flush —
+    // only on streaming-end. When END is missing, AG-UI rejects RUN_FINISHED.
+    // Only auto-END when accumulated args are valid JSON — ending mid-stream
+    // with truncated args causes tool_argument_parse_failed.
+    const openClientToolCallIds = new Set<string>();
+    const argsTextByToolCallId = new Map<string, string>();
+
+    const originalOnToolCallStart = callbacks.onToolCallStart;
+    const originalOnToolCallArgs = callbacks.onToolCallArgs;
+    const originalOnToolCallEnd = callbacks.onToolCallEnd;
+    const originalOnRunFinished = callbacks.onRunFinished;
+
+    const isCompleteJsonArgs = (raw: string) => {
+      try {
+        JSON.parse(raw);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const patchedCallbacks = {
+      ...callbacks,
+      onToolCallStart: (payload: {
+        toolCallId: string;
+        toolName: string;
+      }) => {
+        openClientToolCallIds.add(payload.toolCallId);
+        argsTextByToolCallId.set(payload.toolCallId, "");
+        originalOnToolCallStart?.(payload);
+      },
+      onToolCallArgs: (payload: {
+        toolCallId: string;
+        argsTextDelta: string;
+      }) => {
+        const previous = argsTextByToolCallId.get(payload.toolCallId) ?? "";
+        argsTextByToolCallId.set(
+          payload.toolCallId,
+          previous + (payload.argsTextDelta ?? ""),
+        );
+        originalOnToolCallArgs?.(payload);
+      },
+      onToolCallEnd: (payload: { toolCallId: string }) => {
+        openClientToolCallIds.delete(payload.toolCallId);
+        argsTextByToolCallId.delete(payload.toolCallId);
+        originalOnToolCallEnd?.(payload);
+      },
+      onRunFinished: async (traceId?: string) => {
+        if (openClientToolCallIds.size > 0 && originalOnToolCallEnd) {
+          for (const toolCallId of [...openClientToolCallIds]) {
+            const raw = argsTextByToolCallId.get(toolCallId) ?? "";
+            if (!isCompleteJsonArgs(raw)) {
+              console.warn(
+                `[stream-patch] Skipping TOOL_CALL_END for incomplete client tool args (${toolCallId})`,
+              );
+              continue;
+            }
+            originalOnToolCallEnd({ toolCallId });
+            openClientToolCallIds.delete(toolCallId);
+            argsTextByToolCallId.delete(toolCallId);
+          }
+        }
+        await originalOnRunFinished?.(traceId);
+      },
+    };
+
     return tripwireHandlingContext.run(
       {
         threadId: input.threadId,
@@ -353,12 +416,11 @@ const patchAgUiAgent = (
             ...input,
             messages: excludeResolvedToolCalls(latestTurn, resolvedToolCallIds),
           },
-          callbacks,
+          patchedCallbacks,
         ),
     );
   };
 };
-
 export const enableProcessorTripwireHandling = <
   T extends Record<string, object>,
 >(

@@ -23,14 +23,14 @@ import {
   resolveHitlCardPhase,
   shouldRenderHitlCard,
 } from "@/features/booking/utils";
-import type { ConfirmCancelBookingResult } from "@/features/booking/schemas";
-import type { BookingDetails } from "@/features/booking/types";
+import type { ConfirmCancelBookingResult } from "@repo/schemas";
+import type { BookingDetails, HitlToolResult } from "@/features/booking/types";
 
 type ConfirmCancelBookingModalProps = {
   status: ToolCallStatus;
   bookingItem: BookingDetails;
   respond?: (result: ConfirmCancelBookingResult) => Promise<void>;
-  result?: unknown;
+  result?: HitlToolResult<ConfirmCancelBookingResult>;
   toolCallId?: string;
   /** Prior interaction auto-dismissed this HITL — show expired, not cancelled. */
   forceExpired?: boolean;
