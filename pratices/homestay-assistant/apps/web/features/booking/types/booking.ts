@@ -113,3 +113,9 @@ export type UpdateBookingParameters = {
 export type UpdateBookingToolProps = ToolRendererProps<UpdateBookingResult> & {
   parameters?: UpdateBookingParameters;
 };
+
+export type GetBookingsResult = {
+  bookings?: BookingResponse[];
+};
+
+export type GetBookingsToolProps = ToolRendererProps<GetBookingsResult>;

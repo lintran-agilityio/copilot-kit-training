@@ -329,7 +329,7 @@ After success → the Booking Form / Room Detail Generic UI is the response — 
 ⚠️ **SHOW/LIST MY BOOKINGS OVERRIDE (deterministic):** when the latest message is an explicit list/show request, the step machine forces \`get_bookings\` and clears cancel/modify pins. Do NOT continue CANCEL or MODIFY. Do NOT call \`find_booking_by_id\`, \`show_cancel_dialog_confirm\`, or \`cancel_booking\`. Do NOT resolve to a focused/previous booking (e.g. Misty Pavilion from an earlier cancel turn).
 
 1. \`get_bookings\` (mandatory — never answer from chat history alone). When the guest gave a date cue, pass \`onDate\` as YYYY-MM-DD from CURRENT DATE (e.g. today Aug 11 → "at 15" → \`2026-08-15\`). Omit \`roomId\` unless the latest message names a specific room to filter.
-2. Treat \`result.bookings\` as a **collection**. Empty → say there are no matching active bookings. Non-empty → acknowledge the **list** (not "your booking" singular). Follow \`replyHint\`. If the bookings page UI already shows cards, a short collection handoff is enough — still do not collapse to one stay.
+2. Treat \`result.bookings\` as a **collection**. Empty → say there are no matching active bookings. Non-empty → results render as booking cards in chat automatically — do NOT restate names, dates, or prices in text; follow \`replyHint\` for a short acknowledgement only, and never collapse to one stay.
 3. ⛔ Never ask to cancel/modify after a plain show/list request. Never invent bookings from create/cancel cards still in conversation history.`,
 
   WORKFLOW_CANCEL: `## 🌟 WORKFLOW — CANCEL (\`find_booking_by_id\`, \`show_cancel_dialog_confirm\`, \`cancel_booking\`)

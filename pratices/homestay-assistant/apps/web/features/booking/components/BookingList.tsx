@@ -19,6 +19,7 @@ type BookingListProps = {
   className?: string;
   isLoading?: boolean;
   error?: Error;
+  compact?: boolean;
 };
 
 export const BookingList = ({
@@ -27,6 +28,7 @@ export const BookingList = ({
   className,
   isLoading,
   error,
+  compact = false,
 }: BookingListProps) => {
   const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
   const cancelBooking = useCancelBooking();
@@ -63,11 +65,19 @@ export const BookingList = ({
         </div>
       ) : null}
 
-      <div className="app-scrollbar grid grid-cols-1 gap-4 pb-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        className={cn(
+          "app-scrollbar grid",
+          compact
+            ? "max-h-[50vh] grid-cols-1 gap-3 overflow-y-auto pr-1"
+            : "grid-cols-1 gap-4 pb-1 sm:grid-cols-2 lg:grid-cols-3",
+        )}
+      >
         {bookings.map((booking) => (
           <BookingCard
             key={booking.id}
             booking={booking}
+            compact={compact}
             isAgentRunning={agent.isRunning}
             onCancelBooking={cancelBooking}
             onModifyBooking={modifyBooking}

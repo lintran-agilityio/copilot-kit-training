@@ -1,6 +1,5 @@
 import { createTool } from "@mastra/core/tools";
-import { z } from "zod";
-import { BookingStatus } from "@repo/types";
+import { getBookingsInputSchema } from "@repo/schemas";
 import { matchesRoomName } from "@repo/utils";
 import { TOOL_KEYS } from "@repo/constants";
 import {
@@ -21,20 +20,6 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils";
-
-const getBookingsInputSchema = z.object({
-  roomId: z.string().optional().describe("Filter by room ID"),
-  status: z
-    .enum(Object.values(BookingStatus) as [string, ...string[]])
-    .optional()
-    .describe("Filter by booking status"),
-  onDate: z
-    .string()
-    .optional()
-    .describe(
-      "YYYY-MM-DD — return active bookings whose stay includes this date (checkIn <= onDate < checkOut). Use for show/list my bookings with a date cue (e.g. at 15 → this month's 15th) and for cancel/modify disambiguation with a date cue.",
-    ),
-});
 
 /**
  * Adds a mandatory replyHint so the model cannot invent active bookings from
@@ -143,7 +128,8 @@ const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
     const base =
       `Active bookings only (count=${bookingCount}). ` +
       "This list is a COLLECTION — the sole source of truth for VIEW/LIST. " +
-      "Summarize or acknowledge the collection (names/dates when helpful); " +
+      "Results render as booking cards in chat automatically — do NOT restate room names, dates, prices, or a list in text; " +
+      "reply with ONE short acknowledgement sentence instead; " +
       "do NOT collapse to a single booking; " +
       "do NOT ask to cancel or modify unless the latest user message explicitly asked. ";
 
@@ -199,7 +185,7 @@ const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
 export const getBookingsTool = createTool({
   id: TOOL_KEYS.BOOKING.GET,
   description:
-    "Get the signed-in user's ACTIVE bookings from the backend (cancelled/past stays are excluded). User identity always comes from the server session — never pass or invent a userId. Required for view/list intent and to disambiguate cancel/modify when bookingId is unknown. Optional onDate (YYYY-MM-DD) returns only stays that include that date. Treat result.bookings + replyHint as the sole source of truth — never invent bookings from chat history or create/cancel cards. After calling: VIEW/LIST → one short chat sentence following replyHint; CANCEL with multiple matches → call show_cancel_dialog_confirm with ALL bookings (HITL list is the response — no instructional handoff); CANCEL with one match → find_booking_by_id then dialog; MODIFY with multiple matches → call show_modify_dialog_select with bookingIds[] + queryName only (not full bookings rows); MODIFY with one match → find_booking_by_id then edit/stated-modify.",
+    "Get the signed-in user's ACTIVE bookings from the backend (cancelled/past stays are excluded). User identity always comes from the server session — never pass or invent a userId. Required for view/list intent and to disambiguate cancel/modify when bookingId is unknown. Optional onDate (YYYY-MM-DD) returns only stays that include that date. Treat result.bookings + replyHint as the sole source of truth — never invent bookings from chat history or create/cancel cards. For VIEW/LIST, results render as booking cards in chat automatically — do NOT write booking names, dates, prices, or a list in text. After calling: VIEW/LIST → one short chat sentence following replyHint; CANCEL with multiple matches → call show_cancel_dialog_confirm with ALL bookings (HITL list is the response — no instructional handoff); CANCEL with one match → find_booking_by_id then dialog; MODIFY with multiple matches → call show_modify_dialog_select with bookingIds[] + queryName only (not full bookings rows); MODIFY with one match → find_booking_by_id then edit/stated-modify.",
   inputSchema: getBookingsInputSchema,
   outputSchema: getBookingsOutputSchema,
   execute: async (params, context) => {
