@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CopilotChat,
   CopilotChatAssistantMessage,
+  CopilotChatInput,
   CopilotChatUserMessage,
   CopilotKitCoreErrorCode,
   useAgent,
@@ -31,13 +32,15 @@ import {
   ChatLoadingCursor,
   ChatRunErrorNotice,
 } from "@/features/chat/components";
+import { ChatInput } from "@/features/chat/components/ChatInput";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
 import {
   isExpectedAgentError,
   isThreadLockedAgentError,
+  rejectIfAgentRunning,
   runAgentSafely,
-} from "@/features/chat/utils/agent-run";
+} from "@/features/chat/utils";
 import { SuggestionBar } from "@/components/suggestions";
 import { ThreadLoadingStateView } from "@/features/threads/components";
 import { useChatSession } from "@/features/threads/hooks/useChatSession";
@@ -76,6 +79,8 @@ export const ChatSidebarContent = ({
   const consumePendingOutboundMessage = useChatStore(
     (state) => state.consumePendingOutboundMessage,
   );
+  const actionError = useChatStore((state) => state.actionError);
+  const clearActionError = useChatStore((state) => state.clearActionError);
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId });
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -147,12 +152,18 @@ export const ChatSidebarContent = ({
       return;
     }
 
+    const currentAgent = agentRef.current;
+    // Keep the queued message until the in-flight run finishes — this is a
+    // reconnect flush, not a guest send while busy.
+    if (currentAgent.isRunning) {
+      return;
+    }
+
     const pendingMessage = consumePendingOutboundMessage(scopeKey);
     if (!pendingMessage) {
       return;
     }
 
-    const currentAgent = agentRef.current;
     const currentCopilotkit = copilotkitRef.current;
     currentAgent.threadId = activeThreadId;
 
@@ -182,6 +193,14 @@ export const ChatSidebarContent = ({
     sendPendingMessageRef.current?.();
   }, [isRuntimeConnected, scopeKey]);
 
+  useEffect(() => {
+    if (!isRuntimeConnected || agent.isRunning) {
+      return;
+    }
+
+    sendPendingMessageRef.current?.();
+  }, [agent.isRunning, isRuntimeConnected, scopeKey]);
+
   // A started run (or a thread switch) makes a previous start failure stale.
   useEffect(() => {
     if (agent.isRunning) {
@@ -191,11 +210,16 @@ export const ChatSidebarContent = ({
 
   useEffect(() => {
     setRunStartError(null);
-  }, [activeThreadId]);
+    clearActionError();
+  }, [activeThreadId, clearActionError]);
 
   // The failed run never reached the agent, so the triggering user message is
   // still the last message in the thread — re-running is enough to retry it.
   const retryRun = useCallback(async () => {
+    if (rejectIfAgentRunning(agentRef.current.isRunning)) {
+      return;
+    }
+
     setIsRetryingRun(true);
     setRunStartError(null);
 
@@ -296,12 +320,7 @@ export const ChatSidebarContent = ({
               userMessage: ChatUserMessage as typeof CopilotChatUserMessage,
               cursor: ChatLoadingCursor,
             }}
-            input={{
-              showDisclaimer: false,
-              // Footer owns the input — overlay anchoring only reserves dead space.
-              bottomAnchored: false,
-              className: "pointer-events-auto m-4 mt-0",
-            }}
+            input={ChatInput as typeof CopilotChatInput}
           >
             {({ scrollView, input }) => (
               <div
@@ -325,6 +344,11 @@ export const ChatSidebarContent = ({
                       isRetrying={isRetryingRun}
                       onRetry={retryRun}
                       onDismiss={() => setRunStartError(null)}
+                    />
+                  ) : actionError ? (
+                    <ChatRunErrorNotice
+                      message={actionError}
+                      onDismiss={clearActionError}
                     />
                   ) : null}
                   {suggestionBar}

@@ -7,8 +7,13 @@ import {
   PAGE_ROOMS_PROMPT_PREFIX,
   TOOL_KEYS,
 } from "@repo/constants";
-import { addDaysYmd, resolveCalendarDate, toYmd } from "@repo/utils";
+import { resolveCalendarDate, toYmd } from "@repo/utils";
 
+import {
+  type ModifyStayFields,
+  type ResolvedBookingForStatedModify,
+  type StatedModifyChanges,
+} from "./modify-stay-fields";
 import {
   asNonEmptyString,
   asPositiveInt,
@@ -16,20 +21,9 @@ import {
   parseGetBookingsOutput,
 } from "@/mastra/utils";
 
-/** Absolute stay fields the guest already stated in natural language. */
-export type StatedModifyChanges = {
-  checkInDate?: string;
-  checkOutDate?: string;
-  guests?: number;
-  /** Relative checkout shift, applied against the current booking checkout. */
-  extendCheckoutByNights?: number;
-};
-
-export type ModifyStayFields = {
-  checkInDate: string;
-  checkOutDate: string;
-  guests: number;
-};
+export {
+  
+} from "@/mastra/booking/modify-stay-fields";
 
 const UI_PROMPT_PREFIXES = [
   BOOKING_MODIFY_PROMPT_PREFIX,
@@ -245,52 +239,6 @@ export const extractStatedModifyChanges = (
   }
 
   return changes;
-};
-
-/**
- * Merges stated fields over the current booking stay.
- * Relative extend applies to the current checkout when no absolute checkout was stated.
- */
-export const mergeStatedModifyStay = (
-  current: ModifyStayFields,
-  stated: StatedModifyChanges,
-): ModifyStayFields | null => {
-  let checkOutDate = stated.checkOutDate ?? current.checkOutDate;
-
-  if (stated.extendCheckoutByNights != null && stated.checkOutDate == null) {
-    checkOutDate = addDaysYmd(
-      current.checkOutDate,
-      stated.extendCheckoutByNights,
-    );
-  }
-
-  const next: ModifyStayFields = {
-    checkInDate: stated.checkInDate ?? current.checkInDate,
-    checkOutDate,
-    guests: stated.guests ?? current.guests,
-  };
-
-  if (next.checkOutDate <= next.checkInDate) {
-    return null;
-  }
-
-  if (
-    next.checkInDate === current.checkInDate &&
-    next.checkOutDate === current.checkOutDate &&
-    next.guests === current.guests
-  ) {
-    return null;
-  }
-
-  return next;
-};
-
-
-export type ResolvedBookingForStatedModify = {
-  bookingId: string;
-  roomId: string;
-  capacity?: number;
-  current: ModifyStayFields;
 };
 
 const parseStayFromDates = (

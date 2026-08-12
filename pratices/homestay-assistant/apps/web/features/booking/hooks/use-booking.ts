@@ -14,6 +14,7 @@ import {
 } from "@/features/booking/utils";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { runAgentSafely } from "@/features/chat/utils/agent-run";
+import { rejectIfAgentRunning } from "@/features/chat/utils/reject-if-agent-running";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 /** Selector hook over the module booking store. */
@@ -37,8 +38,13 @@ const useBookingAgentAction = (
     async (booking: BookingResponse) => {
       const room = booking.room;
 
-      if (!isLoaded || !user?.id || !booking.id || !room || agent.isRunning)
+      if (!isLoaded || !user?.id || !booking.id || !room) {
         return;
+      }
+
+      if (rejectIfAgentRunning(agent.isRunning)) {
+        return;
+      }
 
       const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
       const threadId =

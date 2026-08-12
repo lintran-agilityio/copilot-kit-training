@@ -2,8 +2,6 @@ import { createTool } from "@mastra/core/tools";
 import { z } from "zod";
 import { BookingStatus } from "@repo/types";
 import { matchesRoomName } from "@repo/utils";
-import { getAuthUserId } from "@/mastra/middleware/get-auth-user-id";
-
 import { TOOL_KEYS } from "@repo/constants";
 import {
   getBookingsOutputSchema,
@@ -205,33 +203,29 @@ export const getBookingsTool = createTool({
   inputSchema: getBookingsInputSchema,
   outputSchema: getBookingsOutputSchema,
   execute: async (params, context) => {
-    throwIfAborted(context.abortSignal);
-
-    const userId = getAuthUserId(
-      context,
-      "Authentication required to fetch bookings",
-    );
+    const { requestContext, abortSignal } = context;
+    throwIfAborted(abortSignal);
+    const { onDate: onDateParam } = params;
 
     // Prefer prepareStep pins (same pattern as cancel/create stay pins).
-    const listPin = readListMyBookingsPin(context.requestContext);
-    const cancelPin = readCancelWithoutBookingIdPin(context.requestContext);
-    const modifyPin = readModifyWithoutBookingIdPin(context.requestContext);
-    clearListMyBookingsPin(context.requestContext);
-    clearCancelWithoutBookingIdPin(context.requestContext);
-    clearModifyWithoutBookingIdPin(context.requestContext);
+    const listPin = readListMyBookingsPin(requestContext);
+    const cancelPin = readCancelWithoutBookingIdPin(requestContext);
+    const modifyPin = readModifyWithoutBookingIdPin(requestContext);
+    clearListMyBookingsPin(requestContext);
+    clearCancelWithoutBookingIdPin(requestContext);
+    clearModifyWithoutBookingIdPin(requestContext);
 
     const roomId = listPin.active ? undefined : params.roomId;
     const onDate = listPin.active
       ? listPin.onDate
       : cancelPin.active
-        ? (cancelPin.onDate ?? params.onDate)
+        ? (cancelPin.onDate ?? onDateParam)
         : modifyPin.active
-          ? (modifyPin.onDate ?? params.onDate)
-          : params.onDate;
+          ? (modifyPin.onDate ?? onDateParam)
+          : onDateParam;
 
     let bookings = await getBookings(
       {
-        userId,
         roomId,
         status: params.status as GetBookingsParams["status"],
         onDate,

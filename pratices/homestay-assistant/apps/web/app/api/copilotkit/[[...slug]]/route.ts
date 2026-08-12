@@ -157,12 +157,14 @@ const handler = async (req: Request) => {
     latchThreadStop(stoppedThreadId);
   }
 
-  const { userId, sessionId } = await auth();
+  const { userId, sessionId, getToken } = await auth();
+  const sessionClerkToken = userId ? await getToken() : null;
 
   const pipeline = await runAgentRequestPipeline({
     request: req,
     sessionUserId: userId,
     sessionId,
+    sessionClerkToken,
   });
 
   if (!pipeline.ok) {

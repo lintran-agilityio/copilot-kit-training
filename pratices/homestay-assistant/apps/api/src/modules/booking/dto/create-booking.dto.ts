@@ -22,15 +22,6 @@ export class CreateBookingDto {
   roomId: string;
 
   @ApiProperty({
-    description: 'User ID making the booking',
-    example: 'guest-user',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @IsUUID()
-  userId: string;
-
-  @ApiProperty({
     description: 'Check-in date (YYYY-MM-DD)',
     example: '2026-07-01',
   })

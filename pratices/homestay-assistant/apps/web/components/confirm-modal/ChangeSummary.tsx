@@ -8,8 +8,14 @@ export type ChangeSummaryProps = {
 
 /**
  * Modify-only before → after summary. Do not reuse for create/cancel.
+ * Callers should not pass an empty list for the review phase (no-op modifies
+ * are dismissed before this renders).
  */
 export const ChangeSummary = ({ changes }: ChangeSummaryProps) => {
+  if (changes.length === 0) {
+    return null;
+  }
+
   const showChangesHeading = changes.length > 1;
 
   return (
@@ -20,33 +26,29 @@ export const ChangeSummary = ({ changes }: ChangeSummaryProps) => {
         </div>
       ) : null}
 
-      {changes.length === 0 ? (
-        <p className="text-zinc-500">No field changes detected.</p>
-      ) : (
-        changes.map((row, index) => (
-          <div
-            key={row.label}
+      {changes.map((row, index) => (
+        <div
+          key={row.label}
+          className={
+            row.label === "Total"
+              ? `flex justify-between gap-4 ${index > 0 ? "border-t border-white/8 pt-1.5" : ""}`
+              : "flex justify-between gap-4"
+          }
+        >
+          <dt className="text-zinc-500">{row.label}</dt>
+          <dd
             className={
               row.label === "Total"
-                ? `flex justify-between gap-4 ${index > 0 ? "border-t border-white/8 pt-1.5" : ""}`
-                : "flex justify-between gap-4"
+                ? "text-right font-medium text-emerald-300"
+                : "text-right text-zinc-100"
             }
           >
-            <dt className="text-zinc-500">{row.label}</dt>
-            <dd
-              className={
-                row.label === "Total"
-                  ? "text-right font-medium text-emerald-300"
-                  : "text-right text-zinc-100"
-              }
-            >
-              <span className="text-zinc-500">{row.from}</span>
-              <span className="mx-1.5 text-zinc-600">→</span>
-              <span>{row.to}</span>
-            </dd>
-          </div>
-        ))
-      )}
+            <span className="text-zinc-500">{row.from}</span>
+            <span className="mx-1.5 text-zinc-600">→</span>
+            <span>{row.to}</span>
+          </dd>
+        </div>
+      ))}
     </dl>
   );
 };

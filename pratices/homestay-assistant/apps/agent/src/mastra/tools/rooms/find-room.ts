@@ -6,10 +6,7 @@ import {
   findRoomOutputSchema,
 } from "@/mastra/schemas/rooms";
 import { findRooms } from "@/mastra/services";
-import {
-  normalizeFindRoomInput,
-  toFindRoomModelOutput,
-} from "@/mastra/utils";
+import { toFindRoomModelOutput } from "@/mastra/utils";
 import {
   serviceContextFromTool,
   throwIfAborted,
@@ -23,10 +20,8 @@ export const findRoomTool = createTool({
   outputSchema: findRoomOutputSchema,
   execute: async (inputData, context) => {
     throwIfAborted(context.abortSignal);
-    return findRooms(
-      normalizeFindRoomInput(inputData),
-      serviceContextFromTool(context),
-    );
+    // inputSchema already runs normalizeFindRoomInput
+    return findRooms(inputData, serviceContextFromTool(context));
   },
   toModelOutput: toFindRoomModelOutput,
 });

@@ -15,6 +15,7 @@ import { prepareBookingFormMessage } from "@/features/booking/utils/prepare-book
 import { ChatSuggestion } from "@/features/chat/types";
 import { scheduleScrollChatToEnd } from "@/features/chat/utils";
 import { runAgentSafely } from "@/features/chat/utils/agent-run";
+import { rejectIfAgentRunning } from "@/features/chat/utils/reject-if-agent-running";
 
 type SuggestionBarProps = {
   suggestions: ChatSuggestion[];
@@ -53,7 +54,7 @@ export const SuggestionBar = ({
   const { copilotkit } = useCopilotKit();
 
   const handleSuggestionClick = async (prompt: string) => {
-    if (agent.isRunning) {
+    if (rejectIfAgentRunning(agent.isRunning)) {
       return;
     }
 

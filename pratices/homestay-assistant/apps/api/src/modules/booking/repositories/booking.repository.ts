@@ -13,17 +13,16 @@ export class BookingRepository {
     private readonly bookingRepository: Repository<BookingEntity>,
   ) {}
 
-  async findAll(filters: ListBookingsQueryDto = {}): Promise<BookingEntity[]> {
+  async findAll(
+    filters: ListBookingsQueryDto & { userId: string },
+  ): Promise<BookingEntity[]> {
     const query = this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.room', 'room')
       .where('booking.cancelledAt IS NULL')
       .andWhere('booking.checkOutDate > :now', { now: new Date() })
+      .andWhere('booking.userId = :userId', { userId: filters.userId })
       .orderBy('booking.checkInDate', 'ASC');
-
-    if (filters.userId) {
-      query.andWhere('booking.userId = :userId', { userId: filters.userId });
-    }
 
     if (filters.roomId) {
       query.andWhere('booking.roomId = :roomId', { roomId: filters.roomId });

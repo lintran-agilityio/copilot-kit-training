@@ -1,5 +1,6 @@
 import { LUXURY_ROOM_LEVEL } from "@/mastra/constants";
-import type { FindRoomInput, FindRoomOutput } from "@/mastra/schemas/rooms";
+import type { FindRoomInput } from "@repo/schemas";
+import type { FindRoomOutput } from "@/mastra/schemas/rooms";
 import { buildFindRoomReplyHint } from "./generic-ui-reply-hints";
 import { sanitizeFindRoomDate } from "./sanitize-find-room-date";
 import {
@@ -30,7 +31,12 @@ export const normalizeFindRoomInput = (
   options?: { today?: string },
 ): FindRoomInput => {
   const rawName = input.name?.trim();
-  const date = sanitizeFindRoomDate(input.date, options?.today);
+  // Recover date cues the model stuffed into `name` before filler stripping
+  // removes ordinals ("show available room at 16th" → date=YYYY-MM-DD).
+  let date = sanitizeFindRoomDate(input.date, options?.today);
+  if (!date && rawName) {
+    date = sanitizeFindRoomDate(rawName, options?.today);
+  }
 
   if (!rawName) {
     return date === input.date ? input : { ...input, date };

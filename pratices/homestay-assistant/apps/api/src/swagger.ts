@@ -6,6 +6,7 @@ export function setupSwagger(app: INestApplication): void {
     .setTitle('Homestay Assistant API')
     .setDescription('REST API for room availability and homestay management')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

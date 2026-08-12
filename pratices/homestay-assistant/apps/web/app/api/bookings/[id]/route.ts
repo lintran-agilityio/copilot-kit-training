@@ -8,9 +8,14 @@ type RouteContext = {
 };
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const { userId } = await auth();
+  const { userId, getToken } = await auth();
 
   if (!userId) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const accessToken = await getToken();
+  if (!accessToken) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -20,11 +25,8 @@ export async function DELETE(_request: Request, context: RouteContext) {
     const booking = await cancelBookingById({
       bookingId: id,
       via: PREFIX_URL.BACKEND,
+      accessToken,
     });
-
-    if (booking.userId !== userId) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     return Response.json(booking);
   } catch (error) {

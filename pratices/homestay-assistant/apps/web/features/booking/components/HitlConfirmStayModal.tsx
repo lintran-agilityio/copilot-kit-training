@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAgent, ToolCallStatus } from "@copilotkit/react-core/v2";
 import {
@@ -32,6 +33,7 @@ import { useArtifactStore } from "@/features/chat/stores/artifact-store";
 import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks/use-report-homestay-agent-ui-focus";
 import {
   buildCreateStayCorrelationKey,
+  buildModifyChangeRows,
   buildModifyStayCorrelationKey,
   coalesceBookingCardOutcome,
   deriveCreateBookingOutcomeFromMessages,
@@ -289,8 +291,30 @@ const HitlConfirmModifyStayModal = ({
         outcome: modifyOutcome,
       });
 
+  const original = hasArgs
+    ? resolveOriginalStay(pendingModifyStay, args.bookingId, args)
+    : null;
+  const hasNoFieldChanges =
+    Boolean(original) &&
+    hasArgs &&
+    buildModifyChangeRows(
+      original!,
+      { checkInDate, checkOutDate, guests },
+      args.room.pricePerNight,
+    ).length === 0;
+
+  const dismissedNoopRef = useRef(false);
+  useEffect(() => {
+    if (!hasNoFieldChanges || !canRespond || dismissedNoopRef.current) {
+      return;
+    }
+    dismissedNoopRef.current = true;
+    setPendingModifyStay(null);
+    handleDismiss();
+  }, [hasNoFieldChanges, canRespond, handleDismiss, setPendingModifyStay]);
+
   useReportHomestayAgentUiFocus(
-    shouldRender && hasArgs && canRespond,
+    shouldRender && hasArgs && canRespond && !hasNoFieldChanges,
     "confirm-modify-booking",
     {
       type: HOMESTAY_AGENT_TASK_TYPE.MANAGE,
@@ -299,12 +323,16 @@ const HitlConfirmModifyStayModal = ({
     hasArgs ? { type: "booking", id: args.bookingId } : undefined,
   );
 
-  if (!shouldRenderHitlCard(status, hasArgs) || !shouldRender || !hasArgs) {
+  if (
+    !shouldRenderHitlCard(status, hasArgs) ||
+    !shouldRender ||
+    !hasArgs ||
+    hasNoFieldChanges
+  ) {
     return null;
   }
 
   const { bookingId, room } = args;
-  const original = resolveOriginalStay(pendingModifyStay, bookingId, args);
   const description: ReactNode = (
     <>
       Review the changes for your stay at{" "}

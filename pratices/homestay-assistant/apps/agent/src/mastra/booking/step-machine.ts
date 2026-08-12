@@ -21,6 +21,9 @@ import {
 } from "@/mastra/booking/constants";
 import { resolveListMyBookingsStep } from "@/mastra/booking/list-my-bookings-fast-path";
 import { resolveModifyWithoutBookingIdStep } from "@/mastra/booking/modify-resolve-fast-path";
+import { modifyNoOpNarrationStep } from "@/mastra/booking/modify-noop-narration-step";
+import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
+import { resolveBookingFromGetBookingsInTurn } from "@/mastra/booking/resolve-selected-modify-booking";
 import { tryEnforceSearchTerminalStep } from "@/mastra/booking/search-terminal-fast-path";
 import { tryEnforceStatedModifyFastPath } from "@/mastra/booking/stated-modify-fast-path";
 import type {
@@ -421,6 +424,8 @@ const stashConfirmedCancelBookingId = (
 /**
  * Pins the booking id the guest selected in the modify multi-match picker, so
  * find_booking_by_id uses it instead of a stale id the model may guess.
+ * Also pins PENDING_MODIFY_ORIGINAL from get_bookings for that id so stated
+ * "guests to N" cannot show a sibling booking's guests as the before-state.
  */
 const stashConfirmedModifyBookingId = (
   args: ProcessInputStepArgs,
@@ -442,6 +447,17 @@ const stashConfirmedModifyBookingId = (
     REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID,
     result.bookingId,
   );
+
+  const selectedStay = resolveBookingFromGetBookingsInTurn(
+    args.messages,
+    result.bookingId,
+  );
+  if (selectedStay) {
+    requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_ORIGINAL, {
+      bookingId: selectedStay.bookingId,
+      ...selectedStay.current,
+    });
+  }
 };
 
 /**
@@ -508,10 +524,15 @@ export const enforceBookingStep = (
   const { toolName: lastToolName, output: lastToolOutput } = lastToolResult;
 
   if (transition.type === BOOKING_STEP_TRANSITION_TYPE.STOP) {
-    return {
-      activeTools: [],
-      toolChoice: "none",
-    };
+    const output = asRecord(lastToolOutput);
+    if (
+      lastToolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY &&
+      output?.stayUnchanged === true
+    ) {
+      return modifyNoOpNarrationStep(args);
+    }
+
+    return narrationOnlyStep();
   }
 
   if (!args.tools?.[transition.toolName]) {

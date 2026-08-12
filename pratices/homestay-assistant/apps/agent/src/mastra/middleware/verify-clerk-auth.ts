@@ -1,7 +1,14 @@
 import { verifyToken } from "@clerk/backend";
+import {
+  TokenVerificationError,
+  TokenVerificationErrorReason,
+} from "@clerk/backend/errors";
 
-import type { MastraAuthContext } from "./authentication/authentication.types";
-import { CLERK_TOKEN_HEADER } from "./constants";
+import type {
+  MastraAuthContext,
+  VerifyClerkAuthResult,
+} from "./authentication/authentication.types";
+import { AUTH_ERRORS, CLERK_TOKEN_HEADER } from "./constants";
 
 type VerifyClerkAuthInput = {
   clerkToken?: string | null;
@@ -11,6 +18,30 @@ type VerifyClerkAuthInput = {
 
 const stripBearerPrefix = (token: string) =>
   token.startsWith("Bearer ") ? token.slice("Bearer ".length).trim() : token.trim();
+
+const authFailure = (
+  error: (typeof AUTH_ERRORS)[keyof typeof AUTH_ERRORS],
+): VerifyClerkAuthResult => ({
+  ok: false,
+  failure: { status: 401, error },
+});
+
+const authSuccess = (auth: MastraAuthContext): VerifyClerkAuthResult => ({
+  ok: true,
+  auth,
+});
+
+const withClerkToken = (
+  auth: MastraAuthContext,
+  clerkToken?: string | null,
+): MastraAuthContext => {
+  const trimmed = clerkToken?.trim();
+  if (!trimmed) {
+    return auth;
+  }
+
+  return { ...auth, clerkToken: trimmed };
+};
 
 export const extractClerkToken = (request: Request): string | null => {
   const headerToken = request.headers.get(CLERK_TOKEN_HEADER);
@@ -26,20 +57,38 @@ export const extractClerkToken = (request: Request): string | null => {
   return null;
 };
 
+const mapTokenVerificationError = (error: TokenVerificationError) => {
+  if (error.reason === TokenVerificationErrorReason.TokenExpired) {
+    return authFailure(AUTH_ERRORS.TOKEN_EXPIRED);
+  }
+
+  return authFailure(AUTH_ERRORS.INVALID_TOKEN);
+};
+
 export const verifyClerkAuth = async ({
   clerkToken,
   sessionUserId,
   sessionId,
-}: VerifyClerkAuthInput): Promise<MastraAuthContext | null> => {
-  if (sessionUserId?.trim()) {
-    return {
-      userId: sessionUserId.trim(),
-      sessionId: sessionId ?? undefined,
-    };
+}: VerifyClerkAuthInput): Promise<VerifyClerkAuthResult> => {
+  if (sessionUserId !== undefined && sessionUserId !== null) {
+    const trimmedUserId = sessionUserId.trim();
+    if (!trimmedUserId) {
+      return authFailure(AUTH_ERRORS.INVALID_USER);
+    }
+
+    return authSuccess(
+      withClerkToken(
+        {
+          userId: trimmedUserId,
+          sessionId: sessionId ?? undefined,
+        },
+        clerkToken,
+      ),
+    );
   }
 
   if (!clerkToken?.trim()) {
-    return null;
+    return authFailure(AUTH_ERRORS.REQUIRED);
   }
 
   const secretKey = process.env.CLERK_SECRET_KEY;
@@ -47,15 +96,28 @@ export const verifyClerkAuth = async ({
     throw new Error("CLERK_SECRET_KEY is required to verify Clerk JWT tokens");
   }
 
-  const payload = await verifyToken(clerkToken.trim(), { secretKey });
-  const userId = payload.sub;
+  try {
+    const payload = await verifyToken(clerkToken.trim(), { secretKey });
+    const userId = typeof payload.sub === "string" ? payload.sub.trim() : "";
 
-  if (!userId) {
-    return null;
+    if (!userId) {
+      return authFailure(AUTH_ERRORS.INVALID_USER);
+    }
+
+    return authSuccess(
+      withClerkToken(
+        {
+          userId,
+          sessionId: typeof payload.sid === "string" ? payload.sid : undefined,
+        },
+        clerkToken,
+      ),
+    );
+  } catch (error) {
+    if (error instanceof TokenVerificationError) {
+      return mapTokenVerificationError(error);
+    }
+
+    throw error;
   }
-
-  return {
-    userId,
-    sessionId: typeof payload.sid === "string" ? payload.sid : undefined,
-  };
 };

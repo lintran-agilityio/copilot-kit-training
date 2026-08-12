@@ -11,7 +11,7 @@ import type { MastraAuthContext } from "./authentication.types";
 
 export const authenticateRequest = async (
   context: ContextWithMastra,
-): Promise<MastraAuthContext | null> => {
+) => {
   return verifyClerkAuth({
     clerkToken: extractClerkToken(context.req.raw),
   });
@@ -37,20 +37,20 @@ export const authenticationMiddleware: MastraMiddlewareHandler = async (
   context,
   next,
 ) => {
-  const auth = await authenticateRequest(context);
+  const result = await authenticateRequest(context);
 
-  if (!auth) {
-    return context.json({ error: "Authentication required" }, 401);
+  if (!result.ok) {
+    return context.json({ error: result.failure.error }, result.failure.status);
   }
 
-  attachAuthToRequestContext(context, auth);
+  attachAuthToRequestContext(context, result.auth);
   await next();
 };
 
 export const createMastraServerAuthConfig = () => ({
   authenticateToken: async (token: string) => {
-    const auth = await verifyClerkAuth({ clerkToken: token });
-    return auth;
+    const result = await verifyClerkAuth({ clerkToken: token });
+    return result.ok ? result.auth : null;
   },
   mapUserToResourceId: (auth: MastraAuthContext) =>
     getAgentResourceId(auth.userId, AGENT_KEYS.MANAGE_ASSISTANT),

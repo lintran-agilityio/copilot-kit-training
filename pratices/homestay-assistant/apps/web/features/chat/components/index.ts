@@ -1,5 +1,6 @@
 export * from "./ChatSidebar";
 export * from "./ChatSidebarContent";
+export * from "./ChatInput";
 export * from "./ChatToggleButton";
 export * from "./HeaderChat";
 export * from "./ChatAvatars";

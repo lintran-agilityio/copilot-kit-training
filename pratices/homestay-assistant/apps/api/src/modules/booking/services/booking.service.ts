@@ -33,17 +33,19 @@ export class BookingService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  async create(dto: CreateBookingDto): Promise<BookingResponseDto> {
+  async create(
+    dto: CreateBookingDto,
+    userId: string,
+  ): Promise<BookingResponseDto> {
     this.assertRequiredFields(dto, [
       'roomId',
-      'userId',
       'checkInDate',
       'checkOutDate',
       'guests',
     ]);
     this.assertPositiveGuests(dto.guests);
 
-    await this.findOrCreateUser(dto.userId);
+    await this.findOrCreateUser(userId);
 
     const room = await this.getRoomOrThrow(dto.roomId);
     this.assertGuestCapacity(room, dto.guests);
@@ -62,7 +64,7 @@ export class BookingService {
     const now = new Date();
     const booking = await this.bookingRepository.save({
       id: crypto.randomUUID(),
-      userId: dto.userId,
+      userId,
       roomId: dto.roomId,
       checkInDate: toDateKey(checkInDate),
       checkOutDate: toDateKey(checkOutDate),
@@ -78,18 +80,14 @@ export class BookingService {
 
   async findAll(
     query: ListBookingsQueryDto = {},
+    userId: string,
   ): Promise<BookingResponseDto[]> {
-    const bookings = await this.bookingRepository.findAll(query);
+    const bookings = await this.bookingRepository.findAll({ ...query, userId });
     return bookings.map(toBookingResponseDto);
   }
 
-  async findById(id: string): Promise<BookingResponseDto> {
-    const booking = await this.bookingRepository.findById(id);
-
-    if (!booking) {
-      throw new NotFoundException(`Booking with id "${id}" not found`);
-    }
-
+  async findById(id: string, userId: string): Promise<BookingResponseDto> {
+    const booking = await this.getOwnedBookingOrThrow(id, userId);
     return toBookingResponseDto(booking);
   }
 
@@ -129,12 +127,12 @@ export class BookingService {
     };
   }
 
-  async update(id: string, dto: UpdateBookingDto): Promise<BookingResponseDto> {
-    const booking = await this.bookingRepository.findById(id);
-
-    if (!booking) {
-      throw new NotFoundException(`Booking with id "${id}" not found`);
-    }
+  async update(
+    id: string,
+    dto: UpdateBookingDto,
+    userId: string,
+  ): Promise<BookingResponseDto> {
+    const booking = await this.getOwnedBookingOrThrow(id, userId);
 
     if (booking.status === BookingStatus.CANCELLED) {
       throw new BadRequestException('Cancelled bookings cannot be updated');
@@ -192,8 +190,18 @@ export class BookingService {
     return toBookingResponseDto(refreshed ?? updated);
   }
 
-  async cancel(id: string): Promise<BookingResponseDto> {
-    return this.update(id, { status: BookingStatus.CANCELLED });
+  async cancel(id: string, userId: string): Promise<BookingResponseDto> {
+    return this.update(id, { status: BookingStatus.CANCELLED }, userId);
+  }
+
+  private async getOwnedBookingOrThrow(id: string, userId: string) {
+    const booking = await this.bookingRepository.findById(id);
+
+    if (!booking || booking.userId !== userId) {
+      throw new NotFoundException(`Booking with id "${id}" not found`);
+    }
+
+    return booking;
   }
 
   private async findOrCreateUser(userId: string): Promise<UserEntity> {

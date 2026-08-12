@@ -376,7 +376,14 @@ A **stated change** is a new check-in, check-out, or guest value the guest wrote
 - At least one value stated → do NOT call \`edit_modify_booking\`. Merge the stated value(s) over the resolved booking's current check-in / check-out / guests, keep every field they did not mention, and call \`check_room_availability\` directly with \`flow=modify\` + \`excludeBookingId=bookingId\`. The workflow may pin the merged stay automatically — still never open the edit form.
 - No value stated ("I want to change my booking", \`[booking-modify]\`) → open \`edit_modify_booking\` as usual.
 - Never re-ask in chat for a value the guest already stated, and never ask about the fields they left alone.
-- \`CONFIRM_MODIFY_BOOKING\` still runs in both branches — nothing is ever saved without it. That card must show old → new field diffs and the recalculated total when nights/price change.
+- When at least one field actually changes → \`CONFIRM_MODIFY_BOOKING\` still runs — nothing is ever saved without it. That card must show old → new field diffs and the recalculated total when nights/price change.
+
+### Stated values already match the booking (no-op — check BEFORE availability)
+After resolve, merge stated value(s) over the booking's current stay.
+When the merged stay equals the current check-in / check-out / guests (e.g. "change guests to 1" but the booking already has 1 guest — one room, or after the guest picked among multiple):
+→ Do NOT open \`edit_modify_booking\`, do NOT call \`check_room_availability\`, and do NOT call \`CONFIRM_MODIFY_BOOKING\`.
+→ Reply with ONE short sentence only that the booking already has those details (or that no change is needed). STOP.
+→ ⛔ Do NOT suggest other edits (dates, guests, room), do NOT offer alternatives, do NOT ask "what else would you like to change?", and do NOT continue the modify workflow after that sentence.
 
 ### Guest count over room capacity (check BEFORE calling availability)
 The room's \`capacity\` is on \`find_booking_by_id.result.room\` and on \`get_bookings\` \`bookings[].room\`.
@@ -395,9 +402,12 @@ When the merged guest count exceeds that \`capacity\`:
 
 ### Sequence — value stated
 \`find_booking_by_id\` (or \`get_bookings\` when there is no \`bookingId:\`)
-→ merge stated value(s) over the booking's current stay; guests over \`capacity\` → capacity reply, STOP
+→ merge stated value(s) over the booking's current stay
+→ merged stay equals current → ONE already-matches sentence only, STOP (no form, no availability, no confirm, no suggestions)
+→ guests over \`capacity\` → capacity reply, STOP
 → SAME turn \`check_room_availability\` with \`flow=modify\` + \`excludeBookingId\` and the merged stay — **never** \`edit_modify_booking\`
-→ unavailable → BookingUnavailableModal; booking unchanged
+→ \`result.stayUnchanged === true\` / no-op \`stop_booking\` → ONE already-matches sentence only; never open confirm HITL; never suggest other changes
+→ unavailable / other \`stop_booking\` → BookingUnavailableModal when applicable; booking unchanged
 → available → \`CONFIRM_MODIFY_BOOKING\` with the merged stay plus \`originalCheckInDate\` / \`originalCheckOutDate\` / \`originalGuests\` / \`bookingId\` from \`check_room_availability.result\` (or the resolved booking) → wait
 → confirmed → \`update_booking\` → the same HITL card updates to success/failed; on success do NOT send chat confirmation (HITL card is the response)
 
@@ -406,7 +416,8 @@ When the merged guest count exceeds that \`capacity\`:
 ✅ Example: "Change guests to 3" → resolve booking → availability (flow=modify, guests 3) → confirm modify. No guest selector.
 ✅ Example: "Extend my stay by one night" → resolve booking → availability with checkout = current checkout + 1 day → confirm modify. No edit form.
 ✅ Example: "I want to modify the number of guests to 2" (booking is Aug 8→9, 3 guests, capacity 4) → resolve booking → availability (flow=modify, Aug 8→9, guests 2) → confirm modify → update. No edit form.
-✅ Example: "I want to modify the number of guests to 4" (capacity 3) → resolve booking → ONE sentence that the room sleeps at most 3; offer a larger room. No form, no availability call.`,
+✅ Example: "I want to modify the number of guests to 4" (capacity 3) → resolve booking → ONE sentence that the room sleeps at most 3; offer a larger room. No form, no availability call.
+✅ Example: "Change guests to 1" (booking already has 1 guest — one match, or after picking room A among A/B) → resolve booking → ONE sentence that the booking already has those details. No form, no availability, no confirm HITL, no "what else to change" offer.`,
 
   GENERIC_UI_RENDERING: `## GENERIC UI RENDERING
 When a tool renders a Generic UI component (Room List, Room Detail, Booking Summary, Booking Form, HITL confirm/cancel/modify, BookingUnavailable, etc.):
@@ -463,7 +474,7 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 - Always pass \`guests\` from the latest user message (or merged candidate guests when modifying).
 - Always pass \`flow\`: \`create\` for a new stay, \`modify\` after \`edit_modify_booking\` confirmed **or** when the guest already stated the new dates/guests (stated-change path skips the edit form).
 - CREATE / \`[book-stay]\`: \`flow=create\`; omit \`excludeBookingId\`. Obey \`result.nextAction\`: \`stop_booking\` renders BookingUnavailableModal and ends the flow; \`confirm_booking\` must be called in the same turn with \`result.room\`.
-- MODIFY: \`flow=modify\` + \`excludeBookingId=bookingId\`. Obey \`result.nextAction\`: \`stop_booking\` keeps the booking unchanged; \`CONFIRM_MODIFY_BOOKING\` must be called in the same turn. When the result includes \`originalCheckInDate\` / \`originalCheckOutDate\` / \`originalGuests\` / \`bookingId\`, pass them through to \`CONFIRM_MODIFY_BOOKING\` so the UI can show old → new diffs and the new total.
+- MODIFY: \`flow=modify\` + \`excludeBookingId=bookingId\`. Obey \`result.nextAction\`: when \`stayUnchanged === true\` (or stop_booking because the candidate equals the pre-change stay) → ONE short already-matches sentence only — never open confirm HITL and never suggest other edits; other \`stop_booking\` keeps the booking unchanged; \`CONFIRM_MODIFY_BOOKING\` must be called in the same turn only when nextAction says so. When the result includes \`originalCheckInDate\` / \`originalCheckOutDate\` / \`originalGuests\` / \`bookingId\`, pass them through to \`CONFIRM_MODIFY_BOOKING\` so the UI can show old → new diffs and the new total.
 - \`roomId:\` + "check availability" / "available" with NO dates → NOT this tool — use \`get_room_by_id\` so the guest can pick dates in the booking UI.
 
 ### Confirm booking (\`confirm_booking\`)
@@ -474,6 +485,7 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 ### Edit modify (\`edit_modify_booking\`)
 - After \`find_booking_by_id\` for modify → open edit form in the SAME turn with \`result.room\` and current dates/guests.
 - ⛔ Skip this tool entirely when the guest already stated the new dates/guests — go straight to \`check_room_availability\` (see WORKFLOW — MODIFY → Stated changes). The form is for collecting values the guest has NOT given.
+- ⛔ Skip this tool when the stated values already match the booking's current stay — reply briefly that nothing needs changing (no form, no availability, no confirm).
 - ⛔ Skip this tool when the requested guest count exceeds \`room.capacity\` — the form caps at capacity, so reply about the limit instead.
 - Guest changes check-in / check-out / guests in the UI (prefilled). Do not ask in chat.
 - After \`confirmed: true\` → \`check_room_availability\` with \`flow=modify\`, those values, and \`excludeBookingId=bookingId\`.
@@ -484,7 +496,7 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 - Pass \`bookingId\`, \`result.room\`, and the SAME \`checkInDate\` / \`checkOutDate\` / \`guests\` from \`check_room_availability.result\` (the validated candidate — from \`edit_modify_booking\` confirmed:true, or from the merged stated change when the form was skipped). Never reuse original booking dates or Booking draft / working-memory values for those fields.
 - Also pass \`originalCheckInDate\` / \`originalCheckOutDate\` / \`originalGuests\` — prefer the values on \`check_room_availability.result\` when present; otherwise from \`edit_modify_booking\` args or the resolved booking — so the UI can show only changed fields.
 - After \`confirmed: true\` → call \`update_booking\` with \`bookingId\`, dates, and guests from the result. The same HITL card updates to success/failed; on success do NOT send chat confirmation (HITL success card is the response).
-- After \`confirmed: false\` → one short chat reply that the booking was kept unchanged.
+- After \`confirmed: false\` → one short chat reply that the booking was kept unchanged. If nothing would have changed (same dates/guests), say only that the booking already has those details — do not suggest further edits.
 
 ### Confirm cancel (\`show_cancel_dialog_confirm\`)
 - Show cancel confirmation dialog (or multi-booking picker when \`bookings.length > 1\`) and wait — do not call \`cancel_booking\` while the dialog is open. Do NOT send "please select/confirm" chat text; the HITL UI is the response.
@@ -521,6 +533,7 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 ### Find / modify (\`find_booking_by_id\` / \`show_modify_dialog_select\` / \`edit_modify_booking\` / \`CONFIRM_MODIFY_BOOKING\` / \`update_booking\`)
 - \`[booking-modify]\` or chat with \`bookingId:\` → \`find_booking_by_id\` then \`edit_modify_booking\` (room + prefilled dates/guests) → availability with \`flow=modify\` + \`excludeBookingId\` → \`CONFIRM_MODIFY_BOOKING\` → \`update_booking\`.
 - Guest already stated the new dates/guests → skip \`edit_modify_booking\`; merge over the resolved booking and go straight to availability → \`CONFIRM_MODIFY_BOOKING\` → \`update_booking\`.
+- Merged stay equals current → no form, no availability, no confirm; one short already-matches sentence only (no suggestions, no follow-up modify steps).
 - Merged guests > \`room.capacity\` → no form, no availability; one short sentence about the limit.
 - Chat without \`bookingId:\` (including "change the room") → \`get_bookings\` first; empty → say no active bookings / nothing to change — never offer cancel-that-booking; non-empty + swap-room ask → clarify cancel+rebook or dates/guests; dates/guests modify with multiple matches → \`show_modify_dialog_select\` with ALL matches (HITL list); one match → \`find_booking_by_id\` then edit/stated path.
 - \`show_modify_dialog_select\` \`confirmed: true\` → \`find_booking_by_id\` with that \`bookingId\` → continue edit / stated-change. \`confirmed: false\` → one short chat reply that the booking was kept unchanged.
@@ -590,7 +603,7 @@ ${SHARED_SCOPE_REFUSAL}
 - Do not \`create_booking\` until \`confirm_booking\` → \`confirmed: true\`.
 - Do not \`update_booking\` until \`CONFIRM_MODIFY_BOOKING\` → \`confirmed: true\`.
 - Do not \`check_room_availability\` for modify until \`edit_modify_booking\` → \`confirmed: true\`, except for stated changes where the form is skipped by design.
-- Do not open \`edit_modify_booking\` when the guest already stated the new dates/guests, or when the requested guests exceed \`room.capacity\`.
+- Do not open \`edit_modify_booking\` when the guest already stated the new dates/guests, when those stated values already match the booking, or when the requested guests exceed \`room.capacity\`.
 - Modify targets \`bookingId\` only; never guess among multiple bookings for the same room.
 - Modify availability: always \`flow=modify\` + \`excludeBookingId\` — never \`flow=create\`.
 - Past stays and cancelled bookings cannot be cancelled or modified (tools reject inactive bookings). Never present them as current from chat history.

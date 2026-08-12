@@ -74,3 +74,17 @@ export const REQUEST_CONTEXT_KEYS = {
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";
 export const AGENT_ID_HEADER = "x-agent-id";
+
+/** Guest-facing 401 messages from middleware auth (JWT / userId validation). */
+export const AUTH_ERRORS = {
+  REQUIRED: "Authentication required",
+  TOKEN_EXPIRED: "Token expired",
+  INVALID_TOKEN: "Invalid token",
+  INVALID_USER: "Invalid user",
+} as const;
+
+export type AuthErrorMessage = (typeof AUTH_ERRORS)[keyof typeof AUTH_ERRORS];
+
+export const AUTH_ERROR_MESSAGES: ReadonlySet<string> = new Set(
+  Object.values(AUTH_ERRORS),
+);

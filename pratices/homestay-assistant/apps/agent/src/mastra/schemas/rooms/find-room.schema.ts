@@ -4,36 +4,16 @@ import {
   roomSchema,
 } from "@repo/schemas";
 
-import { sanitizeFindRoomDate } from "@/mastra/utils/sanitize-find-room-date";
-import { sanitizeFindRoomName } from "@/mastra/utils/sanitize-find-room-name";
+import { normalizeFindRoomInput } from "@/mastra/utils/find-room";
 
 /**
- * Validation safety net: calendar/category words are stripped from `name`
- * before execute. Soft-book with only date/guests must not fail the tool call.
+ * Mastra inputSchema — sanitize name/date together so a date cue stuffed into
+ * `name` (e.g. "show available room at 16th") is recovered before fillers strip
+ * the ordinal.
  */
-const findRoomNameSchema = z
-  .string()
-  .optional()
-  .describe(
-    "Partial room NAME only (e.g. Moonlight, Heritage). Never pass weekdays, months, or calendar words (Mon, Monday, Aug, today, weekend) — those belong in date. Never pass category words like luxury, premium, top-floor, suite — those use level instead. Soft-book without a room title → omit name.",
-  )
-  .transform((value): string | undefined => sanitizeFindRoomName(value));
-
-/**
- * Relative words (today/weekend) → absolute YYYY-MM-DD. API rejects non-YMD.
- */
-const findRoomDateSchema = z
-  .string()
-  .optional()
-  .describe(
-    "Check-in date as absolute YYYY-MM-DD only. Resolve today/tonight/tomorrow/weekend from CURRENT DATE before calling — never pass those words.",
-  )
-  .transform((value): string | undefined => sanitizeFindRoomDate(value));
-
-/** Mastra inputSchema — shared base + name/date sanitize transforms. */
-export const findRoomInputSchema = findRoomInputBaseSchema
-  .omit({ name: true, date: true })
-  .extend({ name: findRoomNameSchema, date: findRoomDateSchema });
+export const findRoomInputSchema = findRoomInputBaseSchema.transform((input) =>
+  normalizeFindRoomInput(input),
+);
 
 export type FindRoomInput = z.infer<typeof findRoomInputSchema>;
 
