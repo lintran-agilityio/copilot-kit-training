@@ -63,3 +63,35 @@ export const clearStopLatch = (threadId: string): void => {
 export const isStopLatchLive = (
   latch: StopLatchEntry | undefined,
 ): boolean => !!latch && Date.now() - latch.latchedAt < STOP_LATCH_TTL_MS;
+
+type StopLatchBlockArgs = {
+  latch: StopLatchEntry | undefined;
+  isResume: boolean;
+  activeUserMessageId?: string;
+};
+
+/**
+ * Whether a new server run should abort before streaming because the thread
+ * is stop-latched.
+ *
+ * New user turn only when we know which message was stopped AND this run's
+ * trailing user message differs. If `stoppedUserMessageId` is missing (Stop
+ * before `noteThreadUserMessage`, or latch from a gap), keep blocking
+ * non-resume hops — do not treat `id !== undefined` as a new turn.
+ */
+export const isRunBlockedByStopLatch = ({
+  latch,
+  isResume,
+  activeUserMessageId,
+}: StopLatchBlockArgs): boolean => {
+  if (!isStopLatchLive(latch) || isResume) {
+    return false;
+  }
+
+  const isNewUserTurn =
+    !!activeUserMessageId &&
+    latch?.stoppedUserMessageId != null &&
+    activeUserMessageId !== latch.stoppedUserMessageId;
+
+  return !isNewUserTurn;
+};

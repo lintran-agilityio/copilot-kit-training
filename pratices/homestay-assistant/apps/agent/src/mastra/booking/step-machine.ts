@@ -11,6 +11,7 @@ import {
   parseConfirmedStay,
   type ConfirmedStay,
 } from "@/mastra/utils/confirmed-stay";
+import { resolveCancelWithoutBookingIdStep } from "@/mastra/booking/cancel-resolve-fast-path";
 import { resolveListMyBookingsStep } from "@/mastra/booking/list-my-bookings-fast-path";
 import { tryEnforceSearchTerminalStep } from "@/mastra/booking/search-terminal-fast-path";
 import { tryEnforceStatedModifyFastPath } from "@/mastra/booking/stated-modify-fast-path";
@@ -361,6 +362,13 @@ export const enforceBookingStep = (
     const listDecision = resolveListMyBookingsStep(args);
     if (listDecision.kind === "force" || listDecision.kind === "narrate") {
       return listDecision.step;
+    }
+
+    // CANCEL without bookingId: force get_bookings → 0 narrate / 1 find / N>1 HITL list.
+    // Runs after LIST so "show my bookings" never opens cancel dialog.
+    const cancelDecision = resolveCancelWithoutBookingIdStep(args);
+    if (cancelDecision.kind === "force" || cancelDecision.kind === "narrate") {
+      return cancelDecision.step;
     }
 
     // FIND / BROWSE terminal: block re-search after find_room / get_rooms.

@@ -6,7 +6,7 @@ import {
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
-import { parseToolResult } from "@repo/utils";
+import { parseToolResult, formatPrice } from "@repo/utils";
 
 import { Button } from "@/components/ui/button";
 import { EmbeddedWidget } from "@/features/chat/components";
@@ -27,7 +27,7 @@ import type {
   CancelBookingByRoomResult,
 } from "@/features/booking/schemas";
 import type { BookingDetails } from "@/features/booking/types";
-import { CONFIRM_CANCEL_BOOKING } from "@/features/booking/constants";
+import { CONFIRM_CANCEL_BOOKING, CANCEL_BOOKING_PICKER } from "@/features/booking/constants";
 import { ConfirmCancelBookingModal } from "./ConfirmCancelBookingModal";
 
 type CancelBookingByRoomModalProps = {
@@ -155,17 +155,21 @@ export const CancelBookingByRoomModal = ({
               {expiredBySupersede
                 ? CONFIRM_CANCEL_BOOKING.title.expired
                 : decisionStatus === HITL_DECISION_STATUS.REJECTED
-                  ? "Cancelled by you"
+                  ? CANCEL_BOOKING_PICKER.completed.rejectedTitle
                   : decisionStatus === HITL_DECISION_STATUS.APPROVED
-                    ? "Confirmed by you"
+                    ? CANCEL_BOOKING_PICKER.completed.approvedTitle
                     : CONFIRM_CANCEL_BOOKING.title.expired}
             </h3>
             <p className="text-xs text-zinc-400">
               {expiredBySupersede
-                ? `This cancellation confirmation for “${args.queryName}” is no longer available.`
+                ? CANCEL_BOOKING_PICKER.completed.expiredBody(
+                    args.queryName ?? "",
+                  )
                 : decisionStatus === HITL_DECISION_STATUS.REJECTED
-                  ? `You kept all bookings matching “${args.queryName}”.`
-                  : `Multiple bookings match “${args.queryName}”.`}
+                  ? CANCEL_BOOKING_PICKER.completed.keptAll(args.queryName ?? "")
+                  : CANCEL_BOOKING_PICKER.completed.multiMatch(
+                      args.queryName ?? "",
+                    )}
             </p>
           </div>
 
@@ -218,11 +222,10 @@ export const CancelBookingByRoomModal = ({
       <div className="space-y-3 p-3.5 text-zinc-100">
         <div className="space-y-1">
           <h3 className="text-sm font-medium text-white">
-            Which booking should be cancelled?
+            {CANCEL_BOOKING_PICKER.title}
           </h3>
           <p className="text-xs text-zinc-400">
-            Multiple bookings match &ldquo;{args.queryName}&rdquo;. Select one to
-            cancel.
+            {CANCEL_BOOKING_PICKER.description(args.queryName ?? "")}
           </p>
         </div>
 
@@ -239,6 +242,7 @@ export const CancelBookingByRoomModal = ({
               <span className="text-zinc-400">
                 {booking.checkInDate} → {booking.checkOutDate}
               </span>
+              <span className="text-zinc-400">Total price: {formatPrice(booking.totalPrice)}</span>
             </button>
           ))}
         </div>
@@ -252,7 +256,7 @@ export const CancelBookingByRoomModal = ({
             disabled={!canRespond}
             onClick={handleKeepBookings}
           >
-            Keep bookings
+            {CANCEL_BOOKING_PICKER.keepLabel}
           </Button>
         </div>
       </div>

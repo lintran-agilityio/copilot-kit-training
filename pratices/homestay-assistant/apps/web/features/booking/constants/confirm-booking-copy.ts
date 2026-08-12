@@ -67,6 +67,24 @@ export const CONFIRM_CANCEL_BOOKING = {
   },
 } as const;
 
+/** Copy for cancel multi-booking disambiguation picker (HITL list). */
+export const CANCEL_BOOKING_PICKER = {
+  title: "Which booking should be cancelled?",
+  description: (queryName: string) =>
+    `Multiple bookings match “${queryName}”. Select one to cancel.`,
+  keepLabel: "Keep bookings",
+  completed: {
+    rejectedTitle: "Cancelled by you",
+    approvedTitle: "Confirmed by you",
+    keptAll: (queryName: string) =>
+      `You kept all bookings matching “${queryName}”.`,
+    multiMatch: (queryName: string) =>
+      `Multiple bookings match “${queryName}”.`,
+    expiredBody: (queryName: string) =>
+      `This cancellation confirmation for “${queryName}” is no longer available.`,
+  },
+} as const;
+
 /** Titles that mark ConfirmCreateHitlCard as the modify fallback layout. */
 export const MODIFY_PENDING_TITLES = new Set<string>([
   CONFIRM_MODIFY_BOOKING.title.altPending,

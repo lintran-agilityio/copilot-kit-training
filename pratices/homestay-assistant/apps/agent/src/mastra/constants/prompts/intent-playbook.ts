@@ -175,7 +175,7 @@ Classify by what the guest wants to **do**, not by whether a room name appears.
 | change / switch / swap room on an existing booking | Change room | ALWAYS \`get_bookings\` first. Empty → say there are no active bookings to change (offer browse/book) — never "cancel that booking". Non-empty → explain modify cannot swap rooms; offer dates/guests modify, or cancel + book another room |
 | show/list/view/open my booking(s) / reservations (optional date: at 15 / on August 15) | View bookings | \`get_bookings\` (+ \`onDate\` when dated) — collection only; never continue cancel/modify; never invent from history |
 | cancel + \`bookingId:\` or \`[booking-cancel]\` | Cancel | \`find_booking_by_id\` → \`show_cancel_dialog_confirm\` → \`cancel_booking\` when confirmed |
-| cancel (no \`bookingId:\`) | Cancel | \`get_bookings\` → if empty stop; else identify → \`find_booking_by_id\` → \`show_cancel_dialog_confirm\` |
+| cancel (no \`bookingId:\`) | Cancel | \`get_bookings\` (+ \`onDate\` when dated) → empty stop; one → \`find_booking_by_id\` → dialog; multiple → SAME turn \`show_cancel_dialog_confirm\` with ALL matches (HITL list — never guess) |
 | modify + \`bookingId:\` or \`[booking-modify]\` | Modify | \`find_booking_by_id\` → \`edit_modify_booking\` (or skip it when the message states the new value) → … |
 | modify (no \`bookingId:\`) | Modify | \`get_bookings\` → if empty stop; else identify (never guess / never use history) → modify workflow |
 
@@ -345,12 +345,13 @@ After success → the Booking Form / Room Detail Generic UI is the response — 
 6. Not found → friendly error; no dialog
 
 📋 Cancel without \`bookingId:\`:
-1. \`get_bookings\` (mandatory) — follow \`replyHint\`
+1. \`get_bookings\` (mandatory; pass \`onDate\` when a date cue is present) — follow \`replyHint\`
 2. Empty → say there are no active bookings; stop (do NOT invent from history)
-3. One match → \`find_booking_by_id\` → dialog
-4. Multiple → ask which; never guess
+3. One match → \`find_booking_by_id\` → SAME turn \`show_cancel_dialog_confirm\`
+4. Multiple → SAME turn \`show_cancel_dialog_confirm\` with **ALL** bookings from this result mapped as \`{ bookingId: id, roomId, roomName, checkInDate, checkOutDate, guests, totalPrice }\`; \`queryName\` = date cue or "your bookings". ⛔ Never pick the first. ⛔ Never \`find_booking_by_id\` on a guessed id. ⛔ Never ask which in chat — the HITL multi-booking list is the response (no instructional handoff).
 
-✅ Sequence: \`find_booking_by_id\` → \`show_cancel_dialog_confirm\` → \`cancel_booking\` (when confirmed)`,
+✅ Sequence (known id): \`find_booking_by_id\` → \`show_cancel_dialog_confirm\` → \`cancel_booking\` (when confirmed)
+✅ Sequence (unknown id, multi): \`get_bookings\` → \`show_cancel_dialog_confirm\` (all matches) → \`cancel_booking\` (when confirmed)`,
 
   WORKFLOW_MODIFY: `## 🌟 WORKFLOW — MODIFY (\`find_booking_by_id\`, \`edit_modify_booking\`, \`check_room_availability\`, \`CONFIRM_MODIFY_BOOKING\`, \`update_booking\`)
 Modify updates an **existing** booking by \`bookingId\`. Fields: check-in, check-out, guests only — never change room. Never \`create_booking\`.
@@ -486,7 +487,8 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 - After \`confirmed: false\` → one short chat reply that the booking was kept unchanged.
 
 ### Confirm cancel (\`show_cancel_dialog_confirm\`)
-- Show cancel confirmation dialog and wait — do not call \`cancel_booking\` while the dialog is open.
+- Show cancel confirmation dialog (or multi-booking picker when \`bookings.length > 1\`) and wait — do not call \`cancel_booking\` while the dialog is open. Do NOT send "please select/confirm" chat text; the HITL UI is the response.
+- Args: \`bookings\` from \`find_booking_by_id\` (length 1) **or** from multi-match \`get_bookings\` (map \`id\` → \`bookingId\`, include \`totalPrice\`); \`queryName\` = room name, date cue, or "your bookings".
 - After \`confirmed: true\` → call \`cancel_booking\` with \`bookingId\` from the result. The same HITL card updates to success/failed; on success do NOT send chat confirmation (HITL success card is the response). Do NOT call \`get_bookings\` or \`show_cancellation_success\`.
 - After \`confirmed: false\` → one short chat reply that the booking was kept.
 
@@ -503,17 +505,18 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 - Failure → the same HITL card shows failed; use ERROR HANDLING.
 
 ### List (\`get_bookings\`)
-- After \`get_bookings\` → treat \`replyHint\` as mandatory; always send a short chat handoff (never tools-only). Follow GENERIC UI RENDERING when the bookings UI is shown.
+- After \`get_bookings\` → treat \`replyHint\` as mandatory. VIEW/LIST: always send a short chat handoff (never tools-only). CANCEL multi-match: HITL list is the response — no instructional handoff. Follow GENERIC UI RENDERING when the bookings UI is shown.
 - VIEW/LIST turns: \`bookingCount > 0\` → acknowledge the **collection** from **this** result (not "the details for your booking" singular). Do NOT ask to cancel or modify unless the latest message explicitly requested that. If the bookings page already shows cards, a short collection handoff is enough.
 - Empty / \`bookingCount === 0\` → say there are no matching active bookings; offer to browse/book. ⛔ Never invent or re-list a cancelled stay from chat history or create/cancel cards. ⛔ Never continue a prior cancel workflow.
-- For modify/cancel without \`bookingId:\` (not VIEW/LIST): if multiple bookings in **this** result match (e.g. same room, different dates), ask which one — never guess.
+- For cancel without \`bookingId:\` (not VIEW/LIST): one match → \`find_booking_by_id\` → dialog; multiple matches → SAME turn \`show_cancel_dialog_confirm\` with ALL bookings — never guess / never ask which in chat.
+- For modify without \`bookingId:\` (not VIEW/LIST): if multiple bookings in **this** result match, ask which one — never guess.
 
 ### Find / cancel (\`find_booking_by_id\` / \`show_cancel_dialog_confirm\` / \`cancel_booking\`)
 - \`[booking-cancel]\` or chat with \`bookingId:\` → \`find_booking_by_id\` first; if found → \`show_cancel_dialog_confirm\`; wait for guest response.
 - \`confirmed: true\` → \`cancel_booking\` → the same HITL card updates to success/failed; on success do NOT send chat confirmation (HITL success card is the response). Do NOT call \`get_bookings\` or \`show_cancellation_success\`.
 - \`confirmed: false\` → one short chat reply that the booking was kept.
 - If find returns empty → friendly chat error only (no dialog) — booking is cancelled, past, or not theirs.
-- Chat without \`bookingId:\` → \`get_bookings\` first; empty → stop; else identify from that result, then \`find_booking_by_id\` when one match.
+- Chat without \`bookingId:\` → \`get_bookings\` first (+ \`onDate\` when dated); empty → stop; one match → \`find_booking_by_id\` then dialog; multiple → \`show_cancel_dialog_confirm\` with ALL matches (HITL list).
 
 ### Find / modify (\`find_booking_by_id\` / \`edit_modify_booking\` / \`CONFIRM_MODIFY_BOOKING\` / \`update_booking\`)
 - \`[booking-modify]\` or chat with \`bookingId:\` → \`find_booking_by_id\` then \`edit_modify_booking\` (room + prefilled dates/guests) → availability with \`flow=modify\` + \`excludeBookingId\` → \`CONFIRM_MODIFY_BOOKING\` → \`update_booking\`.
@@ -653,7 +656,7 @@ export const MANAGE_AGENT_TOOL_PROMPTS = {
   },
   getBookings: {
     key: "get_bookings",
-    description: `List the guest's ACTIVE bookings for VIEW/LIST (optional onDate for stay-includes-date) or to disambiguate cancel/modify without bookingId. Sole source of truth — follow replyHint; never invent from chat history; never collapse a list turn to one focused booking.`,
+    description: `List the guest's ACTIVE bookings for VIEW/LIST (optional onDate for stay-includes-date) or to disambiguate cancel/modify without bookingId. Sole source of truth — follow replyHint; never invent from chat history; never collapse a list turn to one focused booking. CANCEL with multiple matches → show_cancel_dialog_confirm with ALL bookings (HITL list).`,
   },
   findBookingById: {
     key: "find_booking_by_id",

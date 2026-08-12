@@ -23,7 +23,7 @@ import {
 import {
   clearStopLatch,
   getStopLatch,
-  isStopLatchLive,
+  isRunBlockedByStopLatch,
   latchThreadStop,
   noteThreadUserMessage,
 } from "./stop-latch";
@@ -131,14 +131,14 @@ const patchAgUiAgent = (
       // FE-tool continuations keep the same trailing user message id, so they
       // stay blocked while the latch is live (do not treat them as a new turn).
       const latch = threadId ? getStopLatch(threadId) : undefined;
-      const isLatchLive = isStopLatchLive(latch);
       const isResume =
         (Array.isArray(input.resume) && input.resume.length > 0) ||
         !!(input.forwardedProps as { command?: unknown } | undefined)?.command;
-      const isNewUserTurn =
-        !!activeUserMessageId &&
-        activeUserMessageId !== latch?.stoppedUserMessageId;
-      const blockedByStop = isLatchLive && !isResume && !isNewUserTurn;
+      const blockedByStop = isRunBlockedByStopLatch({
+        latch,
+        isResume,
+        activeUserMessageId,
+      });
 
       // An expired latch, a resume, or a new user turn all release the thread.
       if (threadId && !blockedByStop) {

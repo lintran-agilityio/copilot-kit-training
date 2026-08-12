@@ -4,6 +4,10 @@ export const MONTH_PATTERN =
 export const LIST_MY_BOOKINGS_CORE =
   /(?:show|list|view|open)(?:\s+all)?\s+my\s+(?:bookings?|reservations?)|what\s+are\s+my\s+(?:bookings?|reservations?)/i;
 
+/** Cancel language without a known bookingId (chat NL cancel / cancel room). */
+export const CANCEL_WITHOUT_BOOKING_ID_CORE =
+  /\bcancel(?:l(?:ed|ing|ation))?s?\b/i;
+
 export const MONTH_DAY_CUE = new RegExp(
   `\\b(?:at|on|for)\\s+((?:${MONTH_PATTERN})\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s*\\d{4})?|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${MONTH_PATTERN})(?:,?\\s*\\d{4})?|\\d{4}-\\d{2}-\\d{2})\\b`,
   "i",

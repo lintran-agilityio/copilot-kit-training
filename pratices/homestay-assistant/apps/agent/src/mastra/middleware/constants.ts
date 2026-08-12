@@ -40,6 +40,16 @@ export const REQUEST_CONTEXT_KEYS = {
    * parsed a date cue (e.g. "at 15" → 2026-08-15). Null/undefined = no date filter.
    */
   LIST_MY_BOOKINGS_ON_DATE: "listMyBookingsOnDate",
+  /**
+   * Deterministic CANCEL_WITHOUT_BOOKING_ID override is active — get_bookings
+   * should apply pinned onDate and cancel-disambiguation replyHint.
+   */
+  CANCEL_WITHOUT_BOOKING_ID_ACTIVE: "cancelWithoutBookingIdActive",
+  /**
+   * Optional YYYY-MM-DD pinned for get_bookings.onDate when cancel-without-id
+   * parsed a date cue (e.g. "cancel room at 15th" → 2026-08-15).
+   */
+  CANCEL_WITHOUT_BOOKING_ID_ON_DATE: "cancelWithoutBookingIdOnDate",
 } as const;
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";
