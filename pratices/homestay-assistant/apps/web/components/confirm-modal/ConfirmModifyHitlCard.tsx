@@ -3,8 +3,7 @@
 import type { ReactNode } from "react";
 import { CalendarCheck } from "lucide-react";
 
-import { ChangeSummary } from "@/components/confirm-modal/ChangeSummary";
-import { ConfirmHitlCard } from "@/components/confirm-modal/ConfirmHitlCard";
+import { ChangeSummary, ConfirmHitlCard } from "@/components/confirm-modal";
 import {
   CONFIRM_MODIFY_BOOKING,
   getFailureMessage,
@@ -12,9 +11,11 @@ import {
   HITL_CARD_PHASE,
   type HitlCardPhase,
 } from "@/features/booking/constants";
-import type { HitlDecisionStatus } from "@/features/booking/utils/hitl-decision-status";
-import type { ModifyStaySnapshot } from "@/features/booking/types/booking";
-import { buildModifyChangeRows } from "@/features/booking/utils/build-modify-change-rows";
+import type { ModifyStaySnapshot } from "@/features/booking/types";
+import {
+  buildModifyChangeRows,
+  type HitlDecisionStatus,
+} from "@/features/booking/utils";
 
 export type ConfirmModifyHitlCardProps = {
   roomName: string;

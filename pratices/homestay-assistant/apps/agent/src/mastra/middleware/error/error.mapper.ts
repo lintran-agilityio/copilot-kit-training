@@ -5,7 +5,6 @@ const DEFAULT_ERROR_MESSAGE = "Internal server error";
 
 export const mapErrorToResponse = ({
   error,
-  requestId,
 }: ErrorMapperInput): MappedErrorResponse => {
   if (error instanceof Error) {
     const status: MappedErrorResponse["status"] = AUTH_ERROR_MESSAGES.has(
@@ -18,7 +17,6 @@ export const mapErrorToResponse = ({
       status,
       body: {
         error: status === 500 ? DEFAULT_ERROR_MESSAGE : error.message,
-        requestId,
       },
     };
   }
@@ -27,7 +25,6 @@ export const mapErrorToResponse = ({
     status: 500,
     body: {
       error: DEFAULT_ERROR_MESSAGE,
-      requestId,
     },
   };
 };

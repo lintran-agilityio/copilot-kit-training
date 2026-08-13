@@ -67,6 +67,22 @@ export const CONFIRM_CANCEL_BOOKING = {
   },
 } as const;
 
+/** Shape shared by every multi-booking disambiguation picker's copy. */
+export type BookingPickerCopy = {
+  title: string;
+  description: (queryName: string) => string;
+  keepLabel: string;
+  completed: {
+    rejectedTitle: string;
+    approvedTitle: string;
+    /** Title shown when the picker settles without a clear approve/reject (supersede or missing decision). */
+    expiredTitle: string;
+    keptAll: (queryName: string) => string;
+    multiMatch: (queryName: string) => string;
+    expiredBody: (queryName: string) => string;
+  };
+};
+
 /** Copy for cancel multi-booking disambiguation picker (HITL list). */
 export const CANCEL_BOOKING_PICKER = {
   title: "Which booking should be cancelled?",
@@ -76,6 +92,7 @@ export const CANCEL_BOOKING_PICKER = {
   completed: {
     rejectedTitle: "Cancelled by you",
     approvedTitle: "Confirmed by you",
+    expiredTitle: CONFIRM_CANCEL_BOOKING.title.expired,
     keptAll: (queryName: string) =>
       `You kept all bookings matching “${queryName}”.`,
     multiMatch: (queryName: string) =>
@@ -83,7 +100,7 @@ export const CANCEL_BOOKING_PICKER = {
     expiredBody: (queryName: string) =>
       `This cancellation confirmation for “${queryName}” is no longer available.`,
   },
-} as const;
+} satisfies BookingPickerCopy;
 
 /** Copy for modify multi-booking disambiguation picker (HITL list). */
 export const MODIFY_BOOKING_PICKER = {
@@ -94,6 +111,7 @@ export const MODIFY_BOOKING_PICKER = {
   completed: {
     rejectedTitle: "Kept unchanged",
     approvedTitle: "Selected by you",
+    expiredTitle: "Kept unchanged",
     keptAll: (queryName: string) =>
       `You kept all bookings matching “${queryName}” unchanged.`,
     multiMatch: (queryName: string) =>
@@ -101,7 +119,7 @@ export const MODIFY_BOOKING_PICKER = {
     expiredBody: (queryName: string) =>
       `This modify selection for “${queryName}” is no longer available.`,
   },
-} as const;
+} satisfies BookingPickerCopy;
 
 /** Titles that mark ConfirmCreateHitlCard as the modify fallback layout. */
 export const MODIFY_PENDING_TITLES = new Set<string>([

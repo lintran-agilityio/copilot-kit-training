@@ -2,8 +2,6 @@ import { THREAD_METADATA_BLOCKED_MESSAGE_IDS } from "@repo/constants";
 
 export const REQUEST_CONTEXT_KEYS = {
   AUTH: "auth",
-  REQUEST_ID: "requestId",
-  AGENT_ID: "agentId",
   BLOCKED_MESSAGE_IDS: THREAD_METADATA_BLOCKED_MESSAGE_IDS,
   /**
    * Candidate stay from edit_modify_booking confirmed:true — used to override
@@ -90,7 +88,6 @@ export const REQUEST_CONTEXT_KEYS = {
 } as const;
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";
-export const AGENT_ID_HEADER = "x-agent-id";
 
 /** Guest-facing 401 messages from middleware auth (JWT / userId validation). */
 export const AUTH_ERRORS = {

@@ -16,11 +16,11 @@ import {
   type HitlCardPhase,
 } from "@/features/booking/constants";
 import {
-  HITL_DECISION_STATUS,
   isHitlDecisionTerminal,
   type HitlDecisionStatus,
-} from "@/features/booking/utils/hitl-decision-status";
+} from "@/features/booking/utils";
 import { countNightOfDates } from "@repo/utils";
+import { HITL_DECISION_STATUS } from "@/constants";
 
 export type ConfirmCreateHitlCardProps = {
   roomName: string;

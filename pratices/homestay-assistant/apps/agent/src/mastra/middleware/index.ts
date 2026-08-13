@@ -8,7 +8,6 @@ export type {
 
 export * from "./constants";
 export * from "./verify-clerk-auth";
-export * from "./resolve-agent-id";
 export * from "./build-request-context";
 export * from "./pipeline";
 export * from "./get-auth-user-id";
@@ -26,8 +25,3 @@ export * from "./logging/logger";
 export * from "./error/error.middleware";
 export * from "./error/error.mapper";
 export * from "./error/error.types";
-
-export * from "./request-context/request-context.middleware";
-export * from "./request-context/request-context.types";
-
-export * from "./tracing/tracing.middleware";

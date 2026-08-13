@@ -1,8 +1,14 @@
-import { TOOL_KEYS } from "@repo/constants";
+import type { BookingPickerCopy } from "@/features/booking/constants";
+import { type HitlDecisionStatus } from "./hitl-status";
+import type { ConfirmModifyBookingArgs, ModifyBookingPickerItem } from "@repo/schemas";
 import { parseToolResult } from "@repo/utils";
-
-import type { ModifyBookingPickerItem } from "@repo/schemas";
-import type { MessageLike } from "@/features/chat/types";
+import { TOOL_KEYS } from "@repo/constants";
+import type {
+  ModifyStaySnapshot,
+  PendingModifyStay,
+} from "@/features/booking/types";
+import { MessageLike } from "@/features/chat/types";
+import { HITL_DECISION_STATUS } from "@/constants";
 
 type GetBookingsListItem = {
   id?: string;
@@ -18,6 +24,57 @@ type GetBookingsListItem = {
 
 type GetBookingsToolResult = {
   bookings?: GetBookingsListItem[];
+};
+
+/** Title for a settled cancel/modify disambiguation picker (completed state). */
+export const resolvePickerCompletedTitle = (
+  copy: BookingPickerCopy,
+  decisionStatus: HitlDecisionStatus,
+  expiredBySupersede: boolean,
+) => {
+  const { expiredTitle, rejectedTitle, approvedTitle } = copy.completed;
+  if (expiredBySupersede) {
+    return expiredTitle;
+  }
+
+  if (decisionStatus === HITL_DECISION_STATUS.REJECTED) {
+    return rejectedTitle;
+  }
+
+  if (decisionStatus === HITL_DECISION_STATUS.APPROVED) {
+    return approvedTitle;
+  }
+
+  return expiredTitle;
+};
+
+/**
+ * Prefer stashed pending-modify originals; fall back to original* args on the
+ * confirm_modify tool call.
+ */
+export const resolveOriginalStay = (
+  pending: PendingModifyStay | null | undefined,
+  bookingId: string,
+  args: ConfirmModifyBookingArgs,
+): ModifyStaySnapshot | null => {
+  if (pending?.bookingId === bookingId) {
+    return pending.original;
+  }
+
+  if (
+    args.originalCheckInDate?.trim() &&
+    args.originalCheckOutDate?.trim() &&
+    typeof args.originalGuests === "number" &&
+    args.originalGuests > 0
+  ) {
+    return {
+      checkInDate: args.originalCheckInDate,
+      checkOutDate: args.originalCheckOutDate,
+      guests: args.originalGuests,
+    };
+  }
+
+  return null;
 };
 
 const toPickerItem = (

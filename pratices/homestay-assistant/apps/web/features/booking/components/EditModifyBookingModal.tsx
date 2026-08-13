@@ -16,7 +16,6 @@ import {
   useSupersedeHitlOnNewInteraction,
 } from "@/features/chat/hooks";
 import {
-  HITL_DECISION_STATUS,
   isHitlDecisionTerminal,
   isHitlToolRespondable,
   resolveHitlDecisionStatus,
@@ -38,6 +37,7 @@ import {
 } from "@/features/room/components";
 import { useRoomBookingEstimate } from "@/features/room/hooks";
 import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
+import { HITL_DECISION_STATUS } from "@/constants";
 
 type EditModifyBookingModalProps = {
   status: ToolCallStatus;

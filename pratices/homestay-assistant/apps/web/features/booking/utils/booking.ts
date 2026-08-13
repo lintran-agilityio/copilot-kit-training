@@ -1,5 +1,5 @@
 import { BookingStatus } from "@repo/types";
-import { parseToolResult } from "@repo/utils";
+import { isTimeTodayOrLater, parseToolResult } from "@repo/utils";
 import { CancelBookingResult, CheckRoomAvailabilityResult, CreateBookingResult, UpdateBookingResult } from "../types";
 import { BookingUnavailableReason } from "@repo/schemas";
 
@@ -130,3 +130,27 @@ export const isUpdateBookingSuccess = (
     parsed.status.toLowerCase() !== BookingStatus.CANCELLED.toLowerCase()
   );
 };
+
+export const isBookingCancellable = (status: string, checkOutDate: string) => {
+  if (status.toLowerCase() === BookingStatus.CANCELLED) {
+    return false;
+  }
+
+  return isTimeTodayOrLater(checkOutDate);
+};
+
+/** Required fields for a cancel/modify disambiguation picker row. */
+export type BookingPickerFields = {
+  bookingId?: string;
+  roomName?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+};
+
+export const hasBookingPickerFields = (booking: BookingPickerFields) =>
+  Boolean(
+    booking.bookingId?.trim() &&
+      booking.roomName?.trim() &&
+      booking.checkInDate?.trim() &&
+      booking.checkOutDate?.trim(),
+  );

@@ -49,7 +49,6 @@ const resolveAuthForApi = (
 
 const buildAuthHeaders = (requestContext?: RequestContext): HeadersInit => {
   const auth = resolveAuthForApi(requestContext);
-  const requestId = requestContext?.get(REQUEST_CONTEXT_KEYS.REQUEST_ID);
 
   const headers: Record<string, string> = {};
 
@@ -57,10 +56,6 @@ const buildAuthHeaders = (requestContext?: RequestContext): HeadersInit => {
   // it; user-scoped booking routes enforce auth in Nest (401 if missing).
   if (auth?.clerkToken?.trim()) {
     headers.Authorization = `Bearer ${auth.clerkToken}`;
-  }
-
-  if (typeof requestId === "string" && requestId.trim()) {
-    headers["x-request-id"] = requestId;
   }
 
   return headers;

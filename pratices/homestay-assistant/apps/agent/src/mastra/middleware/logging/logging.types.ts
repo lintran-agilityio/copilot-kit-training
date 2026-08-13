@@ -1,5 +1,4 @@
 export type RequestLogContext = {
-  requestId?: string;
   method: string;
   path: string;
 };

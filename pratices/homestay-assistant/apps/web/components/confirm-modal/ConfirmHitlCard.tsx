@@ -95,8 +95,6 @@ export const ConfirmHitlCard = ({
   onViewBookings,
   onRetry,
 }: ConfirmHitlCardProps) => {
-  console.log('phase===>', phase)
-  console.log('summary===>0', summary)
   switch (phase) {
     case HITL_CARD_PHASE.SUCCESS:
       return (
@@ -191,7 +189,7 @@ export const ConfirmHitlCard = ({
     default: {
       const isSubmittingPhase = phase === HITL_CARD_PHASE.SUBMITTING;
       const isDestructiveConfirm = confirmVariant === "destructive";
-console.log('summary===>1', summary)
+
       return (
         <div className="space-y-3 p-3.5 text-zinc-100">
           <ConfirmHitlHeader

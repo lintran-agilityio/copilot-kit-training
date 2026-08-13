@@ -63,6 +63,13 @@ export const formatYmd = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+/** Today's calendar date as YYYY-MM-DD in the business timezone. */
+export const formatTodayYmd = (now = new Date()): string => formatYmd(now);
+
+/** True when `ymd` (YYYY-MM-DD) is today or later in the business timezone. */
+export const isTimeTodayOrLater = (ymd: string, now = new Date()): boolean =>
+  ymd >= formatTodayYmd(now);
+
 /** Split YYYY-MM-DD into numeric parts, rejecting anything malformed. */
 const splitYmd = (ymd: string) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
@@ -162,7 +169,7 @@ export const bookingStayOverlapsRange = (
 ): boolean => checkInDate < to && checkOutDate > from;
 
 export const getBusinessDates = (now = new Date()) => {
-  const today = formatYmd(now);
+  const today = formatTodayYmd(now);
   const weekend = getWeekendStay(today);
   const nextWeekend = getWeekendStay(today, 1);
 

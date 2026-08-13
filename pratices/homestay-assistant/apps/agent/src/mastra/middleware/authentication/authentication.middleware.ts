@@ -22,14 +22,12 @@ export const attachAuthToRequestContext = (
   auth: MastraAuthContext,
 ): void => {
   const requestContext = context.get("requestContext");
-  const agentId =
-    (requestContext.get(REQUEST_CONTEXT_KEYS.AGENT_ID) as string | undefined) ??
-    AGENT_KEYS.MANAGE_ASSISTANT;
 
   requestContext.set(REQUEST_CONTEXT_KEYS.AUTH, auth);
+  // Memory/threads persist as `${userId}:manage-assistant`; keep that contract.
   requestContext.set(
     MASTRA_RESOURCE_ID_KEY,
-    getAgentResourceId(auth.userId, agentId),
+    getAgentResourceId(auth.userId, AGENT_KEYS.MANAGE_ASSISTANT),
   );
 };
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { BookingStatus } from "@repo/types";
-import { sanitizeBookingId } from "@repo/utils";
+import { isTimeTodayOrLater, sanitizeBookingId } from "@repo/utils";
 import {
   type CheckRoomAvailabilityInput,
   type CreateBookingInput,
@@ -128,11 +128,7 @@ export const isActiveBooking = (booking: Booking) => {
     return false;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const checkout = new Date(`${booking.checkOutDate}T00:00:00`);
-  return checkout >= today;
+  return isTimeTodayOrLater(booking.checkOutDate);
 };
 
 /**

@@ -2,28 +2,28 @@ import { TOOL_KEYS } from "@repo/constants";
 import { parseToolResult } from "@repo/utils";
 
 import { BOOKING_MUTATION_PHASE } from "@/features/booking/constants";
-import type { CreateBookingCardOutcome } from "@/features/booking/stores/create-booking-card-store";
-import type { CancelBookingCardOutcome } from "@/features/booking/stores/cancel-booking-card-store";
-import type { ModifyBookingCardOutcome } from "@/features/booking/stores/modify-booking-card-store";
+import type {
+  CreateBookingCardOutcome,
+  CancelBookingCardOutcome,
+  ModifyBookingCardOutcome,
+} from "@/features/booking/stores";
 import type {
   CancelBookingResult,
   CreateBookingResult,
   UpdateBookingResult,
 } from "@/features/booking/types";
 import type { MessageLike } from "@/features/chat/types";
-import { buildCancelBookingCorrelationKey } from "@/features/booking/utils/cancel-booking-correlation-key";
-import { buildCreateStayCorrelationKey } from "@/features/booking/utils/create-booking-correlation-key";
-import { buildModifyStayCorrelationKey } from "@/features/booking/utils/modify-booking-correlation-key";
 import {
   isCancelBookingSuccess,
   isCreateBookingSuccess,
   isUpdateBookingSuccess,
-} from "@/features/booking/utils/booking";
-import {
+  buildCancelBookingCorrelationKey,
+  buildCreateStayCorrelationKey,
+  buildModifyStayCorrelationKey,
   getCancelBookingFailureMessage,
   getCreateBookingFailureMessage,
   getModifyBookingFailureMessage,
-} from "@/features/booking/utils/get-booking-failure-message";
+} from "@/features/booking/utils";
 
 type MutationToolHit = {
   toolCallId: string;
@@ -36,9 +36,7 @@ type MutationToolHit = {
  * so HITL cards can recover success/failed after refresh when Zustand is empty.
  * Does not rewrite agent.messages.
  */
-const parseToolArguments = (
-  raw: unknown,
-): Record<string, unknown> | null => {
+const parseToolArguments = (raw: unknown): Record<string, unknown> | null => {
   if (raw == null) {
     return null;
   }
@@ -122,26 +120,30 @@ const collectMutationToolHits = (
   return hits;
 };
 
-const pickHit = (
+const findLastHit = (
   hits: MutationToolHit[],
-  matchesCorrelationKey: (hit: MutationToolHit) => boolean,
+  predicate: (hit: MutationToolHit) => boolean,
 ): MutationToolHit | null => {
   for (let index = hits.length - 1; index >= 0; index -= 1) {
     const hit = hits[index];
-    if (hit && matchesCorrelationKey(hit) && hit.resultContent != null) {
-      return hit;
-    }
-  }
 
-  for (let index = hits.length - 1; index >= 0; index -= 1) {
-    const hit = hits[index];
-    if (hit?.resultContent != null) {
+    if (hit && predicate(hit)) {
       return hit;
     }
   }
 
   return null;
 };
+
+const pickHit = (
+  hits: MutationToolHit[],
+  matchesCorrelationKey: (hit: MutationToolHit) => boolean,
+): MutationToolHit | null =>
+  findLastHit(
+    hits,
+    (hit) => hit.resultContent != null && matchesCorrelationKey(hit),
+  ) ??
+  findLastHit(hits, (hit) => hit.resultContent != null);
 
 const asOptionalString = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
