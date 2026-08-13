@@ -56,6 +56,11 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   CANCEL_WITHOUT_BOOKING_ID_ON_DATE: "cancelWithoutBookingIdOnDate",
   /**
+   * Optional room-name query pinned for cancel-without-id so get_bookings can
+   * filter to the named room (e.g. "Orchid Twin Loft") before HITL.
+   */
+  CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY: "cancelWithoutBookingIdRoomQuery",
+  /**
    * Deterministic MODIFY_WITHOUT_BOOKING_ID override is active — get_bookings
    * should apply pinned onDate and modify-disambiguation replyHint.
    */

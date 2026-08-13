@@ -154,10 +154,11 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.MANAGE_ASSISTANT,
       name: TOOL_KEYS.BOOKING.GET,
       parameters: getBookingsInputSchema,
-      render: ({ status, result }) => (
+      render: ({ status, result, toolCallId }) => (
         <MyBookingsNotice
           status={status}
           result={result as GetBookingsResult | string | null}
+          toolCallId={toolCallId}
         />
       ),
     },

@@ -116,6 +116,12 @@ export type UpdateBookingToolProps = ToolRendererProps<UpdateBookingResult> & {
 
 export type GetBookingsResult = {
   bookings?: BookingResponse[];
+  /**
+   * Internal routing set when cancel/modify-without-id resolution forced this
+   * fetch — not a guest-facing VIEW/LIST call. MyBookingsNotice suppresses
+   * itself in this case so only the HITL that follows renders.
+   */
+  intentHint?: "cancel_disambiguate" | "modify_disambiguate";
 };
 
 export type GetBookingsToolProps = ToolRendererProps<GetBookingsResult>;

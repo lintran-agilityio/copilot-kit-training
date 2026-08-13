@@ -94,9 +94,10 @@ const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
 
     return (
       `Multiple active bookings (count=${bookingCount}). ` +
+      "This result is already scoped to the room the guest named, when they named one — " +
       'CANCEL disambiguation: SAME turn call show_cancel_dialog_confirm with ALL bookings ' +
       'mapped as { bookingId: id, roomId, roomName, checkInDate, checkOutDate, guests, totalPrice }; ' +
-      'queryName = the date cue or "your bookings". ' +
+      'queryName = room name (when named), date cue, or "your bookings". ' +
       "Do NOT pick the first. " +
       "Do NOT call find_booking_by_id. " +
       "Do NOT ask which in chat — the HITL list is the response (no instructional handoff)."
@@ -128,8 +129,9 @@ const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
     const base =
       `Active bookings only (count=${bookingCount}). ` +
       "This list is a COLLECTION — the sole source of truth for VIEW/LIST. " +
-      "Results render as booking cards in chat automatically — do NOT restate room names, dates, prices, or a list in text; " +
-      "reply with ONE short acknowledgement sentence instead; " +
+      "Results render as booking cards in chat automatically — the cards ARE the response for VIEW/LIST: " +
+      "do NOT restate room names, dates, prices, or a list in text, and do NOT send any acknowledgement/summary " +
+      'sentence either (e.g. "You have N active bookings..."). Tools-only is allowed. ' +
       "do NOT collapse to a single booking; " +
       "do NOT ask to cancel or modify unless the latest user message explicitly asked. ";
 
@@ -185,7 +187,7 @@ const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
 export const getBookingsTool = createTool({
   id: TOOL_KEYS.BOOKING.GET,
   description:
-    "Get the signed-in user's ACTIVE bookings from the backend (cancelled/past stays are excluded). User identity always comes from the server session — never pass or invent a userId. Required for view/list intent and to disambiguate cancel/modify when bookingId is unknown. Optional onDate (YYYY-MM-DD) returns only stays that include that date. Treat result.bookings + replyHint as the sole source of truth — never invent bookings from chat history or create/cancel cards. For VIEW/LIST, results render as booking cards in chat automatically — do NOT write booking names, dates, prices, or a list in text. After calling: VIEW/LIST → one short chat sentence following replyHint; CANCEL with multiple matches → call show_cancel_dialog_confirm with ALL bookings (HITL list is the response — no instructional handoff); CANCEL with one match → find_booking_by_id then dialog; MODIFY with multiple matches → call show_modify_dialog_select with bookingIds[] + queryName only (not full bookings rows); MODIFY with one match → find_booking_by_id then edit/stated-modify.",
+    "Get the signed-in user's ACTIVE bookings from the backend (cancelled/past stays are excluded). User identity always comes from the server session — never pass or invent a userId. Required for view/list intent and to disambiguate cancel/modify when bookingId is unknown. Optional onDate (YYYY-MM-DD) returns only stays that include that date. Treat result.bookings + replyHint as the sole source of truth — never invent bookings from chat history or create/cancel cards. For VIEW/LIST, results render as booking cards in chat automatically — the cards ARE the response; do NOT write booking names, dates, prices, or a list in text, and do NOT add an acknowledgement/summary sentence either. After calling: VIEW/LIST with bookingCount > 0 → tools-only, no chat text; VIEW/LIST empty → one short chat sentence that nothing matched; CANCEL with multiple matches → call show_cancel_dialog_confirm with ALL bookings (HITL list is the response — no instructional handoff); CANCEL with one match → find_booking_by_id then dialog; MODIFY with multiple matches → call show_modify_dialog_select with bookingIds[] + queryName only (not full bookings rows); MODIFY with one match → find_booking_by_id then edit/stated-modify.",
   inputSchema: getBookingsInputSchema,
   outputSchema: getBookingsOutputSchema,
   execute: async (params, context) => {
@@ -219,15 +221,22 @@ export const getBookingsTool = createTool({
       serviceContextFromTool(context),
     );
 
-    // Modify-without-id: when the guest named a room, keep only matching stays
-    // so the picker JSON stays small and same-room multi-date cases disambiguate.
+    // Cancel/modify-without-id: when the guest named a room, keep only matching
+    // stays so match-count and the HITL list scope to that room, not every
+    // active booking (same-room multi-date cases still disambiguate). A room
+    // query that matches nothing must yield zero bookings, not the unfiltered
+    // list, so the "no active bookings matched" narration path fires instead
+    // of showing an unrelated picker.
+    if (cancelPin.active && cancelPin.roomQuery) {
+      bookings = bookings.filter((booking) =>
+        matchesRoomName(booking.room?.name ?? "", cancelPin.roomQuery!),
+      );
+    }
+
     if (modifyPin.active && modifyPin.roomQuery) {
-      const filtered = bookings.filter((booking) =>
+      bookings = bookings.filter((booking) =>
         matchesRoomName(booking.room?.name ?? "", modifyPin.roomQuery!),
       );
-      if (filtered.length > 0) {
-        bookings = filtered;
-      }
     }
 
     return {

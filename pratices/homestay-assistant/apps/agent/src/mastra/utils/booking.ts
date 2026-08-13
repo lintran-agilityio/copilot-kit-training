@@ -2,13 +2,20 @@ import type { RequestContext } from "@mastra/core/request-context";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 
+export type CancelWithoutBookingIdPin = {
+  active: boolean;
+  onDate?: string;
+  /** Normalized free-text room query when the guest named a room. */
+  roomQuery?: string;
+};
+
 /**
  * Reads CANCEL_WITHOUT_BOOKING_ID pins set by Mastra prepareStep.
  * Same pattern as LIST_MY_BOOKINGS pins — server tool prefers pinned onDate.
  */
 export const readCancelWithoutBookingIdPin = (
   requestContext: RequestContext | undefined,
-): { active: boolean; onDate?: string } => {
+): CancelWithoutBookingIdPin => {
   if (!requestContext) {
     return { active: false };
   }
@@ -19,12 +26,19 @@ export const readCancelWithoutBookingIdPin = (
   const pinnedOnDate = requestContext.get(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ON_DATE,
   );
+  const pinnedRoomQuery = requestContext.get(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY,
+  );
 
   return {
     active,
     onDate:
       typeof pinnedOnDate === "string" && pinnedOnDate.trim().length > 0
         ? pinnedOnDate.trim()
+        : undefined,
+    roomQuery:
+      typeof pinnedRoomQuery === "string" && pinnedRoomQuery.trim().length > 0
+        ? pinnedRoomQuery.trim()
         : undefined,
   };
 };
@@ -41,6 +55,10 @@ export const clearCancelWithoutBookingIdPin = (
   );
   requestContext?.set(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ON_DATE,
+    undefined,
+  );
+  requestContext?.set(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY,
     undefined,
   );
 };

@@ -2,16 +2,16 @@
 
 import { useAgent } from "@copilotkit/react-core/v2";
 
-import { EmptyMessages } from "@repo/components";
 import { AGENT_KEYS } from "@repo/constants";
+import { CardListSection } from "@/components/common/CardListSection";
+import { RoomListSkeleton } from "@/components/common/RoomListSkeleton";
 import { BookingCard } from "@/features/booking/components/BookingCard";
 import type { BookingResponse } from "@/features/booking/types/booking";
-import { cn } from "@repo/utils";
+import { useGenericUiInteraction } from "@/features/chat/hooks";
 import {
   useCancelBooking,
   useModifyBooking,
 } from "@/features/booking/hooks/use-booking";
-import { RoomListSkeleton } from "@/components/common";
 
 type BookingListProps = {
   bookings: BookingResponse[];
@@ -20,6 +20,8 @@ type BookingListProps = {
   isLoading?: boolean;
   error?: Error;
   compact?: boolean;
+  /** Host get_bookings tool call — actions lock once superseded by a new user turn. */
+  toolCallId?: string;
 };
 
 export const BookingList = ({
@@ -29,8 +31,10 @@ export const BookingList = ({
   isLoading,
   error,
   compact = false,
+  toolCallId,
 }: BookingListProps) => {
   const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { isActionable } = useGenericUiInteraction(toolCallId);
   const cancelBooking = useCancelBooking();
   const modifyBooking = useModifyBooking();
 
@@ -39,7 +43,7 @@ export const BookingList = ({
        <RoomListSkeleton className={className} />
     );
   }
-  
+
   if (error && !isLoading) {
     return (
       <div className="flex items-center justify-center">
@@ -48,42 +52,24 @@ export const BookingList = ({
     );
   }
 
-  if (!bookings.length) {
-    return (
-      <section className={cn("space-y-4 flex items-center justify-center h-full", className)}>
-        <EmptyMessages emptyMessage="No bookings found" />
-      </section>
-    );
-  }
-
   return (
-    <section className={cn("space-y-4", className)}>
-      {title ? (
-        <div className="flex items-center gap-2">
-          <span className="h-4 w-1 rounded-full bg-emerald-500" />
-          <h2 className="text-lg font-medium text-zinc-300">{title}</h2>
-        </div>
-      ) : null}
-
-      <div
-        className={cn(
-          "app-scrollbar grid",
-          compact
-            ? "max-h-[50vh] grid-cols-1 gap-3 overflow-y-auto pr-1"
-            : "grid-cols-1 gap-4 pb-1 sm:grid-cols-2 lg:grid-cols-3",
-        )}
-      >
-        {bookings.map((booking) => (
-          <BookingCard
-            key={booking.id}
-            booking={booking}
-            compact={compact}
-            isAgentRunning={agent.isRunning}
-            onCancelBooking={cancelBooking}
-            onModifyBooking={modifyBooking}
-          />
-        ))}
-      </div>
-    </section>
+    <CardListSection
+      items={bookings}
+      title={title}
+      itemLabel="booking"
+      emptyMessage="No bookings found"
+      compact={compact}
+      className={className}
+      getItemKey={(booking) => booking.id}
+      renderItem={(booking) => (
+        <BookingCard
+          booking={booking}
+          compact={compact}
+          isAgentRunning={agent.isRunning || !isActionable}
+          onCancelBooking={cancelBooking}
+          onModifyBooking={modifyBooking}
+        />
+      )}
+    />
   );
 };

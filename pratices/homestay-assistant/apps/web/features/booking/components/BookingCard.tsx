@@ -1,15 +1,18 @@
 "use client";
 
-import { CalendarCheck, CalendarRange, Pencil, Users } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarRange,
+  Pencil,
+  Users,
+  CalendarX2,
+} from "lucide-react";
 import Image, { type StaticImageData } from "next/image";
 import { useState } from "react";
 
 import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
 import type { BookingResponse } from "@/features/booking/types/booking";
-import {
-  FALLBACK_ROOM_IMAGE,
-  resolveRoomImage,
-} from "@/features/room/utils";
+import { FALLBACK_ROOM_IMAGE, resolveRoomImage } from "@/features/room/utils";
 import { cn, formatPrice, formatShortDateForDisplay } from "@repo/utils";
 import { Button } from "@/components/ui/button";
 import { isBookingCancellable } from "@/features/booking/utils";
@@ -98,7 +101,12 @@ export const BookingCard = ({
         </div>
       </div>
 
-      <div className={cn("flex flex-col", compact ? "gap-3 p-3" : "gap-4 p-4")}>
+      <div
+        className={cn(
+          "flex flex-1 flex-col",
+          compact ? "gap-3 p-3" : "gap-4 p-4",
+        )}
+      >
         <div className="flex items-start justify-between gap-3">
           <h3
             className={cn(
@@ -138,7 +146,12 @@ export const BookingCard = ({
         </div>
       </div>
       {isCancellable ? (
-        <div className={cn("flex gap-2", compact ? "m-3 mt-0" : "m-4 mt-0")}>
+        <div
+          className={cn(
+            "mt-auto flex gap-2",
+            compact ? "m-3 mt-0" : "m-4 mt-0",
+          )}
+        >
           <Button
             type="button"
             size={compact ? "sm" : "lg"}
@@ -150,8 +163,8 @@ export const BookingCard = ({
             )}
             onClick={handleModifyBooking}
           >
-            <Pencil className={compact ? "size-3.5" : "size-4"} />
-            Modify
+            <Pencil className="size-4" />
+            {compact ? "" : "Modify"}
           </Button>
           <Button
             type="button"
@@ -163,8 +176,12 @@ export const BookingCard = ({
             )}
             onClick={handleCancelBooking}
           >
-            <CalendarCheck className={compact ? "size-3.5" : "size-4"} />
-            Cancel
+            {compact ? (
+              <CalendarX2 className="size-4" />
+            ) : (
+              <CalendarCheck className="size-4" />
+            )}
+            {compact ? "" : "Cancel"}
           </Button>
         </div>
       ) : null}
