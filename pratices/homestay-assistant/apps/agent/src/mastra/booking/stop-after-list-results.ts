@@ -9,8 +9,12 @@ type StreamChunkLike = {
 
 type ToolResultPayloadLike = {
   toolName?: string;
-  result?: unknown;
   isError?: boolean;
+  providerMetadata?: {
+    mastra?: {
+      modelOutput?: unknown;
+    };
+  };
 };
 
 const asToolResultPayload = (payload: unknown): ToolResultPayloadLike =>
@@ -18,9 +22,16 @@ const asToolResultPayload = (payload: unknown): ToolResultPayloadLike =>
     ? (payload as ToolResultPayloadLike)
     : {};
 
-/** Unwraps the toModelOutput `{ type: "json", value: {...} }` shape when present. */
-const asModelOutputValue = (result: unknown): Record<string, unknown> | null => {
-  const record = asRecord(result);
+/**
+ * Reads the tool's `toModelOutput` `{ type: "json", value: {...} }` shape.
+ * Stream chunk `payload.result` is the RAW execute() return — toModelOutput
+ * (where bookingCount/matchCount/replyHint live) is carried separately on
+ * `payload.providerMetadata.mastra.modelOutput`.
+ */
+const asModelOutputValue = (
+  payload: ToolResultPayloadLike,
+): Record<string, unknown> | null => {
+  const record = asRecord(payload.providerMetadata?.mastra?.modelOutput);
   if (!record) {
     return null;
   }
@@ -43,7 +54,7 @@ const isFindRoomResultWithMatches = (
     return false;
   }
 
-  const value = asModelOutputValue(payload.result);
+  const value = asModelOutputValue(payload);
   if (!value) {
     return false;
   }
@@ -68,7 +79,7 @@ const isGetBookingsResultWithMatches = (
     return false;
   }
 
-  const value = asModelOutputValue(payload.result);
+  const value = asModelOutputValue(payload);
   if (!value) {
     return false;
   }
