@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 import { getBookingsInputSchema } from "@repo/schemas";
-import { matchesRoomName } from "@repo/utils";
+import { bookingStayOverlapsRange, matchesRoomName } from "@repo/utils";
 import { TOOL_KEYS } from "@repo/constants";
 import {
   getBookingsOutputSchema,
@@ -203,7 +203,14 @@ export const getBookingsTool = createTool({
     clearCancelWithoutBookingIdPin(requestContext);
     clearModifyWithoutBookingIdPin(requestContext);
 
-    const roomId = listPin.active ? undefined : params.roomId;
+    // toolChoice forces the tool, not its args — a model-guessed roomId must
+    // not pre-filter the backend query when these pins already scope results
+    // via onDate + fuzzy roomQuery below, or identical guest text can return
+    // a different match count turn to turn.
+    const roomId =
+      listPin.active || cancelPin.active || modifyPin.active
+        ? undefined
+        : params.roomId;
     const onDate = listPin.active
       ? listPin.onDate
       : cancelPin.active
@@ -220,6 +227,15 @@ export const getBookingsTool = createTool({
       },
       serviceContextFromTool(context),
     );
+
+    // LIST_MY_BOOKINGS "weekend" cue: no single onDate to send the backend,
+    // so scope client-side to stays overlapping the Saturday+Sunday span.
+    if (listPin.active && listPin.dateRange) {
+      const { from, to } = listPin.dateRange;
+      bookings = bookings.filter((booking) =>
+        bookingStayOverlapsRange(booking.checkInDate, booking.checkOutDate, from, to),
+      );
+    }
 
     // Cancel/modify-without-id: when the guest named a room, keep only matching
     // stays so match-count and the HITL list scope to that room, not every

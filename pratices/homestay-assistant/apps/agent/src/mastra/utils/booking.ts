@@ -130,7 +130,11 @@ export const clearModifyWithoutBookingIdPin = (
  */
 export const readListMyBookingsPin = (
   requestContext: RequestContext | undefined,
-): { active: boolean; onDate?: string } => {
+): {
+  active: boolean;
+  onDate?: string;
+  dateRange?: { from: string; to: string };
+} => {
   if (!requestContext) {
     return { active: false };
   }
@@ -140,6 +144,20 @@ export const readListMyBookingsPin = (
   const pinnedOnDate = requestContext.get(
     REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_ON_DATE,
   );
+  const pinnedFrom = requestContext.get(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_FROM,
+  );
+  const pinnedTo = requestContext.get(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_TO,
+  );
+
+  const dateRange =
+    typeof pinnedFrom === "string" &&
+    pinnedFrom.trim().length > 0 &&
+    typeof pinnedTo === "string" &&
+    pinnedTo.trim().length > 0
+      ? { from: pinnedFrom.trim(), to: pinnedTo.trim() }
+      : undefined;
 
   return {
     active,
@@ -147,6 +165,7 @@ export const readListMyBookingsPin = (
       typeof pinnedOnDate === "string" && pinnedOnDate.trim().length > 0
         ? pinnedOnDate.trim()
         : undefined,
+    dateRange,
   };
 };
 
@@ -158,4 +177,12 @@ export const clearListMyBookingsPin = (
 ) => {
   requestContext?.set(REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_ACTIVE, undefined);
   requestContext?.set(REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_ON_DATE, undefined);
+  requestContext?.set(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_FROM,
+    undefined,
+  );
+  requestContext?.set(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_TO,
+    undefined,
+  );
 };

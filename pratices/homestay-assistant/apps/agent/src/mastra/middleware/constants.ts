@@ -46,6 +46,18 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   LIST_MY_BOOKINGS_ON_DATE: "listMyBookingsOnDate",
   /**
+   * Optional YYYY-MM-DD range start pinned for get_bookings when LIST_MY_BOOKINGS
+   * parsed a "weekend" cue (e.g. "at weekend" → Saturday). Null/undefined = no
+   * range filter. Paired with LIST_MY_BOOKINGS_DATE_TO.
+   */
+  LIST_MY_BOOKINGS_DATE_FROM: "listMyBookingsDateFrom",
+  /**
+   * Optional YYYY-MM-DD range end (exclusive) pinned alongside
+   * LIST_MY_BOOKINGS_DATE_FROM — together they scope get_bookings results to
+   * stays overlapping that span (e.g. the weekend's Saturday+Sunday).
+   */
+  LIST_MY_BOOKINGS_DATE_TO: "listMyBookingsDateTo",
+  /**
    * Deterministic CANCEL_WITHOUT_BOOKING_ID override is active — get_bookings
    * should apply pinned onDate and cancel-disambiguation replyHint.
    */

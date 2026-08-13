@@ -100,23 +100,71 @@ export const formatYmdWeekday = (ymd: string): string => {
 };
 
 /**
- * Resolves "this weekend" to a concrete Saturday-night stay. Models cannot
- * derive a weekday from a date reliably, so this must be computed here.
+ * Resolves "this/next/last weekend" to a concrete Saturday-night stay. Models
+ * cannot derive a weekday from a date reliably, so this must be computed here.
  *
- * A guest already inside the weekend means the one in progress, so check-in
- * stays on Sunday rather than jumping six days ahead.
+ * `weekOffset` shifts by whole weeks: 0 (default) = this weekend, 1 = next
+ * weekend, -1 = last weekend — mirrors {@link getWeekendRange}'s offset.
+ *
+ * For the current weekend (offset 0) only: a guest already inside the
+ * weekend means the one in progress, so check-in stays on Sunday rather than
+ * jumping six days ahead. Offset navigation always anchors to Saturday.
  */
-export const getWeekendStay = (today: string) => {
-  const weekday = getYmdWeekday(today);
-  const checkIn =
-    weekday === SUNDAY ? today : addDaysYmd(today, (SATURDAY - weekday) % 7);
+export const getWeekendStay = (today: string, weekOffset = 0) => {
+  if (weekOffset === 0) {
+    const weekday = getYmdWeekday(today);
+    const checkIn =
+      weekday === SUNDAY ? today : addDaysYmd(today, (SATURDAY - weekday) % 7);
 
+    return { checkIn, checkOut: addDaysYmd(checkIn, 1) };
+  }
+
+  const checkIn = getWeekendRange(today, weekOffset).from;
   return { checkIn, checkOut: addDaysYmd(checkIn, 1) };
 };
+
+/**
+ * Saturday of the weekend spanning or next following `today`. Unlike
+ * {@link getWeekendStay}, does not special-case Sunday to "today" — range
+ * navigation (this/next/last weekend) always anchors to Saturday so offsetting
+ * by whole weeks lands on the right Saturday–Sunday pair.
+ */
+const anchorWeekendSaturday = (today: string): string => {
+  const weekday = getYmdWeekday(today);
+  return weekday === SUNDAY
+    ? addDaysYmd(today, -1)
+    : addDaysYmd(today, (SATURDAY - weekday) % 7);
+};
+
+/**
+ * Full Saturday+Sunday span for "my bookings at the weekend" range filtering —
+ * distinct from {@link getWeekendStay}'s single Saturday-night stay (used for
+ * new-booking search/create, where a 1-night default is correct).
+ *
+ * `weekOffset` shifts by whole weeks: 0 (default) = this/current weekend,
+ * 1 = next weekend, -1 = last weekend.
+ */
+export const getWeekendRange = (today: string, weekOffset = 0) => {
+  const from = addDaysYmd(anchorWeekendSaturday(today), weekOffset * 7);
+  return { from, to: addDaysYmd(from, 2) };
+};
+
+/**
+ * True when an active stay [checkInDate, checkOutDate) overlaps calendar
+ * range [from, to) — same inclusive-checkin/exclusive-checkout convention as
+ * {@link bookingStayIncludesDate}, generalized from a single date to a span.
+ */
+export const bookingStayOverlapsRange = (
+  checkInDate: string,
+  checkOutDate: string,
+  from: string,
+  to: string,
+): boolean => checkInDate < to && checkOutDate > from;
 
 export const getBusinessDates = (now = new Date()) => {
   const today = formatYmd(now);
   const weekend = getWeekendStay(today);
+  const nextWeekend = getWeekendStay(today, 1);
 
   return {
     today,
@@ -124,6 +172,8 @@ export const getBusinessDates = (now = new Date()) => {
     tomorrow: addDaysYmd(today, 1),
     weekendCheckIn: weekend.checkIn,
     weekendCheckOut: weekend.checkOut,
+    nextWeekendCheckIn: nextWeekend.checkIn,
+    nextWeekendCheckOut: nextWeekend.checkOut,
     timezone: BUSINESS_TIME_ZONE,
   };
 };
