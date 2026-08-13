@@ -3,7 +3,7 @@ import type {
   ProcessInputStepResult,
 } from "@mastra/core/processors";
 
-import { TOOL_KEYS } from "@repo/constants";
+import { TITLE_GENERATION_PROMPT_PATTERN, TOOL_KEYS } from "@repo/constants";
 import {
   detectModifyWithoutBookingIdIntent,
   extractRoomNameQuery,
@@ -90,7 +90,7 @@ export const resolveModifyWithoutBookingIdStep = (
 ): ModifyResolveStepDecision => {
   const text = extractLatestUserText(args.messages);
 
-  if (/^generate a short title for this conversation\b/i.test(text)) {
+  if (TITLE_GENERATION_PROMPT_PATTERN.test(text)) {
     return { kind: BOOKING_STEP_DECISION_KIND.NONE };
   }
 

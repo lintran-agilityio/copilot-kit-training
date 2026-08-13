@@ -1,6 +1,6 @@
 import type { ProcessInputStepArgs } from "@mastra/core/processors";
 
-import { TOOL_KEYS } from "@repo/constants";
+import { TITLE_GENERATION_PROMPT_PATTERN, TOOL_KEYS } from "@repo/constants";
 import {
   detectListMyBookingsIntent,
   getBusinessDates,
@@ -85,7 +85,7 @@ export const resolveListMyBookingsStep = (
 
   // Intelligence title-gen embeds the guest line ("…user: Show my bookings.")
   // — must not force get_bookings on that hidden run (proven TokenLimiter loop).
-  if (/^generate a short title for this conversation\b/i.test(text)) {
+  if (TITLE_GENERATION_PROMPT_PATTERN.test(text)) {
     return { kind: BOOKING_STEP_DECISION_KIND.NONE };
   }
 

@@ -17,6 +17,7 @@ import { ROUTES } from "@repo/constants";
 import { get, post, del, update, assertClerkTokenForApi } from "@/mastra/services/common";
 import type { RequestContext } from "@mastra/core/request-context";
 import { getRoom } from "@/mastra/services/rooms.service";
+import { BOOKING_ERRORS } from "@/mastra/constants/messages";
 
 export type ServiceContext = {
   requestContext?: RequestContext;
@@ -24,7 +25,6 @@ export type ServiceContext = {
 };
 
 export type CreateBookingPayload = CreateBookingInput;
-
 export type GetBookingsParams = {
   roomId?: string;
   status?: BookingStatus;
@@ -147,7 +147,7 @@ export const assertOwnedActiveBooking = async (
   const id = sanitizeBookingId(bookingId);
 
   if (!id) {
-    throw new Error("Booking not found");
+    throw new Error(BOOKING_ERRORS.NOT_FOUND);
   }
 
   let booking: Booking;
@@ -166,11 +166,11 @@ export const assertOwnedActiveBooking = async (
     if (error instanceof Error && error.name === "AbortError") {
       throw error;
     }
-    throw new Error("Booking not found");
+    throw new Error(BOOKING_ERRORS.NOT_FOUND);
   }
 
   if (!isActiveBooking(booking)) {
-    throw new Error("Booking not found or no longer active");
+    throw new Error(BOOKING_ERRORS.NOT_FOUND_OR_INACTIVE);
   }
 
   return booking;

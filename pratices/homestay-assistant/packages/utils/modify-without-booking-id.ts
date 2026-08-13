@@ -1,6 +1,8 @@
 import {
   BOOKING_MODIFY_PROMPT_PREFIX,
+  CANCEL_WITHOUT_BOOKING_ID_CORE,
   MODIFY_WITHOUT_BOOKING_ID_CORE,
+  TITLE_GENERATION_PROMPT_PATTERN,
 } from "@repo/constants";
 
 import { parseListMyBookingsOnDate } from "./list-my-bookings.js";
@@ -36,7 +38,7 @@ export const detectModifyWithoutBookingIdIntent = (
 
   if (!text) return null;
 
-  if (/^generate a short title for this conversation\b/i.test(text)) {
+  if (TITLE_GENERATION_PROMPT_PATTERN.test(text)) {
     return null;
   }
 
@@ -45,7 +47,7 @@ export const detectModifyWithoutBookingIdIntent = (
   }
 
   // Cancel owns cancel language even if "change" appears elsewhere.
-  if (/\bcancel(?:l(?:ed|ing|ation))?s?\b/i.test(text)) {
+  if (CANCEL_WITHOUT_BOOKING_ID_CORE.test(text)) {
     return null;
   }
 

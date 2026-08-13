@@ -4,6 +4,15 @@ export const MONTH_PATTERN =
 export const LIST_MY_BOOKINGS_CORE =
   /(?:show|list|view|open)(?:\s+all)?\s+my\s+(?:bookings?|reservations?)|what\s+are\s+my\s+(?:bookings?|reservations?)/i;
 
+/**
+ * CopilotKit's hidden title-generation run embeds the guest line
+ * ("…user: Show my bookings."). Deterministic booking intents must exclude
+ * it so it cannot force get_bookings / cancel / modify tool calls during
+ * that hidden run.
+ */
+export const TITLE_GENERATION_PROMPT_PATTERN =
+  /^generate a short title for this conversation\b/i;
+
 /** Cancel language without a known bookingId (chat NL cancel / cancel room). */
 export const CANCEL_WITHOUT_BOOKING_ID_CORE =
   /\bcancel(?:l(?:ed|ing|ation))?s?\b/i;

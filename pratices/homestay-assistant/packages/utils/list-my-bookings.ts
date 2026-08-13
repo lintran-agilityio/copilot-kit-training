@@ -14,6 +14,7 @@ import {
   WEEKEND_CUE,
   NEXT_WEEKEND_CUE,
   LAST_WEEKEND_CUE,
+  TITLE_GENERATION_PROMPT_PATTERN,
 } from "@repo/constants";
 
 /** Deterministic routing intent for explicit show/list/view my bookings. */
@@ -150,7 +151,7 @@ export const detectListMyBookingsIntent = (
 
   if (!text) return null;
 
-  if (/^generate a short title for this conversation\b/i.test(text)) {
+  if (TITLE_GENERATION_PROMPT_PATTERN.test(text)) {
     return null;
   }
 
