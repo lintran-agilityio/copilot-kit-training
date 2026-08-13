@@ -2,13 +2,20 @@ import type { RequestContext } from "@mastra/core/request-context";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 
+export type CancelWithoutBookingIdPin = {
+  active: boolean;
+  onDate?: string;
+  /** Normalized free-text room query when the guest named a room. */
+  roomQuery?: string;
+};
+
 /**
  * Reads CANCEL_WITHOUT_BOOKING_ID pins set by Mastra prepareStep.
  * Same pattern as LIST_MY_BOOKINGS pins — server tool prefers pinned onDate.
  */
 export const readCancelWithoutBookingIdPin = (
   requestContext: RequestContext | undefined,
-): { active: boolean; onDate?: string } => {
+): CancelWithoutBookingIdPin => {
   if (!requestContext) {
     return { active: false };
   }
@@ -19,12 +26,19 @@ export const readCancelWithoutBookingIdPin = (
   const pinnedOnDate = requestContext.get(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ON_DATE,
   );
+  const pinnedRoomQuery = requestContext.get(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY,
+  );
 
   return {
     active,
     onDate:
       typeof pinnedOnDate === "string" && pinnedOnDate.trim().length > 0
         ? pinnedOnDate.trim()
+        : undefined,
+    roomQuery:
+      typeof pinnedRoomQuery === "string" && pinnedRoomQuery.trim().length > 0
+        ? pinnedRoomQuery.trim()
         : undefined,
   };
 };
@@ -41,6 +55,10 @@ export const clearCancelWithoutBookingIdPin = (
   );
   requestContext?.set(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ON_DATE,
+    undefined,
+  );
+  requestContext?.set(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY,
     undefined,
   );
 };
@@ -112,7 +130,11 @@ export const clearModifyWithoutBookingIdPin = (
  */
 export const readListMyBookingsPin = (
   requestContext: RequestContext | undefined,
-): { active: boolean; onDate?: string } => {
+): {
+  active: boolean;
+  onDate?: string;
+  dateRange?: { from: string; to: string };
+} => {
   if (!requestContext) {
     return { active: false };
   }
@@ -122,6 +144,20 @@ export const readListMyBookingsPin = (
   const pinnedOnDate = requestContext.get(
     REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_ON_DATE,
   );
+  const pinnedFrom = requestContext.get(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_FROM,
+  );
+  const pinnedTo = requestContext.get(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_TO,
+  );
+
+  const dateRange =
+    typeof pinnedFrom === "string" &&
+    pinnedFrom.trim().length > 0 &&
+    typeof pinnedTo === "string" &&
+    pinnedTo.trim().length > 0
+      ? { from: pinnedFrom.trim(), to: pinnedTo.trim() }
+      : undefined;
 
   return {
     active,
@@ -129,6 +165,7 @@ export const readListMyBookingsPin = (
       typeof pinnedOnDate === "string" && pinnedOnDate.trim().length > 0
         ? pinnedOnDate.trim()
         : undefined,
+    dateRange,
   };
 };
 
@@ -140,4 +177,12 @@ export const clearListMyBookingsPin = (
 ) => {
   requestContext?.set(REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_ACTIVE, undefined);
   requestContext?.set(REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_ON_DATE, undefined);
+  requestContext?.set(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_FROM,
+    undefined,
+  );
+  requestContext?.set(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_TO,
+    undefined,
+  );
 };

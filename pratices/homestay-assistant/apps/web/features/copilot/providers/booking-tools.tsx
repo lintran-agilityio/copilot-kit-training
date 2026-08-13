@@ -8,6 +8,7 @@ import {
   checkRoomAvailabilityInputSchema,
   createBookingInputSchema,
   updateBookingInputSchema,
+  getBookingsInputSchema,
   cancelBookingByRoomSchema,
   modifyBookingByRoomSchema,
   confirmBookingSchema,
@@ -27,12 +28,14 @@ import {
   CreateBookingNotice,
   ConfirmBookingModal,
   EditModifyBookingModal,
+  MyBookingsNotice,
 } from "@/features/booking/components";
 import {
   CancelBookingToolProps,
   CheckRoomAvailabilityResult,
   CreateBookingToolProps,
   UpdateBookingToolProps,
+  GetBookingsResult,
 } from "@/features/booking/types";
 import type { ToolRendererProps } from "@/features/copilot/types/tool-render-props";
 import { HitlConfirmStayModal } from "@/features/booking/components/HitlConfirmStayModal";
@@ -139,6 +142,22 @@ export const BookingToolsProvider = () => {
           args={args as Partial<ModifyBookingByRoomArgs>}
           respond={respond}
           result={result}
+          toolCallId={toolCallId}
+        />
+      ),
+    },
+    [],
+  );
+
+  useRenderTool(
+    {
+      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      name: TOOL_KEYS.BOOKING.GET,
+      parameters: getBookingsInputSchema,
+      render: ({ status, result, toolCallId }) => (
+        <MyBookingsNotice
+          status={status}
+          result={result as GetBookingsResult | string | null}
           toolCallId={toolCallId}
         />
       ),

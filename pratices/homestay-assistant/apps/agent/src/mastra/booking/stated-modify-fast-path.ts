@@ -7,24 +7,27 @@ import { TOOL_KEYS } from "@repo/constants";
 import { getBusinessDates, getCurrentTurn } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
+import { resolveLastToolResult } from "@/mastra/booking/last-tool-result";
+import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
+import { modifyNoOpNarrationStep } from "@/mastra/booking/modify-noop-narration-step";
+import {
+  getConfirmedModifyPickerBookingId,
+  resolveBookingFromGetBookingsInTurn,
+} from "@/mastra/booking/resolve-selected-modify-booking";
 import {
   extractStatedModifyChanges,
-  mergeStatedModifyStay,
   resolveBookingFromLookupResult,
-  type ModifyStayFields,
-} from "@/mastra/booking/stated-modify-changes";
+} from "./stated-modify-changes";
+import {
+  applyStatedModifyStay,
+  isSameModifyStay,
+  ModifyStayFields,
+} from "./modify-stay-fields";
 import {
   asNonEmptyString,
   asRecord,
   type ConfirmedStay,
-  type JsonValue,
 } from "@/mastra/utils";
-
-type ToolResultLike = {
-  toolName?: string;
-  input?: JsonValue;
-  output?: JsonValue;
-};
 
 /**
  * Reads plain text from the latest user message in the current turn.
@@ -73,22 +76,6 @@ export const extractLatestUserText = (
   return "";
 };
 
-/**
- * Last server tool result from agent steps for this turn (not HITL message parts).
- */
-const getLastStepToolResult = (
-  steps: ProcessInputStepArgs["steps"],
-): ToolResultLike | null => {
-  const lastStep = steps.at(-1);
-  const lastResult = lastStep?.toolResults.at(-1);
-
-  if (!lastResult) {
-    return null;
-  }
-
-  return lastResult as ToolResultLike;
-};
-
 const stashStatedModifyPins = (
   args: ProcessInputStepArgs,
   candidate: ConfirmedStay,
@@ -110,24 +97,50 @@ const stashStatedModifyPins = (
  * After find_booking_by_id / single get_bookings, if the guest already stated
  * the new dates/guests, pin the merged stay and force availability — skipping
  * edit_modify_booking so the date/guest form never opens.
+ *
+ * After multi-match picker, prefer the selected booking's stay from get_bookings
+ * so stated "guests to 1" is not merged onto a sibling booking (e.g. other A with 2).
  */
 export const tryEnforceStatedModifyFastPath = (
   args: ProcessInputStepArgs,
 ): ProcessInputStepResult | undefined => {
-  const lastToolResult = getLastStepToolResult(args.steps);
+  const lastToolResult = resolveLastToolResult(args);
   if (!lastToolResult?.toolName) {
     return undefined;
   }
 
-  const resolved = resolveBookingFromLookupResult(
+  // Picker confirm forces find next — do not merge against the picker payload.
+  if (lastToolResult.toolName === TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT) {
+    return undefined;
+  }
+
+  const selectedBookingId = getConfirmedModifyPickerBookingId(args.messages);
+  const fromPickerList = selectedBookingId
+    ? resolveBookingFromGetBookingsInTurn(args.messages, selectedBookingId)
+    : null;
+
+  const fromLookup = resolveBookingFromLookupResult(
     lastToolResult.toolName,
     lastToolResult.output,
   );
+
+  // Selected row from get_bookings wins over find/get bookings[0].
+  const resolved = fromPickerList ?? fromLookup;
   if (!resolved) {
     return undefined;
   }
 
-  // Only apply when the lookup just finished this turn (no later tools yet).
+  if (
+    selectedBookingId &&
+    !fromPickerList &&
+    fromLookup &&
+    fromLookup.bookingId !== selectedBookingId
+  ) {
+    // Find returned a different booking than the guest picked and we could not
+    // hydrate the selected stay — do not pin a stated modify onto the wrong row.
+    return undefined;
+  }
+
   const turn = getCurrentTurn(args.messages ?? []);
   const userText = extractLatestUserText(args.messages);
   if (!userText) {
@@ -171,20 +184,22 @@ export const tryEnforceStatedModifyFastPath = (
     return undefined;
   }
 
-  const merged = mergeStatedModifyStay(resolved.current, stated);
-  if (!merged) {
+  const merged = applyStatedModifyStay(resolved.current, stated);
+  if (merged.checkOutDate <= merged.checkInDate) {
     return undefined;
+  }
+
+  // Stated values match the current stay — stop tools + pin narration so the
+  // model cannot suggest alternatives and then continue with a second reply.
+  if (isSameModifyStay(merged, resolved.current)) {
+    return modifyNoOpNarrationStep(args);
   }
 
   if (
     resolved.capacity != null &&
     merged.guests > resolved.capacity
   ) {
-    // Stop tools so the model can reply with the capacity limit (prompt rule).
-    return {
-      activeTools: [],
-      toolChoice: "none",
-    };
+    return narrationOnlyStep();
   }
 
   if (!args.tools?.[TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY]) {

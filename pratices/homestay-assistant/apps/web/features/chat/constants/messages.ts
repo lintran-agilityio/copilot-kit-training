@@ -3,3 +3,6 @@ export const WELCOME_MESSAGE =
 
 export const RUN_START_FAILED_MESSAGE =
   "Couldn't reach the assistant service. Your message wasn't sent.";
+
+export const AGENT_BUSY_MESSAGE =
+  "The assistant is still responding. Wait until it finishes, or stop it, before sending another request.";

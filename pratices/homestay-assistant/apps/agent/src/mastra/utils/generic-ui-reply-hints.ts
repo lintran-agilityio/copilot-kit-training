@@ -54,7 +54,7 @@ export const buildFindRoomReplyHint = (
     return "No rooms matched. Reply with ONE short sentence that nothing matched and suggest changing name/date/guests/level. Do NOT invent rooms. Do NOT say rooms are ready to browse.";
   }
 
-  return `Room cards are already rendered in chat — do NOT call find_room again this turn, do NOT call update_room_list, and do NOT write room names, a numbered list, or any room details in your reply. Reply with ONE very short sentence only (e.g. "I found ${matchCount} room(s) matching your request."). Never list room names in text.`;
+  return `Room cards are already rendered in chat — do NOT call find_room again this turn, do NOT call update_room_list. The room cards ARE the response: do NOT send any chat text at all (no acknowledgement like "I found ${matchCount} room(s)...", no room names, no numbered list, no room details). Tools-only is allowed for this turn.`;
 };
 
 /**

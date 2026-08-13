@@ -1,4 +1,5 @@
 import {
+  getWeekendRange,
   parseMonthName,
   resolveCalendarDate,
   resolveDayOfMonthDate,
@@ -10,15 +11,22 @@ import {
   MONTH_FIRST_DATE,
   DAY_FIRST_DATE,
   BARE_DAY_CUE,
+  WEEKEND_CUE,
+  NEXT_WEEKEND_CUE,
+  LAST_WEEKEND_CUE,
 } from "@repo/constants";
 
 /** Deterministic routing intent for explicit show/list/view my bookings. */
 export const LIST_MY_BOOKINGS_INTENT = "LIST_MY_BOOKINGS" as const;
 
+export type ListMyBookingsDateRange = { from: string; to: string };
+
 export type ListMyBookingsRouting = {
   intent: typeof LIST_MY_BOOKINGS_INTENT;
-  /** YYYY-MM-DD when a date cue is present; otherwise null (all active). */
+  /** YYYY-MM-DD when a single-date cue is present; otherwise null. */
   onDate: string | null;
+  /** Saturday-to-Sunday span when a "weekend" cue is present; otherwise null. */
+  dateRange: ListMyBookingsDateRange | null;
 };
 
 const parseMonthDayPhrase = (value: string, today: string): string | null => {
@@ -103,6 +111,29 @@ export const parseListMyBookingsOnDate = (
 };
 
 /**
+ * Parses an optional "weekend" cue from a "my bookings" request into the
+ * Saturday-to-Sunday span, e.g. "show my bookings at weekend".
+ *
+ * "next weekend" / "last weekend" must be checked before the bare cue —
+ * both also match WEEKEND_CUE, so checking it first would collapse them
+ * all onto the current weekend.
+ */
+export const parseListMyBookingsDateRange = (
+  message: string,
+  today: string,
+): ListMyBookingsDateRange | null => {
+  const text = message.trim();
+
+  if (!text) return null;
+
+  if (NEXT_WEEKEND_CUE.test(text)) return getWeekendRange(today, 1);
+  if (LAST_WEEKEND_CUE.test(text)) return getWeekendRange(today, -1);
+  if (WEEKEND_CUE.test(text)) return getWeekendRange(today, 0);
+
+  return null;
+};
+
+/**
  * Deterministic SHOW/LIST MY BOOKINGS override.
  *
  * Explicit list language wins over stale conversation context.
@@ -130,5 +161,6 @@ export const detectListMyBookingsIntent = (
   return {
     intent: LIST_MY_BOOKINGS_INTENT,
     onDate: parseListMyBookingsOnDate(text, today),
+    dateRange: parseListMyBookingsDateRange(text, today),
   };
 };

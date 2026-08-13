@@ -7,7 +7,6 @@ import { createBookingInputSchema } from "@repo/schemas";
 import { bookingSchema } from "@/mastra/schemas/booking";
 import { createBooking } from "@/mastra/services";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import { getAuthUserId } from "@/mastra/middleware/get-auth-user-id";
 import {
   clearPinnedStay,
   readPinnedStay,
@@ -26,14 +25,10 @@ export const createBookingTool = createTool({
   outputSchema: bookingSchema,
   execute: async (params, context) => {
     throwIfAborted(context.abortSignal);
-
-    const userId = getAuthUserId(
-      context,
-      "Authentication required to create a booking",
-    );
+    const { requestContext, abortSignal } = context;
 
     const pinned = readPinnedStay(
-      context.requestContext,
+      requestContext,
       REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY,
     );
 
@@ -43,17 +38,16 @@ export const createBookingTool = createTool({
     const guests = pinned?.guests ?? params.guests;
 
     clearPinnedStay(
-      context.requestContext,
+      requestContext,
       REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY,
     );
 
     // Side-effect: re-check immediately before committing the booking.
-    throwIfAborted(context.abortSignal);
+    throwIfAborted(abortSignal);
 
     const booking = await createBooking(
       {
         roomId,
-        userId,
         checkInDate,
         checkOutDate,
         guests,

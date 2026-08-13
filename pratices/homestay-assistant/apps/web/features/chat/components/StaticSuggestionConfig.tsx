@@ -52,7 +52,7 @@ export const StaticSuggestionConfig = ({
   const { data: bookings = [] } = useQuery({
     queryKey: ["bookings", userId],
     queryFn: ({ signal }) =>
-      getMyBookings({ via: PREFIX_URL.WEB, userId: userId ?? undefined, signal }),
+      getMyBookings({ via: PREFIX_URL.WEB, signal }),
     enabled: Boolean(isLoaded && isSignedIn && userId),
     // Auth loss is not transient — retries only spam more 401s during sign-out.
     retry: false,

@@ -26,6 +26,7 @@
     "db:seed": "node -r reflect-metadata -r tsconfig-paths/register -r ts-node/register src/database/seed.ts"
   },
   "dependencies": {
+    "@clerk/backend": "^3.8.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",

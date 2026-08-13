@@ -35,6 +35,7 @@ const MASTRA_BACKEND_TOOL_NAMES = [
 
 /** Backend tools rendered in chat via useRenderTool. */
 const RENDER_BACKEND_TOOLS = [
+  BOOKING.GET,
   BOOKING.CANCEL,
   BOOKING.CREATE_BOOKING,
   BOOKING.UPDATE_BOOKING,
@@ -62,7 +63,6 @@ const LEGACY_HIDDEN_TOOL_NAMES = [
 /** Room/data tools and page UI actions - hidden from chat; effects render on the page. */
 export const CHAT_HIDDEN_TOOLS = new Set([
   ACTION.UPDATE_ROOM_LIST,
-  BOOKING.GET,
   BOOKING.FIND_BY_ID,
   GET.ROOMS,
   ...LEGACY_HIDDEN_TOOL_NAMES,

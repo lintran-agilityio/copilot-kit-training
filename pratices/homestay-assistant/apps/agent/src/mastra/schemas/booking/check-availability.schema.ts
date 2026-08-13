@@ -59,6 +59,12 @@ export const checkRoomAvailabilityOutputSchema =
       .describe(
         "Pre-change guests for flow=modify — pass to CONFIRM_MODIFY_BOOKING so the UI can show old → new.",
       ),
+    stayUnchanged: z
+      .boolean()
+      .optional()
+      .describe(
+        "True for flow=modify when the candidate stay equals the pre-change originals. nextAction is stop_booking — reply that nothing needs changing; never open CONFIRM_MODIFY_BOOKING or suggest other edits.",
+      ),
   });
 
 export type CheckRoomAvailabilityResponse = z.infer<

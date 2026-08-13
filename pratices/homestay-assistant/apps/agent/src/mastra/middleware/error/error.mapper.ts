@@ -1,4 +1,5 @@
 import type { ErrorMapperInput, MappedErrorResponse } from "./error.types";
+import { AUTH_ERROR_MESSAGES } from "../constants";
 
 const DEFAULT_ERROR_MESSAGE = "Internal server error";
 
@@ -7,8 +8,11 @@ export const mapErrorToResponse = ({
   requestId,
 }: ErrorMapperInput): MappedErrorResponse => {
   if (error instanceof Error) {
-    const status: MappedErrorResponse["status"] =
-      error.message.includes("Authentication required") ? 401 : 500;
+    const status: MappedErrorResponse["status"] = AUTH_ERROR_MESSAGES.has(
+      error.message,
+    )
+      ? 401
+      : 500;
 
     return {
       status,

@@ -19,6 +19,7 @@ import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 import { runAgentSafely } from "@/features/chat/utils/agent-run";
+import { rejectIfAgentRunning } from "@/features/chat/utils/reject-if-agent-running";
 import { ROOM_DETAIL_ENTRY_MODE } from "@/features/room/constants/room-detail";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
@@ -53,6 +54,10 @@ export const useRequestRoomBookingForm = () => {
       openOnPage = true,
     }: RequestRoomBookingFormArgs) => {
       if (!isLoaded || !user?.id || !roomId) {
+        return;
+      }
+
+      if (rejectIfAgentRunning(agent.isRunning)) {
         return;
       }
 

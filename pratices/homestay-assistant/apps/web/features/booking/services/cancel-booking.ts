@@ -8,11 +8,14 @@ import { getBaseUrl } from "@/utils";
 type CancelBookingProps = {
   bookingId: string;
   via?: PREFIX_URL;
+  /** Clerk JWT — required when calling Nest (`PREFIX_URL.BACKEND`). */
+  accessToken?: string;
 };
 
 export const cancelBookingById = async ({
   bookingId,
   via = PREFIX_URL.WEB,
+  accessToken,
 }: CancelBookingProps): Promise<BookingResponse> => {
   const id = sanitizeBookingId(bookingId);
 
@@ -21,11 +24,18 @@ export const cancelBookingById = async ({
   }
 
   const baseUrl = getBaseUrl(via);
+  const headers: HeadersInit = {};
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
   const response = await fetch(
     `${baseUrl}${ROUTES.BOOKINGS}/${encodeURIComponent(id)}`,
     {
       method: "DELETE",
       cache: "no-store",
+      headers,
     },
   );
 

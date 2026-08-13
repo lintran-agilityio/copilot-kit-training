@@ -14,7 +14,7 @@ export const CurrentDateReadable = () => {
 
   useAgentContext({
     description:
-      "Authoritative business calendar. Resolve relative dates using today and tomorrow. For any weekend request use weekendCheckIn / weekendCheckOut verbatim — never compute weekend dates.",
+      "Authoritative business calendar. Resolve relative dates using today and tomorrow. For \"this weekend\" use weekendCheckIn / weekendCheckOut verbatim; for \"next weekend\" use nextWeekendCheckIn / nextWeekendCheckOut verbatim — never compute weekend dates and never mix up the two pairs.",
     value,
   });
 

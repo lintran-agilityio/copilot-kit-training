@@ -1,15 +1,18 @@
 "use client";
 
-import { CalendarCheck, CalendarRange, Pencil, Users } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarRange,
+  Pencil,
+  Users,
+  CalendarX2,
+} from "lucide-react";
 import Image, { type StaticImageData } from "next/image";
 import { useState } from "react";
 
 import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
 import type { BookingResponse } from "@/features/booking/types/booking";
-import {
-  FALLBACK_ROOM_IMAGE,
-  resolveRoomImage,
-} from "@/features/room/utils";
+import { FALLBACK_ROOM_IMAGE, resolveRoomImage } from "@/features/room/utils";
 import { cn, formatPrice, formatShortDateForDisplay } from "@repo/utils";
 import { Button } from "@/components/ui/button";
 import { isBookingCancellable } from "@/features/booking/utils";
@@ -18,6 +21,7 @@ type BookingCardProps = {
   booking: BookingResponse;
   className?: string;
   isAgentRunning?: boolean;
+  compact?: boolean;
   onCancelBooking?: (booking: BookingResponse) => void;
   onModifyBooking?: (booking: BookingResponse) => void;
 };
@@ -26,6 +30,7 @@ export const BookingCard = ({
   booking,
   className,
   isAgentRunning = false,
+  compact = false,
   onCancelBooking,
   onModifyBooking,
 }: BookingCardProps) => {
@@ -72,7 +77,12 @@ export const BookingCard = ({
           className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
 
-        <div className="absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/70 via-black/20 to-transparent p-4">
+        <div
+          className={cn(
+            "absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/70 via-black/20 to-transparent",
+            compact ? "p-3" : "p-4",
+          )}
+        >
           {room ? (
             <div className="flex items-center gap-2">
               <span
@@ -91,9 +101,19 @@ export const BookingCard = ({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 p-4">
+      <div
+        className={cn(
+          "flex flex-1 flex-col",
+          compact ? "gap-3 p-3" : "gap-4 p-4",
+        )}
+      >
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-medium text-white">
+          <h3
+            className={cn(
+              "font-medium text-white",
+              compact ? "text-sm" : "text-base",
+            )}
+          >
             {room?.name ?? "Room"}
           </h3>
 
@@ -103,7 +123,12 @@ export const BookingCard = ({
           </div>
         </div>
 
-        <div className="flex items-start gap-2 text-sm text-zinc-400">
+        <div
+          className={cn(
+            "flex items-start gap-2 text-zinc-400",
+            compact ? "text-xs" : "text-sm",
+          )}
+        >
           <CalendarRange className="mt-0.5 size-4 shrink-0 text-zinc-500" />
           <p>
             {formatShortDateForDisplay(checkInDate)} →{" "}
@@ -121,27 +146,42 @@ export const BookingCard = ({
         </div>
       </div>
       {isCancellable ? (
-        <div className="m-4 mt-0 flex gap-2">
+        <div
+          className={cn(
+            "mt-auto flex gap-2",
+            compact ? "m-3 mt-0" : "m-4 mt-0",
+          )}
+        >
           <Button
             type="button"
-            size="lg"
+            size={compact ? "sm" : "lg"}
             variant="outline"
             disabled={!canModify}
-            className="h-11 min-w-10 flex-1 gap-2 border-white/10 bg-transparent text-base font-medium text-zinc-100 hover:bg-white/5 hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            className={cn(
+              "min-w-10 flex-1 gap-2 border-white/10 bg-transparent font-medium text-zinc-100 hover:bg-white/5 hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
+              compact ? "h-8 text-xs" : "h-11 text-base",
+            )}
             onClick={handleModifyBooking}
           >
             <Pencil className="size-4" />
-            Modify
+            {compact ? "" : "Modify"}
           </Button>
           <Button
             type="button"
-            size="lg"
+            size={compact ? "sm" : "lg"}
             disabled={!canCancel}
-            className="h-11 min-w-10 flex-1 gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+            className={cn(
+              "min-w-10 flex-1 gap-2 bg-emerald-500 font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+              compact ? "h-8 text-xs" : "h-11 text-base",
+            )}
             onClick={handleCancelBooking}
           >
-            <CalendarCheck className="size-4" />
-            Cancel
+            {compact ? (
+              <CalendarX2 className="size-4" />
+            ) : (
+              <CalendarCheck className="size-4" />
+            )}
+            {compact ? "" : "Cancel"}
           </Button>
         </div>
       ) : null}

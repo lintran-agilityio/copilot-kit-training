@@ -46,6 +46,18 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   LIST_MY_BOOKINGS_ON_DATE: "listMyBookingsOnDate",
   /**
+   * Optional YYYY-MM-DD range start pinned for get_bookings when LIST_MY_BOOKINGS
+   * parsed a "weekend" cue (e.g. "at weekend" → Saturday). Null/undefined = no
+   * range filter. Paired with LIST_MY_BOOKINGS_DATE_TO.
+   */
+  LIST_MY_BOOKINGS_DATE_FROM: "listMyBookingsDateFrom",
+  /**
+   * Optional YYYY-MM-DD range end (exclusive) pinned alongside
+   * LIST_MY_BOOKINGS_DATE_FROM — together they scope get_bookings results to
+   * stays overlapping that span (e.g. the weekend's Saturday+Sunday).
+   */
+  LIST_MY_BOOKINGS_DATE_TO: "listMyBookingsDateTo",
+  /**
    * Deterministic CANCEL_WITHOUT_BOOKING_ID override is active — get_bookings
    * should apply pinned onDate and cancel-disambiguation replyHint.
    */
@@ -55,6 +67,11 @@ export const REQUEST_CONTEXT_KEYS = {
    * parsed a date cue (e.g. "cancel room at 15th" → 2026-08-15).
    */
   CANCEL_WITHOUT_BOOKING_ID_ON_DATE: "cancelWithoutBookingIdOnDate",
+  /**
+   * Optional room-name query pinned for cancel-without-id so get_bookings can
+   * filter to the named room (e.g. "Orchid Twin Loft") before HITL.
+   */
+  CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY: "cancelWithoutBookingIdRoomQuery",
   /**
    * Deterministic MODIFY_WITHOUT_BOOKING_ID override is active — get_bookings
    * should apply pinned onDate and modify-disambiguation replyHint.
@@ -74,3 +91,17 @@ export const REQUEST_CONTEXT_KEYS = {
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";
 export const AGENT_ID_HEADER = "x-agent-id";
+
+/** Guest-facing 401 messages from middleware auth (JWT / userId validation). */
+export const AUTH_ERRORS = {
+  REQUIRED: "Authentication required",
+  TOKEN_EXPIRED: "Token expired",
+  INVALID_TOKEN: "Invalid token",
+  INVALID_USER: "Invalid user",
+} as const;
+
+export type AuthErrorMessage = (typeof AUTH_ERRORS)[keyof typeof AUTH_ERRORS];
+
+export const AUTH_ERROR_MESSAGES: ReadonlySet<string> = new Set(
+  Object.values(AUTH_ERRORS),
+);

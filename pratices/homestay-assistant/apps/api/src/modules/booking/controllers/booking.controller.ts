@@ -7,20 +7,25 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 
-import { AvailabilityResponseDto } from '@/modules/booking/dto/availability-response.dto';
-import { BookingResponseDto } from '@/modules/booking/dto/booking-response.dto';
-import { CheckAvailabilityQueryDto } from '@/modules/booking/dto/check-availability-query.dto';
-import { CreateBookingDto } from '@/modules/booking/dto/create-booking.dto';
-import { ListBookingsQueryDto } from '@/modules/booking/dto/list-bookings-query.dto';
-import { UpdateBookingDto } from '@/modules/booking/dto/update-booking.dto';
+import { ClerkAuthGuard, CurrentUser, type ClerkAuthUser } from '@/auth';
+import {
+  UpdateBookingDto,
+  CreateBookingDto,
+  ListBookingsQueryDto,
+  BookingResponseDto,
+  CheckAvailabilityQueryDto,
+  AvailabilityResponseDto,
+} from '@/modules/booking/dto';
 import { BookingService } from '@/modules/booking/services/booking.service';
 
 @ApiTags('bookings')
@@ -29,10 +34,15 @@ export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @Post()
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new booking' })
   @ApiCreatedResponse({ type: BookingResponseDto })
-  create(@Body() dto: CreateBookingDto): Promise<BookingResponseDto> {
-    return this.bookingService.create(dto);
+  create(
+    @CurrentUser() user: ClerkAuthUser,
+    @Body() dto: CreateBookingDto,
+  ): Promise<BookingResponseDto> {
+    return this.bookingService.create(dto, user.userId);
   }
 
   @Get('availability')
@@ -45,33 +55,51 @@ export class BookingController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List bookings with optional filters' })
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List bookings for the signed-in user' })
   @ApiOkResponse({ type: BookingResponseDto, isArray: true })
-  findAll(@Query() query: ListBookingsQueryDto): Promise<BookingResponseDto[]> {
-    return this.bookingService.findAll(query);
+  findAll(
+    @CurrentUser() user: ClerkAuthUser,
+    @Query() query: ListBookingsQueryDto,
+  ): Promise<BookingResponseDto[]> {
+    return this.bookingService.findAll(query, user.userId);
   }
 
   @Get(':id')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get a booking by ID' })
   @ApiOkResponse({ type: BookingResponseDto })
-  findById(@Param('id') id: string): Promise<BookingResponseDto> {
-    return this.bookingService.findById(id);
+  findById(
+    @CurrentUser() user: ClerkAuthUser,
+    @Param('id') id: string,
+  ): Promise<BookingResponseDto> {
+    return this.bookingService.findById(id, user.userId);
   }
 
   @Patch(':id')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a booking' })
   @ApiOkResponse({ type: BookingResponseDto })
   update(
+    @CurrentUser() user: ClerkAuthUser,
     @Param('id') id: string,
     @Body() dto: UpdateBookingDto,
   ): Promise<BookingResponseDto> {
-    return this.bookingService.update(id, dto);
+    return this.bookingService.update(id, dto, user.userId);
   }
 
   @Delete(':id')
+  @UseGuards(ClerkAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancel a booking' })
   @ApiOkResponse({ type: BookingResponseDto })
-  cancel(@Param('id') id: string): Promise<BookingResponseDto> {
-    return this.bookingService.cancel(id);
+  cancel(
+    @CurrentUser() user: ClerkAuthUser,
+    @Param('id') id: string,
+  ): Promise<BookingResponseDto> {
+    return this.bookingService.cancel(id, user.userId);
   }
 }

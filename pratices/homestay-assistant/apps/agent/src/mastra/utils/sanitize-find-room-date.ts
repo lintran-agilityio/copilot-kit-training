@@ -4,6 +4,11 @@ import {
   getWeekendStay,
   parseListMyBookingsOnDate,
 } from "@repo/utils";
+import {
+  LAST_WEEKEND_CUE,
+  NEXT_WEEKEND_CUE,
+  WEEKEND_CUE,
+} from "@repo/constants";
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -19,12 +24,7 @@ const businessDatesFor = (todayOverride?: string) => {
     return getBusinessDates();
   }
 
-  const weekend = getWeekendStay(todayOverride);
-  return {
-    today: todayOverride,
-    tomorrow: addDaysYmd(todayOverride, 1),
-    weekendCheckIn: weekend.checkIn,
-  };
+  return { today: todayOverride, tomorrow: addDaysYmd(todayOverride, 1) };
 };
 
 /**
@@ -51,7 +51,7 @@ export const sanitizeFindRoomDate = (
     return trimmed;
   }
 
-  const { today, tomorrow, weekendCheckIn } = businessDatesFor(todayOverride);
+  const { today, tomorrow } = businessDatesFor(todayOverride);
   const lower = trimmed.toLowerCase();
 
   if (lower === "today" || lower === "tonight") {
@@ -62,8 +62,19 @@ export const sanitizeFindRoomDate = (
     return tomorrow;
   }
 
-  if (/\bweekend\b/.test(lower)) {
-    return weekendCheckIn;
+  // "next weekend" / "last weekend" must be checked before the bare cue —
+  // both also match WEEKEND_CUE, so checking it first would collapse them
+  // all onto the current weekend (same ordering as parseListMyBookingsDateRange).
+  if (NEXT_WEEKEND_CUE.test(lower)) {
+    return getWeekendStay(today, 1).checkIn;
+  }
+
+  if (LAST_WEEKEND_CUE.test(lower)) {
+    return getWeekendStay(today, -1).checkIn;
+  }
+
+  if (WEEKEND_CUE.test(lower)) {
+    return getWeekendStay(today).checkIn;
   }
 
   const withoutGlue = trimmed.replace(LEADING_DATE_GLUE, "").trim() || trimmed;

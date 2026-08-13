@@ -5,23 +5,26 @@ import { ROUTES } from "@repo/constants";
 
 type GetMyBookingsProps = {
   via?: PREFIX_URL;
-  userId?: string;
+  /** Clerk JWT — required when calling Nest (`PREFIX_URL.BACKEND`). */
+  accessToken?: string;
   signal?: AbortSignal;
 };
 
 export const getMyBookings = async ({
-  via = PREFIX_URL.BACKEND,
-  userId,
+  via = PREFIX_URL.WEB,
+  accessToken,
   signal,
 }: GetMyBookingsProps = {}): Promise<BookingResponse[]> => {
-  const path =
-    via === PREFIX_URL.WEB
-      ? ROUTES.BOOKINGS
-      : `${ROUTES.BOOKINGS}?userId=${encodeURIComponent(userId ?? "")}`;
   const baseUrl = getBaseUrl(via);
+  const headers: HeadersInit = {};
 
-  const response = await fetch(`${baseUrl}${path}`, {
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch(`${baseUrl}${ROUTES.BOOKINGS}`, {
     cache: "no-store",
+    headers,
     signal,
   });
 

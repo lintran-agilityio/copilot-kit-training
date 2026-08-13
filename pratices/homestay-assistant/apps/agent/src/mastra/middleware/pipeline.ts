@@ -1,61 +1,77 @@
 import { randomUUID } from "node:crypto";
-import { AsyncLocalStorage } from "node:async_hooks";
 
 import type {
   AgentRequestPipelineResult,
   AgentRequestPipelineSuccess,
   AgentRequestState,
 } from "./types";
+import {
+  getCurrentAgentRequest,
+  runWithAgentRequest,
+} from "./agent-request-als";
 import { buildAgentRequestContext } from "./build-request-context";
+import { AUTH_ERRORS } from "./constants";
 import { extractClerkToken, verifyClerkAuth } from "./verify-clerk-auth";
 import { resolveAgentId } from "./resolve-agent-id";
 
-const agentRequestStorage = new AsyncLocalStorage<AgentRequestState>();
+export { getCurrentAgentRequest, runWithAgentRequest } from "./agent-request-als";
 
 type RunAgentRequestPipelineInput = {
   request: Request;
   sessionUserId?: string | null;
   sessionId?: string | null;
+  /**
+   * JWT from Clerk session (`auth().getToken()`), used when the request does
+   * not carry `x-clerk-token` / Authorization — required for Nest forwarding.
+   */
+  sessionClerkToken?: string | null;
 };
-
-export const getCurrentAgentRequest = (): AgentRequestState | undefined =>
-  agentRequestStorage.getStore();
-
-export const runWithAgentRequest = <T>(
-  state: AgentRequestState,
-  fn: () => T,
-): T => agentRequestStorage.run(state, fn);
 
 export const runAgentRequestPipeline = async ({
   request,
   sessionUserId,
   sessionId,
+  sessionClerkToken,
 }: RunAgentRequestPipelineInput): Promise<AgentRequestPipelineResult> => {
-  const auth = await verifyClerkAuth({
-    clerkToken: extractClerkToken(request),
+  // Prefer a fresh server-side session JWT over the browser `x-clerk-token`
+  // header — CopilotKit may forward a stale client token that Nest rejects.
+  const clerkToken =
+    sessionClerkToken?.trim() || extractClerkToken(request) || null;
+
+  const result = await verifyClerkAuth({
+    clerkToken,
     sessionUserId,
     sessionId,
   });
 
-  if (!auth) {
+  if (!result.ok) {
+    return {
+      ok: false,
+      status: result.failure.status,
+      error: result.failure.error,
+    };
+  }
+
+  // Nest booking APIs require a forwardable JWT; session userId alone is not enough.
+  if (!result.auth.clerkToken?.trim()) {
     return {
       ok: false,
       status: 401,
-      error: "Authentication required",
+      error: AUTH_ERRORS.REQUIRED,
     };
   }
 
   const agentId = await resolveAgentId(request);
   const requestId = randomUUID();
   const requestContext = buildAgentRequestContext({
-    auth,
+    auth: result.auth,
     requestId,
     agentId,
   });
 
   return {
     ok: true,
-    auth,
+    auth: result.auth,
     requestId,
     agentId,
     requestContext,

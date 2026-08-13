@@ -9,6 +9,7 @@ import { getAgentResourceId, buildActionPrompt } from "@repo/utils";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 import { runAgentSafely } from "@/features/chat/utils/agent-run";
+import { rejectIfAgentRunning } from "@/features/chat/utils/reject-if-agent-running";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 type OpenRoomDetailArgs = {
@@ -29,6 +30,10 @@ export const useRequestRoomDetail = () => {
   return useCallback(
     ({ roomId, roomName }: OpenRoomDetailArgs) => {
       if (!isLoaded || !user?.id || !roomId) {
+        return;
+      }
+
+      if (rejectIfAgentRunning(agent.isRunning)) {
         return;
       }
 

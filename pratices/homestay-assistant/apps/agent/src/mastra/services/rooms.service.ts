@@ -20,6 +20,7 @@ export const getRooms = async (
   try {
     return await get(`${ROUTES.ROOMS}`, roomsListResponseSchema, {
       errorMessage: "Failed to fetch rooms",
+      requestContext: serviceContext?.requestContext,
       abortSignal: serviceContext?.abortSignal,
     });
   } catch (error) {
@@ -58,6 +59,7 @@ export const findRooms = async (
     const rooms = await get(`${ROUTES.ROOMS}`, roomsListResponseSchema, {
       searchParams: applied,
       errorMessage: "Failed to find rooms",
+      requestContext: serviceContext?.requestContext,
       abortSignal: serviceContext?.abortSignal,
     });
 
@@ -90,5 +92,6 @@ export const getRoom = async (
 ): Promise<Room> =>
   get(`${ROUTES.ROOMS}/${roomId}`, roomSchema, {
     errorMessage: "Failed to fetch room",
+    requestContext: serviceContext?.requestContext,
     abortSignal: serviceContext?.abortSignal,
   });

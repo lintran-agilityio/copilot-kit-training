@@ -15,6 +15,7 @@ import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { runAgentSafely } from "@/features/chat/utils/agent-run";
+import { rejectIfAgentRunning } from "@/features/chat/utils/reject-if-agent-running";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 
 const BOOK_FLOW_KEY = "book-flow";
@@ -33,12 +34,11 @@ export const useRequestRoomBooking = () => {
 
   const requestRoomBooking = useCallback(
     (message = "Book this room") => {
-      if (
-        !isLoaded ||
-        !user?.id ||
-        agent.isRunning ||
-        requestInFlightRef.current
-      ) {
+      if (!isLoaded || !user?.id || requestInFlightRef.current) {
+        return;
+      }
+
+      if (rejectIfAgentRunning(agent.isRunning)) {
         return;
       }
 

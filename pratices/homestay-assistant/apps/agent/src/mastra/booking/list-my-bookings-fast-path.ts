@@ -1,7 +1,11 @@
 import type { ProcessInputStepArgs } from "@mastra/core/processors";
 
 import { TOOL_KEYS } from "@repo/constants";
-import { detectListMyBookingsIntent, getBusinessDates } from "@repo/utils";
+import {
+  detectListMyBookingsIntent,
+  getBusinessDates,
+  type ListMyBookingsDateRange,
+} from "@repo/utils";
 
 import {
   BOOKING_STEP_DECISION_KIND,
@@ -43,6 +47,7 @@ const clearStaleMutationPins = (args: ProcessInputStepArgs) => {
 const pinListMyBookings = (
   args: ProcessInputStepArgs,
   onDate: string | null,
+  dateRange: ListMyBookingsDateRange | null,
 ) => {
   const requestContext = args.requestContext;
   if (!requestContext) {
@@ -54,6 +59,14 @@ const pinListMyBookings = (
   requestContext.set(
     REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_ON_DATE,
     onDate ?? undefined,
+  );
+  requestContext.set(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_FROM,
+    dateRange?.from,
+  );
+  requestContext.set(
+    REQUEST_CONTEXT_KEYS.LIST_MY_BOOKINGS_DATE_TO,
+    dateRange?.to,
   );
 };
 
@@ -103,7 +116,7 @@ export const resolveListMyBookingsStep = (
     return { kind: BOOKING_STEP_DECISION_KIND.NARRATE, step: narrationOnlyStep() };
   }
 
-  pinListMyBookings(args, routing.onDate);
+  pinListMyBookings(args, routing.onDate, routing.dateRange);
 
   return {
     kind: BOOKING_STEP_DECISION_KIND.FORCE,

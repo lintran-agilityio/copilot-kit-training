@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { toDateKey, ACTIVE_BOOKING_STATUSES } from '@/utils';
+import { toDateKey, startOfDay, ACTIVE_BOOKING_STATUSES } from '@/utils';
 import { ListBookingsQueryDto } from '@/modules/booking/dto/list-bookings-query.dto';
 import { BookingEntity } from '@/modules/booking/entities/booking.entity';
 
@@ -13,17 +13,25 @@ export class BookingRepository {
     private readonly bookingRepository: Repository<BookingEntity>,
   ) {}
 
-  async findAll(filters: ListBookingsQueryDto = {}): Promise<BookingEntity[]> {
+  async findAll(
+    filters: ListBookingsQueryDto & { userId: string },
+  ): Promise<BookingEntity[]> {
+    // checkOutDate is a date-only column — compare against today's date key
+    // (not a full timestamp) so a stay checking out today still counts as
+    // active for the whole checkout day, matching the agent's isActiveBooking.
+    const today = toDateKey(startOfDay(new Date()));
+
     const query = this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.room', 'room')
       .where('booking.cancelledAt IS NULL')
-      .andWhere('booking.checkOutDate > :now', { now: new Date() })
-      .orderBy('booking.checkInDate', 'ASC');
-
-    if (filters.userId) {
-      query.andWhere('booking.userId = :userId', { userId: filters.userId });
-    }
+      .andWhere('booking.checkOutDate >= :today', { today })
+      .andWhere('booking.userId = :userId', { userId: filters.userId })
+      // Secondary tie-break on id — checkInDate alone is not unique, so
+      // repeated identical requests could otherwise return rows in a
+      // different order (Postgres does not guarantee stable order for ties).
+      .orderBy('booking.checkInDate', 'ASC')
+      .addOrderBy('booking.id', 'ASC');
 
     if (filters.roomId) {
       query.andWhere('booking.roomId = :roomId', { roomId: filters.roomId });

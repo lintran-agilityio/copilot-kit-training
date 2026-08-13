@@ -14,7 +14,7 @@ import {
   type FindBookingByIdOutput,
 } from "@/mastra/schemas/booking";
 import { ROUTES } from "@repo/constants";
-import { get, post, del, update } from "@/mastra/services/common";
+import { get, post, del, update, assertClerkTokenForApi } from "@/mastra/services/common";
 import type { RequestContext } from "@mastra/core/request-context";
 import { getRoom } from "@/mastra/services/rooms.service";
 
@@ -23,10 +23,9 @@ export type ServiceContext = {
   abortSignal?: AbortSignal;
 };
 
-export type CreateBookingPayload = CreateBookingInput & { userId: string };
+export type CreateBookingPayload = CreateBookingInput;
 
 export type GetBookingsParams = {
-  userId?: string;
   roomId?: string;
   status?: BookingStatus;
   /** YYYY-MM-DD — stays where checkIn <= onDate < checkOut */
@@ -36,25 +35,29 @@ export type GetBookingsParams = {
 export const createBooking = async (
   booking: CreateBookingPayload,
   serviceContext?: ServiceContext,
-): Promise<Booking> =>
-  post(
+): Promise<Booking> => {
+  assertClerkTokenForApi(serviceContext?.requestContext);
+  return post(
     ROUTES.BOOKINGS,
     booking,
     bookingSchema,
     "Failed to create booking",
     serviceContext,
   );
+};
 
 export const getBookings = async (
   params?: GetBookingsParams,
   serviceContext?: ServiceContext,
-): Promise<Booking[]> =>
-  get(ROUTES.BOOKINGS, z.array(bookingSchema), {
+): Promise<Booking[]> => {
+  assertClerkTokenForApi(serviceContext?.requestContext);
+  return get(ROUTES.BOOKINGS, z.array(bookingSchema), {
     searchParams: params,
     errorMessage: "Failed to fetch bookings",
     requestContext: serviceContext?.requestContext,
     abortSignal: serviceContext?.abortSignal,
   });
+};
 
 export type CheckRoomAvailabilityApiInput = Omit<
   CheckRoomAvailabilityInput,
@@ -75,6 +78,7 @@ export const updateBooking = async (
   input: UpdateBookingInput,
   serviceContext?: ServiceContext,
 ): Promise<Booking> => {
+  assertClerkTokenForApi(serviceContext?.requestContext);
   const bookingId = sanitizeBookingId(input.bookingId);
 
   return update(
@@ -93,13 +97,15 @@ export const updateBooking = async (
 export const cancelBooking = async (
   bookingId: string,
   serviceContext?: ServiceContext,
-): Promise<Booking> =>
-  del(
+): Promise<Booking> => {
+  assertClerkTokenForApi(serviceContext?.requestContext);
+  return del(
     `${ROUTES.BOOKINGS}/${encodeURIComponent(sanitizeBookingId(bookingId))}`,
     bookingSchema,
     "Failed to cancel booking",
     serviceContext,
   );
+};
 
 const toCancellationSummary = (booking: Booking) => ({
   bookingId: booking.id,
@@ -130,14 +136,14 @@ export const isActiveBooking = (booking: Booking) => {
 };
 
 /**
- * Load a booking and ensure it belongs to the signed-in user and is still
- * active (not cancelled / past checkout). Used before cancel/update.
+ * Load a booking owned by the signed-in user (Nest scopes by JWT) and ensure
+ * it is still active (not cancelled / past checkout). Used before cancel/update.
  */
 export const assertOwnedActiveBooking = async (
-  userId: string,
   bookingId: string,
   serviceContext?: ServiceContext,
 ): Promise<Booking> => {
+  assertClerkTokenForApi(serviceContext?.requestContext);
   const id = sanitizeBookingId(bookingId);
 
   if (!id) {
@@ -163,7 +169,7 @@ export const assertOwnedActiveBooking = async (
     throw new Error("Booking not found");
   }
 
-  if (booking.userId !== userId || !isActiveBooking(booking)) {
+  if (!isActiveBooking(booking)) {
     throw new Error("Booking not found or no longer active");
   }
 
@@ -171,10 +177,10 @@ export const assertOwnedActiveBooking = async (
 };
 
 export const findBookingById = async (
-  userId: string,
   bookingId: string,
   serviceContext?: ServiceContext,
 ): Promise<FindBookingByIdOutput> => {
+  assertClerkTokenForApi(serviceContext?.requestContext);
   const id = sanitizeBookingId(bookingId);
 
   if (!id) {
@@ -192,7 +198,7 @@ export const findBookingById = async (
       },
     );
 
-    if (booking.userId !== userId || !isActiveBooking(booking)) {
+    if (!isActiveBooking(booking)) {
       return { bookings: [], bookingId: id, queryName: "" };
     }
 

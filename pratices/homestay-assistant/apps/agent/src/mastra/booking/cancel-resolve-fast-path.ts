@@ -6,6 +6,7 @@ import type {
 import { TOOL_KEYS } from "@repo/constants";
 import {
   detectCancelWithoutBookingIdIntent,
+  extractRoomNameQuery,
   getBusinessDates,
 } from "@repo/utils";
 
@@ -74,6 +75,7 @@ export const resolveSoleBookingIdFromToolOutput = (
 const pinCancelWithoutBookingId = (
   args: ProcessInputStepArgs,
   onDate: string | null,
+  roomQuery: string | null,
 ) => {
   const requestContext = args.requestContext;
   if (!requestContext) {
@@ -87,6 +89,10 @@ const pinCancelWithoutBookingId = (
   requestContext.set(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ON_DATE,
     onDate ?? undefined,
+  );
+  requestContext.set(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY,
+    roomQuery && roomQuery.trim().length > 0 ? roomQuery.trim() : undefined,
   );
 };
 
@@ -102,7 +108,7 @@ const forceTool = (toolName: string): ProcessInputStepResult => ({
  * Deterministic CANCEL-without-bookingId step decision for `enforceBookingStep`.
  *
  * Sequence:
- * 1. Force `get_bookings` (optional onDate pin from date cue)
+ * 1. Force `get_bookings` (optional onDate + roomQuery pins)
  * 2. Empty → narrate/stop
  * 3. One match → force `find_booking_by_id` (dialog follows via playbook / next hop)
  * 4. Multiple → force `show_cancel_dialog_confirm` with all matches (HITL list)
@@ -143,7 +149,12 @@ export const resolveCancelWithoutBookingIdStep = (
   );
 
   if (getBookingsCount === 0 && findByIdCount === 0) {
-    pinCancelWithoutBookingId(args, routing.onDate);
+    const roomQuery = extractRoomNameQuery(text);
+    pinCancelWithoutBookingId(
+      args,
+      routing.onDate,
+      roomQuery.length > 0 ? roomQuery : null,
+    );
     return {
       kind: BOOKING_STEP_DECISION_KIND.FORCE,
       step: forceTool(TOOL_KEYS.BOOKING.GET),

@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { RequestContext } from "@mastra/core/request-context";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
+import { getCurrentAgentRequest } from "@/mastra/middleware/agent-request-als";
 import type { MastraAuthContext } from "@/mastra/middleware/types";
 import { throwIfAborted } from "@/mastra/utils/abort";
 
@@ -23,14 +24,39 @@ const getAuthFromContext = (
     | MastraAuthContext
     | undefined;
 
+const resolveAuthForApi = (
+  requestContext?: RequestContext,
+): MastraAuthContext | undefined => {
+  const fromContext = getAuthFromContext(requestContext);
+  if (fromContext?.clerkToken?.trim()) {
+    return fromContext;
+  }
+
+  const fromAls = getCurrentAgentRequest()?.auth;
+  if (fromAls?.clerkToken?.trim()) {
+    // Keep tool requestContext in sync for later calls in the same run.
+    if (requestContext && fromAls) {
+      requestContext.set(REQUEST_CONTEXT_KEYS.AUTH, {
+        ...fromContext,
+        ...fromAls,
+      });
+    }
+    return fromAls;
+  }
+
+  return fromContext ?? fromAls;
+};
+
 const buildAuthHeaders = (requestContext?: RequestContext): HeadersInit => {
-  const auth = getAuthFromContext(requestContext);
+  const auth = resolveAuthForApi(requestContext);
   const requestId = requestContext?.get(REQUEST_CONTEXT_KEYS.REQUEST_ID);
 
   const headers: Record<string, string> = {};
 
-  if (auth?.userId) {
-    headers["x-user-id"] = auth.userId;
+  // Attach JWT when available. Public routes (rooms/availability) work without
+  // it; user-scoped booking routes enforce auth in Nest (401 if missing).
+  if (auth?.clerkToken?.trim()) {
+    headers.Authorization = `Bearer ${auth.clerkToken}`;
   }
 
   if (typeof requestId === "string" && requestId.trim()) {
@@ -38,6 +64,18 @@ const buildAuthHeaders = (requestContext?: RequestContext): HeadersInit => {
   }
 
   return headers;
+};
+
+/** Booking Nest calls must forward a Clerk JWT — fail before fetch if missing. */
+export const assertClerkTokenForApi = (
+  requestContext?: RequestContext,
+): void => {
+  const auth = resolveAuthForApi(requestContext);
+  if (!auth?.clerkToken?.trim()) {
+    throw new Error(
+      "Authentication token missing for API request — signed-in Clerk JWT is required",
+    );
+  }
 };
 
 const buildUrl = (path: string, searchParams?: SearchParams) => {

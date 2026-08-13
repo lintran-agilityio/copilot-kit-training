@@ -1,9 +1,6 @@
 import { createTool } from "@mastra/core/tools";
-import { z } from "zod";
-import { BookingStatus } from "@repo/types";
-import { matchesRoomName } from "@repo/utils";
-import { getAuthUserId } from "@/mastra/middleware/get-auth-user-id";
-
+import { getBookingsInputSchema } from "@repo/schemas";
+import { bookingStayOverlapsRange, matchesRoomName } from "@repo/utils";
 import { TOOL_KEYS } from "@repo/constants";
 import {
   getBookingsOutputSchema,
@@ -23,20 +20,6 @@ import {
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils";
-
-const getBookingsInputSchema = z.object({
-  roomId: z.string().optional().describe("Filter by room ID"),
-  status: z
-    .enum(Object.values(BookingStatus) as [string, ...string[]])
-    .optional()
-    .describe("Filter by booking status"),
-  onDate: z
-    .string()
-    .optional()
-    .describe(
-      "YYYY-MM-DD — return active bookings whose stay includes this date (checkIn <= onDate < checkOut). Use for show/list my bookings with a date cue (e.g. at 15 → this month's 15th) and for cancel/modify disambiguation with a date cue.",
-    ),
-});
 
 /**
  * Adds a mandatory replyHint so the model cannot invent active bookings from
@@ -111,9 +94,10 @@ const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
 
     return (
       `Multiple active bookings (count=${bookingCount}). ` +
+      "This result is already scoped to the room the guest named, when they named one — " +
       'CANCEL disambiguation: SAME turn call show_cancel_dialog_confirm with ALL bookings ' +
       'mapped as { bookingId: id, roomId, roomName, checkInDate, checkOutDate, guests, totalPrice }; ' +
-      'queryName = the date cue or "your bookings". ' +
+      'queryName = room name (when named), date cue, or "your bookings". ' +
       "Do NOT pick the first. " +
       "Do NOT call find_booking_by_id. " +
       "Do NOT ask which in chat — the HITL list is the response (no instructional handoff)."
@@ -145,7 +129,9 @@ const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
     const base =
       `Active bookings only (count=${bookingCount}). ` +
       "This list is a COLLECTION — the sole source of truth for VIEW/LIST. " +
-      "Summarize or acknowledge the collection (names/dates when helpful); " +
+      "Results render as booking cards in chat automatically — the cards ARE the response for VIEW/LIST: " +
+      "do NOT restate room names, dates, prices, or a list in text, and do NOT send any acknowledgement/summary " +
+      'sentence either (e.g. "You have N active bookings..."). Tools-only is allowed. ' +
       "do NOT collapse to a single booking; " +
       "do NOT ask to cancel or modify unless the latest user message explicitly asked. ";
 
@@ -201,37 +187,40 @@ const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
 export const getBookingsTool = createTool({
   id: TOOL_KEYS.BOOKING.GET,
   description:
-    "Get the signed-in user's ACTIVE bookings from the backend (cancelled/past stays are excluded). User identity always comes from the server session — never pass or invent a userId. Required for view/list intent and to disambiguate cancel/modify when bookingId is unknown. Optional onDate (YYYY-MM-DD) returns only stays that include that date. Treat result.bookings + replyHint as the sole source of truth — never invent bookings from chat history or create/cancel cards. After calling: VIEW/LIST → one short chat sentence following replyHint; CANCEL with multiple matches → call show_cancel_dialog_confirm with ALL bookings (HITL list is the response — no instructional handoff); CANCEL with one match → find_booking_by_id then dialog; MODIFY with multiple matches → call show_modify_dialog_select with bookingIds[] + queryName only (not full bookings rows); MODIFY with one match → find_booking_by_id then edit/stated-modify.",
+    "Get the signed-in user's ACTIVE bookings from the backend (cancelled/past stays are excluded). User identity always comes from the server session — never pass or invent a userId. Required for view/list intent and to disambiguate cancel/modify when bookingId is unknown. Optional onDate (YYYY-MM-DD) returns only stays that include that date. Treat result.bookings + replyHint as the sole source of truth — never invent bookings from chat history or create/cancel cards. For VIEW/LIST, results render as booking cards in chat automatically — the cards ARE the response; do NOT write booking names, dates, prices, or a list in text, and do NOT add an acknowledgement/summary sentence either. After calling: VIEW/LIST with bookingCount > 0 → tools-only, no chat text; VIEW/LIST empty → one short chat sentence that nothing matched; CANCEL with multiple matches → call show_cancel_dialog_confirm with ALL bookings (HITL list is the response — no instructional handoff); CANCEL with one match → find_booking_by_id then dialog; MODIFY with multiple matches → call show_modify_dialog_select with bookingIds[] + queryName only (not full bookings rows); MODIFY with one match → find_booking_by_id then edit/stated-modify.",
   inputSchema: getBookingsInputSchema,
   outputSchema: getBookingsOutputSchema,
   execute: async (params, context) => {
-    throwIfAborted(context.abortSignal);
-
-    const userId = getAuthUserId(
-      context,
-      "Authentication required to fetch bookings",
-    );
+    const { requestContext, abortSignal } = context;
+    throwIfAborted(abortSignal);
+    const { onDate: onDateParam } = params;
 
     // Prefer prepareStep pins (same pattern as cancel/create stay pins).
-    const listPin = readListMyBookingsPin(context.requestContext);
-    const cancelPin = readCancelWithoutBookingIdPin(context.requestContext);
-    const modifyPin = readModifyWithoutBookingIdPin(context.requestContext);
-    clearListMyBookingsPin(context.requestContext);
-    clearCancelWithoutBookingIdPin(context.requestContext);
-    clearModifyWithoutBookingIdPin(context.requestContext);
+    const listPin = readListMyBookingsPin(requestContext);
+    const cancelPin = readCancelWithoutBookingIdPin(requestContext);
+    const modifyPin = readModifyWithoutBookingIdPin(requestContext);
+    clearListMyBookingsPin(requestContext);
+    clearCancelWithoutBookingIdPin(requestContext);
+    clearModifyWithoutBookingIdPin(requestContext);
 
-    const roomId = listPin.active ? undefined : params.roomId;
+    // toolChoice forces the tool, not its args — a model-guessed roomId must
+    // not pre-filter the backend query when these pins already scope results
+    // via onDate + fuzzy roomQuery below, or identical guest text can return
+    // a different match count turn to turn.
+    const roomId =
+      listPin.active || cancelPin.active || modifyPin.active
+        ? undefined
+        : params.roomId;
     const onDate = listPin.active
       ? listPin.onDate
       : cancelPin.active
-        ? (cancelPin.onDate ?? params.onDate)
+        ? (cancelPin.onDate ?? onDateParam)
         : modifyPin.active
-          ? (modifyPin.onDate ?? params.onDate)
-          : params.onDate;
+          ? (modifyPin.onDate ?? onDateParam)
+          : onDateParam;
 
     let bookings = await getBookings(
       {
-        userId,
         roomId,
         status: params.status as GetBookingsParams["status"],
         onDate,
@@ -239,15 +228,31 @@ export const getBookingsTool = createTool({
       serviceContextFromTool(context),
     );
 
-    // Modify-without-id: when the guest named a room, keep only matching stays
-    // so the picker JSON stays small and same-room multi-date cases disambiguate.
+    // LIST_MY_BOOKINGS "weekend" cue: no single onDate to send the backend,
+    // so scope client-side to stays overlapping the Saturday+Sunday span.
+    if (listPin.active && listPin.dateRange) {
+      const { from, to } = listPin.dateRange;
+      bookings = bookings.filter((booking) =>
+        bookingStayOverlapsRange(booking.checkInDate, booking.checkOutDate, from, to),
+      );
+    }
+
+    // Cancel/modify-without-id: when the guest named a room, keep only matching
+    // stays so match-count and the HITL list scope to that room, not every
+    // active booking (same-room multi-date cases still disambiguate). A room
+    // query that matches nothing must yield zero bookings, not the unfiltered
+    // list, so the "no active bookings matched" narration path fires instead
+    // of showing an unrelated picker.
+    if (cancelPin.active && cancelPin.roomQuery) {
+      bookings = bookings.filter((booking) =>
+        matchesRoomName(booking.room?.name ?? "", cancelPin.roomQuery!),
+      );
+    }
+
     if (modifyPin.active && modifyPin.roomQuery) {
-      const filtered = bookings.filter((booking) =>
+      bookings = bookings.filter((booking) =>
         matchesRoomName(booking.room?.name ?? "", modifyPin.roomQuery!),
       );
-      if (filtered.length > 0) {
-        bookings = filtered;
-      }
     }
 
     return {

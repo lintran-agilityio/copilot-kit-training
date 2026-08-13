@@ -23,7 +23,7 @@ export const BookingsPageClient = ({ userId }: BookingsPageClientProps) => {
   } = useQuery({
     queryKey: ["bookings", userId],
     queryFn: ({ signal }) =>
-      getMyBookings({ via: PREFIX_URL.WEB, userId, signal }),
+      getMyBookings({ via: PREFIX_URL.WEB, signal }),
     enabled: Boolean(isLoaded && isSignedIn && userId),
     retry: false,
   });
