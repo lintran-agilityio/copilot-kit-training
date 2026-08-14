@@ -1,6 +1,6 @@
 "use client";
 
-import type { ModifyChangeRow } from "@/features/booking/utils/build-modify-change-rows";
+import type { ModifyChangeRow } from "@/features/booking/utils";
 
 export type ChangeSummaryProps = {
   changes: ModifyChangeRow[];

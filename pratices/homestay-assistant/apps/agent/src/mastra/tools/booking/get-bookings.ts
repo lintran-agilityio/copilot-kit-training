@@ -203,10 +203,13 @@ export const getBookingsTool = createTool({
     clearCancelWithoutBookingIdPin(requestContext);
     clearModifyWithoutBookingIdPin(requestContext);
 
-    // toolChoice forces the tool, not its args — a model-guessed roomId must
-    // not pre-filter the backend query when these pins already scope results
-    // via onDate + fuzzy roomQuery below, or identical guest text can return
-    // a different match count turn to turn.
+    // toolChoice forces the tool, not its args — a model-guessed roomId/onDate
+    // must not pre-filter the backend query when these pins already scope
+    // results via onDate + fuzzy roomQuery below, or identical guest text can
+    // return a different match count turn to turn. This guest turn carries no
+    // date cue of its own whenever the pin's onDate is unset, so a date the
+    // model recalls from earlier browsing (e.g. "available rooms at 15th")
+    // must not silently narrow an unrelated cancel/modify-by-room request.
     const roomId =
       listPin.active || cancelPin.active || modifyPin.active
         ? undefined
@@ -214,9 +217,9 @@ export const getBookingsTool = createTool({
     const onDate = listPin.active
       ? listPin.onDate
       : cancelPin.active
-        ? (cancelPin.onDate ?? onDateParam)
+        ? cancelPin.onDate
         : modifyPin.active
-          ? (modifyPin.onDate ?? onDateParam)
+          ? modifyPin.onDate
           : onDateParam;
 
     let bookings = await getBookings(
