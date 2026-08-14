@@ -10,7 +10,6 @@ export * from "./constants";
 export * from "./verify-clerk-auth";
 export * from "./build-request-context";
 export * from "./pipeline";
-export * from "./get-auth-user-id";
 
 export * from "./middleware.types";
 export * from "./middleware.pipeline";

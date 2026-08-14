@@ -6,7 +6,6 @@ export * from "./generic-ui-reply-hints";
 export * from "./json-value";
 export * from "./parse-json-record";
 export * from "./parse-tool-output";
-export * from "./resolve-agent-user-id";
 export * from "./resolve-pinned-stay";
 export * from "./resolved-tool-call-ids";
 export * from "./abort";

@@ -186,8 +186,12 @@ const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
 
 export const getBookingsTool = createTool({
   id: TOOL_KEYS.BOOKING.GET,
-  description:
-    "Get the signed-in user's ACTIVE bookings from the backend (cancelled/past stays are excluded). User identity always comes from the server session — never pass or invent a userId. Required for view/list intent and to disambiguate cancel/modify when bookingId is unknown. Optional onDate (YYYY-MM-DD) returns only stays that include that date. Treat result.bookings + replyHint as the sole source of truth — never invent bookings from chat history or create/cancel cards. For VIEW/LIST, results render as booking cards in chat automatically — the cards ARE the response; do NOT write booking names, dates, prices, or a list in text, and do NOT add an acknowledgement/summary sentence either. After calling: VIEW/LIST with bookingCount > 0 → tools-only, no chat text; VIEW/LIST empty → one short chat sentence that nothing matched; CANCEL with multiple matches → call show_cancel_dialog_confirm with ALL bookings (HITL list is the response — no instructional handoff); CANCEL with one match → find_booking_by_id then dialog; MODIFY with multiple matches → call show_modify_dialog_select with bookingIds[] + queryName only (not full bookings rows); MODIFY with one match → find_booking_by_id then edit/stated-modify.",
+  description: `
+    Get the signed-in user's ACTIVE bookings (cancelled/past stays are excluded). User identity always comes from the server session — never pass or invent a userId.
+      - Required for view/list intent, and to disambiguate cancel/modify when bookingId is unknown.
+      - Optional onDate (YYYY-MM-DD) scopes results to stays that include that date.
+      - Treat result.bookings + replyHint as the sole source of truth — never invent bookings from chat history or create/cancel cards. replyHint tells you exactly what to do next (which dialog/tool to call, or how to reply) based on the match count and intent.
+    `,
   inputSchema: getBookingsInputSchema,
   outputSchema: getBookingsOutputSchema,
   execute: async (params, context) => {

@@ -22,14 +22,10 @@ import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/utils/generic-
 export const updateBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
   description:
-    `Update an existing booking by bookingId after CONFIRM_MODIFY_BOOKING returns confirmed: true.
+    `Update an existing booking's dates/guests by bookingId after CONFIRM_MODIFY_BOOKING returns confirmed: true — only the signed-in owner's active (non-past) bookings can be updated. roomId is not updatable.
     - Use bookingId, checkInDate, checkOutDate, and guests from the CONFIRM_MODIFY_BOOKING result.
-    - Never change the room — roomId is not updatable.
-    - Never call this to create a new booking.
     - ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT}
-    - Do NOT call get_bookings — the same HITL card updates to success/failed and refreshes the bookings list automatically.
-    - Never call this before CONFIRM_MODIFY_BOOKING returns confirmed: true.
-    - Only the signed-in owner's active (non-past) bookings can be updated.`,
+    - Do NOT call get_bookings — the same HITL card updates to success/failed and refreshes the bookings list automatically.`,
   inputSchema: updateBookingInputSchema,
   outputSchema: bookingSchema,
   execute: async ({ bookingId, checkInDate, checkOutDate, guests }, context) => {
