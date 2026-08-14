@@ -5,6 +5,10 @@ import type {
 
 import { TOOL_KEYS } from "@repo/constants";
 
+import {
+  resolveContinuityStayHint,
+  stashBookingFormStayHint,
+} from "@/mastra/booking/book-form-prefill";
 import { resolveLastToolResult } from "@/mastra/booking/last-tool-result";
 import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
 import { parseFindRoomOutput } from "@/mastra/utils";
@@ -37,6 +41,37 @@ const excludeSearchLoopTools = (
   };
 };
 
+/**
+ * Deterministically forces `get_room_by_id` so a named-room free-text book request
+ * always opens the Booking Form for the guest to pick check-in/check-out/guests,
+ * instead of letting the model invent unstated dates/guests and jump straight to
+ * `check_room_availability` / `confirm_booking`. `[book-stay]` submissions from that
+ * same form bypass `find_room`/book_resolve entirely, so they are unaffected.
+ */
+const forceGetRoomById = (
+  args: ProcessInputStepArgs,
+): ProcessInputStepResult | undefined => {
+  if (!args.tools?.[TOOL_KEYS.BOOKING.GET_ROOM_BY_ID]) {
+    return undefined;
+  }
+
+  // Pin any already-established search date so the Booking Form prefills it
+  // instead of defaulting to today — the tool call itself is still forced
+  // regardless of whether a hint is found.
+  stashBookingFormStayHint(
+    args.requestContext,
+    resolveContinuityStayHint(args.messages),
+  );
+
+  return {
+    activeTools: [TOOL_KEYS.BOOKING.GET_ROOM_BY_ID],
+    toolChoice: {
+      type: "tool",
+      toolName: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID,
+    },
+  };
+};
+
 const readFindRoomPurpose = (
   output: unknown,
 ): FindRoomPurpose | undefined => {
@@ -52,7 +87,8 @@ const readFindRoomMatchCount = (output: unknown): number => {
  * Terminal / post-search prepareStep decisions for FIND / BROWSE.
  *
  * - search / recommend / multi-match book_resolve / empty book_resolve → narration only
- * - book_resolve + exactly one match → continue BOOK, but block re-calling find_room/get_rooms
+ * - book_resolve + exactly one match → force get_room_by_id (Booking Form), never a
+ *   direct hop to check_room_availability/confirm_booking with guessed dates/guests
  * - get_rooms → allow update_room_list / HITL, block re-get_rooms / find_room / get_bookings
  */
 export const tryEnforceSearchTerminalStep = (
@@ -68,7 +104,7 @@ export const tryEnforceSearchTerminalStep = (
     const matchCount = readFindRoomMatchCount(lastToolResult.output);
 
     if (purpose === "book_resolve" && matchCount === 1) {
-      return excludeSearchLoopTools(args);
+      return forceGetRoomById(args) ?? excludeSearchLoopTools(args);
     }
 
     return narrationOnlyStep();

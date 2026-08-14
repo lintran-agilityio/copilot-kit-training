@@ -36,7 +36,7 @@ export const getCopilotkitAgents = ({
   enableProcessorTripwireHandling(
     MastraAgent.getLocalAgents({
       mastra: runtimeMastra,
-      resourceId: getAgentResourceId(userId, AGENT_KEYS.MANAGE_ASSISTANT),
+      resourceId: getAgentResourceId(userId, AGENT_KEYS.HOMESTAY_ASSISTANT),
       requestContext,
     }),
     threadMemoryPort,

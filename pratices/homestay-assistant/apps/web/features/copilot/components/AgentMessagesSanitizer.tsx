@@ -16,7 +16,7 @@ import { AGENT_KEYS } from "@repo/constants";
 import { normalizeMessages } from "@/features/chat/utils";
 
 export const AgentMessagesSanitizer = () => {
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   // Fingerprint of the last sanitized snapshot we wrote. Clears the
   // setMessages ↔ normalizeMessages oscillation that hits React's
   // "Maximum update depth exceeded" when the runtime reintroduces a shape

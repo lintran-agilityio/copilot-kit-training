@@ -28,11 +28,11 @@ import type {
 } from "@/features/room/types";
 
 export const RoomToolsProvider = () => {
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
 
   useRenderTool(
     {
-      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID,
       parameters: getRoomByIdInputSchema,
       render: ({ status, result, toolCallId }) => (
@@ -48,7 +48,7 @@ export const RoomToolsProvider = () => {
 
   useRenderTool(
     {
-      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.GET.FIND_ROOM,
       parameters: findRoomInputSchema,
       render: ({ status, result, parameters, toolCallId }) => (
@@ -67,7 +67,7 @@ export const RoomToolsProvider = () => {
 
   useFrontendTool(
     {
-      agentId: AGENT_KEYS.MANAGE_ASSISTANT,
+      agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.UPDATE_ROOM_LIST,
       description:
         "Use ONLY after get_rooms (plain catalog browse). Pass roomIds from get_rooms result.roomIds (IDs only). Do NOT call after find_room — ListRoomPreview already renders search results and calling this can duplicate the room list in chat. This tool does not change the page the guest is browsing. After this succeeds, always send one short guest-facing chat reply.",

@@ -2,6 +2,10 @@ import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { getRoomByIdInputSchema } from "@repo/schemas";
+import {
+  clearBookingFormStayHint,
+  readBookingFormStayHint,
+} from "@/mastra/booking/book-form-prefill";
 import { getRoom } from "@/mastra/services";
 import {
   getRoomDetailOutputSchema,
@@ -48,7 +52,11 @@ export const getRoomByIdTool = createTool({
     throwIfAborted(context.abortSignal);
     const { roomId } = inputData;
     const room = await getRoom(roomId, serviceContextFromTool(context));
-    return { room };
+
+    const stayHint = readBookingFormStayHint(context.requestContext);
+    clearBookingFormStayHint(context.requestContext);
+
+    return { room: stayHint ? { ...room, ...stayHint } : room };
   },
   toModelOutput: toGetRoomByIdModelOutput,
 });

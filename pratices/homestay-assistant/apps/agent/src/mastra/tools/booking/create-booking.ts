@@ -12,6 +12,7 @@ import {
   readPinnedStay,
 } from "@/mastra/utils/resolve-pinned-stay";
 import {
+  commitIfNotAborted,
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
@@ -47,19 +48,17 @@ export const createBookingTool = createTool({
       REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY,
     );
 
-    // Side-effect: re-check immediately before committing the booking.
-    throwIfAborted(abortSignal);
-
-    const booking = await createBooking(
-      {
-        roomId,
-        checkInDate,
-        checkOutDate,
-        guests,
-        status: params.status ?? BookingStatus.CONFIRMED,
-      },
-      serviceContextFromTool(context),
+    return commitIfNotAborted(abortSignal, () =>
+      createBooking(
+        {
+          roomId,
+          checkInDate,
+          checkOutDate,
+          guests,
+          status: params.status ?? BookingStatus.CONFIRMED,
+        },
+        serviceContextFromTool(context),
+      ),
     );
-    return booking;
   },
 });

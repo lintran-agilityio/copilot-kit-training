@@ -15,7 +15,7 @@ import {
   stopWhenStepLimitReached,
 } from "@/mastra/booking/stop-after-booking-form";
 import {
-  manageAgentPrompt,
+  homestayAssistantPrompt,
   withCurrentDateInstructions,
 } from "@/mastra/utils";
 import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants";
@@ -35,12 +35,12 @@ import {
 import { agentOutputProcessors } from "@/mastra/processors/agent-output-processors";
 import { securityInputProcessor } from "@/mastra/processors/prompt-injection.processors";
 
-export const manageAgent = new Agent({
-  id: AGENT_KEYS.MANAGE_ASSISTANT,
-  name: "Homestay Manager Agent",
+export const homestayAssistant = new Agent({
+  id: AGENT_KEYS.HOMESTAY_ASSISTANT,
+  name: "Homestay Assistant",
   description:
     "Public chat agent that coordinates room discovery and booking flows (step machine + HITL).",
-  instructions: () => withCurrentDateInstructions(manageAgentPrompt),
+  instructions: () => withCurrentDateInstructions(homestayAssistantPrompt),
   model: process.env.AI_MODEL || "openai/gpt-4o-mini",
   // Rate-limit responses are transient; Mastra applies bounded backoff retries.
   maxRetries: 2,

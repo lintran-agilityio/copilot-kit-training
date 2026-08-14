@@ -8,7 +8,7 @@ import { Observability, MastraStorageExporter, MastraPlatformExporter, Sensitive
 import { AGENT_KEYS } from '@repo/constants';
 import { duckDbPath, studioDbPath } from './db-paths';
 
-import { manageAgent } from './agents/manage-agent';
+import { homestayAssistant } from './agents/homestay-assistant';
 import {
   createMastraServerAuthConfig,
   createMastraServerMiddleware,
@@ -20,7 +20,7 @@ import {
  */
 export const mastra = new Mastra({
   agents: {
-    [AGENT_KEYS.MANAGE_ASSISTANT]: manageAgent,
+    [AGENT_KEYS.HOMESTAY_ASSISTANT]: homestayAssistant,
   },
   storage: new MastraCompositeStore({
     id: 'composite-storage',

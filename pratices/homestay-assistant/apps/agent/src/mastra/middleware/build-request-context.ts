@@ -18,10 +18,10 @@ export const buildAgentRequestContext = ({
   const requestContext = new RequestContext();
 
   requestContext.set(REQUEST_CONTEXT_KEYS.AUTH, auth);
-  // Memory/threads persist as `${userId}:manage-assistant`; keep that contract.
+  // Memory/threads persist as `${userId}:homestay-assistant`; keep that contract.
   requestContext.set(
     MASTRA_RESOURCE_ID_KEY,
-    getAgentResourceId(auth.userId, AGENT_KEYS.MANAGE_ASSISTANT),
+    getAgentResourceId(auth.userId, AGENT_KEYS.HOMESTAY_ASSISTANT),
   );
 
   return requestContext;

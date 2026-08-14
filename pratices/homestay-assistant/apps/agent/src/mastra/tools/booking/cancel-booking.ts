@@ -10,7 +10,11 @@ import {
   clearPinnedStay,
   readPinnedBookingId,
 } from "@/mastra/utils/resolve-pinned-stay";
-import { serviceContextFromTool, throwIfAborted } from "@/mastra/utils/abort";
+import {
+  commitIfNotAborted,
+  serviceContextFromTool,
+  throwIfAborted,
+} from "@/mastra/utils/abort";
 import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/utils/generic-ui-reply-hints";
 
 export const cancelBookingTool = createTool({
@@ -45,9 +49,8 @@ export const cancelBookingTool = createTool({
 
     await assertOwnedActiveBooking(id, serviceContext);
 
-    // Side-effect: re-check immediately before committing the cancellation.
-    throwIfAborted(abortSignal);
-
-    return await cancelBooking(id, serviceContext);
+    return commitIfNotAborted(abortSignal, () =>
+      cancelBooking(id, serviceContext),
+    );
   },
 });

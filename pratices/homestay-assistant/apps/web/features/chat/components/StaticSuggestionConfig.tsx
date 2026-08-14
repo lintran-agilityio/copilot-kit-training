@@ -23,7 +23,7 @@ type StaticSuggestionConfigProps = {
 };
 
 export const StaticSuggestionConfig = ({
-  agentId = AGENT_KEYS.MANAGE_ASSISTANT,
+  agentId = AGENT_KEYS.HOMESTAY_ASSISTANT,
 }: StaticSuggestionConfigProps) => {
   const context = useHomestayAgentContext();
   const { agent } = useAgent({

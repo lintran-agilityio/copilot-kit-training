@@ -35,3 +35,17 @@ export const serviceContextFromTool = (context: {
   requestContext: context.requestContext,
   abortSignal: context.abortSignal,
 });
+
+/**
+ * Re-check the signal immediately before a mutation commits, then run it.
+ * Guards the gap between tool setup (pin resolution, ownership checks) and
+ * the fetch that actually persists the change, so Stop cannot land after
+ * the last check but before the write goes out.
+ */
+export const commitIfNotAborted = <T>(
+  signal: AbortSignal | null | undefined,
+  mutate: () => Promise<T>,
+): Promise<T> => {
+  throwIfAborted(signal);
+  return mutate();
+};

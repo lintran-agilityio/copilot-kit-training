@@ -50,7 +50,7 @@ export const ModifyBookingByRoomModal = ({
   result,
   toolCallId,
 }: ModifyBookingByRoomModalProps) => {
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const { respondOnce, canRespond, isActionable, expiredBySupersede } =
     useHitlPickerDismiss<ModifyBookingByRoomResult>(respond, toolCallId, {
       confirmed: false,

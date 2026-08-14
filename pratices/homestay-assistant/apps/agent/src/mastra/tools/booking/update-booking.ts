@@ -14,6 +14,7 @@ import {
   readPinnedStay,
 } from "@/mastra/utils/resolve-pinned-stay";
 import {
+  commitIfNotAborted,
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
@@ -53,17 +54,16 @@ export const updateBookingTool = createTool({
 
     await assertOwnedActiveBooking(resolvedBookingId, serviceContext);
 
-    // Side-effect: re-check immediately before committing the update.
-    throwIfAborted(context.abortSignal);
-
-    return await updateBooking(
-      {
-        bookingId: resolvedBookingId,
-        checkInDate: resolvedCheckIn,
-        checkOutDate: resolvedCheckOut,
-        guests: resolvedGuests,
-      },
-      serviceContext,
+    return commitIfNotAborted(context.abortSignal, () =>
+      updateBooking(
+        {
+          bookingId: resolvedBookingId,
+          checkInDate: resolvedCheckIn,
+          checkOutDate: resolvedCheckOut,
+          guests: resolvedGuests,
+        },
+        serviceContext,
+      ),
     );
   },
 });

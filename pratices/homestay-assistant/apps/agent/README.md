@@ -29,7 +29,7 @@ Registered in `src/mastra/index.ts` (Studio) and `src/mastra/runtime.ts` (Copilo
 
 | Agent | Key | Role |
 | --- | --- | --- |
-| Homestay Manager | `manage-assistant` | Public chat agent: rooms + booking flows |
+| Homestay Manager | `homestay-assistant` | Public chat agent: rooms + booking flows |
 
 One agent today — no specialist agents under `agents/` yet.
 
@@ -105,7 +105,7 @@ src/
   ag-ui/                 # abort controllers, transcript filters, tripwire, stream-patch, stop latch
   copilotkit.ts          # AG-UI agent export for web (+ ThreadMemoryPort inject)
   mastra/
-    agents/              # manage-agent
+    agents/              # homestay-assistant
     booking/             # step-machine (prepareStep state machine)
     tools/               # rooms + booking tools
     schemas/
