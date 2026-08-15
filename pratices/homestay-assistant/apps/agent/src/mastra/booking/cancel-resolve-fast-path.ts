@@ -8,18 +8,16 @@ import {
   detectCancelWithoutBookingIdIntent,
   extractRoomNameQuery,
   getBusinessDates,
+  type ListMyBookingsDateRange,
 } from "@repo/utils";
 
 import {
   BOOKING_STEP_DECISION_KIND,
   type BookingPrepareStepDecision,
-} from "@/mastra/booking/constants";
-import {
-  countToolResultsInCurrentTurn,
-  resolveLastToolResult,
-} from "@/mastra/booking/last-tool-result";
-import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
+} from "@/mastra/constants";
 import { extractLatestUserText } from "@/mastra/booking/stated-modify-fast-path";
+import { countToolResultsInCurrentTurn, resolveLastToolResult } from "@/mastra/booking/last-tool-result";
+import { narrationOnlyStep } from "@/mastra/booking/step-machine";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import {
   parseFindBookingByIdOutput,
@@ -75,6 +73,7 @@ export const resolveSoleBookingIdFromToolOutput = (
 const pinCancelWithoutBookingId = (
   args: ProcessInputStepArgs,
   onDate: string | null,
+  dateRange: ListMyBookingsDateRange | null,
   roomQuery: string | null,
 ) => {
   const requestContext = args.requestContext;
@@ -89,6 +88,14 @@ const pinCancelWithoutBookingId = (
   requestContext.set(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ON_DATE,
     onDate ?? undefined,
+  );
+  requestContext.set(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_DATE_FROM,
+    dateRange?.from,
+  );
+  requestContext.set(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_DATE_TO,
+    dateRange?.to,
   );
   requestContext.set(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY,
@@ -153,6 +160,7 @@ export const resolveCancelWithoutBookingIdStep = (
     pinCancelWithoutBookingId(
       args,
       routing.onDate,
+      routing.dateRange,
       roomQuery.length > 0 ? roomQuery : null,
     );
     return {

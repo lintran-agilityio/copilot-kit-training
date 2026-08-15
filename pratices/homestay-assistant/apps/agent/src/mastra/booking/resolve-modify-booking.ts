@@ -3,17 +3,54 @@ import type { ProcessInputStepArgs } from "@mastra/core/processors";
 import { TOOL_KEYS } from "@repo/constants";
 import { getCurrentTurn } from "@repo/utils";
 
-import type { ResolvedBookingForStatedModify } from "@/mastra/booking/modify-stay-fields";
 import {
-  asNonEmptyString,
-  asPositiveInt,
-} from "@/mastra/utils/common";
+  isSameModifyStay,
+  type ModifyStayFields,
+  type ResolvedBookingForStatedModify,
+} from "@/mastra/booking/modify-stay-fields";
+import { asNonEmptyString, asPositiveInt } from "@/mastra/utils/common";
 import { asRecord } from "@/mastra/utils/parse-json-record";
 
 type ToolInvocationLike = {
   state?: string;
   toolName?: string;
   result?: unknown;
+};
+
+export type ModifyAvailabilityNextAction =
+  | "CONFIRM_MODIFY_BOOKING"
+  | "confirm_booking"
+  | "stop_booking";
+
+export type ResolveModifyAvailabilityNextActionInput = {
+  available: boolean;
+  guestsWithinCapacity: boolean;
+  isModify: boolean;
+  candidate: ModifyStayFields;
+  /** Pre-change stay when known (pinned originals). */
+  original: ModifyStayFields | null;
+};
+
+/**
+ * Chooses nextAction after availability. Modify with a no-op candidate
+ * (same as originals) must stop — never open CONFIRM_MODIFY_BOOKING.
+ */
+export const resolveModifyAvailabilityNextAction = ({
+  available,
+  guestsWithinCapacity,
+  isModify,
+  candidate,
+  original,
+}: ResolveModifyAvailabilityNextActionInput): ModifyAvailabilityNextAction => {
+  if (isModify && original && isSameModifyStay(candidate, original)) {
+    return "stop_booking";
+  }
+
+  if (available && guestsWithinCapacity) {
+    return isModify ? "CONFIRM_MODIFY_BOOKING" : "confirm_booking";
+  }
+
+  return "stop_booking";
 };
 
 /**
@@ -47,9 +84,9 @@ const forEachTurnToolResult = (
         continue;
       }
 
-      const invocation = asRecord(part.toolInvocation) as
-        | ToolInvocationLike
-        | null;
+      const invocation = asRecord(
+        part.toolInvocation,
+      ) as ToolInvocationLike | null;
       const toolName = asNonEmptyString(invocation?.toolName);
       if (invocation?.state !== "result" || !toolName) {
         continue;
@@ -132,9 +169,7 @@ export const resolveBookingFromGetBookingsInTurn = (
       return false;
     }
 
-    const booking = bookings.find(
-      (row) => asNonEmptyString(row.id) === target,
-    );
+    const booking = bookings.find((row) => asNonEmptyString(row.id) === target);
     if (!booking) {
       return false;
     }

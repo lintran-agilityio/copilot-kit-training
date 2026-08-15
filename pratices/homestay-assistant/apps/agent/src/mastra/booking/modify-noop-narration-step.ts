@@ -3,7 +3,7 @@ import type {
   ProcessInputStepResult,
 } from "@mastra/core/processors";
 
-import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
+import { narrationOnlyStep } from "@/mastra/booking";
 
 /** Pin the model to a single no-op modify chat reply — no offers, no more tools. */
 export const MODIFY_NOOP_NARRATION_INSTRUCTION =

@@ -18,12 +18,11 @@ import { resolveCancelWithoutBookingIdStep } from "@/mastra/booking/cancel-resol
 import {
   BOOKING_STEP_TRANSITION_TYPE,
   isActionableBookingStepDecision,
-} from "@/mastra/booking/constants";
+} from "@/mastra/constants";
 import { resolveListMyBookingsStep } from "@/mastra/booking/list-my-bookings-fast-path";
 import { resolveModifyWithoutBookingIdStep } from "@/mastra/booking/modify-resolve-fast-path";
 import { modifyNoOpNarrationStep } from "@/mastra/booking/modify-noop-narration-step";
-import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
-import { resolveBookingFromGetBookingsInTurn } from "@/mastra/booking/resolve-selected-modify-booking";
+import { resolveBookingFromGetBookingsInTurn } from "@/mastra/booking/resolve-modify-booking";
 import { tryEnforceSearchTerminalStep } from "@/mastra/booking/search-terminal-fast-path";
 import { tryEnforceStatedModifyFastPath } from "@/mastra/booking/stated-modify-fast-path";
 import type {
@@ -41,6 +40,20 @@ export type BookingStepTransition =
   | { type: typeof BOOKING_STEP_TRANSITION_TYPE.CALL; toolName: string }
   | { type: typeof BOOKING_STEP_TRANSITION_TYPE.STOP }
   | null;
+
+/**
+ * prepareStep result for a terminal business hop that still needs one guest-facing
+ * text reply: forbid further tool calls so the model cannot re-execute the completed
+ * operation (MessageMerger would append another large tool part onto the same
+ * assistant message).
+ *
+ * Prefer this over `undefined` after terminal success — `undefined` restores the
+ * full default tool set and enables self-loops.
+ */
+export const narrationOnlyStep = (): ProcessInputStepResult => ({
+  activeTools: [],
+  toolChoice: "none",
+});
 
 /**
  * Resolves the next booking step-machine transition from the latest tool result.

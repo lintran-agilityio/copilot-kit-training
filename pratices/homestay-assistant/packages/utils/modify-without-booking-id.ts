@@ -5,7 +5,11 @@ import {
   TITLE_GENERATION_PROMPT_PATTERN,
 } from "@repo/constants";
 
-import { parseListMyBookingsOnDate } from "./list-my-bookings.js";
+import {
+  parseListMyBookingsDateRange,
+  parseListMyBookingsOnDate,
+  type ListMyBookingsDateRange,
+} from "./list-my-bookings.js";
 
 /** Deterministic routing intent for modify when bookingId is unknown. */
 export const MODIFY_WITHOUT_BOOKING_ID_INTENT =
@@ -15,6 +19,8 @@ export type ModifyWithoutBookingIdRouting = {
   intent: typeof MODIFY_WITHOUT_BOOKING_ID_INTENT;
   /** YYYY-MM-DD when a date cue is present; otherwise null (all active). */
   onDate: string | null;
+  /** Saturday-to-Sunday span when a "weekend" cue is present; otherwise null. */
+  dateRange: ListMyBookingsDateRange | null;
 };
 
 const hasBookingIdMarker = (text: string): boolean =>
@@ -58,5 +64,6 @@ export const detectModifyWithoutBookingIdIntent = (
   return {
     intent: MODIFY_WITHOUT_BOOKING_ID_INTENT,
     onDate: parseListMyBookingsOnDate(text, today),
+    dateRange: parseListMyBookingsDateRange(text, today),
   };
 };

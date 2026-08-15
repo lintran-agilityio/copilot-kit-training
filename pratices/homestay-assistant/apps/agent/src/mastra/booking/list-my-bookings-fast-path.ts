@@ -10,12 +10,12 @@ import {
 import {
   BOOKING_STEP_DECISION_KIND,
   type BookingPrepareStepDecision,
-} from "@/mastra/booking/constants";
+} from "@/mastra/constants";
 import {
   countToolResultsInCurrentTurn,
   resolveLastToolResult,
 } from "@/mastra/booking/last-tool-result";
-import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
+import { narrationOnlyStep } from "@/mastra/booking/step-machine";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { extractLatestUserText } from "@/mastra/booking/stated-modify-fast-path";
 

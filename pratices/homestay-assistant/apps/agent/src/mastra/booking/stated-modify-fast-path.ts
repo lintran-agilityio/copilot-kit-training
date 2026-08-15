@@ -8,12 +8,12 @@ import { getBusinessDates, getCurrentTurn } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { resolveLastToolResult } from "@/mastra/booking/last-tool-result";
-import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
+import { narrationOnlyStep } from "@/mastra/booking/step-machine";
 import { modifyNoOpNarrationStep } from "@/mastra/booking/modify-noop-narration-step";
 import {
   getConfirmedModifyPickerBookingId,
   resolveBookingFromGetBookingsInTurn,
-} from "@/mastra/booking/resolve-selected-modify-booking";
+} from "@/mastra/booking/resolve-modify-booking";
 import {
   extractStatedModifyChanges,
   resolveBookingFromLookupResult,

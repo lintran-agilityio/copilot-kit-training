@@ -235,10 +235,19 @@ export const getBookingsTool = createTool({
       serviceContextFromTool(context),
     );
 
-    // LIST_MY_BOOKINGS "weekend" cue: no single onDate to send the backend,
-    // so scope client-side to stays overlapping the Saturday+Sunday span.
-    if (listPin.active && listPin.dateRange) {
-      const { from, to } = listPin.dateRange;
+    // "weekend" cue (LIST/CANCEL/MODIFY without id): no single onDate to send
+    // the backend, so scope client-side to stays overlapping the
+    // Saturday+Sunday span.
+    const activeDateRange = listPin.active
+      ? listPin.dateRange
+      : cancelPin.active
+        ? cancelPin.dateRange
+        : modifyPin.active
+          ? modifyPin.dateRange
+          : undefined;
+
+    if (activeDateRange) {
+      const { from, to } = activeDateRange;
       bookings = bookings.filter((booking) =>
         bookingStayOverlapsRange(booking.checkInDate, booking.checkOutDate, from, to),
       );

@@ -11,8 +11,7 @@ import {
   checkRoomAvailability,
 } from "@/mastra/services";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import { isSameModifyStay } from "@/mastra/booking/modify-stay-fields";
-import { resolveModifyAvailabilityNextAction } from "@/mastra/booking/resolve-modify-availability-next-action";
+import { resolveModifyAvailabilityNextAction, isSameModifyStay } from "@/mastra/booking";
 import {
   clearPinnedStay,
   readPinnedStay,

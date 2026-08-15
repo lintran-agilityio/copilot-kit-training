@@ -8,6 +8,7 @@ import {
   detectModifyWithoutBookingIdIntent,
   extractRoomNameQuery,
   getBusinessDates,
+  type ListMyBookingsDateRange,
 } from "@repo/utils";
 
 import {
@@ -17,12 +18,12 @@ import {
 import {
   BOOKING_STEP_DECISION_KIND,
   type BookingPrepareStepDecision,
-} from "@/mastra/booking/constants";
+} from "@/mastra/constants";
 import {
   countToolResultsInCurrentTurn,
   resolveLastToolResult,
 } from "@/mastra/booking/last-tool-result";
-import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
+import { narrationOnlyStep } from "@/mastra/booking/step-machine";
 import { extractLatestUserText } from "@/mastra/booking/stated-modify-fast-path";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 
@@ -36,6 +37,7 @@ export type ModifyResolveStepDecision = BookingPrepareStepDecision;
 const pinModifyWithoutBookingId = (
   args: ProcessInputStepArgs,
   onDate: string | null,
+  dateRange: ListMyBookingsDateRange | null,
   roomQuery: string | null,
 ) => {
   const requestContext = args.requestContext;
@@ -50,6 +52,14 @@ const pinModifyWithoutBookingId = (
   requestContext.set(
     REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_ON_DATE,
     onDate ?? undefined,
+  );
+  requestContext.set(
+    REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_DATE_FROM,
+    dateRange?.from,
+  );
+  requestContext.set(
+    REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_DATE_TO,
+    dateRange?.to,
   );
   requestContext.set(
     REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_ROOM_QUERY,
@@ -125,6 +135,7 @@ export const resolveModifyWithoutBookingIdStep = (
     pinModifyWithoutBookingId(
       args,
       routing.onDate,
+      routing.dateRange,
       roomQuery.length > 0 ? roomQuery : null,
     );
     return {

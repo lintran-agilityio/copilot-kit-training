@@ -8,9 +8,9 @@ import { TOOL_KEYS } from "@repo/constants";
 import {
   resolveContinuityStayHint,
   stashBookingFormStayHint,
-} from "@/mastra/booking/book-form-prefill";
-import { resolveLastToolResult } from "@/mastra/booking/last-tool-result";
-import { narrationOnlyStep } from "@/mastra/booking/narration-only-step";
+  resolveLastToolResult,
+  narrationOnlyStep
+} from "@/mastra/booking";
 import { parseFindRoomOutput } from "@/mastra/utils";
 import type { FindRoomPurpose } from "@repo/schemas";
 
