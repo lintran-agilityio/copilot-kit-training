@@ -16,16 +16,6 @@ export type IterationToolResultLike = {
   isError?: boolean;
 };
 
-export type BookingFormStopIterationContext = {
-  toolResults?: IterationToolResultLike[];
-  toolCalls?: Array<{ name?: string; toolName?: string }>;
-};
-
-export type AgentStepLike = {
-  toolResults?: IterationToolResultLike[];
-  toolCalls?: Array<{ name?: string; toolName?: string }>;
-};
-
 const toolNameOf = (tool: {
   name?: string;
   toolName?: string;
@@ -155,60 +145,6 @@ export const isActionableBookingUiToolSuccess = (
   isSuccessfulCreateBookingToolResult(toolResult) ||
   isSuccessfulUpdateBookingToolResult(toolResult) ||
   isSuccessfulCancelBookingToolResult(toolResult);
-
-export const shouldStopAfterActionableBookingUi = (
-  context: BookingFormStopIterationContext,
-): boolean =>
-  (context.toolResults ?? []).some(isActionableBookingUiToolSuccess);
-
-/** @deprecated Prefer shouldStopAfterActionableBookingUi */
-export const shouldStopAfterSuccessfulGetRoomById =
-  shouldStopAfterActionableBookingUi;
-
-/**
- * stopWhen: halt after BookingForm or mutation HITL success (create/update/cancel)
- * so no follow-up LLM step emits redundant chat text the Generic UI already shows.
- */
-export const stopWhenBookingFormRendered = ({
-  steps,
-}: {
-  steps: AgentStepLike[];
-}): boolean => {
-  for (let index = steps.length - 1; index >= 0; index -= 1) {
-    const step = steps[index];
-    if (!step) {
-      continue;
-    }
-
-    if (
-      shouldStopAfterActionableBookingUi({
-        toolResults: step.toolResults,
-        toolCalls: step.toolCalls,
-      })
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-/** Caps runaway loops when maxSteps is omitted (maxSteps overrides stopWhen). */
-export const stopWhenStepLimitReached = (limit: number) => {
-  return ({ steps }: { steps: unknown[] }): boolean => steps.length >= limit;
-};
-
-/**
- * Mastra onIterationComplete: halt after BookingForm / mutation HITL success.
- */
-export const stopAfterBookingFormIteration = (context: {
-  toolResults?: IterationToolResultLike[];
-  toolCalls?: Array<{ name?: string; toolName?: string }>;
-}): { continue: false } | void => {
-  if (shouldStopAfterActionableBookingUi(context)) {
-    return { continue: false };
-  }
-};
 
 const ACTIONABLE_BOOKING_UI_SUPPRESS_STATE_KEY =
   "suppressActionableBookingUiText" as const;

@@ -117,11 +117,18 @@ export type UpdateBookingToolProps = ToolRendererProps<UpdateBookingResult> & {
 export type GetBookingsResult = {
   bookings?: BookingResponse[];
   /**
-   * Internal routing set when cancel/modify-without-id resolution forced this
-   * fetch — not a guest-facing VIEW/LIST call. MyBookingsNotice suppresses
-   * itself in this case so only the HITL that follows renders.
+   * Echoed from get_bookings args. "resolve" means cancel/modify/change-room
+   * resolution forced this fetch — not a guest-facing VIEW/LIST call.
+   * MyBookingsNotice suppresses itself in this case so only the HITL that
+   * follows (confirm dialog or picker) renders.
    */
-  intentHint?: "cancel_disambiguate" | "modify_disambiguate";
+  purpose?: "list" | "resolve";
 };
 
-export type GetBookingsToolProps = ToolRendererProps<GetBookingsResult>;
+export type GetBookingsParameters = {
+  purpose?: GetBookingsResult["purpose"];
+};
+
+export type GetBookingsToolProps = ToolRendererProps<GetBookingsResult> & {
+  parameters?: GetBookingsParameters;
+};

@@ -29,7 +29,7 @@ export const findBookingByIdTool = createTool({
   outputSchema: findBookingByIdOutputSchema,
   execute: async ({ bookingId }, context) => {
     throwIfAborted(context.abortSignal);
-
+console.log('bookingId==>', bookingId);
     // Prefer the id pinned by prepareStep from the modify picker / sole match.
     const pinnedBookingId = readPinnedBookingId(
       context.requestContext,

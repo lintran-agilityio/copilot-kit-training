@@ -2,8 +2,7 @@
  * Soft thread-scoped draft hints for the model.
  *
  * - Template field names ("Workflow state", Intent, Status) are golden LLM wording.
- * - They are NOT Mastra Workflows and NOT the booking step machine.
- * - Canonical forced tool transitions: `mastra/booking/step-machine.ts`.
+ * - They are NOT Mastra Workflows.
  * - Intent/Status here are soft hints the model may update; do not treat as authority.
  */
 export const BOOKING_WORKING_MEMORY_TEMPLATE = `# Workflow state

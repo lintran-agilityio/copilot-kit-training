@@ -154,10 +154,15 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.BOOKING.GET,
       parameters: getBookingsInputSchema,
-      render: ({ status, result, toolCallId }) => (
+      render: ({ status, result, parameters, toolCallId }) => (
         <MyBookingsNotice
           status={status}
           result={result as GetBookingsResult | string | null}
+          parameters={
+            parameters as
+              | { purpose?: GetBookingsResult["purpose"] }
+              | undefined
+          }
           toolCallId={toolCallId}
         />
       ),
