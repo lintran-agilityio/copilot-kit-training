@@ -25,6 +25,8 @@ export type Room = {
   bookingStatus?: BookingStatus;
   checkInDate?: string;
   checkOutDate?: string;
+  /** Booking Form prefill hint — guest count stated directly in the BOOK message. */
+  guests?: number;
   available?: boolean;
 };
 

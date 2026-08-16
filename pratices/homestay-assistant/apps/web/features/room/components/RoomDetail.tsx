@@ -96,6 +96,7 @@ export const RoomDetail = ({
     bookingStatus,
     checkInDate: roomCheckInDate,
     checkOutDate: roomCheckOutDate,
+    guests: roomGuestsHint,
   } = room;
 
   useReportHomestayFocusedRoom(id);
@@ -119,7 +120,12 @@ export const RoomDetail = ({
 
     return getDefaultDates().checkOut;
   });
-  const [guests, setLocalGuests] = useState(1);
+  const clampGuestsHint = (hint: number | undefined) =>
+    hint ? Math.min(Math.max(1, hint), capacity) : 1;
+
+  const [guests, setLocalGuests] = useState(() =>
+    clampGuestsHint(roomGuestsHint),
+  );
 
   useEffect(() => {
     if (
@@ -129,14 +135,17 @@ export const RoomDetail = ({
     ) {
       setLocalCheckIn(roomCheckInDate);
       setLocalCheckOut(roomCheckOutDate);
-      return;
+    } else {
+      const defaults = getDefaultDates();
+      setLocalCheckIn(defaults.checkIn);
+      setLocalCheckOut(defaults.checkOut);
     }
 
-    const defaults = getDefaultDates();
-    setLocalCheckIn(defaults.checkIn);
-    setLocalCheckOut(defaults.checkOut);
-    setLocalGuests(1);
-  }, [id, roomCheckInDate, roomCheckOutDate]);
+    setLocalGuests(clampGuestsHint(roomGuestsHint));
+    // clampGuestsHint closes over capacity, already listed below — omitting the
+    // function itself avoids re-running this effect on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clampGuestsHint is stable per capacity dep
+  }, [id, roomCheckInDate, roomCheckOutDate, roomGuestsHint, capacity]);
 
   useEffect(() => {
     if (

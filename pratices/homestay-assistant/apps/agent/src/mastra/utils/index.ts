@@ -5,6 +5,7 @@ export * from "./find-room";
 export * from "./generic-ui-reply-hints";
 export * from "./get-bookings";
 export * from "./json-value";
+export * from "./latest-user-message";
 export * from "./parse-json-record";
 export * from "./parse-tool-output";
 export * from "./resolve-pinned-stay";
