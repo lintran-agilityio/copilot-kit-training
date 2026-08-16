@@ -2,8 +2,6 @@ import { THREAD_METADATA_BLOCKED_MESSAGE_IDS } from "@repo/constants";
 
 export const REQUEST_CONTEXT_KEYS = {
   AUTH: "auth",
-  REQUEST_ID: "requestId",
-  AGENT_ID: "agentId",
   BLOCKED_MESSAGE_IDS: THREAD_METADATA_BLOCKED_MESSAGE_IDS,
   /**
    * Candidate stay from edit_modify_booking confirmed:true — used to override
@@ -73,6 +71,18 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY: "cancelWithoutBookingIdRoomQuery",
   /**
+   * Optional YYYY-MM-DD range start pinned for get_bookings when cancel-without-id
+   * parsed a "weekend" cue (e.g. "cancel my booking at weekend" → Saturday).
+   * Null/undefined = no range filter. Paired with CANCEL_WITHOUT_BOOKING_ID_DATE_TO.
+   */
+  CANCEL_WITHOUT_BOOKING_ID_DATE_FROM: "cancelWithoutBookingIdDateFrom",
+  /**
+   * Optional YYYY-MM-DD range end (exclusive) pinned alongside
+   * CANCEL_WITHOUT_BOOKING_ID_DATE_FROM — together they scope get_bookings
+   * results to stays overlapping that span (e.g. the weekend's Saturday+Sunday).
+   */
+  CANCEL_WITHOUT_BOOKING_ID_DATE_TO: "cancelWithoutBookingIdDateTo",
+  /**
    * Deterministic MODIFY_WITHOUT_BOOKING_ID override is active — get_bookings
    * should apply pinned onDate and modify-disambiguation replyHint.
    */
@@ -87,10 +97,29 @@ export const REQUEST_CONTEXT_KEYS = {
    * filter to the named room (e.g. "Heritage Master Suite") before HITL.
    */
   MODIFY_WITHOUT_BOOKING_ID_ROOM_QUERY: "modifyWithoutBookingIdRoomQuery",
+  /**
+   * Optional YYYY-MM-DD range start pinned for get_bookings when modify-without-id
+   * parsed a "weekend" cue (e.g. "modify my booking at weekend" → Saturday).
+   * Null/undefined = no range filter. Paired with MODIFY_WITHOUT_BOOKING_ID_DATE_TO.
+   */
+  MODIFY_WITHOUT_BOOKING_ID_DATE_FROM: "modifyWithoutBookingIdDateFrom",
+  /**
+   * Optional YYYY-MM-DD range end (exclusive) pinned alongside
+   * MODIFY_WITHOUT_BOOKING_ID_DATE_FROM — together they scope get_bookings
+   * results to stays overlapping that span (e.g. the weekend's Saturday+Sunday).
+   */
+  MODIFY_WITHOUT_BOOKING_ID_DATE_TO: "modifyWithoutBookingIdDateTo",
+  /**
+   * Optional {checkInDate, checkOutDate} pinned before get_room_by_id forces
+   * open the Booking Form for a named-room BOOK resolution — sourced
+   * deterministically from the latest dated find_room (search/recommend)
+   * earlier in the conversation, so the form prefills that date instead of
+   * defaulting to today. Guest can still edit it before booking.
+   */
+  PENDING_BOOKING_FORM_STAY_HINT: "pendingBookingFormStayHint",
 } as const;
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";
-export const AGENT_ID_HEADER = "x-agent-id";
 
 /** Guest-facing 401 messages from middleware auth (JWT / userId validation). */
 export const AUTH_ERRORS = {

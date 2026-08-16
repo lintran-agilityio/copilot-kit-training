@@ -5,6 +5,8 @@ import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 export type CancelWithoutBookingIdPin = {
   active: boolean;
   onDate?: string;
+  /** Saturday-to-Sunday span when a "weekend" cue is present. */
+  dateRange?: { from: string; to: string };
   /** Normalized free-text room query when the guest named a room. */
   roomQuery?: string;
 };
@@ -26,9 +28,23 @@ export const readCancelWithoutBookingIdPin = (
   const pinnedOnDate = requestContext.get(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ON_DATE,
   );
+  const pinnedFrom = requestContext.get(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_DATE_FROM,
+  );
+  const pinnedTo = requestContext.get(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_DATE_TO,
+  );
   const pinnedRoomQuery = requestContext.get(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY,
   );
+
+  const dateRange =
+    typeof pinnedFrom === "string" &&
+    pinnedFrom.trim().length > 0 &&
+    typeof pinnedTo === "string" &&
+    pinnedTo.trim().length > 0
+      ? { from: pinnedFrom.trim(), to: pinnedTo.trim() }
+      : undefined;
 
   return {
     active,
@@ -36,6 +52,7 @@ export const readCancelWithoutBookingIdPin = (
       typeof pinnedOnDate === "string" && pinnedOnDate.trim().length > 0
         ? pinnedOnDate.trim()
         : undefined,
+    dateRange,
     roomQuery:
       typeof pinnedRoomQuery === "string" && pinnedRoomQuery.trim().length > 0
         ? pinnedRoomQuery.trim()
@@ -58,6 +75,14 @@ export const clearCancelWithoutBookingIdPin = (
     undefined,
   );
   requestContext?.set(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_DATE_FROM,
+    undefined,
+  );
+  requestContext?.set(
+    REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_DATE_TO,
+    undefined,
+  );
+  requestContext?.set(
     REQUEST_CONTEXT_KEYS.CANCEL_WITHOUT_BOOKING_ID_ROOM_QUERY,
     undefined,
   );
@@ -66,6 +91,8 @@ export const clearCancelWithoutBookingIdPin = (
 export type ModifyWithoutBookingIdPin = {
   active: boolean;
   onDate?: string;
+  /** Saturday-to-Sunday span when a "weekend" cue is present. */
+  dateRange?: { from: string; to: string };
   /** Normalized free-text room query when the guest named a room. */
   roomQuery?: string;
 };
@@ -87,9 +114,23 @@ export const readModifyWithoutBookingIdPin = (
   const pinnedOnDate = requestContext.get(
     REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_ON_DATE,
   );
+  const pinnedFrom = requestContext.get(
+    REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_DATE_FROM,
+  );
+  const pinnedTo = requestContext.get(
+    REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_DATE_TO,
+  );
   const pinnedRoomQuery = requestContext.get(
     REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_ROOM_QUERY,
   );
+
+  const dateRange =
+    typeof pinnedFrom === "string" &&
+    pinnedFrom.trim().length > 0 &&
+    typeof pinnedTo === "string" &&
+    pinnedTo.trim().length > 0
+      ? { from: pinnedFrom.trim(), to: pinnedTo.trim() }
+      : undefined;
 
   return {
     active,
@@ -97,6 +138,7 @@ export const readModifyWithoutBookingIdPin = (
       typeof pinnedOnDate === "string" && pinnedOnDate.trim().length > 0
         ? pinnedOnDate.trim()
         : undefined,
+    dateRange,
     roomQuery:
       typeof pinnedRoomQuery === "string" && pinnedRoomQuery.trim().length > 0
         ? pinnedRoomQuery.trim()
@@ -116,6 +158,14 @@ export const clearModifyWithoutBookingIdPin = (
   );
   requestContext?.set(
     REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_ON_DATE,
+    undefined,
+  );
+  requestContext?.set(
+    REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_DATE_FROM,
+    undefined,
+  );
+  requestContext?.set(
+    REQUEST_CONTEXT_KEYS.MODIFY_WITHOUT_BOOKING_ID_DATE_TO,
     undefined,
   );
   requestContext?.set(

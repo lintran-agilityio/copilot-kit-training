@@ -16,7 +16,6 @@ import {
   useSupersedeHitlOnNewInteraction,
 } from "@/features/chat/hooks";
 import {
-  HITL_DECISION_STATUS,
   isHitlDecisionTerminal,
   isHitlToolRespondable,
   resolveHitlDecisionStatus,
@@ -38,6 +37,7 @@ import {
 } from "@/features/room/components";
 import { useRoomBookingEstimate } from "@/features/room/hooks";
 import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
+import { HITL_DECISION_STATUS } from "@/constants";
 
 type EditModifyBookingModalProps = {
   status: ToolCallStatus;
@@ -60,22 +60,13 @@ const hasRequiredArgs = (args: Partial<EditModifyBookingArgs>) =>
       args.guests > 0,
   );
 
+// APPROVED is handled by an earlier return (the form hides itself once the
+// guest confirms — see the CONFIRM_MODIFY_BOOKING hand-off above), so this
+// only ever renders REJECTED or EXPIRED settled copy.
 const getSettledCopy = (
   decisionStatus: HitlDecisionStatus,
   roomName: string,
 ): { title: string; description: ReactNode } => {
-  if (decisionStatus === HITL_DECISION_STATUS.APPROVED) {
-    return {
-      title: "Confirmed by you",
-      description: (
-        <>
-          You confirmed updated stay details for{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span>.
-        </>
-      ),
-    };
-  }
-
   if (decisionStatus === HITL_DECISION_STATUS.REJECTED) {
     return {
       title: "Cancelled by you",
@@ -207,6 +198,13 @@ export const EditModifyBookingModal = ({
   const canSubmit = canRespond && canProceed && hasStayChanges;
 
   if (!shouldRenderHitlCard(status, hasArgs) || !room) {
+    return null;
+  }
+
+  if (isComplete && decisionStatus === HITL_DECISION_STATUS.APPROVED) {
+    // After the guest confirms new dates/guests, hide this form — the
+    // CONFIRM_MODIFY_BOOKING diff card is the next step (no leftover
+    // "Confirmed by you" card stacked above it).
     return null;
   }
 

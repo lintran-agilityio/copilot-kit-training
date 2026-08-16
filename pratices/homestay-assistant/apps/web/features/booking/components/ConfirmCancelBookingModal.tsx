@@ -53,7 +53,7 @@ export const ConfirmCancelBookingModal = ({
   forceExpired = false,
 }: ConfirmCancelBookingModalProps) => {
   const router = useRouter();
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const markSubmitting = useCancelBookingCardStore(
     (state) => state.markSubmitting,
   );

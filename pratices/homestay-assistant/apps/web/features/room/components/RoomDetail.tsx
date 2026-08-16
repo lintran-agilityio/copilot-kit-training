@@ -33,7 +33,7 @@ import {
 import { useRoomBookingEstimate } from "@/features/room/hooks";
 import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
 import type { Room } from "@/features/room/types/room";
-import { buildBookingStayMessage } from "@/features/booking/utils/build-messages";
+import { buildBookingStayMessage } from "@/features/booking/utils";
 import {
   addDays,
   startOfDay,

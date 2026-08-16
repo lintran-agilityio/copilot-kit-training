@@ -1,18 +1,11 @@
-import { randomUUID } from "node:crypto";
-
 import type {
   AgentRequestPipelineResult,
   AgentRequestPipelineSuccess,
   AgentRequestState,
 } from "./types";
-import {
-  getCurrentAgentRequest,
-  runWithAgentRequest,
-} from "./agent-request-als";
 import { buildAgentRequestContext } from "./build-request-context";
 import { AUTH_ERRORS } from "./constants";
 import { extractClerkToken, verifyClerkAuth } from "./verify-clerk-auth";
-import { resolveAgentId } from "./resolve-agent-id";
 
 export { getCurrentAgentRequest, runWithAgentRequest } from "./agent-request-als";
 
@@ -61,19 +54,13 @@ export const runAgentRequestPipeline = async ({
     };
   }
 
-  const agentId = await resolveAgentId(request);
-  const requestId = randomUUID();
   const requestContext = buildAgentRequestContext({
     auth: result.auth,
-    requestId,
-    agentId,
   });
 
   return {
     ok: true,
     auth: result.auth,
-    requestId,
-    agentId,
     requestContext,
   };
 };
@@ -82,7 +69,5 @@ export const toAgentRequestState = (
   result: AgentRequestPipelineSuccess,
 ): AgentRequestState => ({
   auth: result.auth,
-  requestId: result.requestId,
-  agentId: result.agentId,
   requestContext: result.requestContext,
 });

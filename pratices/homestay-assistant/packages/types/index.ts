@@ -1,3 +1,3 @@
-export * from "./booking";
-export * from "./navbar";
-export * from "./urls";
+export * from "./booking.js";
+export * from "./navbar.js";
+export * from "./urls.js";

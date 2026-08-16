@@ -6,8 +6,6 @@ export type { MastraAuthContext };
 
 export type AgentRequestState = {
   auth: MastraAuthContext;
-  requestId: string;
-  agentId: string;
   requestContext: RequestContext;
 };
 

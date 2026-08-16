@@ -93,7 +93,6 @@ const createRuntime = () => {
 
       return getCopilotkitAgents({
         userId: agentRequest.auth.userId,
-        agentId: agentRequest.agentId,
         requestContext: agentRequest.requestContext,
       });
     },

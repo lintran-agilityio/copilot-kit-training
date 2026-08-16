@@ -28,6 +28,7 @@ export const buildFindRoomReplyHint = (
   matchCount: number,
   purpose: FindRoomReplyPurpose,
 ): string => {
+  console.log("matchCount", matchCount, "purpose", purpose);
   if (purpose === "book_resolve") {
     if (matchCount === 0) {
       return "No room matched that booking name. Reply with ONE short sentence that nothing matched; suggest a different room name. Do NOT invent rooms. Do NOT call check_room_availability.";
@@ -35,16 +36,16 @@ export const buildFindRoomReplyHint = (
     if (matchCount === 1) {
       return (
         "Room resolved for booking — Room List is suppressed (do NOT say cards were shown). " +
-        "Extract roomId from rooms[0].id. " +
-        "Date continuity (mandatory): if a prior find_room in this conversation already had a date " +
-        "(search/recommend echo, e.g. Rooms · YYYY-MM-DD), that date is known checkInDate — " +
-        "do NOT ask for check-in again. When check-out / stay length was not given, default " +
-        "checkOutDate = checkInDate + 1 day (same window as room search). " +
-        "If check-in, check-out (or defaulted), and guests are known → immediately call " +
-        "check_room_availability (flow=create) in this same turn. " +
-        "If only guests (or another truly unknown field) is missing → ask ONLY for that field " +
-        "in ONE short sentence; do NOT re-ask dates that continuity already supplies; " +
-        "do NOT call check_room_availability yet. Never list room details in text."
+        "Check the LATEST user message only (not older searches, continuity dates, or working memory): " +
+        "does it state an explicit check-in date (or a resolvable relative date like today/tomorrow/weekend/weekday) " +
+        "AND a guest count for this room? " +
+        "If BOTH are present (full info): skip the Booking Form — call check_room_availability (flow=create) next " +
+        "with those values (checkOutDate defaults to checkInDate + 1 day only when no stay length was stated), " +
+        "then confirm_booking when available. " +
+        "If EITHER is missing (partial info): call get_room_by_id next to open the Booking Form so the guest " +
+        "sets/confirms the missing field(s) — do NOT invent a missing check-in date or guest count, and do NOT " +
+        "ask for it in chat instead. " +
+        "Reply with at most one short guest-facing sentence (tools-only is also fine) either way. Never list room details in text."
       );
     }
     return `Multiple rooms matched (${matchCount}) — Room cards are rendered so the guest can pick one. Do NOT call check_room_availability until a specific room is selected. Reply with ONE short sentence asking them to choose. Never list room names in text.`;
@@ -55,6 +56,31 @@ export const buildFindRoomReplyHint = (
   }
 
   return `Room cards are already rendered in chat — do NOT call find_room again this turn, do NOT call update_room_list. The room cards ARE the response: do NOT send any chat text at all (no acknowledgement like "I found ${matchCount} room(s)...", no room names, no numbered list, no room details). Tools-only is allowed for this turn.`;
+};
+
+export type GetBookingsReplyPurpose = "list" | "resolve" | undefined;
+
+/**
+ * Model-facing hint after get_bookings. purpose:"resolve" means the FE
+ * suppresses the booking-list card since the HITL that follows (confirm
+ * dialog or picker) is the response — not a guest-facing VIEW/LIST turn.
+ */
+export const buildGetBookingsReplyHint = (
+  bookingCount: number,
+  purpose: GetBookingsReplyPurpose,
+): string => {
+  if (purpose === "resolve") {
+    if (bookingCount === 0) {
+      return "No active bookings matched — the booking-list card is suppressed. Reply with ONE short sentence that there are no matching active bookings. Do NOT invent one from chat history.";
+    }
+    return "Booking-list card is suppressed for this internal resolve fetch — do NOT say cards were shown or list booking details in text. Continue the cancel/modify workflow with the resolved booking(s) (find_booking_by_id on a single match, or the HITL picker on multiple matches).";
+  }
+
+  if (bookingCount === 0) {
+    return "No matching active bookings. Reply with ONE short sentence that there are no matching active bookings.";
+  }
+
+  return "Booking cards are already rendered in chat — the cards ARE the response: do NOT restate names, dates, or prices in text, and do NOT send an acknowledgement sentence either (tools-only is allowed).";
 };
 
 /**

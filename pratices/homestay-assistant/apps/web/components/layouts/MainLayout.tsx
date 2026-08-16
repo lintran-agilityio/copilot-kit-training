@@ -59,7 +59,7 @@ export const MainLayout = ({ children, className }: MainLayoutProps) => {
   const activeTab =
     pathname === ROUTES.BOOKINGS ? NavbarTab.MY_BOOKINGS : NavbarTab.HOME;
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const agentId = AGENT_KEYS.MANAGE_ASSISTANT;
+  const agentId = AGENT_KEYS.HOMESTAY_ASSISTANT;
   const { scopeKey, activeThreadId, setActiveThread } = useActiveThread({
     agentId,
   });

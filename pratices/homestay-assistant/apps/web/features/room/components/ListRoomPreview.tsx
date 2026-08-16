@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useAgent } from "@copilotkit/react-core/v2";
 
+import { AGENT_KEYS } from "@repo/constants";
 import { useGenericUiInteraction } from "@/features/chat/hooks";
 import { ListRoom } from "@/features/room/components/ListRoom";
 import type { RoomSelectPayload } from "@/features/room/components/Room";
@@ -28,7 +30,10 @@ export const ListRoomPreview = ({
 }: ListRoomPreviewProps) => {
   const [viewedRoomId, setViewedRoomId] = useState<string | null>(null);
   const requestRoomBookingForm = useRequestRoomBookingForm();
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const { isActionable } = useGenericUiInteraction(toolCallId);
+  // Book stays disabled until the agent finishes the turn — matches BookingList.
+  const canBook = isActionable && !agent.isRunning;
 
   const viewedRoom = viewedRoomId
     ? rooms.find((room) => room.id === viewedRoomId)
@@ -50,7 +55,7 @@ export const ListRoomPreview = ({
       <RoomChatDetail
         room={viewedRoom}
         onBack={() => setViewedRoomId(null)}
-        onBook={isActionable ? handleBookInChat : undefined}
+        onBook={canBook ? handleBookInChat : undefined}
       />
     );
   }
@@ -62,7 +67,7 @@ export const ListRoomPreview = ({
       compact
       className="max-w-full rounded-xl border border-white/12 bg-[#111111] p-3.5"
       onSelectRoom={handleView}
-      onBookRoom={isActionable ? handleBookInChat : false}
+      onBookRoom={canBook ? handleBookInChat : false}
     />
   );
 };

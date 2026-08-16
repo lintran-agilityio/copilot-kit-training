@@ -2,7 +2,6 @@ import type { MastraMiddlewareHandler } from "../middleware.types";
 import {
   buildRequestLogContext,
   getMastraLogger,
-  getRequestId,
   logRequestComplete,
   logRequestStart,
 } from "./logger";
@@ -37,7 +36,6 @@ export const createLoggingMiddleware = (
 
     logRequestComplete(logger, {
       ...requestLogContext,
-      requestId: getRequestId(context),
       status: context.res.status,
       durationMs: Date.now() - startedAt,
     });

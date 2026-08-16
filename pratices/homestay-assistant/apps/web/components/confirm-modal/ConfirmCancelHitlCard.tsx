@@ -11,7 +11,7 @@ import {
   MODEL_NAME,
   type HitlCardPhase,
 } from "@/features/booking/constants";
-import type { HitlDecisionStatus } from "@/features/booking/utils/hitl-decision-status";
+import type { HitlDecisionStatus } from "@/features/booking/utils";
 import type { BookingDetails } from "@/features/booking/types";
 
 export type ConfirmCancelHitlCardProps = {

@@ -1,6 +1,7 @@
 export * from "./BookingStatusBadge";
 export * from "./BookingCard";
 export * from "./BookingList";
+export * from "./BookingPickerCard";
 export * from "./CancelBookingByRoomModal";
 export * from "./ModifyBookingByRoomModal";
 export * from "./CancelBookingNotice";

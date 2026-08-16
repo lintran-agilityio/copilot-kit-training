@@ -9,7 +9,7 @@ Mastra agents for Homestay Assistant. Tools call the Nest API for rooms and book
 | Web | Chat UI, HITL UI, RenderTool, Context, Thread UX, Zustand UI state | Booking orchestration, business state |
 | CopilotKit Runtime / BFF | `/api/copilotkit`, auth forwarding, Intelligence | Business logic |
 | AG-UI bridge (`src/ag-ui`) | Stream adaptation, stop latch, tripwire compatibility | Prompts, tools |
-| Mastra | Agents, `prepareStep` step machine, memory, tools | React / UI |
+| Mastra | Agents, memory, tools | React / UI |
 | Nest | Domain logic, persistence | Orchestration |
 
 Mastra should stay usable if CopilotKit is later replaced by AG-UI directly.
@@ -29,7 +29,7 @@ Registered in `src/mastra/index.ts` (Studio) and `src/mastra/runtime.ts` (Copilo
 
 | Agent | Key | Role |
 | --- | --- | --- |
-| Homestay Manager | `manage-assistant` | Public chat agent: rooms + booking flows |
+| Homestay Manager | `homestay-assistant` | Public chat agent: rooms + booking flows |
 
 One agent today — no specialist agents under `agents/` yet.
 
@@ -105,8 +105,8 @@ src/
   ag-ui/                 # abort controllers, transcript filters, tripwire, stream-patch, stop latch
   copilotkit.ts          # AG-UI agent export for web (+ ThreadMemoryPort inject)
   mastra/
-    agents/              # manage-agent
-    booking/             # step-machine (prepareStep state machine)
+    agents/              # homestay-assistant
+    booking/             # HITL prefill / stop-after-handoff helpers
     tools/               # rooms + booking tools
     schemas/
     services/
@@ -121,7 +121,6 @@ src/
 
 | Concept | Canonical name | Deprecated alias |
 | --- | --- | --- |
-| Forced tool hops | `enforceBookingStep` / `booking/step-machine.ts` |
 | LLM instruction sections | intent playbook / `PLAYBOOK_*` | `WORKFLOW_*` section keys (wording unchanged) |
 | Web suggestion state | UI focus stack (`uiFocusEntries`, `pushUiFocus`) | `workflowEntries`, `pushWorkflow` |
 | Report HITL focus | `useReportHomestayAgentUiFocus` | `useReportHomestayAgentWorkflow` |

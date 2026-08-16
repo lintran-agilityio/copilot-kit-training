@@ -1,5 +1,6 @@
 import { ROUTES } from "@repo/constants";
 import { roomSchema, type Room } from "@repo/schemas";
+import { formatTodayYmd } from "@repo/utils";
 import {
   roomsListResponseSchema,
   type FindRoomInput,
@@ -27,7 +28,7 @@ export const getRooms = async (
     if (error instanceof Error && error.name === "AbortError") {
       throw error;
     }
-    const today = new Date().toISOString().slice(0, 10);
+    const today = formatTodayYmd();
     const { rooms } = await findRooms({ date: today }, serviceContext);
     return rooms;
   }

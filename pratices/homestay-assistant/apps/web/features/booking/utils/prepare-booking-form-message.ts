@@ -1,4 +1,4 @@
-import { buildBookingFormMessage } from "@/features/booking/utils/build-messages";
+import { buildBookingFormMessage } from "@/features/booking/utils";
 import { useArtifactStore } from "@/features/chat/stores/artifact-store";
 
 /**

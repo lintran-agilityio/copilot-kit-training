@@ -1,34 +1,33 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 import {
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
-import { parseToolResult, formatPrice } from "@repo/utils";
+import { parseToolResult } from "@repo/utils";
 
-import { Button } from "@/components/ui/button";
 import { EmbeddedWidget } from "@/features/chat/components";
+import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
 import {
-  useReportHomestayAgentUiFocus,
-  useSupersedeHitlOnNewInteraction,
-} from "@/features/chat/hooks";
-import {
-  HITL_DECISION_STATUS,
+  hasBookingPickerFields,
   isHitlDecisionTerminal,
   isHitlToolAwaitingUser,
   resolveHitlDecisionStatus,
+  resolvePickerCompletedTitle,
   shouldRenderHitlCard,
-  useHitlRespondOnce,
 } from "@/features/booking/utils";
+import { useHitlPickerDismiss } from "@/features/booking/hooks";
 import type {
   CancelBookingByRoomArgs,
   CancelBookingByRoomResult,
 } from "@repo/schemas";
 import type { BookingDetails, HitlToolResult } from "@/features/booking/types";
-import { CONFIRM_CANCEL_BOOKING, CANCEL_BOOKING_PICKER } from "@/features/booking/constants";
+import { CANCEL_BOOKING_PICKER } from "@/features/booking/constants";
+import { BookingPickerCard } from "./BookingPickerCard";
 import { ConfirmCancelBookingModal } from "./ConfirmCancelBookingModal";
+import { HITL_DECISION_STATUS } from "@/constants";
 
 type CancelBookingByRoomModalProps = {
   status: ToolCallStatus;
@@ -49,14 +48,6 @@ const toBookingDetails = (booking: BookingItem): BookingDetails => ({
   totalPrice: booking.totalPrice,
 });
 
-const hasValidBooking = (booking: BookingItem) =>
-  Boolean(
-    booking.bookingId?.trim() &&
-      booking.roomName?.trim() &&
-      booking.checkInDate?.trim() &&
-      booking.checkOutDate?.trim(),
-  );
-
 export const CancelBookingByRoomModal = ({
   status,
   args,
@@ -67,22 +58,13 @@ export const CancelBookingByRoomModal = ({
   const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(
     null,
   );
-  const { respondOnce, canRespond: canRespondHitl } =
-    useHitlRespondOnce<CancelBookingByRoomResult>(respond);
+  const { respondOnce, canRespond, isActionable, expiredBySupersede } =
+    useHitlPickerDismiss<CancelBookingByRoomResult>(respond, toolCallId, {
+      confirmed: false,
+      reason: "declined",
+    });
 
-  const supersedeDismiss = useCallback(() => {
-    void respondOnce({ confirmed: false, reason: "declined" });
-  }, [respondOnce]);
-
-  const { isActionable, expiredBySupersede } = useSupersedeHitlOnNewInteraction({
-    toolCallId,
-    canRespond: canRespondHitl,
-    onSupersede: supersedeDismiss,
-  });
-
-  const canRespond = canRespondHitl && isActionable;
-
-  const bookings = (args.bookings ?? []).filter(hasValidBooking);
+  const bookings = (args.bookings ?? []).filter(hasBookingPickerFields);
   const hasArgs = bookings.length > 0;
   const decisionStatus = resolveHitlDecisionStatus(status, result);
   const isComplete =
@@ -149,46 +131,25 @@ export const CancelBookingByRoomModal = ({
 
     return (
       <EmbeddedWidget>
-        <div className="space-y-3 p-3.5 text-zinc-100">
-          <div className="space-y-1">
-            <h3 className="text-sm font-medium text-white">
-              {expiredBySupersede
-                ? CONFIRM_CANCEL_BOOKING.title.expired
-                : decisionStatus === HITL_DECISION_STATUS.REJECTED
-                  ? CANCEL_BOOKING_PICKER.completed.rejectedTitle
-                  : decisionStatus === HITL_DECISION_STATUS.APPROVED
-                    ? CANCEL_BOOKING_PICKER.completed.approvedTitle
-                    : CONFIRM_CANCEL_BOOKING.title.expired}
-            </h3>
-            <p className="text-xs text-zinc-400">
-              {expiredBySupersede
-                ? CANCEL_BOOKING_PICKER.completed.expiredBody(
+        <BookingPickerCard
+          title={resolvePickerCompletedTitle(
+            CANCEL_BOOKING_PICKER,
+            decisionStatus,
+            expiredBySupersede,
+          )}
+          description={
+            expiredBySupersede
+              ? CANCEL_BOOKING_PICKER.completed.expiredBody(
+                  args.queryName ?? "",
+                )
+              : decisionStatus === HITL_DECISION_STATUS.REJECTED
+                ? CANCEL_BOOKING_PICKER.completed.keptAll(args.queryName ?? "")
+                : CANCEL_BOOKING_PICKER.completed.multiMatch(
                     args.queryName ?? "",
                   )
-                : decisionStatus === HITL_DECISION_STATUS.REJECTED
-                  ? CANCEL_BOOKING_PICKER.completed.keptAll(args.queryName ?? "")
-                  : CANCEL_BOOKING_PICKER.completed.multiMatch(
-                      args.queryName ?? "",
-                    )}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            {bookings.map((booking) => (
-              <div
-                key={booking.bookingId}
-                className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs"
-              >
-                <span className="font-medium text-zinc-100">
-                  {booking.roomName}
-                </span>
-                <span className="text-zinc-400">
-                  {booking.checkInDate} → {booking.checkOutDate}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+          }
+          bookings={bookings.map(toBookingDetails)}
+        />
       </EmbeddedWidget>
     );
   }
@@ -219,47 +180,15 @@ export const CancelBookingByRoomModal = ({
 
   return (
     <EmbeddedWidget>
-      <div className="space-y-3 p-3.5 text-zinc-100">
-        <div className="space-y-1">
-          <h3 className="text-sm font-medium text-white">
-            {CANCEL_BOOKING_PICKER.title}
-          </h3>
-          <p className="text-xs text-zinc-400">
-            {CANCEL_BOOKING_PICKER.description(args.queryName ?? "")}
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          {bookings.map((booking) => (
-            <button
-              key={booking.bookingId}
-              type="button"
-              disabled={!canRespond}
-              className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs transition hover:bg-white/[0.05] disabled:opacity-50"
-              onClick={() => setSelectedBooking(toBookingDetails(booking))}
-            >
-              <span className="font-medium text-zinc-100">{booking.roomName}</span>
-              <span className="text-zinc-400">
-                {booking.checkInDate} → {booking.checkOutDate}
-              </span>
-              <span className="text-zinc-400">Total price: {formatPrice(booking.totalPrice)}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="pt-0.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
-            disabled={!canRespond}
-            onClick={handleKeepBookings}
-          >
-            {CANCEL_BOOKING_PICKER.keepLabel}
-          </Button>
-        </div>
-      </div>
+      <BookingPickerCard
+        title={CANCEL_BOOKING_PICKER.title}
+        description={CANCEL_BOOKING_PICKER.description(args.queryName ?? "")}
+        bookings={bookings.map(toBookingDetails)}
+        disabled={!canRespond}
+        onSelect={setSelectedBooking}
+        keepLabel={CANCEL_BOOKING_PICKER.keepLabel}
+        onKeep={handleKeepBookings}
+      />
     </EmbeddedWidget>
   );
 };

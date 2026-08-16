@@ -3,7 +3,7 @@ import {
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
-import { buildBookingFormMessage } from "@/features/booking/utils/build-messages";
+import { buildBookingFormMessage } from "@/features/booking/utils";
 import {
   ACTIVE_BOOKINGS_SUGGESTIONS,
   AFTER_BOOKING_SUGGESTIONS,

@@ -20,12 +20,22 @@ const MY_BOOKINGS_TITLE = "Your bookings";
 export const MyBookingsNotice = ({
   status,
   result,
+  parameters,
   toolCallId,
 }: GetBookingsToolProps) => {
+  // purpose:"resolve" — cancel/modify/change-room resolution fetch, not a
+  // guest-facing VIEW/LIST call. Suppress skeleton and card alike; the HITL
+  // that follows (confirm dialog or picker) is the response.
+  const suppressForResolve = parameters?.purpose === "resolve";
+
   if (
     status === ToolCallStatus.Executing ||
     status === ToolCallStatus.InProgress
   ) {
+    if (suppressForResolve) {
+      return null;
+    }
+
     return (
       <EmbeddedWidget className="p-3.5">
         <RoomListSkeleton itemCount={2} className="max-w-full" />
@@ -48,12 +58,7 @@ export const MyBookingsNotice = ({
     );
   }
 
-  // Internal cancel/modify resolution fetch — the HITL that follows (confirm
-  // dialog or picker) is the response; don't also show the plain list.
-  if (
-    parsed.intentHint === "cancel_disambiguate" ||
-    parsed.intentHint === "modify_disambiguate"
-  ) {
+  if ((parsed.purpose ?? parameters?.purpose) === "resolve") {
     return null;
   }
 

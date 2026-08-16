@@ -110,7 +110,7 @@ const HitlConfirmCreateStayModal = ({
     toolCallId,
   );
 
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const hasArgs = hasRequiredCreateArgs(args);
   const correlationKey = hasArgs
     ? buildCreateStayCorrelationKey({
@@ -234,7 +234,7 @@ const HitlConfirmModifyStayModal = ({
     (state) => state.markSubmitting,
   );
   const { retryModifyBooking, isRetrying } = useRetryModifyBooking();
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const {
     shouldRender,
     isSubmitting,

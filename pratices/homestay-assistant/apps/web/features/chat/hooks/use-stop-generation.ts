@@ -94,7 +94,7 @@ export const useStopGeneration = ({ agentId }: UseStopGenerationOptions) => {
       runtimeStop: threadId
         ? () =>
             requestRuntimeAgentStop({
-              runtimeUrl: AGENT_URLS.MANAGE_ASSISTANT,
+              runtimeUrl: AGENT_URLS.HOMESTAY_ASSISTANT,
               agentId,
               threadId,
               headers: copilotkit.headers,

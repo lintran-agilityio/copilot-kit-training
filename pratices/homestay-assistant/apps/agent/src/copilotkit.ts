@@ -16,7 +16,6 @@ export { abortThreadRuns, latchThreadStop } from "./ag-ui";
 
 type GetCopilotkitAgentsInput = {
   userId: string;
-  agentId?: string;
   requestContext?: RequestContext;
 };
 
@@ -32,13 +31,12 @@ const threadMemoryPort: ThreadMemoryPort = {
  */
 export const getCopilotkitAgents = ({
   userId,
-  agentId = AGENT_KEYS.MANAGE_ASSISTANT,
   requestContext,
 }: GetCopilotkitAgentsInput) =>
   enableProcessorTripwireHandling(
     MastraAgent.getLocalAgents({
       mastra: runtimeMastra,
-      resourceId: getAgentResourceId(userId, agentId),
+      resourceId: getAgentResourceId(userId, AGENT_KEYS.HOMESTAY_ASSISTANT),
       requestContext,
     }),
     threadMemoryPort,

@@ -2,10 +2,8 @@ import { CheckCircle2, CircleSlash, Clock3, XCircle } from "lucide-react";
 
 import { cn } from "@repo/utils";
 
-import {
-  HITL_DECISION_STATUS,
-  type HitlDecisionStatus,
-} from "@/features/booking/utils/hitl-decision-status";
+import { type HitlDecisionStatus } from "@/features/booking/utils";
+import { HITL_DECISION_STATUS } from "@/constants";
 
 const STATUS_META: Record<
   Exclude<HitlDecisionStatus, "pending">,

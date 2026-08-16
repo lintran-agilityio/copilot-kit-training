@@ -1,6 +1,3 @@
-import type { ModifyStayFields } from "@/mastra/booking/modify-stay-fields";
-import { isSameModifyStay } from "@/mastra/booking/modify-stay-fields";
-
 export type ModifyAvailabilityNextAction =
   | "CONFIRM_MODIFY_BOOKING"
   | "confirm_booking"
@@ -10,9 +7,8 @@ export type ResolveModifyAvailabilityNextActionInput = {
   available: boolean;
   guestsWithinCapacity: boolean;
   isModify: boolean;
-  candidate: ModifyStayFields;
-  /** Pre-change stay when known (pinned originals). */
-  original: ModifyStayFields | null;
+  /** True when the candidate stay equals the pre-change originals. */
+  stayUnchanged: boolean;
 };
 
 /**
@@ -23,10 +19,9 @@ export const resolveModifyAvailabilityNextAction = ({
   available,
   guestsWithinCapacity,
   isModify,
-  candidate,
-  original,
+  stayUnchanged,
 }: ResolveModifyAvailabilityNextActionInput): ModifyAvailabilityNextAction => {
-  if (isModify && original && isSameModifyStay(candidate, original)) {
+  if (isModify && stayUnchanged) {
     return "stop_booking";
   }
 

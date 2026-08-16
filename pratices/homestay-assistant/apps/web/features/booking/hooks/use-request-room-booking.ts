@@ -23,7 +23,7 @@ const BOOK_FLOW_KEY = "book-flow";
 export const useRequestRoomBooking = () => {
   const { user, isLoaded } = useUser();
   const { copilotkit } = useCopilotKit();
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const requestInFlightRef = useRef(false);
   const [isRequesting, setIsRequesting] = useState(false);
   const activeThreadIds = useThreadStore((state) => state.activeThreadIds);
@@ -42,7 +42,7 @@ export const useRequestRoomBooking = () => {
         return;
       }
 
-      const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
+      const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.HOMESTAY_ASSISTANT);
       const threadId =
         activeThreadIds[scopeKey] ?? createDraftThread(scopeKey);
 

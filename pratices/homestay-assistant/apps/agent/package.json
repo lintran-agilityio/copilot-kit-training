@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --import tsx --test src/mastra/booking/modify-stay-fields.test.ts src/mastra/booking/resolve-modify-availability-next-action.test.ts src/mastra/booking/resolve-selected-modify-booking.test.ts",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start"

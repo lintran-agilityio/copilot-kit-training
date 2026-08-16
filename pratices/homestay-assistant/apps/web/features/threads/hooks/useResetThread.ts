@@ -53,7 +53,7 @@ export const useResetThread = ({
         runtimeStop: threadId
           ? () =>
               requestRuntimeAgentStop({
-                runtimeUrl: AGENT_URLS.MANAGE_ASSISTANT,
+                runtimeUrl: AGENT_URLS.HOMESTAY_ASSISTANT,
                 agentId,
                 threadId,
                 headers: copilotkit.headers,
@@ -74,7 +74,7 @@ export const useResetThread = ({
 
     try {
       const response = await fetch(
-        `${AGENT_URLS.MANAGE_ASSISTANT}/threads/${encodeURIComponent(previousThreadId)}/archive`,
+        `${AGENT_URLS.HOMESTAY_ASSISTANT}/threads/${encodeURIComponent(previousThreadId)}/archive`,
         {
           method: "POST",
           credentials: "include",

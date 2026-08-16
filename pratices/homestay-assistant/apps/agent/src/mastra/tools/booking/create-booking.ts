@@ -12,6 +12,7 @@ import {
   readPinnedStay,
 } from "@/mastra/utils/resolve-pinned-stay";
 import {
+  commitIfNotAborted,
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
@@ -19,8 +20,13 @@ import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/utils/generic-
 
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE_BOOKING,
-  description:
-    `Create a confirmed room booking after confirm_booking returns confirmed: true. Use roomId, checkInDate, checkOutDate, and guests from the confirm_booking result. The confirm HITL card updates in place from this tool result (success or failure). ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT} The signed-in user is always taken from the server session — never pass a userId.`,
+  description: `
+    Create a new confirmed room booking after confirm_booking returns confirmed: true.
+      - Use roomId, checkInDate, checkOutDate, and guests from the confirm_booking result.
+      - ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT}
+      - The same confirm HITL card updates in place to success/failed — do not expect a separate success card.
+      - The signed-in user is always taken from the server session — never pass a userId.
+    `,
   inputSchema: createBookingInputSchema,
   outputSchema: bookingSchema,
   execute: async (params, context) => {
@@ -42,19 +48,17 @@ export const createBookingTool = createTool({
       REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY,
     );
 
-    // Side-effect: re-check immediately before committing the booking.
-    throwIfAborted(abortSignal);
-
-    const booking = await createBooking(
-      {
-        roomId,
-        checkInDate,
-        checkOutDate,
-        guests,
-        status: params.status ?? BookingStatus.CONFIRMED,
-      },
-      serviceContextFromTool(context),
+    return commitIfNotAborted(abortSignal, () =>
+      createBooking(
+        {
+          roomId,
+          checkInDate,
+          checkOutDate,
+          guests,
+          status: params.status ?? BookingStatus.CONFIRMED,
+        },
+        serviceContextFromTool(context),
+      ),
     );
-    return booking;
   },
 });

@@ -156,7 +156,7 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
   return (
     <CopilotKitProvider
       credentials="include"
-      runtimeUrl={AGENT_URLS.MANAGE_ASSISTANT}
+      runtimeUrl={AGENT_URLS.HOMESTAY_ASSISTANT}
       headers={headers}
       // Intelligence thread routes (/threads*) require REST transport.
       // Single-endpoint /info always reports threadEndpoints.list=false.

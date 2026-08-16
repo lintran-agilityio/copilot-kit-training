@@ -1,9 +1,9 @@
 import { ConversationItem } from "@/features/chat/components";
 import {
-  HITL_DECISION_STATUS,
   isHitlDecisionTerminal,
   type HitlDecisionStatus,
-} from "@/features/booking/utils/hitl-decision-status";
+} from "@/features/booking/utils";
+import { HITL_DECISION_STATUS } from "@/constants";
 
 type HitlDecisionUserMessageProps = {
   decisionStatus: HitlDecisionStatus;

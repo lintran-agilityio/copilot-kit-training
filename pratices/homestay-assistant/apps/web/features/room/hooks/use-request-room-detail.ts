@@ -20,7 +20,7 @@ type OpenRoomDetailArgs = {
 export const useRequestRoomDetail = () => {
   const { user, isLoaded } = useUser();
   const { copilotkit } = useCopilotKit();
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const activeThreadIds = useThreadStore((state) => state.activeThreadIds);
   const createDraftThread = useThreadStore((state) => state.createDraftThread);
   const setPendingOutboundMessage = useChatStore(
@@ -39,7 +39,7 @@ export const useRequestRoomDetail = () => {
 
       useHomestayAgentUiStore.getState().pushFocusedRoom(roomId);
 
-      const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.MANAGE_ASSISTANT);
+      const scopeKey = getAgentResourceId(user.id, AGENT_KEYS.HOMESTAY_ASSISTANT);
       const threadId =
         activeThreadIds[scopeKey] ?? createDraftThread(scopeKey);
       const message = buildActionPrompt({

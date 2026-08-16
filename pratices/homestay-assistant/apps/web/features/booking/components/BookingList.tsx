@@ -33,7 +33,7 @@ export const BookingList = ({
   compact = false,
   toolCallId,
 }: BookingListProps) => {
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const { isActionable } = useGenericUiInteraction(toolCallId);
   const cancelBooking = useCancelBooking();
   const modifyBooking = useModifyBooking();

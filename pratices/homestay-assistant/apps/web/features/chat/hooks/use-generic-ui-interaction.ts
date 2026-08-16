@@ -17,7 +17,7 @@ import {
  * Derived from the transcript turn boundary — not feature-specific state.
  */
 export const useGenericUiInteraction = (toolCallId?: string) => {
-  const { agent } = useAgent({ agentId: AGENT_KEYS.MANAGE_ASSISTANT });
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const interaction: GenericUiInteraction = resolveGenericUiInteraction(
     agent.messages,
     toolCallId,

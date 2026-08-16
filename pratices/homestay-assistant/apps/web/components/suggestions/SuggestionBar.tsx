@@ -43,7 +43,7 @@ const resolveOutboundPrompt = (prompt: string) => {
 
 export const SuggestionBar = ({
   suggestions,
-  agentId = AGENT_KEYS.MANAGE_ASSISTANT,
+  agentId = AGENT_KEYS.HOMESTAY_ASSISTANT,
   threadId,
 }: SuggestionBarProps) => {
   const { agent } = useAgent({

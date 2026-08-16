@@ -2,7 +2,7 @@ import { Mastra } from "@mastra/core/mastra";
 import { LibSQLStore } from "@mastra/libsql";
 import { AGENT_KEYS } from "@repo/constants";
 
-import { manageAgent } from "@/mastra/agents/manage-agent";
+import { homestayAssistant } from "@/mastra/agents/homestay-assistant";
 import { runtimeDbPath } from "@/mastra/db-paths";
 import {
   createMastraServerAuthConfig,
@@ -15,7 +15,7 @@ import {
  */
 export const runtimeMastra = new Mastra({
   agents: {
-    [AGENT_KEYS.MANAGE_ASSISTANT]: manageAgent,
+    [AGENT_KEYS.HOMESTAY_ASSISTANT]: homestayAssistant,
   },
   storage: new LibSQLStore({
     id: "mastra-runtime-storage",

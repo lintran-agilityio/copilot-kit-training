@@ -8,10 +8,10 @@ import {
 const joinSections = (...parts: string[]) => parts.join("\n\n");
 
 /**
- * Assembles the manage-agent system prompt from the intent playbook.
+ * Assembles the homestay-assistant system prompt from the intent playbook.
  * Section order is golden — do not reorder without a regression pass.
  */
-export const manageAgentPrompt = joinSections(
+export const homestayAssistantPrompt = joinSections(
   MANAGE_AGENT_INSTRUCTION_SECTIONS.ROLE,
   MANAGE_AGENT_INSTRUCTION_SECTIONS.CORE_PRINCIPLES,
   MANAGE_AGENT_INSTRUCTION_SECTIONS.LANGUAGE,
