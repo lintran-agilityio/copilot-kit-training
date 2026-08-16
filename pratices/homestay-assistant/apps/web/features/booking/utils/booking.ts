@@ -1,5 +1,5 @@
 import { BookingStatus } from "@repo/types";
-import { isTimeTodayOrLater, parseToolResult } from "@repo/utils";
+import { isTimeInFuture, isTimeTodayOrLater, parseToolResult } from "@repo/utils";
 import { CancelBookingResult, CheckRoomAvailabilityResult, CreateBookingResult, UpdateBookingResult } from "../types";
 import { BookingUnavailableReason } from "@repo/schemas";
 
@@ -137,6 +137,19 @@ export const isBookingCancellable = (status: string, checkOutDate: string) => {
   }
 
   return isTimeTodayOrLater(checkOutDate);
+};
+
+/**
+ * True only while the stay hasn't started yet. Once check-in arrives the
+ * stay is in progress (or over), so dates/guests can no longer be modified —
+ * cancellation ({@link isBookingCancellable}) is still allowed separately.
+ */
+export const isBookingModifiable = (status: string, checkInDate: string) => {
+  if (status.toLowerCase() === BookingStatus.CANCELLED) {
+    return false;
+  }
+
+  return isTimeInFuture(checkInDate);
 };
 
 /** Required fields for a cancel/modify disambiguation picker row. */

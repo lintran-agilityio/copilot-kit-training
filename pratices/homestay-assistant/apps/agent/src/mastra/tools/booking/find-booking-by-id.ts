@@ -23,13 +23,14 @@ export const findBookingByIdTool = createTool({
     Find the signed-in user's active booking(s) by booking ID.
       - Use when bookingId: is in the message — including [booking-cancel] / [booking-modify] from BookingCard clicks.
       - Pass the UUID after bookingId: — never the room name or roomId (a room can have multiple bookings).
-      - Returns bookings: [] when the booking is not found or not owned/active; result.room is included for MODIFY.
+      - Pass purpose: "modify" for MODIFY lookups — a booking whose check-in has already started comes back as bookings: [] with reason: "not_modifiable" so the edit form is never opened for it; reply that it can only be cancelled instead. Omit (or "cancel") for CANCEL lookups, which allow an already-started booking.
+      - Returns bookings: [] when the booking is not found, not owned/active, or (purpose: "modify") not modifiable; result.room is included for MODIFY.
     `,
   inputSchema: findBookingByIdInputSchema,
   outputSchema: findBookingByIdOutputSchema,
-  execute: async ({ bookingId }, context) => {
+  execute: async ({ bookingId, purpose }, context) => {
     throwIfAborted(context.abortSignal);
-console.log('bookingId==>', bookingId);
+
     // Prefer the id pinned by prepareStep from the modify picker / sole match.
     const pinnedBookingId = readPinnedBookingId(
       context.requestContext,
@@ -43,6 +44,6 @@ console.log('bookingId==>', bookingId);
 
     const id = sanitizeBookingId(pinnedBookingId ?? bookingId);
 
-    return await findBookingById(id, serviceContextFromTool(context));
+    return await findBookingById(id, serviceContextFromTool(context), purpose);
   },
 });

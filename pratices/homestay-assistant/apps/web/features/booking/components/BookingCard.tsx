@@ -15,7 +15,7 @@ import type { BookingResponse } from "@/features/booking/types/booking";
 import { FALLBACK_ROOM_IMAGE, resolveRoomImage } from "@/features/room/utils";
 import { cn, formatPrice, formatShortDateForDisplay } from "@repo/utils";
 import { Button } from "@/components/ui/button";
-import { isBookingCancellable } from "@/features/booking/utils";
+import { isBookingCancellable, isBookingModifiable } from "@/features/booking/utils";
 
 type BookingCardProps = {
   booking: BookingResponse;
@@ -42,8 +42,9 @@ export const BookingCard = ({
   );
 
   const isCancellable = isBookingCancellable(status, checkOutDate);
-  const canModify = isCancellable && !isAgentRunning;
-  const canCancel = canModify;
+  const canModify =
+    isCancellable && isBookingModifiable(status, checkInDate) && !isAgentRunning;
+  const canCancel = isCancellable && !isAgentRunning;
 
   const handleCancelBooking = () => {
     if (!room || !canCancel) return;

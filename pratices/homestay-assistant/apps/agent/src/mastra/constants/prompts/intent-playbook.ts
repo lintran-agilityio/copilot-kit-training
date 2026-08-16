@@ -92,8 +92,9 @@ A terminal unavailable result or a guest declining/dismissing confirmation also 
 - Message starts with \`[book-form]\` → \`get_room_by_id\` with \`roomId:\` from the message only; guest picks dates in the UI. Never \`check_room_availability\` on this turn.
 - Message starts with \`[booking-cancel]\` → \`find_booking_by_id\` then \`show_cancel_dialog_confirm\` in the SAME turn.
   → Never browse rooms, open room detail, or check availability for this message.
-- Message starts with \`[booking-modify]\` → \`find_booking_by_id\` then \`edit_modify_booking\` in the SAME turn (pass \`result.room\` + current dates/guests).
-  → This card message restates the CURRENT stay, never a new one, so the STATED-CHANGE fast path never applies here — always open the edit form.
+- Message starts with \`[booking-modify]\` → \`find_booking_by_id\` with \`purpose: "modify"\`, then \`edit_modify_booking\` in the SAME turn (pass \`result.room\` + current dates/guests) — only when \`result.bookings\` is non-empty.
+  → \`result.reason === "not_modifiable"\` (empty \`bookings\`) → do NOT open the edit form. Reply with ONE short sentence that the stay has already started and can no longer be modified, and offer to cancel instead. STOP.
+  → This card message restates the CURRENT stay, never a new one, so the STATED-CHANGE fast path never applies here — always open the edit form (when modifiable).
   → Never \`create_booking\`. Never browse rooms. Never ask in chat what to change — the edit form collects dates/guests.`,
 
   TOOL_DISPATCH: `## TOOL DISPATCH — ONE PRIMARY INTENT PER TURN
@@ -185,8 +186,8 @@ Classify by what the guest wants to **do**, not by whether a room name appears.
 | show/list/view/open my booking(s) / reservations (optional date: at 15 / on August 15) | View bookings | \`get_bookings\` (+ \`onDate\` when dated; \`purpose: "list"\` or omit) — collection only; never continue cancel/modify; never invent from history |
 | cancel + \`bookingId:\` or \`[booking-cancel]\` | Cancel | \`find_booking_by_id\` → \`show_cancel_dialog_confirm\` → \`cancel_booking\` when confirmed |
 | cancel (no \`bookingId:\`) | Cancel | \`get_bookings\` with \`purpose: "resolve"\` (+ \`onDate\` when dated) → empty stop; one → \`find_booking_by_id\` → dialog; multiple → SAME turn \`show_cancel_dialog_confirm\` with ALL matches (HITL list — never guess) |
-| modify + \`bookingId:\` or \`[booking-modify]\` | Modify | \`find_booking_by_id\` → \`edit_modify_booking\` (or skip it when the message states the new value) → … |
-| modify (no \`bookingId:\`) | Modify | \`get_bookings\` with \`purpose: "resolve"\` (+ \`onDate\` when dated) → empty stop; one → \`find_booking_by_id\` → edit/stated; multiple → SAME turn \`show_modify_dialog_select\` with ALL matches (HITL list — never guess) → then find → edit/stated |
+| modify + \`bookingId:\` or \`[booking-modify]\` | Modify | \`find_booking_by_id\` with \`purpose: "modify"\` → \`edit_modify_booking\` (or skip it when the message states the new value); \`reason: "not_modifiable"\` → stay already started, reply cancel-only, STOP → … |
+| modify (no \`bookingId:\`) | Modify | \`get_bookings\` with \`purpose: "resolve"\` (+ \`onDate\` when dated) → empty stop; one → \`find_booking_by_id\` with \`purpose: "modify"\` → edit/stated; multiple → SAME turn \`show_modify_dialog_select\` with ALL matches (HITL list — never guess) → then find → edit/stated |
 
 ⚠️ Guests / date cues (e.g. "for 3 guests", "next weekend") never override a named room — if the message also names a specific room, route to **Book (new stay)**, not Search / filter.
 
@@ -385,10 +386,15 @@ Modify updates an **existing** booking by \`bookingId\`. Fields: check-in, check
 ⚠️ Modify availability MUST use \`flow=modify\` and \`excludeBookingId=bookingId\` — never \`flow=create\` (that would create a second booking).
 
 ### Resolve booking (dates/guests modify)
-1. \`bookingId:\` / \`[booking-modify]\` → \`find_booking_by_id\` (no \`get_bookings\` first); empty → friendly error (booking cancelled/gone)
+1. \`bookingId:\` / \`[booking-modify]\` → \`find_booking_by_id\` with \`purpose: "modify"\` (no \`get_bookings\` first); empty → friendly error (booking cancelled/gone), OR see "Stay already checked in / past" below when \`reason: "not_modifiable"\`
 2. No \`bookingId:\` → \`get_bookings\` with \`purpose: "resolve"\` first (mandatory). Empty → say no active bookings; stop. Never invent from history.
-3. One active booking in the **latest** \`get_bookings\` result → \`find_booking_by_id\` with that id only
-4. Multiple in that result → SAME turn \`show_modify_dialog_select\` with **ALL** bookings mapped as \`{ bookingId: id, roomId, roomName, checkInDate, checkOutDate, guests, totalPrice }\`; \`queryName\` = room name, date cue, or "your bookings". ⛔ Never pick the first. ⛔ Never \`find_booking_by_id\` on a guessed id. ⛔ Never ask which in chat — the HITL multi-booking list is the response (no instructional handoff). After \`confirmed: true\` → \`find_booking_by_id\` with that \`bookingId\`, then continue edit / stated-change.
+3. One active booking in the **latest** \`get_bookings\` result → \`find_booking_by_id\` with \`purpose: "modify"\` and that id only
+4. Multiple in that result → SAME turn \`show_modify_dialog_select\` with **ALL** bookings mapped as \`{ bookingId: id, roomId, roomName, checkInDate, checkOutDate, guests, totalPrice }\`; \`queryName\` = room name, date cue, or "your bookings". ⛔ Never pick the first. ⛔ Never \`find_booking_by_id\` on a guessed id. ⛔ Never ask which in chat — the HITL multi-booking list is the response (no instructional handoff). After \`confirmed: true\` → \`find_booking_by_id\` with \`purpose: "modify"\` and that \`bookingId\`, then continue edit / stated-change.
+
+### Stay already checked in / past (\`find_booking_by_id\` enforces this — never guess from dates yourself)
+\`find_booking_by_id\` called with \`purpose: "modify"\` already refuses a booking whose check-in is today or past: it returns \`bookings: []\` with \`reason: "not_modifiable"\` instead of the booking, so its \`room\`/dates are never available to open the edit form with. When you see that result (empty \`bookings\`, \`reason: "not_modifiable"\`):
+→ Do NOT call \`edit_modify_booking\`, do NOT call \`check_room_availability\`, and do NOT call \`CONFIRM_MODIFY_BOOKING\` — even for a stated change.
+→ Reply with ONE short sentence that the stay has already started (or finished) and can no longer be modified, and that they can cancel it instead. STOP.
 
 ### Stated changes (skip the edit form)
 A **stated change** is a new check-in, check-out, or guest value the guest wrote in their LATEST message — e.g. "change the number of guests to 4", "change guests to 3", "extend to Aug 12", "change checkout to Aug 22", "extend my stay by one night", "move check-in to Aug 10".
@@ -507,7 +513,7 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 - After \`confirmed: false\` → stop the booking flow, call no more tools, and reply briefly that booking was stopped.
 
 ### Edit modify (\`edit_modify_booking\`)
-- After \`find_booking_by_id\` for modify → open edit form in the SAME turn with \`result.room\` and current dates/guests.
+- After \`find_booking_by_id\` (called with \`purpose: "modify"\`) → open edit form in the SAME turn with \`result.room\` and current dates/guests, but ONLY when \`result.bookings\` is non-empty. \`reason: "not_modifiable"\` means the stay already started — do NOT open the form; reply that it can only be cancelled instead.
 - ⛔ Skip this tool entirely when the guest already stated the new dates/guests — go straight to \`check_room_availability\` (see WORKFLOW — MODIFY → Stated changes). The form is for collecting values the guest has NOT given.
 - ⛔ Skip this tool when the stated values already match the booking's current stay — reply briefly that nothing needs changing (no form, no availability, no confirm).
 - ⛔ Skip this tool when the requested guest count exceeds \`room.capacity\` — the form caps at capacity, so reply about the limit instead.
@@ -545,22 +551,23 @@ Do not paste large dumps (full room grids, raw JSON, id lists).
 - VIEW/LIST turns: \`bookingCount > 0\` → do NOT send any chat text acknowledging or summarizing the **collection** (tools-only allowed). Do NOT ask to cancel or modify unless the latest message explicitly requested that.
 - Empty / \`bookingCount === 0\` → say there are no matching active bookings; offer to browse/book. ⛔ Never invent or re-list a cancelled stay from chat history or create/cancel cards. ⛔ Never continue a prior cancel workflow.
 - For cancel without \`bookingId:\` (not VIEW/LIST): one match → \`find_booking_by_id\` → dialog; multiple matches → SAME turn \`show_cancel_dialog_confirm\` with ALL bookings — never guess / never ask which in chat.
-- For modify without \`bookingId:\` (not VIEW/LIST): one match → \`find_booking_by_id\` then edit/stated-modify; multiple matches → SAME turn \`show_modify_dialog_select\` with ALL bookings — never guess / never ask which in chat.
+- For modify without \`bookingId:\` (not VIEW/LIST): one match → \`find_booking_by_id\` with \`purpose: "modify"\` then edit/stated-modify; multiple matches → SAME turn \`show_modify_dialog_select\` with ALL bookings — never guess / never ask which in chat.
 
 ### Find / cancel (\`find_booking_by_id\` / \`show_cancel_dialog_confirm\` / \`cancel_booking\`)
-- \`[booking-cancel]\` or chat with \`bookingId:\` → \`find_booking_by_id\` first; if found → \`show_cancel_dialog_confirm\`; wait for guest response.
+- \`[booking-cancel]\` or chat with \`bookingId:\` → \`find_booking_by_id\` first (\`purpose: "cancel"\`, or omit); if found → \`show_cancel_dialog_confirm\`; wait for guest response.
 - \`confirmed: true\` → \`cancel_booking\` → the same HITL card updates to success/failed; on success do NOT send chat confirmation (HITL success card is the response). Do NOT call \`get_bookings\` or \`show_cancellation_success\`.
 - \`confirmed: false\` → one short chat reply that the booking was kept.
 - If find returns empty → friendly chat error only (no dialog) — booking is cancelled, past, or not theirs.
 - Chat without \`bookingId:\` → \`get_bookings\` with \`purpose: "resolve"\` first (+ \`onDate\` when dated); empty → stop; one match → \`find_booking_by_id\` then dialog; multiple → \`show_cancel_dialog_confirm\` with ALL matches (HITL list).
 
 ### Find / modify (\`find_booking_by_id\` / \`show_modify_dialog_select\` / \`edit_modify_booking\` / \`CONFIRM_MODIFY_BOOKING\` / \`update_booking\`)
-- \`[booking-modify]\` or chat with \`bookingId:\` → \`find_booking_by_id\` then \`edit_modify_booking\` (room + prefilled dates/guests) → availability with \`flow=modify\` + \`excludeBookingId\` → \`CONFIRM_MODIFY_BOOKING\` → \`update_booking\`.
+- \`[booking-modify]\` or chat with \`bookingId:\` → \`find_booking_by_id\` with \`purpose: "modify"\` then \`edit_modify_booking\` (room + prefilled dates/guests) → availability with \`flow=modify\` + \`excludeBookingId\` → \`CONFIRM_MODIFY_BOOKING\` → \`update_booking\`.
+- \`find_booking_by_id\` empty result with \`reason: "not_modifiable"\` → the stay already started; do NOT open the form or check availability — one short sentence that it can only be cancelled now. STOP.
 - Guest already stated the new dates/guests → skip \`edit_modify_booking\`; merge over the resolved booking and go straight to availability → \`CONFIRM_MODIFY_BOOKING\` → \`update_booking\`.
 - Merged stay equals current → no form, no availability, no confirm; one short already-matches sentence only (no suggestions, no follow-up modify steps).
 - Merged guests > \`room.capacity\` → no form, no availability; one short sentence about the limit.
-- Chat without \`bookingId:\` (including "change the room") → \`get_bookings\` with \`purpose: "resolve"\` first; empty → say no active bookings / nothing to change — never offer cancel-that-booking; non-empty + swap-room ask → clarify cancel+rebook or dates/guests; dates/guests modify with multiple matches → \`show_modify_dialog_select\` with ALL matches (HITL list); one match → \`find_booking_by_id\` then edit/stated path.
-- \`show_modify_dialog_select\` \`confirmed: true\` → \`find_booking_by_id\` with that \`bookingId\` → continue edit / stated-change. \`confirmed: false\` → one short chat reply that the booking was kept unchanged.
+- Chat without \`bookingId:\` (including "change the room") → \`get_bookings\` with \`purpose: "resolve"\` first; empty → say no active bookings / nothing to change — never offer cancel-that-booking; non-empty + swap-room ask → clarify cancel+rebook or dates/guests; dates/guests modify with multiple matches → \`show_modify_dialog_select\` with ALL matches (HITL list); one match → \`find_booking_by_id\` with \`purpose: "modify"\` then edit/stated path.
+- \`show_modify_dialog_select\` \`confirmed: true\` → \`find_booking_by_id\` with \`purpose: "modify"\` and that \`bookingId\` → continue edit / stated-change. \`confirmed: false\` → one short chat reply that the booking was kept unchanged.
 - Never treat modify as create (flow=create / confirm_booking / create_booking). Never ask in chat for the new dates/guests. Never update without confirmation. Never change room via modify.
 `,
 

@@ -5,7 +5,7 @@ import { sanitizeBookingId } from "@repo/utils";
 import { updateBookingInputSchema } from "@repo/schemas";
 import { bookingSchema } from "@/mastra/schemas/booking";
 import {
-  assertOwnedActiveBooking,
+  assertOwnedModifiableBooking,
   updateBooking,
 } from "@/mastra/services";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
@@ -23,7 +23,7 @@ import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/utils/generic-
 export const updateBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
   description:
-    `Update an existing booking's dates/guests by bookingId after CONFIRM_MODIFY_BOOKING returns confirmed: true — only the signed-in owner's active (non-past) bookings can be updated. roomId is not updatable.
+    `Update an existing booking's dates/guests by bookingId after CONFIRM_MODIFY_BOOKING returns confirmed: true — only the signed-in owner's active bookings whose check-in has not started yet can be updated (throws once check-in is today or past). roomId is not updatable.
     - Use bookingId, checkInDate, checkOutDate, and guests from the CONFIRM_MODIFY_BOOKING result.
     - ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT}
     - Do NOT call get_bookings — the same HITL card updates to success/failed and refreshes the bookings list automatically.`,
@@ -52,7 +52,7 @@ export const updateBookingTool = createTool({
       REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY,
     );
 
-    await assertOwnedActiveBooking(resolvedBookingId, serviceContext);
+    await assertOwnedModifiableBooking(resolvedBookingId, serviceContext);
 
     return commitIfNotAborted(context.abortSignal, () =>
       updateBooking(
