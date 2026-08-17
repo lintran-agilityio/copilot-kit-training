@@ -1,4 +1,6 @@
-type ChatMessageRole = "user" | "assistant" | "reasoning" | string;
+import { MESSAGE_ROLE, type MessageRole } from "@repo/constants";
+
+type ChatMessageRole = MessageRole | "reasoning" | string;
 
 type ChatMessageLike = {
   id: string;
@@ -11,18 +13,18 @@ const DEFAULT_TOP_SPACING = "pt-4";
 const WIDGET_TOP_SPACING = "pt-3";
 
 const isSameSenderGroup = (
-  currentRole: "user" | "assistant",
+  currentRole: Extract<MessageRole, "user" | "assistant">,
   previousRole: ChatMessageRole | undefined,
 ) => {
   if (!previousRole) {
     return false;
   }
 
-  if (currentRole === "user") {
-    return previousRole === "user";
+  if (currentRole === MESSAGE_ROLE.USER) {
+    return previousRole === MESSAGE_ROLE.USER;
   }
 
-  return previousRole === "assistant" || previousRole === "reasoning";
+  return previousRole === MESSAGE_ROLE.ASSISTANT || previousRole === "reasoning";
 };
 
 type MessageTopSpacingOptions = {
@@ -33,7 +35,7 @@ type MessageTopSpacingOptions = {
 export const getMessageTopSpacing = (
   messages: ChatMessageLike[] | undefined,
   messageId: string,
-  role: "user" | "assistant",
+  role: Extract<MessageRole, "user" | "assistant">,
   options?: MessageTopSpacingOptions,
 ) => {
   if (!messages?.length) {

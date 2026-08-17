@@ -1,3 +1,5 @@
+import { MESSAGE_ROLE } from "@repo/constants";
+
 // Features
 import { CHAT_ICON_STATUS } from "@/features/chat/constants";
 import {
@@ -50,7 +52,7 @@ const isResponseToHiddenPrompt = (
   }
 
   const previousMessage = messages[index - 1];
-  if (previousMessage?.role !== "user") {
+  if (previousMessage?.role !== MESSAGE_ROLE.USER) {
     return false;
   }
 
@@ -68,7 +70,7 @@ export const isCountableAssistantMessage = (
   message: ChatIconMessage,
   messages: ChatIconMessage[],
 ) => {
-  if (message.role !== "assistant") {
+  if (message.role !== MESSAGE_ROLE.ASSISTANT) {
     return false;
   }
 
@@ -112,11 +114,11 @@ export const hasActiveToolProcessing = (messages: ChatIconMessage[]) => {
     return false;
   }
 
-  if (lastMessage.role === "tool") {
+  if (lastMessage.role === MESSAGE_ROLE.TOOL) {
     return true;
   }
 
-  if (lastMessage.role !== "assistant") {
+  if (lastMessage.role !== MESSAGE_ROLE.ASSISTANT) {
     return false;
   }
 

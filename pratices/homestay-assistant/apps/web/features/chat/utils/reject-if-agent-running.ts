@@ -1,5 +1,5 @@
 import { useChatStore } from "@/features/chat/stores/chat-store";
-import { resolveAgentBusyMessage } from "@/features/chat/utils/agent-busy";
+import { resolveAgentBusyMessage } from "@/features/chat/utils";
 
 /**
  * Blocks a new agent request while a run is in flight and records the

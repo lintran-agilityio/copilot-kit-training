@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Intent playbook — LLM instruction sections for homestay-assistant.
  *
  * Ownership:

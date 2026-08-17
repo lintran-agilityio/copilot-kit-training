@@ -3,6 +3,7 @@ import type {
   ProcessLLMRequestResult,
   Processor,
 } from "@mastra/core/processors";
+import { MESSAGE_ROLE } from "@repo/constants";
 
 type LlmPrompt = ProcessLLMRequestArgs["prompt"];
 type LlmMessage = LlmPrompt[number];
@@ -49,7 +50,10 @@ export class DedupeToolCallsProcessor implements Processor {
     let changed = false;
 
     for (const message of prompt) {
-      if (message.role !== "assistant" && message.role !== "tool") {
+      if (
+        message.role !== MESSAGE_ROLE.ASSISTANT &&
+        message.role !== MESSAGE_ROLE.TOOL
+      ) {
         deduped.push(message);
         continue;
       }

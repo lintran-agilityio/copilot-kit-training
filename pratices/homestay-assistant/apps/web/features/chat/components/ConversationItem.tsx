@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@repo/utils";
+import { MESSAGE_ROLE, type MessageRole } from "@repo/constants";
 
 type ConversationItemProps = {
   children: ReactNode;
-  role: "user" | "assistant";
+  role: Extract<MessageRole, "user" | "assistant">;
   className?: string;
   /**
    * Optional banner above the bubble body (e.g. blocked-message notice).
@@ -24,7 +25,7 @@ export const ConversationItem = ({
   className,
   banner,
 }: ConversationItemProps) => {
-  const isUser = role === "user";
+  const isUser = role === MESSAGE_ROLE.USER;
 
   return (
     <div

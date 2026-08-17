@@ -1,7 +1,7 @@
 import type { ProcessInputStepArgs } from "@mastra/core/processors";
 import type { RequestContext } from "@mastra/core/request-context";
 
-import { TOOL_KEYS } from "@repo/constants";
+import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import { addDaysYmd, parseBookingFormMessageHint } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
@@ -57,7 +57,7 @@ export const resolveContinuityStayHint = (
       const parsed = parseFindRoomOutput(invocation.result);
       if (
         !parsed?.date ||
-        parsed.purpose === "book_resolve" ||
+        parsed.purpose === TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE ||
         !YMD_PATTERN.test(parsed.date)
       ) {
         continue;

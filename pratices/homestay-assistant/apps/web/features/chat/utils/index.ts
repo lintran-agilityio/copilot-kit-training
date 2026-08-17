@@ -7,7 +7,7 @@ export * from "./scroll";
 export * from "./normalize-messages";
 export * from "./blocked-messages";
 export * from "./tool-card-suppression";
+export * from "./has-later-tool-call-in-turn";
 export * from "./suggestions";
 export * from "./generic-ui-interaction";
-export * from "./agent-busy";
 export * from "./reject-if-agent-running";

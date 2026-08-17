@@ -10,19 +10,20 @@ import {
   AGENT_KEYS,
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
+  MESSAGE_ROLE,
 } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
 import { ROUTES } from "@/constants";
-import { prepareBookingFormMessage } from "@/features/booking/utils/prepare-booking-form-message";
+import { prepareBookingFormMessage } from "@/features/booking/utils";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
-import { runAgentSafely } from "@/features/chat/utils/agent-run";
-import { rejectIfAgentRunning } from "@/features/chat/utils/reject-if-agent-running";
-import { ROOM_DETAIL_ENTRY_MODE } from "@/features/room/constants/room-detail";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
+import { runAgentSafely } from "@/features/chat/utils/agent-run";
+import { rejectIfAgentRunning } from "@/features/chat/utils";
+import { ROOM_DETAIL_ENTRY_MODE } from "@/features/room/constants/room-detail";
 
 const BOOK_FLOW_KEY = "book-flow";
 
@@ -93,7 +94,7 @@ export const useRequestRoomBookingForm = () => {
 
         agent.addMessage({
           id: crypto.randomUUID(),
-          role: "user",
+          role: MESSAGE_ROLE.USER,
           content: message,
         });
 

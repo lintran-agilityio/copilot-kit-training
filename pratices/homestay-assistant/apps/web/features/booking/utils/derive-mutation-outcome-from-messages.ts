@@ -1,4 +1,4 @@
-import { TOOL_KEYS } from "@repo/constants";
+import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
 import { parseToolResult } from "@repo/utils";
 
 import { BOOKING_MUTATION_PHASE } from "@/features/booking/constants";
@@ -71,7 +71,8 @@ const readToolResultContent = (
   toolCallId: string,
 ): string | null => {
   const toolMessage = messages.find(
-    (message) => message.role === "tool" && message.toolCallId === toolCallId,
+    (message) =>
+      message.role === MESSAGE_ROLE.TOOL && message.toolCallId === toolCallId,
   );
 
   if (!toolMessage || toolMessage.content == null) {
@@ -100,7 +101,7 @@ const collectMutationToolHits = (
   const hits: MutationToolHit[] = [];
 
   for (const message of messages) {
-    if (message.role !== "assistant") {
+    if (message.role !== MESSAGE_ROLE.ASSISTANT) {
       continue;
     }
 

@@ -2,7 +2,7 @@ import type { BookingPickerCopy } from "@/features/booking/constants";
 import { type HitlDecisionStatus } from "./hitl-status";
 import type { ConfirmModifyBookingArgs, ModifyBookingPickerItem } from "@repo/schemas";
 import { parseToolResult } from "@repo/utils";
-import { TOOL_KEYS } from "@repo/constants";
+import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
 import type {
   ModifyStaySnapshot,
   PendingModifyStay,
@@ -116,53 +116,10 @@ const readToolResultContent = (
   toolCallId: string,
 ): MessageLike["content"] => {
   const toolMessage = messages.find(
-    (message) => message.role === "tool" && message.toolCallId === toolCallId,
+    (message) =>
+      message.role === MESSAGE_ROLE.TOOL && message.toolCallId === toolCallId,
   );
   return toolMessage?.content ?? null;
-};
-
-/**
- * True when another tool ran later in the same turn (before the next user
- * message) after the given tool call. A guest-facing show/list answer is
- * always the LAST tool call of its turn; a resolve-style lookup for
- * cancel/modify is always followed by more tool activity (find_booking_by_id,
- * a picker, a confirm dialog, ...). Used as a determinism fallback so the
- * get_bookings list card stays hidden even if a call forgot purpose:"resolve".
- */
-export const hasLaterToolCallInTurn = (
-  messages: MessageLike[] | undefined,
-  toolCallId: string | undefined,
-): boolean => {
-  if (!messages?.length || !toolCallId) {
-    return false;
-  }
-
-  const callIndex = messages.findIndex(
-    (message) =>
-      message.role === "assistant" &&
-      (message.toolCalls ?? []).some((call) => call.id === toolCallId),
-  );
-
-  if (callIndex === -1) {
-    return false;
-  }
-
-  const ownMessage = messages[callIndex];
-  if ((ownMessage?.toolCalls ?? []).length > 1) {
-    return true;
-  }
-
-  for (let index = callIndex + 1; index < messages.length; index += 1) {
-    const message = messages[index];
-    if (message?.role === "user") {
-      return false;
-    }
-    if (message?.role === "assistant" && (message.toolCalls ?? []).length > 0) {
-      return true;
-    }
-  }
-
-  return false;
 };
 
 /**
@@ -187,7 +144,7 @@ export const resolveModifyPickerBookingsFromMessages = (
 
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message?.role !== "assistant") {
+    if (message?.role !== MESSAGE_ROLE.ASSISTANT) {
       continue;
     }
 

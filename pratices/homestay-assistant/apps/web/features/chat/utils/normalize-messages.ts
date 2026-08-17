@@ -1,3 +1,4 @@
+import { MESSAGE_ROLE } from "@repo/constants";
 import type { MessageLike, ToolCallLike } from "@/features/chat/types";
 
 type CopilotKitToolCall = {
@@ -155,7 +156,7 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
   const candidate = message as MessageLike & Record<string, unknown>;
   const rawToolCalls = candidate.toolCalls;
 
-  if (candidate.role !== "assistant" || !Array.isArray(rawToolCalls)) {
+  if (candidate.role !== MESSAGE_ROLE.ASSISTANT || !Array.isArray(rawToolCalls)) {
     return message;
   }
 
@@ -277,7 +278,10 @@ export const dedupeMessagesById = <
 
     const existing = result[existingIndex]!;
 
-    if (message.role === "assistant" && existing.role === "assistant") {
+    if (
+      message.role === MESSAGE_ROLE.ASSISTANT &&
+      existing.role === MESSAGE_ROLE.ASSISTANT
+    ) {
       result[existingIndex] = mergeAssistantDuplicates(
         existing as TMessage & { id: string },
         message as TMessage & { id: string },
@@ -314,8 +318,8 @@ export const collapseConsecutiveIdenticalAssistants = <
     const previous = result.at(-1);
 
     if (
-      previous?.role === "assistant" &&
-      message.role === "assistant" &&
+      previous?.role === MESSAGE_ROLE.ASSISTANT &&
+      message.role === MESSAGE_ROLE.ASSISTANT &&
       !hasToolCalls(previous) &&
       !hasToolCalls(message)
     ) {
@@ -373,7 +377,10 @@ export const mergeHydratedMessages = <
       continue;
     }
 
-    if (message.role === "assistant" && existing.role === "assistant") {
+    if (
+      message.role === MESSAGE_ROLE.ASSISTANT &&
+      existing.role === MESSAGE_ROLE.ASSISTANT
+    ) {
       byId.set(message.id, mergeAssistantDuplicates(existing, message));
       continue;
     }

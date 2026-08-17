@@ -3,37 +3,38 @@
 import { Award, CalendarCheck, Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { useRequestRoomBooking } from "@/features/booking/hooks/use-request-room-booking";
-import { useBooking } from "@/features/booking/hooks/use-booking";
-import { useReportHomestayFocusedRoom } from "@/features/chat/hooks/use-report-homestay-focused-room";
+import { useRequestRoomBooking, useBooking } from "@/features/booking/hooks";
+import { useReportHomestayFocusedRoom } from "@/features/chat/hooks";
+import { useRoomBookingEstimate } from "@/features/room/hooks";
 import { useArtifactStore } from "@/features/chat/stores/artifact-store";
+import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
+import { buildBookingStayMessage } from "@/features/booking/utils";
+import type { Room } from "@/features/room/types/room";
 import {
   ARTIFACT_STATUS,
   isArtifactLocked,
 } from "@/features/chat/types/artifact";
+
 import { Button } from "@/components/ui/button";
-import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
-import { RoomBookingDates } from "@/features/room/components/RoomBookingDates";
-import { RoomBookingEstimatedTotal } from "@/features/room/components/RoomBookingEstimatedTotal";
-import { RoomBookingGuests } from "@/features/room/components/RoomBookingGuests";
-import { RoomBookingPricePerNight } from "@/features/room/components/RoomBookingPricePerNight";
-import { RoomBookingSummaryHeader } from "@/features/room/components/RoomBookingSummaryHeader";
+import { BookingStatusBadge } from "@/features/booking/components";
+import { RoomBookingDates } from "./RoomBookingDates";
+import { RoomBookingEstimatedTotal } from "./RoomBookingEstimatedTotal";
+import { RoomBookingGuests } from "./RoomBookingGuests";
+import { RoomBookingPricePerNight } from "./RoomBookingPricePerNight";
+import { RoomBookingSummaryHeader } from "./RoomBookingSummaryHeader";
 import {
   RoomDetailAmenityHighlights,
   RoomDetailQuickStats,
-} from "@/features/room/components/RoomDetailHighlights";
-import { RoomDetailRating } from "@/features/room/components/RoomDetailRating";
-import { RoomImageGallery } from "@/features/room/components/RoomImageGallery";
+} from "./RoomDetailHighlights";
+import { RoomDetailRating } from "./RoomDetailRating";
+import { RoomImageGallery } from "./RoomImageGallery";
 import {
   ROOM_DETAIL_ENTRY_MODE,
   ROOM_DETAIL_VARIANT,
   type RoomDetailEntryMode,
   type RoomDetailVariant,
 } from "@/features/room/constants/room-detail";
-import { useRoomBookingEstimate } from "@/features/room/hooks";
-import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
-import type { Room } from "@/features/room/types/room";
-import { buildBookingStayMessage } from "@/features/booking/utils";
+
 import {
   addDays,
   startOfDay,

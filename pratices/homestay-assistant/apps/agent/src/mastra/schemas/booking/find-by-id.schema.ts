@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { roomSchema } from "@repo/schemas";
+import { FIND_BOOKING_BY_ID_PURPOSE_VALUES } from "@repo/constants";
 
 import { cancellationBookingSchema } from "./cancel.schema";
 
@@ -10,7 +11,7 @@ export const findBookingByIdInputSchema = z.object({
       "Booking ID (UUID) to look up — extract the value after bookingId: in [booking-cancel] / [booking-modify] messages (format: [booking-cancel|booking-modify] bookingId: <uuid>. …) or chat cancel/modify messages. Never pass the room name or roomId.",
     ),
   purpose: z
-    .enum(["cancel", "modify"])
+    .enum(FIND_BOOKING_BY_ID_PURPOSE_VALUES)
     .optional()
     .describe(
       '"cancel" (or omit) allows any active booking, including one already checked in. "modify" additionally requires the stay not to have started yet — a booking whose check-in is today or past comes back as bookings: [] with reason: "not_modifiable" so the edit form is never opened for it.',

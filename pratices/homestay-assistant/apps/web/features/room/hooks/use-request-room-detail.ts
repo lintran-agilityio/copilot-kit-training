@@ -4,7 +4,7 @@ import { useUser } from "@clerk/nextjs";
 import { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { useCallback } from "react";
 
-import { AGENT_KEYS } from "@repo/constants";
+import { AGENT_KEYS, MESSAGE_ROLE } from "@repo/constants";
 import { getAgentResourceId, buildActionPrompt } from "@repo/utils";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
@@ -55,7 +55,7 @@ export const useRequestRoomDetail = () => {
 
         agent.addMessage({
           id: crypto.randomUUID(),
-          role: "user",
+          role: MESSAGE_ROLE.USER,
           content: message,
         });
 

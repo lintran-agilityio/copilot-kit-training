@@ -8,8 +8,7 @@ import {
 
 import { cn } from "@repo/utils";
 import { useChatStore } from "@/features/chat/stores/chat-store";
-import { shouldBlockChatSendKeyDown } from "@/features/chat/utils/agent-busy";
-import { rejectIfAgentRunning } from "@/features/chat/utils/reject-if-agent-running";
+import { shouldBlockChatSendKeyDown, rejectIfAgentRunning } from "@/features/chat/utils";
 
 const ChatInputRunningContext = createContext(false);
 

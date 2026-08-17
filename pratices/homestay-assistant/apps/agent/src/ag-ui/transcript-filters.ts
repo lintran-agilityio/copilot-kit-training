@@ -1,4 +1,5 @@
 import { getCurrentTurn, isBlockedUserMessage } from "@repo/utils";
+import { MESSAGE_ROLE } from "@repo/constants";
 
 import type { AgUiMessage, AgUiMessageContent } from "./types";
 
@@ -7,7 +8,7 @@ export const trailingUserMessageId = (
 ): string | undefined => {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message?.role === "user" && typeof message.id === "string") {
+    if (message?.role === MESSAGE_ROLE.USER && typeof message.id === "string") {
       return message.id;
     }
   }
@@ -49,7 +50,7 @@ export const excludeResolvedToolCalls = <T extends AgUiMessage>(
   const filtered: T[] = [];
 
   for (const message of messages) {
-    if (message.role === "tool") {
+    if (message.role === MESSAGE_ROLE.TOOL) {
       if (message.toolCallId && resolvedToolCallIds.has(message.toolCallId)) {
         continue;
       }
@@ -58,7 +59,7 @@ export const excludeResolvedToolCalls = <T extends AgUiMessage>(
       continue;
     }
 
-    if (message.role !== "assistant" || !message.toolCalls?.length) {
+    if (message.role !== MESSAGE_ROLE.ASSISTANT || !message.toolCalls?.length) {
       filtered.push(message);
       continue;
     }
@@ -87,7 +88,7 @@ export const findLatestUnblockedUserMessageId = (messages: AgUiMessage[]) => {
     const message = messages[index];
 
     if (
-      message?.role === "user" &&
+      message?.role === MESSAGE_ROLE.USER &&
       typeof message.id === "string" &&
       !isBlockedUserMessage(message)
     ) {

@@ -2,13 +2,13 @@
  * Model-facing replyHint builders for Generic UI turns.
  * Kept free of path aliases so unit tests can import without the Mastra loader.
  */
+import {
+  TOOL_PURPOSE,
+  type FindRoomPurpose,
+  type GetBookingsPurpose,
+} from "@repo/constants";
 
-export type FindRoomReplyPurpose =
-  | "search"
-  | "recommend"
-  | "book_resolve"
-  | "resolve"
-  | undefined;
+export type FindRoomReplyPurpose = FindRoomPurpose | undefined;
 
 /**
  * Actionable Booking Form / Room Detail is the response — no instructional
@@ -29,7 +29,7 @@ export const buildFindRoomReplyHint = (
   matchCount: number,
   purpose: FindRoomReplyPurpose,
 ): string => {
-  if (purpose === "resolve") {
+  if (purpose === TOOL_PURPOSE.FIND_ROOM.RESOLVE) {
     if (matchCount === 0) {
       return "No room matched that name — Room List is suppressed. Reply with ONE short sentence that no room by that name exists; do NOT call get_bookings. Do NOT invent a roomId.";
     }
@@ -39,7 +39,7 @@ export const buildFindRoomReplyHint = (
     return `Multiple rooms matched that name (${matchCount}) — Room List is suppressed. Reply with ONE short sentence naming the matching rooms and asking which one they mean; do NOT call get_bookings until they pick.`;
   }
 
-  if (purpose === "book_resolve") {
+  if (purpose === TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE) {
     if (matchCount === 0) {
       return "No room matched that booking name. Reply with ONE short sentence that nothing matched; suggest a different room name. Do NOT invent rooms. Do NOT call check_room_availability.";
     }
@@ -68,7 +68,7 @@ export const buildFindRoomReplyHint = (
   return `Room cards are already rendered in chat — do NOT call find_room again this turn, do NOT call update_room_list. The room cards ARE the response: do NOT send any chat text at all (no acknowledgement like "I found ${matchCount} room(s)...", no room names, no numbered list, no room details). Tools-only is allowed for this turn.`;
 };
 
-export type GetBookingsReplyPurpose = "list" | "resolve" | undefined;
+export type GetBookingsReplyPurpose = GetBookingsPurpose | undefined;
 
 /**
  * Model-facing hint after get_bookings. purpose:"resolve" means the FE
@@ -79,7 +79,7 @@ export const buildGetBookingsReplyHint = (
   bookingCount: number,
   purpose: GetBookingsReplyPurpose,
 ): string => {
-  if (purpose === "resolve") {
+  if (purpose === TOOL_PURPOSE.GET_BOOKINGS.RESOLVE) {
     if (bookingCount === 0) {
       return "No active bookings matched — the booking-list card is suppressed. Reply with ONE short sentence that there are no matching active bookings. Do NOT invent one from chat history.";
     }

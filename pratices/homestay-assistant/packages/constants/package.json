@@ -20,6 +20,14 @@
       "types": "./dist/tool-keys.d.ts",
       "default": "./dist/tool-keys.js"
     },
+    "./tool-purposes": {
+      "types": "./dist/tool-purposes.d.ts",
+      "default": "./dist/tool-purposes.js"
+    },
+    "./message-roles": {
+      "types": "./dist/message-roles.d.ts",
+      "default": "./dist/message-roles.js"
+    },
     "./prompt-tags": {
       "types": "./dist/prompt-tags.d.ts",
       "default": "./dist/prompt-tags.js"

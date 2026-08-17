@@ -1,4 +1,4 @@
-import { TOOL_KEYS } from "@repo/constants";
+import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 
 import { asRecord } from "@/mastra/utils";
 
@@ -64,15 +64,18 @@ const isFindRoomResultWithMatches = (
   return (
     typeof matchCount === "number" &&
     matchCount > 0 &&
-    value.purpose !== "book_resolve" &&
-    value.purpose !== "resolve"
+    value.purpose !== TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE &&
+    value.purpose !== TOOL_PURPOSE.FIND_ROOM.RESOLVE
   );
 };
 
 /**
- * True when get_bookings returned bookings — the booking cards (VIEW/LIST) or
- * the HITL that follows (CANCEL/MODIFY disambiguation) is the response either way.
- * Empty results are excluded: the model still needs to say nothing matched.
+ * True when get_bookings returned bookings for a list/view turn — the booking
+ * cards (VIEW/LIST) or the HITL that follows (CANCEL/MODIFY disambiguation) is
+ * the response either way. purpose "resolve" is excluded: that call only
+ * resolves the target booking for cancel/modify/change-room and is followed by
+ * a chat reply, same as find_room's book_resolve/resolve exclusion above.
+ * Empty results are also excluded: the model still needs to say nothing matched.
  */
 const isGetBookingsResultWithMatches = (
   payload: ToolResultPayloadLike,
@@ -87,7 +90,11 @@ const isGetBookingsResultWithMatches = (
   }
 
   const bookingCount = value.bookingCount;
-  return typeof bookingCount === "number" && bookingCount > 0;
+  return (
+    typeof bookingCount === "number" &&
+    bookingCount > 0 &&
+    value.purpose !== TOOL_PURPOSE.GET_BOOKINGS.RESOLVE
+  );
 };
 
 const SUPPRESS_LIST_RESULTS_TEXT_STATE_KEY =

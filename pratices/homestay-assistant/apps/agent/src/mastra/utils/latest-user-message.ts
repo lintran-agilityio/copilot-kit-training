@@ -1,4 +1,5 @@
 import type { MastraDBMessage } from "@mastra/core/agent";
+import { MESSAGE_ROLE } from "@repo/constants";
 
 /** Concatenated text parts of a message, falling back to raw string content. */
 export const extractMessageText = (message: MastraDBMessage): string => {
@@ -26,7 +27,7 @@ export const findLatestUserMessage = (
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
 
-    if (message?.role === "user") {
+    if (message?.role === MESSAGE_ROLE.USER) {
       return message;
     }
   }

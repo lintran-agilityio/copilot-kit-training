@@ -3,11 +3,11 @@
 import { ToolCallStatus, useAgent } from "@copilotkit/react-core/v2";
 
 import { parseToolResult } from "@repo/utils";
-import { AGENT_KEYS } from "@repo/constants";
+import { AGENT_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import { RoomListSkeleton } from "@/components/common/RoomListSkeleton";
 import { EmbeddedWidget } from "@/features/chat/components";
 import { BookingList } from "@/features/booking/components/BookingList";
-import { hasLaterToolCallInTurn } from "@/features/booking/utils";
+import { hasLaterToolCallInTurn } from "@/features/chat/utils";
 import type { MessageLike } from "@/features/chat/types";
 import type {
   GetBookingsResult,
@@ -35,7 +35,7 @@ export const MyBookingsNotice = ({
   // resolved a target, never the guest-facing answer. Suppress skeleton and
   // card alike; the HITL that follows is the response.
   const suppressForResolve =
-    parameters?.purpose === "resolve" ||
+    parameters?.purpose === TOOL_PURPOSE.GET_BOOKINGS.RESOLVE ||
     hasLaterToolCallInTurn(
       agent.messages as MessageLike[] | undefined,
       toolCallId,
@@ -71,7 +71,10 @@ export const MyBookingsNotice = ({
     );
   }
 
-  if (suppressForResolve || (parsed.purpose ?? parameters?.purpose) === "resolve") {
+  if (
+    suppressForResolve ||
+    (parsed.purpose ?? parameters?.purpose) === TOOL_PURPOSE.GET_BOOKINGS.RESOLVE
+  ) {
     return null;
   }
 

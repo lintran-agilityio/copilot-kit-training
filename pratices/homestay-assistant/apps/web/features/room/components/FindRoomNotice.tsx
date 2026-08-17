@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ToolCallStatus } from "@copilotkit/react-core/v2";
+import { ToolCallStatus, useAgent } from "@copilotkit/react-core/v2";
 
 import { parseToolResult } from "@repo/utils";
-import { RoomListSkeleton } from "@/components/common/RoomListSkeleton";
+import { AGENT_KEYS, TOOL_PURPOSE } from "@repo/constants";
+import { hasLaterToolCallInTurn } from "@/features/chat/utils";
+import type { MessageLike } from "@/features/chat/types";
+import { RoomListSkeleton } from "@/components/common";
 import { EmbeddedWidget } from "@/features/chat/components";
-import { ListRoomPreview } from "@/features/room/components/ListRoomPreview";
+import { ListRoomPreview } from "@/features/room/components";
 import type {
   FindRoomResult,
   FindRoomToolProps,
@@ -60,16 +63,15 @@ const getFindRoomToolError = (
 };
 
 /**
- * True when Room List should stay hidden: BOOK name-resolve skips it only on
- * exactly one match, while an internal cancel/modify room lookup ("resolve")
- * never renders it — that flow only needs the roomId, not a picker card.
- * FIND/RECOMMEND always show the list when matches exist.
+ * True when Room List should stay hidden for a BOOK name-resolve: skipped
+ * only on exactly one match. FIND/RECOMMEND always show the list when
+ * matches exist. purpose:"resolve" (internal cancel/modify room lookup) is
+ * handled separately by suppressForResolve below.
  */
 const shouldSuppressRoomList = (
   purpose: FindRoomResult["purpose"] | undefined,
   roomCount: number,
-) =>
-  (purpose === "book_resolve" && roomCount === 1) || purpose === "resolve";
+) => purpose === TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE && roomCount === 1;
 
 /**
  * Renders find_room tool output in chat: skeleton while loading, room cards when done.
@@ -86,6 +88,7 @@ export const FindRoomNotice = ({
   toolCallId,
 }: FindRoomToolProps) => {
   const lastMarkedKeyRef = useRef<string | null>(null);
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
 
   const toolError =
     status === ToolCallStatus.Complete ? getFindRoomToolError(result) : null;
@@ -97,10 +100,25 @@ export const FindRoomNotice = ({
   const purpose = parsed?.purpose ?? parameters?.purpose;
   const title = parsed ? buildFindRoomTitle(parsed) : "Room results";
   const roomIdsKey = rooms.map((room) => room.id).join(",");
-  const suppressList = shouldSuppressRoomList(purpose, rooms.length);
+
+  // purpose:"resolve" — internal cancel/modify room-name lookup, not a
+  // guest-facing FIND/RECOMMEND call. Also suppress when another tool ran
+  // later in the same turn (get_bookings, a picker, a confirm dialog, ...)
+  // even if the call forgot purpose:"resolve" — mirrors MyBookingsNotice's
+  // fallback for the analogous get_bookings risk.
+  const suppressForResolve =
+    purpose === TOOL_PURPOSE.FIND_ROOM.RESOLVE ||
+    hasLaterToolCallInTurn(
+      agent.messages as MessageLike[] | undefined,
+      toolCallId,
+    );
+
+  const suppressList =
+    suppressForResolve || shouldSuppressRoomList(purpose, rooms.length);
   // book_resolve/resolve never show a Room List — avoid the skeleton flash while loading.
   const suppressLoadingSkeleton =
-    parameters?.purpose === "book_resolve" || parameters?.purpose === "resolve";
+    parameters?.purpose === TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE ||
+    suppressForResolve;
 
   useEffect(() => {
     if (status !== ToolCallStatus.Complete || !rooms.length || suppressList) {
@@ -143,16 +161,16 @@ export const FindRoomNotice = ({
     );
   }
 
+  if (suppressList) {
+    return null;
+  }
+
   if (!rooms.length) {
     return (
       <EmbeddedWidget className="px-3.5 py-3 text-zinc-400">
         No rooms matched that search.
       </EmbeddedWidget>
     );
-  }
-
-  if (suppressList) {
-    return null;
   }
 
   return (

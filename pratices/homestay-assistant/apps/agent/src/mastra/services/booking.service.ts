@@ -13,7 +13,11 @@ import {
   type Booking,
   type FindBookingByIdOutput,
 } from "@/mastra/schemas/booking";
-import { ROUTES } from "@repo/constants";
+import {
+  ROUTES,
+  TOOL_PURPOSE,
+  type FindBookingByIdPurpose,
+} from "@repo/constants";
 import { get, post, del, update, assertClerkTokenForApi } from "@/mastra/services/common";
 import type { RequestContext } from "@mastra/core/request-context";
 import { getRoom } from "@/mastra/services/rooms.service";
@@ -202,8 +206,6 @@ export const assertOwnedModifiableBooking = async (
   return booking;
 };
 
-export type FindBookingByIdPurpose = "cancel" | "modify";
-
 /**
  * Look up a single owned booking. `purpose: "modify"` additionally requires
  * the stay not to have started yet — an already-checked-in booking comes
@@ -213,7 +215,7 @@ export type FindBookingByIdPurpose = "cancel" | "modify";
 export const findBookingById = async (
   bookingId: string,
   serviceContext?: ServiceContext,
-  purpose: FindBookingByIdPurpose = "cancel",
+  purpose: FindBookingByIdPurpose = TOOL_PURPOSE.FIND_BOOKING_BY_ID.CANCEL,
 ): Promise<FindBookingByIdOutput> => {
   assertClerkTokenForApi(serviceContext?.requestContext);
   const id = sanitizeBookingId(bookingId);
@@ -237,7 +239,10 @@ export const findBookingById = async (
       return { bookings: [], bookingId: id, queryName: "" };
     }
 
-    if (purpose === "modify" && !isModifiableBooking(booking)) {
+    if (
+      purpose === TOOL_PURPOSE.FIND_BOOKING_BY_ID.MODIFY &&
+      !isModifiableBooking(booking)
+    ) {
       return {
         bookings: [],
         bookingId: id,
