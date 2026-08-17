@@ -409,6 +409,9 @@ importers:
 
   packages/schemas:
     dependencies:
+      '@repo/constants':
+        specifier: workspace:*
+        version: link:../constants
       '@repo/types':
         specifier: workspace:*
         version: link:../types

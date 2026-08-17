@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { BookingStatus } from "@repo/types";
-import { isTimeTodayOrLater, sanitizeBookingId } from "@repo/utils";
+import { isTimeInFuture, isTimeTodayOrLater, sanitizeBookingId } from "@repo/utils";
 import {
   type CheckRoomAvailabilityInput,
   type CreateBookingInput,
@@ -13,7 +13,11 @@ import {
   type Booking,
   type FindBookingByIdOutput,
 } from "@/mastra/schemas/booking";
-import { ROUTES } from "@repo/constants";
+import {
+  ROUTES,
+  TOOL_PURPOSE,
+  type FindBookingByIdPurpose,
+} from "@repo/constants";
 import { get, post, del, update, assertClerkTokenForApi } from "@/mastra/services/common";
 import type { RequestContext } from "@mastra/core/request-context";
 import { getRoom } from "@/mastra/services/rooms.service";
@@ -132,10 +136,14 @@ export const isActiveBooking = (booking: Booking) => {
 };
 
 /**
- * Load a booking owned by the signed-in user (Nest scopes by JWT) and ensure
- * it is still active (not cancelled / past checkout). Used before cancel/update.
+ * True for an active booking whose stay has not started yet. Once check-in
+ * arrives, the stay is in progress (or over) and dates/guests can no longer
+ * be modified — only cancellation is allowed.
  */
-export const assertOwnedActiveBooking = async (
+export const isModifiableBooking = (booking: Booking) =>
+  isActiveBooking(booking) && isTimeInFuture(booking.checkInDate);
+
+const loadOwnedBooking = async (
   bookingId: string,
   serviceContext?: ServiceContext,
 ): Promise<Booking> => {
@@ -146,10 +154,8 @@ export const assertOwnedActiveBooking = async (
     throw new Error(BOOKING_ERRORS.NOT_FOUND);
   }
 
-  let booking: Booking;
-
   try {
-    booking = await get<Booking>(
+    return await get<Booking>(
       `${ROUTES.BOOKINGS}/${encodeURIComponent(id)}`,
       bookingSchema,
       {
@@ -164,6 +170,17 @@ export const assertOwnedActiveBooking = async (
     }
     throw new Error(BOOKING_ERRORS.NOT_FOUND);
   }
+};
+
+/**
+ * Load a booking owned by the signed-in user (Nest scopes by JWT) and ensure
+ * it is still active (not cancelled / past checkout). Used before cancel.
+ */
+export const assertOwnedActiveBooking = async (
+  bookingId: string,
+  serviceContext?: ServiceContext,
+): Promise<Booking> => {
+  const booking = await loadOwnedBooking(bookingId, serviceContext);
 
   if (!isActiveBooking(booking)) {
     throw new Error(BOOKING_ERRORS.NOT_FOUND_OR_INACTIVE);
@@ -172,9 +189,33 @@ export const assertOwnedActiveBooking = async (
   return booking;
 };
 
+/**
+ * Load a booking owned by the signed-in user and ensure it can still be
+ * modified: active AND check-in has not started yet. Used before update.
+ */
+export const assertOwnedModifiableBooking = async (
+  bookingId: string,
+  serviceContext?: ServiceContext,
+): Promise<Booking> => {
+  const booking = await loadOwnedBooking(bookingId, serviceContext);
+
+  if (!isModifiableBooking(booking)) {
+    throw new Error(BOOKING_ERRORS.NOT_MODIFIABLE);
+  }
+
+  return booking;
+};
+
+/**
+ * Look up a single owned booking. `purpose: "modify"` additionally requires
+ * the stay not to have started yet — an already-checked-in booking comes
+ * back empty with `reason: "not_modifiable"` so callers can never resolve an
+ * edit form for it (deterministic gate; not left to prompt instructions).
+ */
 export const findBookingById = async (
   bookingId: string,
   serviceContext?: ServiceContext,
+  purpose: FindBookingByIdPurpose = TOOL_PURPOSE.FIND_BOOKING_BY_ID.CANCEL,
 ): Promise<FindBookingByIdOutput> => {
   assertClerkTokenForApi(serviceContext?.requestContext);
   const id = sanitizeBookingId(bookingId);
@@ -196,6 +237,18 @@ export const findBookingById = async (
 
     if (!isActiveBooking(booking)) {
       return { bookings: [], bookingId: id, queryName: "" };
+    }
+
+    if (
+      purpose === TOOL_PURPOSE.FIND_BOOKING_BY_ID.MODIFY &&
+      !isModifiableBooking(booking)
+    ) {
+      return {
+        bookings: [],
+        bookingId: id,
+        queryName: "",
+        reason: "not_modifiable",
+      };
     }
 
     const summary = toCancellationSummary(booking);

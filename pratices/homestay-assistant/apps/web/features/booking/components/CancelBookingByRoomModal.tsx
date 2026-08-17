@@ -6,19 +6,15 @@ import {
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
-import { parseToolResult } from "@repo/utils";
 
 import { EmbeddedWidget } from "@/features/chat/components";
 import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
 import {
   hasBookingPickerFields,
-  isHitlDecisionTerminal,
-  isHitlToolAwaitingUser,
-  resolveHitlDecisionStatus,
   resolvePickerCompletedTitle,
   shouldRenderHitlCard,
 } from "@/features/booking/utils";
-import { useHitlPickerDismiss } from "@/features/booking/hooks";
+import { useBookingPickerHitl } from "@/features/booking/hooks";
 import type {
   CancelBookingByRoomArgs,
   CancelBookingByRoomResult,
@@ -58,22 +54,24 @@ export const CancelBookingByRoomModal = ({
   const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(
     null,
   );
-  const { respondOnce, canRespond, isActionable, expiredBySupersede } =
-    useHitlPickerDismiss<CancelBookingByRoomResult>(respond, toolCallId, {
-      confirmed: false,
-      reason: "declined",
-    });
+  const {
+    respondOnce,
+    canRespond,
+    expiredBySupersede,
+    decisionStatus,
+    isComplete,
+    isAwaiting: isAwaitingCancel,
+    parsedResult,
+    handleKeepBookings,
+  } = useBookingPickerHitl<CancelBookingByRoomResult>(
+    status,
+    respond,
+    toolCallId,
+    result,
+  );
 
   const bookings = (args.bookings ?? []).filter(hasBookingPickerFields);
   const hasArgs = bookings.length > 0;
-  const decisionStatus = resolveHitlDecisionStatus(status, result);
-  const isComplete =
-    isHitlDecisionTerminal(decisionStatus) || expiredBySupersede;
-  const isAwaitingCancel =
-    isHitlToolAwaitingUser(status) && !isComplete && isActionable;
-  const parsedResult = parseToolResult<CancelBookingByRoomResult>(
-    result as CancelBookingByRoomResult | string | null | undefined,
-  );
 
   useReportHomestayAgentUiFocus(isAwaitingCancel, "cancel-flow", {
     type: HOMESTAY_AGENT_TASK_TYPE.CANCEL,
@@ -83,14 +81,6 @@ export const CancelBookingByRoomModal = ({
   if (!shouldRenderHitlCard(status, hasArgs)) {
     return null;
   }
-
-  const handleKeepBookings = () => {
-    if (!canRespond) {
-      return;
-    }
-
-    void respondOnce({ confirmed: false, reason: "declined" });
-  };
 
   const confirmRespond = (bookingItem: BookingDetails) =>
     canRespond

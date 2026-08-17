@@ -129,3 +129,22 @@ export const isMastraTripwireChunk = (
 
   return (chunk as MastraStreamChunk).type === "tripwire";
 };
+
+/**
+ * Small port so AG-UI stream wiring does not import Mastra memory loaders.
+ * CopilotKit BFF injects the concrete loaders at `enableProcessorTripwireHandling`.
+ */
+export type ThreadMemoryPort = {
+  loadBlockedMessageIds: (args: {
+    mastraAgent: MastraAgentLike | null | undefined;
+    threadId: string;
+    requestContext?: RequestContext;
+  }) => Promise<string[]>;
+
+  loadResolvedToolCallIds: (args: {
+    mastraAgent: MastraAgentLike | null | undefined;
+    threadId: string;
+    resourceId: string | undefined;
+    requestContext?: RequestContext;
+  }) => Promise<ReadonlySet<string>>;
+};

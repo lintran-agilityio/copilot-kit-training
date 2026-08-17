@@ -28,6 +28,13 @@ export const getRooms = async (
     if (error instanceof Error && error.name === "AbortError") {
       throw error;
     }
+    // Older API returned 404 "No rooms found" for empty filters — treat as
+    // empty. Any other failure (5xx, network error) must surface, not be
+    // disguised as "no rooms today".
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/no rooms found/i.test(message)) {
+      throw error;
+    }
     const today = formatTodayYmd();
     const { rooms } = await findRooms({ date: today }, serviceContext);
     return rooms;

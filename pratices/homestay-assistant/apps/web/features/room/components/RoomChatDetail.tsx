@@ -20,6 +20,8 @@ type RoomChatDetailProps = {
   className?: string;
   onBack?: () => void;
   onBook?: (payload: RoomSelectPayload) => void;
+  /** Keeps the Book button visible but non-interactive (e.g. turn superseded / agent still running). */
+  bookDisabled?: boolean;
 };
 
 /**
@@ -32,6 +34,7 @@ export const RoomChatDetail = ({
   className,
   onBack,
   onBook,
+  bookDisabled = false,
 }: RoomChatDetailProps) => {
   const {
     id,
@@ -126,7 +129,8 @@ export const RoomChatDetail = ({
             <Button
               type="button"
               size="sm"
-              className="h-8 gap-1.5 bg-emerald-500 px-3 text-xs font-medium text-black hover:bg-emerald-400"
+              disabled={bookDisabled}
+              className="h-8 gap-1.5 bg-emerald-500 px-3 text-xs font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => onBook({ roomId: id, roomName: name })}
             >
               <CalendarCheck className="size-3.5" />

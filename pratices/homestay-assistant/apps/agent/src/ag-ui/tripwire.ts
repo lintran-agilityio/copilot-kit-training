@@ -12,9 +12,8 @@ import {
 } from "@repo/utils";
 
 import { classifyTripwire } from "./classify-tripwire";
-import type { ThreadMemoryPort } from "./thread-memory-port";
 import type { AgUiMessage, MastraAgentLike, MastraStreamChunk } from "./types";
-import { isMastraTripwireChunk } from "./types";
+import { isMastraTripwireChunk, ThreadMemoryPort } from "./types";
 
 export type TripwireHandlingContext = {
   threadId: string;

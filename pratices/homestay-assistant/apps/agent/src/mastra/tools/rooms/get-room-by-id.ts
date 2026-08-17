@@ -56,7 +56,26 @@ export const getRoomByIdTool = createTool({
     const stayHint = readBookingFormStayHint(context.requestContext);
     clearBookingFormStayHint(context.requestContext);
 
-    return { room: stayHint ? { ...room, ...stayHint } : room };
+    if (!stayHint) {
+      return { room };
+    }
+
+    const guests = stayHint.guests
+      ? Math.min(Math.max(1, stayHint.guests), room.capacity)
+      : undefined;
+
+    return {
+      room: {
+        ...room,
+        ...(stayHint.checkInDate && stayHint.checkOutDate
+          ? {
+              checkInDate: stayHint.checkInDate,
+              checkOutDate: stayHint.checkOutDate,
+            }
+          : {}),
+        ...(guests ? { guests } : {}),
+      },
+    };
   },
   toModelOutput: toGetRoomByIdModelOutput,
 });

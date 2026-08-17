@@ -1,3 +1,4 @@
+import { hasLaterToolCallInTurn } from "@/features/chat/utils";
 import { TOOL_KEYS } from "@repo/constants";
 import { getCurrentTurn } from "@repo/utils";
 
@@ -65,3 +66,19 @@ export const getLatestFindRoomToolCallIdInCurrentTurn = (
 
   return lastId;
 };
+
+/**
+ * True when a tool call is an internal "resolve" lookup rather than a
+ * guest-facing answer: either it was called with the resolve purpose, or
+ * another tool ran later in the same turn (get_bookings, find_booking_by_id,
+ * a picker, a confirm dialog, ...) even if the call forgot to pass purpose.
+ * Shared by FindRoomNotice (find_room) and MyBookingsNotice (get_bookings),
+ * whose resolve-suppression rules are otherwise identical.
+ */
+export const shouldSuppressForResolve = <TPurpose>(
+  purpose: TPurpose | undefined,
+  resolvePurpose: TPurpose,
+  messages: MessageLike[] | undefined,
+  toolCallId: string | undefined,
+) => purpose === resolvePurpose || hasLaterToolCallInTurn(messages, toolCallId);
+

@@ -1,3 +1,5 @@
+import type { MessageRole } from "@repo/constants";
+
 export type ChatThread = {
   id: string;
   agentId: string;
@@ -20,7 +22,7 @@ export type ChatToolCall = {
 
 export type ChatMessage = {
   id: string;
-  role: "assistant" | "system" | "tool" | "user";
+  role: MessageRole;
   content: string;
   /** Required for AG-UI tool-result messages (`role: "tool"`). */
   toolCallId?: string;

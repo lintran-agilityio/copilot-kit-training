@@ -3,8 +3,8 @@ import { z } from "zod";
 import type { RequestContext } from "@mastra/core/request-context";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import { getCurrentAgentRequest } from "@/mastra/middleware/agent-request-als";
-import type { MastraAuthContext } from "@/mastra/middleware/types";
+import { getCurrentAgentRequest } from "@/mastra/middleware/request-pipeline/agent-request-als";
+import type { MastraAuthContext } from "@/mastra/middleware/request-pipeline/request-pipeline.types";
 import { throwIfAborted } from "@/mastra/utils/abort";
 
 export const getApiUrl = () => process.env.API_URL ?? "http://localhost:5001";

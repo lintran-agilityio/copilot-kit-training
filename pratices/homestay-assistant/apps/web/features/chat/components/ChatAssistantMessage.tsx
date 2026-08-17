@@ -5,7 +5,7 @@ import {
   type CopilotChatToolCallsViewProps,
 } from "@copilotkit/react-core/v2";
 
-import { isProcessorBlockAssistantContent } from "@repo/constants";
+import { MESSAGE_ROLE, isProcessorBlockAssistantContent } from "@repo/constants";
 
 import {
   getChatVisibleToolCalls,
@@ -38,7 +38,7 @@ const isResponseToHiddenPrompt = (
 
   const previousMessage = messages[index - 1];
 
-  if (previousMessage?.role !== "user") {
+  if (previousMessage?.role !== MESSAGE_ROLE.USER) {
     return false;
   }
 

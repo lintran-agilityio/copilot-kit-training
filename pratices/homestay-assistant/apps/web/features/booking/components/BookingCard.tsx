@@ -15,12 +15,13 @@ import type { BookingResponse } from "@/features/booking/types/booking";
 import { FALLBACK_ROOM_IMAGE, resolveRoomImage } from "@/features/room/utils";
 import { cn, formatPrice, formatShortDateForDisplay } from "@repo/utils";
 import { Button } from "@/components/ui/button";
-import { isBookingCancellable } from "@/features/booking/utils";
+import { isBookingCancellable, isBookingModifiable } from "@/features/booking/utils";
 
 type BookingCardProps = {
   booking: BookingResponse;
   className?: string;
-  isAgentRunning?: boolean;
+  /** True once this card's interaction is superseded by a newer request. */
+  actionsLocked?: boolean;
   compact?: boolean;
   onCancelBooking?: (booking: BookingResponse) => void;
   onModifyBooking?: (booking: BookingResponse) => void;
@@ -29,7 +30,7 @@ type BookingCardProps = {
 export const BookingCard = ({
   booking,
   className,
-  isAgentRunning = false,
+  actionsLocked = false,
   compact = false,
   onCancelBooking,
   onModifyBooking,
@@ -42,8 +43,9 @@ export const BookingCard = ({
   );
 
   const isCancellable = isBookingCancellable(status, checkOutDate);
-  const canModify = isCancellable && !isAgentRunning;
-  const canCancel = canModify;
+  const canModify =
+    isCancellable && isBookingModifiable(status, checkInDate) && !actionsLocked;
+  const canCancel = isCancellable && !actionsLocked;
 
   const handleCancelBooking = () => {
     if (!room || !canCancel) return;

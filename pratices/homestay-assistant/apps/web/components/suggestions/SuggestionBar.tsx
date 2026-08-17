@@ -5,17 +5,20 @@ import {
 } from "@copilotkit/react-core/v2";
 import {
   AGENT_KEYS,
+  MESSAGE_ROLE,
   getBookingFormDisplayText,
   isBookingFormPrompt,
   parseBookingFormRoomId,
 } from "@repo/constants";
 
 import { CopilotSuggestion } from "@/components/suggestions/CopilotSuggestion";
-import { prepareBookingFormMessage } from "@/features/booking/utils/prepare-booking-form-message";
+import { prepareBookingFormMessage } from "@/features/booking/utils";
 import { ChatSuggestion } from "@/features/chat/types";
-import { scheduleScrollChatToEnd } from "@/features/chat/utils";
-import { runAgentSafely } from "@/features/chat/utils/agent-run";
-import { rejectIfAgentRunning } from "@/features/chat/utils/reject-if-agent-running";
+import {
+  scheduleScrollChatToEnd,
+  runAgentSafely,
+  rejectIfAgentRunning,
+} from "@/features/chat/utils";
 
 type SuggestionBarProps = {
   suggestions: ChatSuggestion[];
@@ -64,7 +67,7 @@ export const SuggestionBar = ({
 
     agent.addMessage({
       id: crypto.randomUUID(),
-      role: "user",
+      role: MESSAGE_ROLE.USER,
       content: resolveOutboundPrompt(prompt),
     });
 

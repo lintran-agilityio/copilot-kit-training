@@ -15,11 +15,10 @@ type ListRoomProps = {
   className?: string;
   /** Overrides the default "open room detail on the page" behaviour. */
   onSelectRoom?: (payload: RoomSelectPayload) => void;
-  /**
-   * Overrides the default "start the booking form" behaviour.
-   * Pass `false` to hide Book (e.g. superseded Generic UI interaction).
-   */
-  onBookRoom?: ((payload: RoomSelectPayload) => void) | false;
+  /** Overrides the default "start the booking form" behaviour. */
+  onBookRoom?: (payload: RoomSelectPayload) => void;
+  /** Keeps Book visible but disabled (e.g. superseded Generic UI interaction). */
+  bookDisabled?: boolean;
 };
 
 export const ListRoom = ({
@@ -29,14 +28,12 @@ export const ListRoom = ({
   className,
   onSelectRoom,
   onBookRoom,
+  bookDisabled = false,
 }: ListRoomProps) => {
   const openRoomOnPage = useOpenRoomOnPage();
   const requestRoomBookingForm = useRequestRoomBookingForm();
   const handleSelect = onSelectRoom ?? openRoomOnPage;
-  const handleBook =
-    onBookRoom === false
-      ? undefined
-      : (onBookRoom ?? requestRoomBookingForm);
+  const handleBook = onBookRoom ?? requestRoomBookingForm;
 
   return (
     <CardListSection
@@ -52,6 +49,7 @@ export const ListRoom = ({
           compact={compact}
           onSelect={handleSelect}
           onBook={handleBook}
+          bookDisabled={bookDisabled}
         />
       )}
     />

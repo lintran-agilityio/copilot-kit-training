@@ -10,3 +10,4 @@ export * from "./use-thread-messages";
 export * from "./use-report-homestay-agent-ui-focus";
 export * from "./use-generic-ui-interaction";
 export * from "./use-supersede-hitl-on-new-interaction";
+export * from "./use-report-homestay-focused-room";

@@ -14,7 +14,7 @@ import {
   type StaticSuggestion,
   type SuggestionGuestState,
 } from "@/features/chat/constants/suggestions";
-import type { HomestayAgentContext } from "@/features/chat/types";
+import type { HomestayAgentContext, HomestayAgentTaskStatus } from "@/features/chat/types";
 
 const bookThisRoom = (roomId: string, roomName: string): StaticSuggestion => ({
   title: "Book this room",
@@ -28,26 +28,81 @@ const openBookingForm = (roomId: string, roomName: string): StaticSuggestion => 
 });
 
 const isActiveUiFocusTask = (context: HomestayAgentContext): boolean => {
-  const task = context.task;
-  if (!task) {
+  if (!context.task) {
     return false;
   }
 
+  const { type, status } = context.task;
+
   if (
-    task.type === HOMESTAY_AGENT_TASK_TYPE.BOOK ||
-    task.type === HOMESTAY_AGENT_TASK_TYPE.CANCEL
+    type === HOMESTAY_AGENT_TASK_TYPE.BOOK ||
+    type === HOMESTAY_AGENT_TASK_TYPE.CANCEL
   ) {
-    return task.status !== HOMESTAY_AGENT_TASK_STATUS.IDLE;
+    return status !== HOMESTAY_AGENT_TASK_STATUS.IDLE;
   }
 
   return (
-    task.type === HOMESTAY_AGENT_TASK_TYPE.MANAGE &&
-    task.status !== HOMESTAY_AGENT_TASK_STATUS.IDLE
+    type === HOMESTAY_AGENT_TASK_TYPE.MANAGE &&
+    status !== HOMESTAY_AGENT_TASK_STATUS.IDLE
   );
 };
 
 const getFocusedRoomId = (context: HomestayAgentContext) =>
   context.focus?.type === "room" ? context.focus.id : undefined;
+
+type GetBookingSuggestionsArgs = {
+  status: HomestayAgentTaskStatus;
+  roomId?: string;
+  name: string;
+};
+const getBookingSuggestions = ({
+  status,
+  roomId,
+  name,
+}: GetBookingSuggestionsArgs): StaticSuggestion[] => {
+  switch (status) {
+    case HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION:
+      return [
+        SUGGESTION.changeDates,
+        SUGGESTION.changeGuests,
+        SUGGESTION.otherRooms,
+      ];
+
+    case HOMESTAY_AGENT_TASK_STATUS.IN_PROGRESS:
+      return [
+        ...(roomId ? [openBookingForm(roomId, name)] : []),
+        SUGGESTION.changeDates,
+        SUGGESTION.otherRooms,
+      ];
+
+    case HOMESTAY_AGENT_TASK_STATUS.COMPLETED:
+      return AFTER_BOOKING_SUGGESTIONS;
+
+    default:
+      return [SUGGESTION.availableToday, SUGGESTION.findWeekendRooms, SUGGESTION.myBookings];
+  }
+};
+
+const getManageSuggestions = (status: HomestayAgentTaskStatus) => {
+  switch (status) {
+    case HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION:
+      return [
+        SUGGESTION.changeDates,
+        SUGGESTION.changeGuests,
+        SUGGESTION.keepBooking,
+      ];
+    case HOMESTAY_AGENT_TASK_STATUS.IN_PROGRESS:
+      return [
+        SUGGESTION.changeDates,
+        SUGGESTION.changeGuests,
+        SUGGESTION.myBookings,
+      ];
+    case HOMESTAY_AGENT_TASK_STATUS.COMPLETED:
+      return [SUGGESTION.myBookings, SUGGESTION.findWeekendRooms];
+    default:
+      return [SUGGESTION.myBookings, SUGGESTION.findWeekendRooms];
+  }
+}
 
 /**
  * Active UI-focus pills — must match the guest's current task step.
@@ -58,66 +113,25 @@ export const getUiFocusStaticSuggestions = (
   context: HomestayAgentContext,
   roomName?: string | null,
 ): StaticSuggestion[] => {
-  const task = context.task;
-  if (!task || !isActiveUiFocusTask(context)) {
+  if (!context.task || !isActiveUiFocusTask(context)) {
     return [];
   }
 
+  const { type, status } = context.task;
   const roomId = getFocusedRoomId(context);
   const name = roomName?.trim() || "this room";
 
-  if (task.type === HOMESTAY_AGENT_TASK_TYPE.BOOK) {
-    if (task.status === HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION) {
-      return [
-        SUGGESTION.changeDates,
-        SUGGESTION.changeGuests,
-        SUGGESTION.otherRooms,
-      ];
-    }
-
-    if (task.status === HOMESTAY_AGENT_TASK_STATUS.IN_PROGRESS) {
-      const suggestions: StaticSuggestion[] = [];
-
-      if (roomId) {
-        suggestions.push(openBookingForm(roomId, name));
-      }
-
-      suggestions.push(SUGGESTION.changeDates, SUGGESTION.otherRooms);
-      return suggestions;
-    }
-
-    if (task.status === HOMESTAY_AGENT_TASK_STATUS.COMPLETED) {
-      return AFTER_BOOKING_SUGGESTIONS;
-    }
+  switch (type) {
+    case HOMESTAY_AGENT_TASK_TYPE.BOOK:
+      return getBookingSuggestions({ status, roomId, name });
+    case HOMESTAY_AGENT_TASK_TYPE.CANCEL:
+      return [SUGGESTION.keepBooking, SUGGESTION.myBookings];
+    case HOMESTAY_AGENT_TASK_TYPE.MANAGE:
+      return getManageSuggestions(status);
+    
+    default:
+      return [];
   }
-
-  if (task.type === HOMESTAY_AGENT_TASK_TYPE.CANCEL) {
-    return [SUGGESTION.keepBooking, SUGGESTION.myBookings];
-  }
-
-  if (task.type === HOMESTAY_AGENT_TASK_TYPE.MANAGE) {
-    if (task.status === HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION) {
-      return [
-        SUGGESTION.changeDates,
-        SUGGESTION.changeGuests,
-        SUGGESTION.keepBooking,
-      ];
-    }
-
-    if (task.status === HOMESTAY_AGENT_TASK_STATUS.IN_PROGRESS) {
-      return [
-        SUGGESTION.changeDates,
-        SUGGESTION.changeGuests,
-        SUGGESTION.myBookings,
-      ];
-    }
-
-    if (task.status === HOMESTAY_AGENT_TASK_STATUS.COMPLETED) {
-      return [SUGGESTION.myBookings, SUGGESTION.findWeekendRooms];
-    }
-  }
-
-  return [];
 };
 
 /**
@@ -127,15 +141,16 @@ export const getUiFocusStaticSuggestions = (
 export const getGuestStateStaticSuggestions = (
   guestState: SuggestionGuestState,
 ): StaticSuggestion[] => {
-  if (guestState.bookingJustCompleted) {
+  const { hasActiveBookings, hasSearchedRooms, bookingJustCompleted } = guestState;
+  if (bookingJustCompleted) {
     return AFTER_BOOKING_SUGGESTIONS;
   }
 
-  if (guestState.hasSearchedRooms) {
+  if (hasSearchedRooms) {
     return AFTER_SEARCH_SUGGESTIONS;
   }
 
-  if (guestState.hasActiveBookings) {
+  if (hasActiveBookings) {
     return ACTIVE_BOOKINGS_SUGGESTIONS;
   }
 

@@ -1,9 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useAgent } from "@copilotkit/react-core/v2";
 
-import { AGENT_KEYS } from "@repo/constants";
 import { useGenericUiInteraction } from "@/features/chat/hooks";
 import { ListRoom } from "@/features/room/components/ListRoom";
 import type { RoomSelectPayload } from "@/features/room/components/Room";
@@ -21,7 +19,8 @@ type ListRoomPreviewProps = {
 /**
  * Chat-only room results. Viewing a room swaps this card for a chat-sized
  * detail view; nothing here touches the page room grid.
- * View stays available after a new user request; Book does not.
+ * Book stays visible but disabled once the interaction is superseded by a
+ * new user request.
  */
 export const ListRoomPreview = ({
   rooms = [],
@@ -30,10 +29,12 @@ export const ListRoomPreview = ({
 }: ListRoomPreviewProps) => {
   const [viewedRoomId, setViewedRoomId] = useState<string | null>(null);
   const requestRoomBookingForm = useRequestRoomBookingForm();
-  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const { isActionable } = useGenericUiInteraction(toolCallId);
-  // Book stays disabled until the agent finishes the turn — matches BookingList.
-  const canBook = isActionable && !agent.isRunning;
+  // Clicking while the agent is genuinely still running is already caught by
+  // rejectIfAgentRunning() inside sendMessage (useSendAgentMessage) — gating
+  // the button on agent.isRunning too just left it stuck disabled whenever
+  // that flag lagged/failed to clear until a thread refresh.
+  const bookDisabled = !isActionable;
 
   const viewedRoom = viewedRoomId
     ? rooms.find((room) => room.id === viewedRoomId)
@@ -55,7 +56,8 @@ export const ListRoomPreview = ({
       <RoomChatDetail
         room={viewedRoom}
         onBack={() => setViewedRoomId(null)}
-        onBook={canBook ? handleBookInChat : undefined}
+        onBook={handleBookInChat}
+        bookDisabled={bookDisabled}
       />
     );
   }
@@ -67,7 +69,8 @@ export const ListRoomPreview = ({
       compact
       className="max-w-full rounded-xl border border-white/12 bg-[#111111] p-3.5"
       onSelectRoom={handleView}
-      onBookRoom={canBook ? handleBookInChat : false}
+      onBookRoom={handleBookInChat}
+      bookDisabled={bookDisabled}
     />
   );
 };

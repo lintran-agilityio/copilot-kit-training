@@ -1,15 +1,18 @@
 "use client";
 
-import { ToolCallStatus } from "@copilotkit/react-core/v2";
+import { ToolCallStatus, useAgent } from "@copilotkit/react-core/v2";
 
 import { parseToolResult } from "@repo/utils";
+import { AGENT_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import { RoomListSkeleton } from "@/components/common/RoomListSkeleton";
 import { EmbeddedWidget } from "@/features/chat/components";
 import { BookingList } from "@/features/booking/components/BookingList";
+import type { MessageLike } from "@/features/chat/types";
 import type {
   GetBookingsResult,
   GetBookingsToolProps,
 } from "@/features/booking/types";
+import { shouldSuppressForResolve } from "@/features/room/utils";
 
 const MY_BOOKINGS_TITLE = "Your bookings";
 
@@ -23,10 +26,18 @@ export const MyBookingsNotice = ({
   parameters,
   toolCallId,
 }: GetBookingsToolProps) => {
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
+
   // purpose:"resolve" — cancel/modify/change-room resolution fetch, not a
-  // guest-facing VIEW/LIST call. Suppress skeleton and card alike; the HITL
-  // that follows (confirm dialog or picker) is the response.
-  const suppressForResolve = parameters?.purpose === "resolve";
+  // guest-facing VIEW/LIST call. See shouldSuppressForResolve for the
+  // later-tool-call fallback (mirrors FindRoomNotice's find_room rule).
+  // Suppress skeleton and card alike; the HITL that follows is the response.
+  const suppressForResolve = shouldSuppressForResolve(
+    parameters?.purpose,
+    TOOL_PURPOSE.GET_BOOKINGS.RESOLVE,
+    agent.messages as MessageLike[] | undefined,
+    toolCallId,
+  );
 
   if (
     status === ToolCallStatus.Executing ||
@@ -58,7 +69,10 @@ export const MyBookingsNotice = ({
     );
   }
 
-  if ((parsed.purpose ?? parameters?.purpose) === "resolve") {
+  if (
+    suppressForResolve ||
+    (parsed.purpose ?? parameters?.purpose) === TOOL_PURPOSE.GET_BOOKINGS.RESOLVE
+  ) {
     return null;
   }
 

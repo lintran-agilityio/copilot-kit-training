@@ -8,10 +8,7 @@ import {
 } from "@/mastra/schemas/booking";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { findBookingById } from "@/mastra/services";
-import {
-  clearPinnedStay,
-  readPinnedBookingId,
-} from "@/mastra/utils/resolve-pinned-stay";
+import { takePinnedBookingId } from "@/mastra/utils/resolve-pinned-stay";
 import {
   serviceContextFromTool,
   throwIfAborted,
@@ -23,26 +20,22 @@ export const findBookingByIdTool = createTool({
     Find the signed-in user's active booking(s) by booking ID.
       - Use when bookingId: is in the message — including [booking-cancel] / [booking-modify] from BookingCard clicks.
       - Pass the UUID after bookingId: — never the room name or roomId (a room can have multiple bookings).
-      - Returns bookings: [] when the booking is not found or not owned/active; result.room is included for MODIFY.
+      - Pass purpose: "modify" for MODIFY lookups — a booking whose check-in has already started comes back as bookings: [] with reason: "not_modifiable" so the edit form is never opened for it; reply that it can only be cancelled instead. Omit (or "cancel") for CANCEL lookups, which allow an already-started booking.
+      - Returns bookings: [] when the booking is not found, not owned/active, or (purpose: "modify") not modifiable; result.room is included for MODIFY.
     `,
   inputSchema: findBookingByIdInputSchema,
   outputSchema: findBookingByIdOutputSchema,
-  execute: async ({ bookingId }, context) => {
+  execute: async ({ bookingId, purpose }, context) => {
     throwIfAborted(context.abortSignal);
-console.log('bookingId==>', bookingId);
-    // Prefer the id pinned by prepareStep from the modify picker / sole match.
-    const pinnedBookingId = readPinnedBookingId(
-      context.requestContext,
-      REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID,
-    );
 
-    clearPinnedStay(
+    // Prefer the id pinned by prepareStep from the modify picker / sole match.
+    const pinnedBookingId = takePinnedBookingId(
       context.requestContext,
       REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID,
     );
 
     const id = sanitizeBookingId(pinnedBookingId ?? bookingId);
 
-    return await findBookingById(id, serviceContextFromTool(context));
+    return await findBookingById(id, serviceContextFromTool(context), purpose);
   },
 });

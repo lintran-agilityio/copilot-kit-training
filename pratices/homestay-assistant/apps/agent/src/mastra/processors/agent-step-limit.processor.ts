@@ -1,6 +1,7 @@
 import type { ProcessOutputStepArgs, Processor } from "@mastra/core/processors";
 import {
   AGENT_STEP_LIMIT_PROCESSOR_ID,
+  AGENT_STEP_LIMIT_TRIPWIRE_REASON_PREFIX,
 } from "@repo/constants";
 
 export type AgentStepLimitProcessorOptions = {
@@ -26,7 +27,7 @@ export class AgentStepLimitProcessor implements Processor {
     this.#limit = options.limit;
     this.#message =
       options.message ??
-      `Agent step limit reached (${options.limit}). Stopping further tool execution.`;
+      `${AGENT_STEP_LIMIT_TRIPWIRE_REASON_PREFIX} (${options.limit}). Stopping further tool execution.`;
   }
 
   processOutputStep({

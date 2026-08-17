@@ -70,6 +70,10 @@ export const formatTodayYmd = (now = new Date()): string => formatYmd(now);
 export const isTimeTodayOrLater = (ymd: string, now = new Date()): boolean =>
   ymd >= formatTodayYmd(now);
 
+/** True when `ymd` (YYYY-MM-DD) is strictly after today in the business timezone. */
+export const isTimeInFuture = (ymd: string, now = new Date()): boolean =>
+  ymd > formatTodayYmd(now);
+
 /** Split YYYY-MM-DD into numeric parts, rejecting anything malformed. */
 const splitYmd = (ymd: string) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
@@ -93,18 +97,19 @@ export const addDaysYmd = (ymd: string, days: number): string => {
 };
 
 /**
- * Weekday of a business calendar date, 0 = Sunday. The date is already in
- * business time, so it is read back as UTC to avoid a second timezone shift.
+ * Business calendar date read back as a UTC Date, so it can be inspected
+ * (weekday, formatting) without a second timezone shift.
  */
-const getYmdWeekday = (ymd: string): number => {
+const ymdToUtcDate = (ymd: string): Date => {
   const { year, month, day } = splitYmd(ymd);
-  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return new Date(Date.UTC(year, month - 1, day));
 };
 
-export const formatYmdWeekday = (ymd: string): string => {
-  const { year, month, day } = splitYmd(ymd);
-  return weekdayFormatter.format(new Date(Date.UTC(year, month - 1, day)));
-};
+/** Weekday of a business calendar date, 0 = Sunday. */
+const getYmdWeekday = (ymd: string): number => ymdToUtcDate(ymd).getUTCDay();
+
+export const formatYmdWeekday = (ymd: string): string =>
+  weekdayFormatter.format(ymdToUtcDate(ymd));
 
 /**
  * Resolves "this/next/last weekend" to a concrete Saturday-night stay. Models
@@ -113,28 +118,27 @@ export const formatYmdWeekday = (ymd: string): string => {
  * `weekOffset` shifts by whole weeks: 0 (default) = this weekend, 1 = next
  * weekend, -1 = last weekend — mirrors {@link getWeekendRange}'s offset.
  *
- * For the current weekend (offset 0) only: a guest already inside the
- * weekend means the one in progress, so check-in stays on Sunday rather than
- * jumping six days ahead. Offset navigation always anchors to Saturday.
+ * A same-day check-in is fine on Saturday (a guest booking "the weekend"
+ * that morning is booking a normal same-day stay). On Sunday the Saturday
+ * night has already passed, so booking "this weekend" (offset 0) would
+ * check the guest in for the last few hours of today — instead it rolls
+ * forward to the next Saturday, same as "next weekend". Offset navigation
+ * (explicit next/last) always anchors to Saturday untouched.
  */
 export const getWeekendStay = (today: string, weekOffset = 0) => {
-  if (weekOffset === 0) {
-    const weekday = getYmdWeekday(today);
-    const checkIn =
-      weekday === SUNDAY ? today : addDaysYmd(today, (SATURDAY - weekday) % 7);
+  const isCurrentWeekendAlreadyOver =
+    weekOffset === 0 && getYmdWeekday(today) === SUNDAY;
+  const effectiveOffset = isCurrentWeekendAlreadyOver ? 1 : weekOffset;
 
-    return { checkIn, checkOut: addDaysYmd(checkIn, 1) };
-  }
-
-  const checkIn = getWeekendRange(today, weekOffset).from;
+  const checkIn = getWeekendRange(today, effectiveOffset).from;
   return { checkIn, checkOut: addDaysYmd(checkIn, 1) };
 };
 
 /**
- * Saturday of the weekend spanning or next following `today`. Unlike
- * {@link getWeekendStay}, does not special-case Sunday to "today" — range
- * navigation (this/next/last weekend) always anchors to Saturday so offsetting
- * by whole weeks lands on the right Saturday–Sunday pair.
+ * Saturday of the weekend spanning or next following `today`. Anchors to
+ * Saturday regardless of weekday so offsetting by whole weeks lands on the
+ * right Saturday–Sunday pair; callers needing "roll forward on Sunday"
+ * semantics (e.g. {@link getWeekendStay}) apply that on top via `weekOffset`.
  */
 const anchorWeekendSaturday = (today: string): string => {
   const weekday = getYmdWeekday(today);

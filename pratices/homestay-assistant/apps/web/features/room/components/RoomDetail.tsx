@@ -3,37 +3,38 @@
 import { Award, CalendarCheck, Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { useRequestRoomBooking } from "@/features/booking/hooks/use-request-room-booking";
-import { useBooking } from "@/features/booking/hooks/use-booking";
-import { useReportHomestayFocusedRoom } from "@/features/chat/hooks/use-report-homestay-focused-room";
+import { useRequestRoomBooking, useBooking } from "@/features/booking/hooks";
+import { useReportHomestayFocusedRoom } from "@/features/chat/hooks";
+import { useRoomBookingEstimate } from "@/features/room/hooks";
 import { useArtifactStore } from "@/features/chat/stores/artifact-store";
+import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
+import { buildBookingStayMessage } from "@/features/booking/utils";
+import type { Room } from "@/features/room/types/room";
 import {
   ARTIFACT_STATUS,
   isArtifactLocked,
 } from "@/features/chat/types/artifact";
+
 import { Button } from "@/components/ui/button";
-import { BookingStatusBadge } from "@/features/booking/components/BookingStatusBadge";
-import { RoomBookingDates } from "@/features/room/components/RoomBookingDates";
-import { RoomBookingEstimatedTotal } from "@/features/room/components/RoomBookingEstimatedTotal";
-import { RoomBookingGuests } from "@/features/room/components/RoomBookingGuests";
-import { RoomBookingPricePerNight } from "@/features/room/components/RoomBookingPricePerNight";
-import { RoomBookingSummaryHeader } from "@/features/room/components/RoomBookingSummaryHeader";
+import { BookingStatusBadge } from "@/features/booking/components";
+import { RoomBookingDates } from "./RoomBookingDates";
+import { RoomBookingEstimatedTotal } from "./RoomBookingEstimatedTotal";
+import { RoomBookingGuests } from "./RoomBookingGuests";
+import { RoomBookingPricePerNight } from "./RoomBookingPricePerNight";
+import { RoomBookingSummaryHeader } from "./RoomBookingSummaryHeader";
 import {
   RoomDetailAmenityHighlights,
   RoomDetailQuickStats,
-} from "@/features/room/components/RoomDetailHighlights";
-import { RoomDetailRating } from "@/features/room/components/RoomDetailRating";
-import { RoomImageGallery } from "@/features/room/components/RoomImageGallery";
+} from "./RoomDetailHighlights";
+import { RoomDetailRating } from "./RoomDetailRating";
+import { RoomImageGallery } from "./RoomImageGallery";
 import {
   ROOM_DETAIL_ENTRY_MODE,
   ROOM_DETAIL_VARIANT,
   type RoomDetailEntryMode,
   type RoomDetailVariant,
-} from "@/features/room/constants/room-detail";
-import { useRoomBookingEstimate } from "@/features/room/hooks";
-import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
-import type { Room } from "@/features/room/types/room";
-import { buildBookingStayMessage } from "@/features/booking/utils";
+} from "@/constants";
+
 import {
   addDays,
   startOfDay,
@@ -96,6 +97,7 @@ export const RoomDetail = ({
     bookingStatus,
     checkInDate: roomCheckInDate,
     checkOutDate: roomCheckOutDate,
+    guests: roomGuestsHint,
   } = room;
 
   useReportHomestayFocusedRoom(id);
@@ -119,7 +121,12 @@ export const RoomDetail = ({
 
     return getDefaultDates().checkOut;
   });
-  const [guests, setLocalGuests] = useState(1);
+  const clampGuestsHint = (hint: number | undefined) =>
+    hint ? Math.min(Math.max(1, hint), capacity) : 1;
+
+  const [guests, setLocalGuests] = useState(() =>
+    clampGuestsHint(roomGuestsHint),
+  );
 
   useEffect(() => {
     if (
@@ -129,14 +136,17 @@ export const RoomDetail = ({
     ) {
       setLocalCheckIn(roomCheckInDate);
       setLocalCheckOut(roomCheckOutDate);
-      return;
+    } else {
+      const defaults = getDefaultDates();
+      setLocalCheckIn(defaults.checkIn);
+      setLocalCheckOut(defaults.checkOut);
     }
 
-    const defaults = getDefaultDates();
-    setLocalCheckIn(defaults.checkIn);
-    setLocalCheckOut(defaults.checkOut);
-    setLocalGuests(1);
-  }, [id, roomCheckInDate, roomCheckOutDate]);
+    setLocalGuests(clampGuestsHint(roomGuestsHint));
+    // clampGuestsHint closes over capacity, already listed below — omitting the
+    // function itself avoids re-running this effect on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clampGuestsHint is stable per capacity dep
+  }, [id, roomCheckInDate, roomCheckOutDate, roomGuestsHint, capacity]);
 
   useEffect(() => {
     if (

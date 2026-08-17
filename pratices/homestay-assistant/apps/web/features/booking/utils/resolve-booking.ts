@@ -2,7 +2,7 @@ import type { BookingPickerCopy } from "@/features/booking/constants";
 import { type HitlDecisionStatus } from "./hitl-status";
 import type { ConfirmModifyBookingArgs, ModifyBookingPickerItem } from "@repo/schemas";
 import { parseToolResult } from "@repo/utils";
-import { TOOL_KEYS } from "@repo/constants";
+import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
 import type {
   ModifyStaySnapshot,
   PendingModifyStay,
@@ -116,7 +116,8 @@ const readToolResultContent = (
   toolCallId: string,
 ): MessageLike["content"] => {
   const toolMessage = messages.find(
-    (message) => message.role === "tool" && message.toolCallId === toolCallId,
+    (message) =>
+      message.role === MESSAGE_ROLE.TOOL && message.toolCallId === toolCallId,
   );
   return toolMessage?.content ?? null;
 };
@@ -143,7 +144,7 @@ export const resolveModifyPickerBookingsFromMessages = (
 
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message?.role !== "assistant") {
+    if (message?.role !== MESSAGE_ROLE.ASSISTANT) {
       continue;
     }
 

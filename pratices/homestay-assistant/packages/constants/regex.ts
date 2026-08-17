@@ -36,6 +36,14 @@ export const DAY_FIRST_DATE =
 export const BARE_DAY_CUE =
   /\b(?:at|on|for)(?:\s+the)?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i;
 
+/**
+ * Guest-count cue stated directly in a BOOK message, e.g. "2 guests",
+ * "for 3 people", "4 pax", "2 adults". Matched and stripped before
+ * {@link BARE_DAY_CUE} parsing so "for 2 guests" is never misread as
+ * day-of-month 2.
+ */
+export const GUEST_COUNT_CUE = /\b(\d{1,2})\s*(?:guests?|people|persons?|pax|adults?)\b/i;
+
 /** "weekend" / "weekends" cue, e.g. "at weekend", "this weekend". */
 export const WEEKEND_CUE = /\bweekends?\b/i;
 

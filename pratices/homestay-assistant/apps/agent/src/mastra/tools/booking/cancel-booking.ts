@@ -6,10 +6,7 @@ import { cancelBookingInputSchema } from "@repo/schemas";
 import { bookingSchema } from "@/mastra/schemas/booking";
 import { assertOwnedActiveBooking, cancelBooking } from "@/mastra/services";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import {
-  clearPinnedStay,
-  readPinnedBookingId,
-} from "@/mastra/utils/resolve-pinned-stay";
+import { takePinnedBookingId } from "@/mastra/utils/resolve-pinned-stay";
 import {
   commitIfNotAborted,
   serviceContextFromTool,
@@ -35,12 +32,7 @@ export const cancelBookingTool = createTool({
 
     // Prefer the id pinned by prepareStep from the cancel dialog — the model
     // often reuses a stale booking id when toolChoice forces this call.
-    const pinnedBookingId = readPinnedBookingId(
-      requestContext,
-      REQUEST_CONTEXT_KEYS.PENDING_CANCEL_BOOKING_ID,
-    );
-
-    clearPinnedStay(
+    const pinnedBookingId = takePinnedBookingId(
       requestContext,
       REQUEST_CONTEXT_KEYS.PENDING_CANCEL_BOOKING_ID,
     );

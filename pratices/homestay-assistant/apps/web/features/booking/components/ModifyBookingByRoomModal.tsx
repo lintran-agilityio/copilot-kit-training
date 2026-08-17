@@ -7,20 +7,16 @@ import {
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
-import { parseToolResult } from "@repo/utils";
 
 import { EmbeddedWidget } from "@/features/chat/components";
 import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
 import {
   hasBookingPickerFields,
-  isHitlDecisionTerminal,
-  isHitlToolAwaitingUser,
-  resolveHitlDecisionStatus,
   resolveModifyPickerBookingsFromMessages,
   resolvePickerCompletedTitle,
   shouldRenderHitlCard,
 } from "@/features/booking/utils";
-import { useHitlPickerDismiss } from "@/features/booking/hooks";
+import { useBookingPickerHitl } from "@/features/booking/hooks";
 import type {
   ModifyBookingByRoomArgs,
   ModifyBookingByRoomResult,
@@ -51,11 +47,21 @@ export const ModifyBookingByRoomModal = ({
   toolCallId,
 }: ModifyBookingByRoomModalProps) => {
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
-  const { respondOnce, canRespond, isActionable, expiredBySupersede } =
-    useHitlPickerDismiss<ModifyBookingByRoomResult>(respond, toolCallId, {
-      confirmed: false,
-      reason: "declined",
-    });
+  const {
+    respondOnce,
+    canRespond,
+    expiredBySupersede,
+    decisionStatus,
+    isComplete,
+    isAwaiting: isAwaitingSelect,
+    parsedResult,
+    handleKeepBookings,
+  } = useBookingPickerHitl<ModifyBookingByRoomResult>(
+    status,
+    respond,
+    toolCallId,
+    result,
+  );
 
   const bookingsFromArgs = useMemo(
     () => (args.bookings ?? []).filter(hasBookingPickerFields),
@@ -85,14 +91,6 @@ export const ModifyBookingByRoomModal = ({
     bookingsFromArgs.length > 0 ? bookingsFromArgs : bookingsFromMessages;
 
   const hasArgs = bookings.length > 0;
-  const decisionStatus = resolveHitlDecisionStatus(status, result);
-  const isComplete =
-    isHitlDecisionTerminal(decisionStatus) || expiredBySupersede;
-  const isAwaitingSelect =
-    isHitlToolAwaitingUser(status) && !isComplete && isActionable;
-  const parsedResult = parseToolResult<ModifyBookingByRoomResult>(
-    result as ModifyBookingByRoomResult | string | null | undefined,
-  );
 
   useReportHomestayAgentUiFocus(
     isAwaitingSelect,
@@ -103,14 +101,6 @@ export const ModifyBookingByRoomModal = ({
   if (!shouldRenderHitlCard(status, hasArgs)) {
     return null;
   }
-
-  const handleKeepBookings = () => {
-    if (!canRespond) {
-      return;
-    }
-
-    void respondOnce({ confirmed: false, reason: "declined" });
-  };
 
   const handleSelectBooking = (booking: BookingDetails) => {
     if (!canRespond) {

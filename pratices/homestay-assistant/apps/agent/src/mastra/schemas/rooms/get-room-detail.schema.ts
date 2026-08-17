@@ -10,6 +10,8 @@ export const getRoomDetailOutputSchema = z.object({
      */
     checkInDate: z.string().optional(),
     checkOutDate: z.string().optional(),
+    /** Same prefill hint, for guest count stated directly in the BOOK message. */
+    guests: z.number().optional(),
   }),
 });
 

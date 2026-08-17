@@ -3,6 +3,7 @@ import type {
   ProcessLLMRequestResult,
   Processor,
 } from "@mastra/core/processors";
+import { MESSAGE_ROLE } from "@repo/constants";
 
 type LlmPrompt = ProcessLLMRequestArgs["prompt"];
 type LlmMessage = LlmPrompt[number];
@@ -35,6 +36,14 @@ const keepFirstOccurrence = <TPart extends AssistantPart | ToolPart>(
  * approvals the model has already collected, so it stops opening the HITL
  * dialog and asks in chat instead. Only the first occurrence of each call and
  * result reaches the provider; this rewrite is transient and never persists.
+ *
+ * A second, independent defense against the same invariant —
+ * `excludeResolvedToolCalls` in `apps/agent/src/ag-ui/transcript-filters.ts`
+ * — strips already-resolved tool calls from the *incoming* AG-UI transcript
+ * before it reaches Mastra memory. That one guards against the transport
+ * replaying a call memory already owns; this one guards the LLM-bound prompt
+ * built from memory. Keep both in sync if the dedupe key (toolCallId) or the
+ * "resolved" definition changes.
  */
 export class DedupeToolCallsProcessor implements Processor {
   id = "dedupe-tool-calls";
@@ -49,7 +58,10 @@ export class DedupeToolCallsProcessor implements Processor {
     let changed = false;
 
     for (const message of prompt) {
-      if (message.role !== "assistant" && message.role !== "tool") {
+      if (
+        message.role !== MESSAGE_ROLE.ASSISTANT &&
+        message.role !== MESSAGE_ROLE.TOOL
+      ) {
         deduped.push(message);
         continue;
       }

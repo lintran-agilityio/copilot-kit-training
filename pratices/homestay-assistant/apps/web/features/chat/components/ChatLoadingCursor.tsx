@@ -10,12 +10,13 @@ import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
 import { ConversationItem } from "@/features/chat/components/ConversationItem";
 import { getMessageTextContent } from "@/features/copilot/config";
 import { cn } from "@repo/utils";
+import { MESSAGE_ROLE } from "@repo/constants";
 
 const hasVisibleAssistantText = (message: {
   role?: string;
   content?: unknown;
 }) => {
-  if (message.role !== "assistant") {
+  if (message.role !== MESSAGE_ROLE.ASSISTANT) {
     return false;
   }
 
@@ -56,7 +57,7 @@ export const ChatLoadingCursor = ({
     >
       <ChatAgentAvatar />
       <ConversationItem
-        role="assistant"
+        role={MESSAGE_ROLE.ASSISTANT}
         className="flex min-h-9 items-center gap-1.5 py-3"
       >
         <span className="sr-only">Assistant is responding</span>

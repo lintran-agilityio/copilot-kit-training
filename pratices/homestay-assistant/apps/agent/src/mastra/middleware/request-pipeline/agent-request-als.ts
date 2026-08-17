@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import type { AgentRequestState } from "./types";
+import type { AgentRequestState } from "./request-pipeline.types";
 
 const agentRequestStorage = new AsyncLocalStorage<AgentRequestState>();
 

@@ -12,6 +12,7 @@ import {
 } from "@copilotkit/react-core/v2";
 
 import { cn } from "@repo/utils";
+import { MESSAGE_ROLE } from "@repo/constants";
 import {
   RUN_START_FAILED_MESSAGE,
   WELCOME_MESSAGE,
@@ -169,7 +170,7 @@ export const ChatSidebarContent = ({
 
     currentAgent.addMessage({
       id: crypto.randomUUID(),
-      role: "user",
+      role: MESSAGE_ROLE.USER,
       content: pendingMessage,
     });
 

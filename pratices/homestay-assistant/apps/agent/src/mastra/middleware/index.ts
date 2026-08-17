@@ -4,15 +4,15 @@ export type {
   AgentRequestPipelineResult,
   AgentRequestPipelineSuccess,
   AgentRequestState,
-} from "./types";
+} from "./request-pipeline/request-pipeline.types";
 
 export * from "./constants";
 export * from "./verify-clerk-auth";
 export * from "./build-request-context";
-export * from "./pipeline";
+export * from "./request-pipeline/request-pipeline";
 
-export * from "./middleware.types";
-export * from "./middleware.pipeline";
+export * from "./server-middleware.types";
+export * from "./server-middleware";
 
 export * from "./authentication/authentication.middleware";
 export * from "./authentication/authentication.types";

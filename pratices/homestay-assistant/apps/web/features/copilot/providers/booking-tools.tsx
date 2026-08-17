@@ -89,13 +89,6 @@ export const BookingToolsProvider = () => {
         "After check_room_availability succeeds for a MODIFY flow (flow=modify + excludeBookingId), show the read-only confirm modification modal with before→after diffs and recalculated total. Pass bookingId, result.room, and the SAME checkInDate, checkOutDate, and guests from check_room_availability.result (the values just validated — from edit_modify_booking confirmed:true, or the stated change merged over the booking when the edit form was skipped). Also pass originalCheckInDate, originalCheckOutDate, and originalGuests from check_room_availability.result when present (fallback: edit_modify_booking args or the resolved booking) so the UI can show only changed fields. Never put original booking dates into checkInDate/checkOutDate/guests. Do NOT call update_booking until CONFIRM_MODIFY_BOOKING returns confirmed: true. If confirmed: true, call update_booking with bookingId, checkInDate, checkOutDate, and guests from the result — the same HITL card then shows submitting/success/failed from update_booking (do not expect a separate ConfirmSuccess card); on success do NOT send chat confirmation text. If confirmed: false, reply that the booking was kept unchanged. Never use this for creating a new booking.",
       parameters: confirmModifyBookingSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
-        // <ConfirmModifyBookingModal
-        //   status={status}
-        //   args={args as Partial<ConfirmModifyBookingArgs>}
-        //   respond={respond}
-        //   result={result}
-        //   toolCallId={toolCallId}
-        // />
         <HitlConfirmStayModal
           variant="modify"
           status={status}

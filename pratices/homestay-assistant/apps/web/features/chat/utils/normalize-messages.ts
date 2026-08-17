@@ -1,3 +1,4 @@
+import { MESSAGE_ROLE, MessageRole } from "@repo/constants";
 import type { MessageLike, ToolCallLike } from "@/features/chat/types";
 
 type CopilotKitToolCall = {
@@ -34,23 +35,17 @@ const extractFirstJsonObject = (args: string): string => {
 
   let depth = 0;
   let inString = false;
-  let isEscaped = false;
+  let escaped = false;
 
-  for (let index = start; index < args.length; index++) {
+  for (let index = start; index < args.length; index += 1) {
     const char = args[index];
 
-    if (inString && char === '"' && !isEscaped) {
-      inString = false;
-      continue;
-    }
-
-    if (inString && char === "\\" && !isEscaped) {
-      isEscaped = true;
-      continue;
-    }
-
     if (inString) {
-      isEscaped = false;
+      if (char === '"' && !escaped) {
+        inString = false;
+      }
+
+      escaped = char === "\\" && !escaped;
       continue;
     }
 
@@ -59,10 +54,14 @@ const extractFirstJsonObject = (args: string): string => {
       continue;
     }
 
-    depth += char === "{" ? 1 : char === "}" ? -1 : 0;
+    if (char === "{") {
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
 
-    if (depth === 0) {
-      return args.slice(start, index + 1);
+      if (depth === 0) {
+        return args.slice(start, index + 1);
+      }
     }
   }
 
@@ -155,7 +154,7 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
   const candidate = message as MessageLike & Record<string, unknown>;
   const rawToolCalls = candidate.toolCalls;
 
-  if (candidate.role !== "assistant" || !Array.isArray(rawToolCalls)) {
+  if (candidate.role !== MESSAGE_ROLE.ASSISTANT || !Array.isArray(rawToolCalls)) {
     return message;
   }
 
@@ -277,7 +276,10 @@ export const dedupeMessagesById = <
 
     const existing = result[existingIndex]!;
 
-    if (message.role === "assistant" && existing.role === "assistant") {
+    if (
+      message.role === MESSAGE_ROLE.ASSISTANT &&
+      existing.role === MESSAGE_ROLE.ASSISTANT
+    ) {
       result[existingIndex] = mergeAssistantDuplicates(
         existing as TMessage & { id: string },
         message as TMessage & { id: string },
@@ -314,8 +316,8 @@ export const collapseConsecutiveIdenticalAssistants = <
     const previous = result.at(-1);
 
     if (
-      previous?.role === "assistant" &&
-      message.role === "assistant" &&
+      previous?.role === MESSAGE_ROLE.ASSISTANT &&
+      message.role === MESSAGE_ROLE.ASSISTANT &&
       !hasToolCalls(previous) &&
       !hasToolCalls(message)
     ) {
@@ -373,7 +375,10 @@ export const mergeHydratedMessages = <
       continue;
     }
 
-    if (message.role === "assistant" && existing.role === "assistant") {
+    if (
+      message.role === MESSAGE_ROLE.ASSISTANT &&
+      existing.role === MESSAGE_ROLE.ASSISTANT
+    ) {
       byId.set(message.id, mergeAssistantDuplicates(existing, message));
       continue;
     }
@@ -409,3 +414,126 @@ export const normalizeMessages = <
   collapseConsecutiveIdenticalAssistants(
     dedupeMessagesById(messages.map(normalizeMessage)),
   );
+
+type ChatMessageRole = MessageRole | "reasoning" | string;
+
+type ChatMessageLike = {
+  id: string;
+  role: ChatMessageRole;
+};
+
+const GROUPED_TOP_SPACING = "pt-1.5";
+const DEFAULT_TOP_SPACING = "pt-4";
+/** Embedded widgets sit slightly apart from conversation bubbles. */
+const WIDGET_TOP_SPACING = "pt-3";
+
+const isSameSenderGroup = (
+  currentRole: Extract<MessageRole, "user" | "assistant">,
+  previousRole: ChatMessageRole | undefined,
+) => {
+  if (!previousRole) {
+    return false;
+  }
+
+  if (currentRole === MESSAGE_ROLE.USER) {
+    return previousRole === MESSAGE_ROLE.USER;
+  }
+
+  return previousRole === MESSAGE_ROLE.ASSISTANT || previousRole === "reasoning";
+};
+
+type MessageTopSpacingOptions = {
+  /** Tool-only assistant turn — treat as widget block, not a grouped bubble. */
+  widgetOnly?: boolean;
+};
+
+export const getMessageTopSpacing = (
+  messages: ChatMessageLike[] | undefined,
+  messageId: string,
+  role: Extract<MessageRole, "user" | "assistant">,
+  options?: MessageTopSpacingOptions,
+) => {
+  if (!messages?.length) {
+    return options?.widgetOnly ? WIDGET_TOP_SPACING : DEFAULT_TOP_SPACING;
+  }
+
+  const index = messages.findIndex((message) => message.id === messageId);
+  if (index <= 0) {
+    return options?.widgetOnly ? WIDGET_TOP_SPACING : DEFAULT_TOP_SPACING;
+  }
+
+  if (options?.widgetOnly) {
+    return WIDGET_TOP_SPACING;
+  }
+
+  const previousRole = messages[index - 1]?.role;
+  return isSameSenderGroup(role, previousRole)
+    ? GROUPED_TOP_SPACING
+    : DEFAULT_TOP_SPACING;
+};
+
+/**
+ * True when another tool ran later in the same turn (before the next user
+ * message) after the given tool call. A guest-facing answer (Room List,
+ * booking-list) is always the LAST tool call of its turn; an internal
+ * resolve-style lookup (find_room / get_bookings with purpose:"resolve") is
+ * always followed by more tool activity (get_bookings, find_booking_by_id, a
+ * picker, a confirm dialog, ...) once its result comes back. Used as a
+ * determinism fallback so a resolve-purpose card stays hidden even if a call
+ * forgot to pass purpose.
+ *
+ * Only counts activity in a LATER assistant message, never a co-occurring
+ * call in the same message: every real resolve chain needs the previous
+ * step's result (a roomId, a bookingId) before the next tool can be called,
+ * so it can never be emitted as a parallel call alongside this one — a
+ * parallel call in the same message is always an unrelated request (e.g.
+ * "show rooms and my bookings" batching find_room + get_bookings together),
+ * not evidence this call was a resolve lookup.
+ */
+export const hasLaterToolCallInTurn = (
+  messages: MessageLike[] | undefined,
+  toolCallId: string | undefined,
+): boolean => {
+  if (!messages?.length || !toolCallId) {
+    return false;
+  }
+
+  const callIndex = messages.findIndex(
+    (message) =>
+      message.role === MESSAGE_ROLE.ASSISTANT &&
+      (message.toolCalls ?? []).some((call) => call.id === toolCallId),
+  );
+
+  if (callIndex < 0) {
+    return false;
+  }
+
+  for (let index = callIndex + 1; index < messages.length; index += 1) {
+    const message = messages[index];
+    if (message?.role === MESSAGE_ROLE.USER) {
+      return false;
+    }
+    if (
+      message?.role === MESSAGE_ROLE.ASSISTANT &&
+      (message.toolCalls ?? []).length > 0
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Formerly hid assistant text when a dedicated success/unavailable card already
+ * answered the turn. Create/cancel/update notices are headless (HITL same-card
+ * phases), and actionable Booking Form opening copy is stopped at Mastra
+ * (`replyHint` / GENERIC UI RENDERING) — not by blanking chat text here.
+ *
+ * Always returns false so confirmation, search, availability, and clarification
+ * sentences still render. Kept as a named hook for ChatAssistantMessage.
+ */
+export const isSupersededByToolCard = (
+  _messages: MessageLike[] | undefined,
+  _messageId: string,
+) => false;

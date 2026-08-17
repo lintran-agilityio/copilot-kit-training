@@ -31,7 +31,6 @@ export {
   isStopLatchLive,
   latchThreadStop,
   noteThreadUserMessage,
-  STOP_LATCH_TTL_MS,
   type StopLatchEntry,
 } from "./stop-latch";
 
@@ -46,6 +45,5 @@ export {
   enableProcessorTripwireHandling,
   excludeResolvedToolCalls,
   selectLatestUserTurn,
-  type ThreadMemoryPort,
 } from "./stream-patch";
-
+export * from "./types";

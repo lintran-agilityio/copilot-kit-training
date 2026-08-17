@@ -18,12 +18,14 @@
  * `STOP_LATCH_TTL_MS` (10s) — one contract in `@repo/constants` `stop-timing`.
  */
 
-import { STOP_RECENT_TTL_MS } from "@repo/constants";
+import { MESSAGE_ROLE, STOP_RECENT_TTL_MS } from "@repo/constants";
 import {
   isAbortError,
   isAbortLikeErrorMessage,
   isAgUiStopErrorCode,
 } from "@repo/utils";
+import { AGENT_BUSY_MESSAGE } from "../constants";
+import { useChatStore } from "../stores/chat-store";
 
 export { isAbortError } from "@repo/utils";
 
@@ -48,14 +50,6 @@ type StoppableAgent<TMessage extends AgentMessageLike> = {
   messages: TMessage[];
   setMessages: (messages: TMessage[]) => void;
 };
-
-/**
- * Silent-409 window after Stop. Client half of the Stop timing contract
- * (`STOP_RECENT_TTL_MS` in `@repo/constants`; review with `STOP_LATCH_TTL_MS`).
- *
- * @deprecated Prefer `STOP_RECENT_TTL_MS` from `@repo/constants`.
- */
-export const RECENT_STOP_TTL_MS = STOP_RECENT_TTL_MS;
 
 const recentlyStoppedAtByThreadId = new Map<string, number>();
 
@@ -244,7 +238,7 @@ export const getTrailingAssistantMessageId = (
 ): string | undefined => {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message?.role === "assistant" && typeof message.id === "string") {
+    if (message?.role === MESSAGE_ROLE.ASSISTANT && typeof message.id === "string") {
       return message.id;
     }
   }
@@ -360,4 +354,43 @@ export const runAgentSafely = async (
 
     console.error("Agent run failed", error);
   }
+};
+
+type ChatSendKeyDown = {
+  key: string;
+  shiftKey: boolean;
+  isComposing: boolean;
+  isRunning: boolean;
+};
+
+export const resolveAgentBusyMessage = (
+  isRunning: boolean,
+): string | null => (isRunning ? AGENT_BUSY_MESSAGE : null);
+
+/** True when Enter would submit chat while the agent is already running. */
+export const shouldBlockChatSendKeyDown = ({
+  key,
+  shiftKey,
+  isComposing,
+  isRunning,
+}: ChatSendKeyDown): boolean => {
+  if (!isRunning || isComposing || shiftKey) {
+    return false;
+  }
+
+  return key === "Enter";
+};
+
+/**
+ * Blocks a new agent request while a run is in flight and records the
+ * guest-facing error. Returns true when the caller must abort.
+ */
+export const rejectIfAgentRunning = (isRunning: boolean): boolean => {
+  const message = resolveAgentBusyMessage(isRunning);
+  if (!message) {
+    return false;
+  }
+
+  useChatStore.getState().setActionError(message);
+  return true;
 };

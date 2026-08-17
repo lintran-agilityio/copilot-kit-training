@@ -16,6 +16,8 @@ export type Room = RoomType & {
   className?: string;
   onSelect?: (payload: RoomSelectPayload) => void;
   onBook?: (payload: RoomSelectPayload) => void;
+  /** Keeps the Book button visible but non-interactive (e.g. turn superseded / agent still running). */
+  bookDisabled?: boolean;
 };
 
 export const Room = ({
@@ -23,6 +25,7 @@ export const Room = ({
   className,
   onSelect,
   onBook,
+  bookDisabled = false,
   ...room
 }: Room) => {
   const canViewOnPage = typeof onSelect === "function";
@@ -99,7 +102,8 @@ export const Room = ({
             <Button
               type="button"
               size="sm"
-              className="h-8 gap-1.5 bg-emerald-500/15 px-3 text-xs font-medium text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200"
+              disabled={bookDisabled}
+              className="h-8 gap-1.5 bg-emerald-500/15 px-3 text-xs font-medium text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={handleBook}
             >
               <CalendarCheck className="size-3.5" />

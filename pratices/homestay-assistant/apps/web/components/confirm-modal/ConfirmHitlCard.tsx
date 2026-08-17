@@ -48,6 +48,10 @@ export type ConfirmHitlCardProps = {
   confirmIcon?: LucideIcon;
   actionsDisabled?: boolean;
   confirmDisabled?: boolean;
+  /** Grays out View bookings instead of unmounting it — avoids stuck UI when actionability flips transiently. */
+  viewBookingsDisabled?: boolean;
+  /** Grays out Retry instead of unmounting it — avoids stuck UI when actionability flips transiently. */
+  retryDisabled?: boolean;
   errorMessage?: string | null;
 
   onCancel: () => void;
@@ -89,6 +93,8 @@ export const ConfirmHitlCard = ({
   confirmIcon: ConfirmIcon,
   actionsDisabled = false,
   confirmDisabled = false,
+  viewBookingsDisabled = false,
+  retryDisabled = false,
   errorMessage = null,
   onCancel,
   onConfirm,
@@ -119,6 +125,7 @@ export const ConfirmHitlCard = ({
                 type="button"
                 size="sm"
                 className="bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
+                disabled={viewBookingsDisabled}
                 onClick={onViewBookings}
               >
                 {viewBookingsLabel}
@@ -149,6 +156,7 @@ export const ConfirmHitlCard = ({
                 type="button"
                 size="sm"
                 className="bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
+                disabled={retryDisabled}
                 onClick={onRetry}
               >
                 {retryLabel}

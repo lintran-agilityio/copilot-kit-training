@@ -1,7 +1,7 @@
 import type { ProcessOutputStreamArgs } from "@mastra/core/processors";
 import type { ChunkType } from "@mastra/core/stream";
 
-import { applyListResultsHandoffStreamFilter } from "../booking/stop-after-list-results";
+import { applyListResultsHandoffStreamFilter } from "../booking";
 
 /**
  * After a find_room / get_bookings tool-result chunk that returned results,

@@ -1,4 +1,4 @@
-import type { MastraMiddlewareHandler } from "../middleware.types";
+import type { MastraMiddlewareHandler } from "../server-middleware.types";
 import {
   buildRequestLogContext,
   getMastraLogger,

@@ -1,3 +1,4 @@
+import type { GetBookingsPurpose } from "@repo/constants";
 import type { Room } from "@/features/room/types/room";
 import { ToolRendererProps } from "@/features/copilot/types";
 
@@ -122,7 +123,7 @@ export type GetBookingsResult = {
    * MyBookingsNotice suppresses itself in this case so only the HITL that
    * follows (confirm dialog or picker) renders.
    */
-  purpose?: "list" | "resolve";
+  purpose?: GetBookingsPurpose;
 };
 
 export type GetBookingsParameters = {

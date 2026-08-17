@@ -1,8 +1,5 @@
 "use client";
 
-import { useAgent } from "@copilotkit/react-core/v2";
-
-import { AGENT_KEYS } from "@repo/constants";
 import { CardListSection } from "@/components/common/CardListSection";
 import { RoomListSkeleton } from "@/components/common/RoomListSkeleton";
 import { BookingCard } from "@/features/booking/components/BookingCard";
@@ -33,7 +30,6 @@ export const BookingList = ({
   compact = false,
   toolCallId,
 }: BookingListProps) => {
-  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const { isActionable } = useGenericUiInteraction(toolCallId);
   const cancelBooking = useCancelBooking();
   const modifyBooking = useModifyBooking();
@@ -65,7 +61,7 @@ export const BookingList = ({
         <BookingCard
           booking={booking}
           compact={compact}
-          isAgentRunning={agent.isRunning || !isActionable}
+          actionsLocked={!isActionable}
           onCancelBooking={cancelBooking}
           onModifyBooking={modifyBooking}
         />

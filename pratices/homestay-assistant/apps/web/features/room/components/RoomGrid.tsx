@@ -5,7 +5,7 @@ import { ArrowLeft, Heart, Share2 } from "lucide-react";
 import { RoomListSkeleton } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { ListRoom, RoomDetail } from "@/features/room/components";
-import { ROOM_DETAIL_VARIANT } from "@/features/room/constants/room-detail";
+import { ROOM_DETAIL_VARIANT } from "@/constants";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import type { Room } from "@/features/room/types/room";
 import { cn } from "@repo/utils";
