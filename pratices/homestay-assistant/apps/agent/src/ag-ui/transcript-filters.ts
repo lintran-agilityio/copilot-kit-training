@@ -38,6 +38,13 @@ const hasText = (content: AgUiMessageContent) =>
  * gets written again and comes back duplicated on later recalls. Forward only
  * the calls memory does not own yet; the tool result of a resolved call is
  * dropped with it so no result is left orphaned.
+ *
+ * A second, independent defense against the same invariant —
+ * `DedupeToolCallsProcessor` in
+ * `apps/agent/src/mastra/processors/dedupe-tool-calls.processor.ts` — dedupes
+ * by toolCallId within the *stored* memory prompt sent to the LLM. This one
+ * guards the transport-to-memory boundary; that one guards memory-to-LLM.
+ * Keep both in sync if the dedupe key or the "resolved" definition changes.
  */
 export const excludeResolvedToolCalls = <T extends AgUiMessage>(
   messages: T[],

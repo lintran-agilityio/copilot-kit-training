@@ -31,7 +31,6 @@ export {
   isStopLatchLive,
   latchThreadStop,
   noteThreadUserMessage,
-  STOP_LATCH_TTL_MS,
   type StopLatchEntry,
 } from "./stop-latch";
 

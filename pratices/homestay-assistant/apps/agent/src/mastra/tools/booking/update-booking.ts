@@ -9,10 +9,7 @@ import {
   updateBooking,
 } from "@/mastra/services";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import {
-  clearPinnedStay,
-  readPinnedStay,
-} from "@/mastra/utils/resolve-pinned-stay";
+import { takePinnedStay } from "@/mastra/utils/resolve-pinned-stay";
 import {
   commitIfNotAborted,
   serviceContextFromTool,
@@ -36,7 +33,7 @@ export const updateBookingTool = createTool({
 
     // Prefer the HITL confirm result pinned by prepareStep — the model often
     // reuses stale draft/original dates when toolChoice forces this call.
-    const pinned = readPinnedStay(
+    const pinned = takePinnedStay(
       context.requestContext,
       REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY,
     );
@@ -46,11 +43,6 @@ export const updateBookingTool = createTool({
     const resolvedCheckIn = pinned?.checkInDate ?? checkInDate;
     const resolvedCheckOut = pinned?.checkOutDate ?? checkOutDate;
     const resolvedGuests = pinned?.guests ?? guests;
-
-    clearPinnedStay(
-      context.requestContext,
-      REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY,
-    );
 
     await assertOwnedModifiableBooking(resolvedBookingId, serviceContext);
 

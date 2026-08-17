@@ -1,7 +1,7 @@
 import type { ProcessOutputStreamArgs } from "@mastra/core/processors";
 import type { ChunkType } from "@mastra/core/stream";
 
-import { applyBookingFormHandoffStreamFilter } from "../booking/stop-after-booking-form";
+import { applyBookingFormHandoffStreamFilter } from "../booking";
 
 /**
  * After a successful get_room_by_id or mutation (create/update/cancel)

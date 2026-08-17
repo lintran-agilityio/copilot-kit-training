@@ -8,10 +8,7 @@ import {
 } from "@/mastra/schemas/booking";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { findBookingById } from "@/mastra/services";
-import {
-  clearPinnedStay,
-  readPinnedBookingId,
-} from "@/mastra/utils/resolve-pinned-stay";
+import { takePinnedBookingId } from "@/mastra/utils/resolve-pinned-stay";
 import {
   serviceContextFromTool,
   throwIfAborted,
@@ -32,12 +29,7 @@ export const findBookingByIdTool = createTool({
     throwIfAborted(context.abortSignal);
 
     // Prefer the id pinned by prepareStep from the modify picker / sole match.
-    const pinnedBookingId = readPinnedBookingId(
-      context.requestContext,
-      REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID,
-    );
-
-    clearPinnedStay(
+    const pinnedBookingId = takePinnedBookingId(
       context.requestContext,
       REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID,
     );

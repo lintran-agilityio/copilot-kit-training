@@ -97,18 +97,19 @@ export const addDaysYmd = (ymd: string, days: number): string => {
 };
 
 /**
- * Weekday of a business calendar date, 0 = Sunday. The date is already in
- * business time, so it is read back as UTC to avoid a second timezone shift.
+ * Business calendar date read back as a UTC Date, so it can be inspected
+ * (weekday, formatting) without a second timezone shift.
  */
-const getYmdWeekday = (ymd: string): number => {
+const ymdToUtcDate = (ymd: string): Date => {
   const { year, month, day } = splitYmd(ymd);
-  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return new Date(Date.UTC(year, month - 1, day));
 };
 
-export const formatYmdWeekday = (ymd: string): string => {
-  const { year, month, day } = splitYmd(ymd);
-  return weekdayFormatter.format(new Date(Date.UTC(year, month - 1, day)));
-};
+/** Weekday of a business calendar date, 0 = Sunday. */
+const getYmdWeekday = (ymd: string): number => ymdToUtcDate(ymd).getUTCDay();
+
+export const formatYmdWeekday = (ymd: string): string =>
+  weekdayFormatter.format(ymdToUtcDate(ymd));
 
 /**
  * Resolves "this/next/last weekend" to a concrete Saturday-night stay. Models

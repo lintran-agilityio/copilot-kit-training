@@ -36,6 +36,14 @@ const keepFirstOccurrence = <TPart extends AssistantPart | ToolPart>(
  * approvals the model has already collected, so it stops opening the HITL
  * dialog and asks in chat instead. Only the first occurrence of each call and
  * result reaches the provider; this rewrite is transient and never persists.
+ *
+ * A second, independent defense against the same invariant —
+ * `excludeResolvedToolCalls` in `apps/agent/src/ag-ui/transcript-filters.ts`
+ * — strips already-resolved tool calls from the *incoming* AG-UI transcript
+ * before it reaches Mastra memory. That one guards against the transport
+ * replaying a call memory already owns; this one guards the LLM-bound prompt
+ * built from memory. Keep both in sync if the dedupe key (toolCallId) or the
+ * "resolved" definition changes.
  */
 export class DedupeToolCallsProcessor implements Processor {
   id = "dedupe-tool-calls";

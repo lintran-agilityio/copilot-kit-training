@@ -22,9 +22,6 @@ const stopLatchByThreadId = new Map<string, StopLatchEntry>();
 /** Newest user message id seen per thread — identifies the turn a Stop belongs to. */
 const lastUserMessageIdByThreadId = new Map<string, string>();
 
-/** @deprecated Prefer `STOP_LATCH_TTL_MS` from `@repo/constants`. */
-export { STOP_LATCH_TTL_MS };
-
 /**
  * Record that the user stopped this thread.
  *

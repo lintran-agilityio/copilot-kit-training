@@ -7,10 +7,7 @@ import { createBookingInputSchema } from "@repo/schemas";
 import { bookingSchema } from "@/mastra/schemas/booking";
 import { createBooking } from "@/mastra/services";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import {
-  clearPinnedStay,
-  readPinnedStay,
-} from "@/mastra/utils/resolve-pinned-stay";
+import { takePinnedStay } from "@/mastra/utils/resolve-pinned-stay";
 import {
   commitIfNotAborted,
   serviceContextFromTool,
@@ -33,7 +30,7 @@ export const createBookingTool = createTool({
     throwIfAborted(context.abortSignal);
     const { requestContext, abortSignal } = context;
 
-    const pinned = readPinnedStay(
+    const pinned = takePinnedStay(
       requestContext,
       REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY,
     );
@@ -42,11 +39,6 @@ export const createBookingTool = createTool({
     const checkInDate = pinned?.checkInDate ?? params.checkInDate;
     const checkOutDate = pinned?.checkOutDate ?? params.checkOutDate;
     const guests = pinned?.guests ?? params.guests;
-
-    clearPinnedStay(
-      requestContext,
-      REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY,
-    );
 
     return commitIfNotAborted(abortSignal, () =>
       createBooking(

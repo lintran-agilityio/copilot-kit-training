@@ -1,12 +1,12 @@
 import {
   PromptInjectionDetector,
+  TokenLimiterProcessor,
   UnicodeNormalizer,
 } from "@mastra/core/processors";
 
 import { AGENT_INPUT_TOKEN_LIMIT } from "@repo/constants";
 import { DedupeToolCallsProcessor } from "./dedupe-tool-calls.processor";
 import { ExcludeBlockedMessagesProcessor } from "./exclude-blocked-messages.processor";
-import { TokenLimiterWithDiagnosticsProcessor } from "./token-limiter-diagnostics.processor";
 import { UserMessageTokenLimitProcessor } from "./user-message-token-limit.processor";
 
 const promptInjectionProcessor = new PromptInjectionDetector({
@@ -17,8 +17,7 @@ const promptInjectionProcessor = new PromptInjectionDetector({
   detectionTypes: ["injection", "jailbreak", "system-override"],
 });
 
-/** Same limit/trimMode as before — diagnostics wrapper only logs on TripWire. */
-const tokenLimitProcessor = new TokenLimiterWithDiagnosticsProcessor({
+const tokenLimitProcessor = new TokenLimiterProcessor({
   limit: AGENT_INPUT_TOKEN_LIMIT,
   trimMode: "contiguous",
 });
