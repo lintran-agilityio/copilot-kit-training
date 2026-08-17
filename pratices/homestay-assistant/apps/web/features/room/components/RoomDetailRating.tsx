@@ -3,7 +3,7 @@ import { Star } from "lucide-react";
 import {
   ROOM_DETAIL_STATIC_RATING,
   ROOM_DETAIL_STATIC_REVIEW_COUNT,
-} from "@/features/room/constants/room-detail";
+} from "@/constants";
 
 export const RoomDetailRating = () => {
   return (

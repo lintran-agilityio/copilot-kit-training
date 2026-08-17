@@ -5,7 +5,6 @@ import { ToolCallStatus, useAgent } from "@copilotkit/react-core/v2";
 
 import { parseToolResult } from "@repo/utils";
 import { AGENT_KEYS, TOOL_PURPOSE } from "@repo/constants";
-import { hasLaterToolCallInTurn } from "@/features/chat/utils";
 import type { MessageLike } from "@/features/chat/types";
 import { RoomListSkeleton } from "@/components/common";
 import { EmbeddedWidget } from "@/features/chat/components";
@@ -17,6 +16,7 @@ import type {
 import {
   buildFindRoomTitle,
   markAgentRoomSearch,
+  shouldSuppressForResolve,
 } from "@/features/room/utils";
 
 type ToolErrorResult = {
@@ -102,16 +102,14 @@ export const FindRoomNotice = ({
   const roomIdsKey = rooms.map((room) => room.id).join(",");
 
   // purpose:"resolve" — internal cancel/modify room-name lookup, not a
-  // guest-facing FIND/RECOMMEND call. Also suppress when another tool ran
-  // later in the same turn (get_bookings, a picker, a confirm dialog, ...)
-  // even if the call forgot purpose:"resolve" — mirrors MyBookingsNotice's
-  // fallback for the analogous get_bookings risk.
-  const suppressForResolve =
-    purpose === TOOL_PURPOSE.FIND_ROOM.RESOLVE ||
-    hasLaterToolCallInTurn(
-      agent.messages as MessageLike[] | undefined,
-      toolCallId,
-    );
+  // guest-facing FIND/RECOMMEND call. See shouldSuppressForResolve for the
+  // later-tool-call fallback (mirrors MyBookingsNotice's get_bookings rule).
+  const suppressForResolve = shouldSuppressForResolve(
+    purpose,
+    TOOL_PURPOSE.FIND_ROOM.RESOLVE,
+    agent.messages as MessageLike[] | undefined,
+    toolCallId,
+  );
 
   const suppressList =
     suppressForResolve || shouldSuppressRoomList(purpose, rooms.length);

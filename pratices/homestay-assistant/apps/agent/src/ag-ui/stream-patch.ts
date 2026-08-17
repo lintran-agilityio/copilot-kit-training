@@ -27,7 +27,6 @@ import {
   latchThreadStop,
   noteThreadUserMessage,
 } from "./stop-latch";
-import type { ThreadMemoryPort } from "./thread-memory-port";
 import {
   excludeResolvedToolCalls,
   findLatestUnblockedUserMessageId,
@@ -41,7 +40,7 @@ import {
   syncBlockedMessageIdsToRequestContext,
   tripwireHandlingContext,
 } from "./tripwire";
-import type { AgUiMastraAgent, AgUiMessage } from "./types";
+import type { AgUiMastraAgent, AgUiMessage, ThreadMemoryPort } from "./types";
 
 const patchedAgents = new WeakSet<object>();
 
@@ -323,7 +322,7 @@ const patchAgUiAgent = (
 
     await syncBlockedMessageIdsToRequestContext({
       requestContext: aguiAgent.requestContext,
-      blockedMessageIds,
+      blockedMessageIds: blockedMessageIds as string[],
     });
 
     const blockedUserMessageId = findLatestUnblockedUserMessageId(
@@ -362,10 +361,7 @@ const patchAgUiAgent = (
 
     const patchedCallbacks = {
       ...callbacks,
-      onToolCallStart: (payload: {
-        toolCallId: string;
-        toolName: string;
-      }) => {
+      onToolCallStart: (payload: { toolCallId: string; toolName: string }) => {
         openClientToolCallIds.add(payload.toolCallId);
         argsTextByToolCallId.set(payload.toolCallId, "");
         originalOnToolCallStart?.(payload);
@@ -438,5 +434,3 @@ export {
   excludeResolvedToolCalls,
   selectLatestUserTurn,
 } from "./transcript-filters";
-
-export type { ThreadMemoryPort } from "./thread-memory-port";

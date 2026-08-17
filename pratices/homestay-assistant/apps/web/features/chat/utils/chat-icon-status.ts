@@ -114,21 +114,23 @@ export const hasActiveToolProcessing = (messages: ChatIconMessage[]) => {
     return false;
   }
 
-  if (lastMessage.role === MESSAGE_ROLE.TOOL) {
+  const { role, toolCalls, content } = lastMessage;
+
+  if (role === MESSAGE_ROLE.TOOL) {
     return true;
   }
 
-  if (lastMessage.role !== MESSAGE_ROLE.ASSISTANT) {
+  if (role !== MESSAGE_ROLE.ASSISTANT) {
     return false;
   }
 
   const hasToolCalls =
-    Array.isArray(lastMessage.toolCalls) && lastMessage.toolCalls.length > 0;
+    Array.isArray(toolCalls) && toolCalls.length > 0;
   if (!hasToolCalls) {
     return false;
   }
 
-  const text = getMessageTextContent(lastMessage.content).trim();
+  const text = getMessageTextContent(content).trim();
 
   // Tool-only / tool-first turns read as processing; text replies as typing.
   return !text;
@@ -149,24 +151,26 @@ export const resolveChatIconStatus = (input: {
   unreadCount: number;
   showCompleted: boolean;
 }): ChatIconStatus => {
-  if (input.isChatOpen) {
+  const { isChatOpen, isRunning, messages, unreadCount, showCompleted } = input;
+
+  if (isChatOpen) {
     return { kind: CHAT_ICON_STATUS.IDLE };
   }
 
-  if (input.isRunning) {
-    if (hasActiveToolProcessing(input.messages)) {
+  if (isRunning) {
+    if (hasActiveToolProcessing(messages)) {
       return { kind: CHAT_ICON_STATUS.PROCESSING };
     }
 
     return { kind: CHAT_ICON_STATUS.TYPING };
   }
 
-  if (input.showCompleted) {
+  if (showCompleted) {
     return { kind: CHAT_ICON_STATUS.COMPLETED };
   }
 
-  if (input.unreadCount > 0) {
-    return { kind: CHAT_ICON_STATUS.UNREAD, count: input.unreadCount };
+  if (unreadCount > 0) {
+    return { kind: CHAT_ICON_STATUS.UNREAD, count: unreadCount };
   }
 
   return { kind: CHAT_ICON_STATUS.IDLE };

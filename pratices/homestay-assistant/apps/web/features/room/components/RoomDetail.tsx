@@ -33,7 +33,7 @@ import {
   ROOM_DETAIL_VARIANT,
   type RoomDetailEntryMode,
   type RoomDetailVariant,
-} from "@/features/room/constants/room-detail";
+} from "@/constants";
 
 import {
   addDays,

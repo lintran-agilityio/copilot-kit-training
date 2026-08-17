@@ -46,6 +46,5 @@ export {
   enableProcessorTripwireHandling,
   excludeResolvedToolCalls,
   selectLatestUserTurn,
-  type ThreadMemoryPort,
 } from "./stream-patch";
-
+export * from "./types";

@@ -25,6 +25,7 @@ import {
   isAgUiStopErrorCode,
 } from "@repo/utils";
 import { AGENT_BUSY_MESSAGE } from "../constants";
+import { useChatStore } from "../stores/chat-store";
 
 export { isAbortError } from "@repo/utils";
 
@@ -49,14 +50,6 @@ type StoppableAgent<TMessage extends AgentMessageLike> = {
   messages: TMessage[];
   setMessages: (messages: TMessage[]) => void;
 };
-
-/**
- * Silent-409 window after Stop. Client half of the Stop timing contract
- * (`STOP_RECENT_TTL_MS` in `@repo/constants`; review with `STOP_LATCH_TTL_MS`).
- *
- * @deprecated Prefer `STOP_RECENT_TTL_MS` from `@repo/constants`.
- */
-export const RECENT_STOP_TTL_MS = STOP_RECENT_TTL_MS;
 
 const recentlyStoppedAtByThreadId = new Map<string, number>();
 
@@ -386,4 +379,18 @@ export const shouldBlockChatSendKeyDown = ({
   }
 
   return key === "Enter";
+};
+
+/**
+ * Blocks a new agent request while a run is in flight and records the
+ * guest-facing error. Returns true when the caller must abort.
+ */
+export const rejectIfAgentRunning = (isRunning: boolean): boolean => {
+  const message = resolveAgentBusyMessage(isRunning);
+  if (!message) {
+    return false;
+  }
+
+  useChatStore.getState().setActionError(message);
+  return true;
 };

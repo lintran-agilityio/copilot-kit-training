@@ -11,7 +11,7 @@ import {
   isArtifactInteractive,
 } from "@/features/chat/types/artifact";
 import { RoomDetail } from "@/features/room/components";
-import { ROOM_DETAIL_VARIANT } from "@/features/room/constants/room-detail";
+import { ROOM_DETAIL_VARIANT } from "@/constants";
 import type {
   GetRoomByIdResult,
   GetRoomByIdToolProps,

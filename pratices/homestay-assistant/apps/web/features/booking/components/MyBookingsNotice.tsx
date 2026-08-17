@@ -7,12 +7,12 @@ import { AGENT_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import { RoomListSkeleton } from "@/components/common/RoomListSkeleton";
 import { EmbeddedWidget } from "@/features/chat/components";
 import { BookingList } from "@/features/booking/components/BookingList";
-import { hasLaterToolCallInTurn } from "@/features/chat/utils";
 import type { MessageLike } from "@/features/chat/types";
 import type {
   GetBookingsResult,
   GetBookingsToolProps,
 } from "@/features/booking/types";
+import { shouldSuppressForResolve } from "@/features/room/utils";
 
 const MY_BOOKINGS_TITLE = "Your bookings";
 
@@ -29,17 +29,15 @@ export const MyBookingsNotice = ({
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
 
   // purpose:"resolve" — cancel/modify/change-room resolution fetch, not a
-  // guest-facing VIEW/LIST call. Also suppress when another tool ran later in
-  // the same turn (find_booking_by_id, a picker, a confirm dialog, ...) even
-  // if the call forgot purpose:"resolve" — that always means this fetch only
-  // resolved a target, never the guest-facing answer. Suppress skeleton and
-  // card alike; the HITL that follows is the response.
-  const suppressForResolve =
-    parameters?.purpose === TOOL_PURPOSE.GET_BOOKINGS.RESOLVE ||
-    hasLaterToolCallInTurn(
-      agent.messages as MessageLike[] | undefined,
-      toolCallId,
-    );
+  // guest-facing VIEW/LIST call. See shouldSuppressForResolve for the
+  // later-tool-call fallback (mirrors FindRoomNotice's find_room rule).
+  // Suppress skeleton and card alike; the HITL that follows is the response.
+  const suppressForResolve = shouldSuppressForResolve(
+    parameters?.purpose,
+    TOOL_PURPOSE.GET_BOOKINGS.RESOLVE,
+    agent.messages as MessageLike[] | undefined,
+    toolCallId,
+  );
 
   if (
     status === ToolCallStatus.Executing ||

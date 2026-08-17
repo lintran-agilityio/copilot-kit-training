@@ -3,7 +3,7 @@ import { create } from "zustand";
 import {
   ROOM_DETAIL_ENTRY_MODE,
   type RoomDetailEntryMode,
-} from "@/features/room/constants/room-detail";
+} from "@/constants";
 import type { Room } from "@/features/room/types/room";
 
 type RoomStore = {

@@ -12,9 +12,9 @@ import {
 import {
   AMENITY_HIGHLIGHTS,
   type AmenityHighlight,
-} from "@/features/room/constants/room-detail";
-import type { Amenity } from "@/features/room/types/room";
+} from "@/constants";
 import { cn } from "@repo/utils";
+import type { Amenity } from "@/features/room/types/room";
 
 const AMENITY_ICONS = {
   monitor: Monitor,
