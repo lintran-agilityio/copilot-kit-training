@@ -60,13 +60,16 @@ const getFindRoomToolError = (
 };
 
 /**
- * True when BOOK name-resolve should skip Room List (exactly one match).
+ * True when Room List should stay hidden: BOOK name-resolve skips it only on
+ * exactly one match, while an internal cancel/modify room lookup ("resolve")
+ * never renders it — that flow only needs the roomId, not a picker card.
  * FIND/RECOMMEND always show the list when matches exist.
  */
 const shouldSuppressRoomList = (
   purpose: FindRoomResult["purpose"] | undefined,
   roomCount: number,
-) => purpose === "book_resolve" && roomCount === 1;
+) =>
+  (purpose === "book_resolve" && roomCount === 1) || purpose === "resolve";
 
 /**
  * Renders find_room tool output in chat: skeleton while loading, room cards when done.
@@ -95,8 +98,9 @@ export const FindRoomNotice = ({
   const title = parsed ? buildFindRoomTitle(parsed) : "Room results";
   const roomIdsKey = rooms.map((room) => room.id).join(",");
   const suppressList = shouldSuppressRoomList(purpose, rooms.length);
-  // book_resolve loads toward Confirm / ask-fields — avoid Room List skeleton flash.
-  const suppressLoadingSkeleton = parameters?.purpose === "book_resolve";
+  // book_resolve/resolve never show a Room List — avoid the skeleton flash while loading.
+  const suppressLoadingSkeleton =
+    parameters?.purpose === "book_resolve" || parameters?.purpose === "resolve";
 
   useEffect(() => {
     if (status !== ToolCallStatus.Complete || !rooms.length || suppressList) {

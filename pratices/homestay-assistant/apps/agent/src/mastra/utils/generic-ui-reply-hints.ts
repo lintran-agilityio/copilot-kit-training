@@ -7,6 +7,7 @@ export type FindRoomReplyPurpose =
   | "search"
   | "recommend"
   | "book_resolve"
+  | "resolve"
   | undefined;
 
 /**
@@ -28,7 +29,16 @@ export const buildFindRoomReplyHint = (
   matchCount: number,
   purpose: FindRoomReplyPurpose,
 ): string => {
-  console.log("matchCount", matchCount, "purpose", purpose);
+  if (purpose === "resolve") {
+    if (matchCount === 0) {
+      return "No room matched that name — Room List is suppressed. Reply with ONE short sentence that no room by that name exists; do NOT call get_bookings. Do NOT invent a roomId.";
+    }
+    if (matchCount === 1) {
+      return "Room resolved for cancel/modify lookup — Room List is suppressed (do NOT say cards were shown). Use rooms[0].id as roomId and continue the cancel/modify workflow's get_bookings call in the SAME turn — do NOT ask the guest to confirm the room name first.";
+    }
+    return `Multiple rooms matched that name (${matchCount}) — Room List is suppressed. Reply with ONE short sentence naming the matching rooms and asking which one they mean; do NOT call get_bookings until they pick.`;
+  }
+
   if (purpose === "book_resolve") {
     if (matchCount === 0) {
       return "No room matched that booking name. Reply with ONE short sentence that nothing matched; suggest a different room name. Do NOT invent rooms. Do NOT call check_room_availability.";

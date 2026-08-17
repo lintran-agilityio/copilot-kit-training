@@ -11,6 +11,12 @@ export type ResolveModifyAvailabilityNextActionInput = {
   stayUnchanged: boolean;
 };
 
+export type ModifyStayFields = {
+  checkInDate: string;
+  checkOutDate: string;
+  guests: number;
+};
+
 /**
  * Chooses nextAction after availability. Modify with a no-op candidate
  * (same as originals) must stop — never open CONFIRM_MODIFY_BOOKING.
@@ -31,3 +37,14 @@ export const resolveModifyAvailabilityNextAction = ({
 
   return "stop_booking";
 };
+
+/**
+ * True when two stay snapshots share the same check-in, check-out, and guests.
+ */
+export const isSameModifyStay = (
+  currentValue: ModifyStayFields,
+  newValue: ModifyStayFields,
+): boolean =>
+  currentValue.checkInDate === newValue.checkInDate &&
+  currentValue.checkOutDate === newValue.checkOutDate &&
+  currentValue.guests === newValue.guests;

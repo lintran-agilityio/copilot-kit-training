@@ -36,12 +36,12 @@ export type FindRoomResult = {
   date?: string;
   guests?: number;
   level?: number;
-  /** Echoed from find_room args — skip Room List when book_resolve + exactly 1 room. */
-  purpose?: "search" | "recommend" | "book_resolve";
+  /** Echoed from find_room args — skip Room List when book_resolve + exactly 1 room, or always for resolve. */
+  purpose?: "search" | "recommend" | "book_resolve" | "resolve";
 };
 
 export type FindRoomToolProps = ToolRendererProps<FindRoomResult> & {
-  /** Streaming tool args — used to skip Room List skeleton on book_resolve. */
+  /** Streaming tool args — used to skip Room List skeleton on book_resolve/resolve. */
   parameters?: {
     purpose?: FindRoomResult["purpose"];
   };

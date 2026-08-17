@@ -5,10 +5,10 @@ import { z } from "zod";
  * Default / omit = search (always show Room List when matches exist).
  */
 export const findRoomPurposeSchema = z
-  .enum(["search", "recommend", "book_resolve"])
+  .enum(["search", "recommend", "book_resolve", "resolve"])
   .optional()
   .describe(
-    'search = FIND/filter ("find/show Misty Pavilion") — Room List always. recommend = soft-book without a named room — Room List. book_resolve = BOOK name lookup only ("Book Misty Pavilion") — skip Room List when exactly 1 match; show list when >1; empty when 0. Never use book_resolve for find/show/tell-me-about.',
+    'search = FIND/filter ("find/show Misty Pavilion") — Room List always. recommend = soft-book without a named room — Room List. book_resolve = BOOK name lookup only ("Book Misty Pavilion") — skip Room List when exactly 1 match; show list when >1; empty when 0. resolve = internal room-name → roomId lookup for cancel/modify without a bookingId (e.g. "modify guest number for Moonlight Loft") — Room List always suppressed regardless of match count; use the single match\'s id as get_bookings.roomId, or ask which room when there is more than one match. Never use book_resolve or resolve for find/show/tell-me-about.',
   );
 
 /**

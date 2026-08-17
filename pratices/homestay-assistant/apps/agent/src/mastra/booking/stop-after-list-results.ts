@@ -41,8 +41,9 @@ const asModelOutputValue = (
 
 /**
  * True when find_room returned matches for a search/recommend turn — Room List
- * renders and IS the response. book_resolve is excluded: matchCount 0/1/N there
- * still needs a chat reply (error, missing field, or "choose one").
+ * renders and IS the response. book_resolve and resolve are excluded: matchCount
+ * 0/1/N there still needs a chat reply (error, missing field, or "choose one") —
+ * neither purpose ever renders a Room List.
  */
 const isFindRoomResultWithMatches = (
   payload: ToolResultPayloadLike,
@@ -63,7 +64,8 @@ const isFindRoomResultWithMatches = (
   return (
     typeof matchCount === "number" &&
     matchCount > 0 &&
-    value.purpose !== "book_resolve"
+    value.purpose !== "book_resolve" &&
+    value.purpose !== "resolve"
   );
 };
 
