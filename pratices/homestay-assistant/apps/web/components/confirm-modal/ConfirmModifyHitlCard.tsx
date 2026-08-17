@@ -40,6 +40,8 @@ export type ConfirmModifyHitlCardProps = {
   onConfirm: () => void;
   onViewBookings?: () => void;
   onRetry?: () => void;
+  viewBookingsDisabled?: boolean;
+  retryDisabled?: boolean;
 };
 
 /**
@@ -64,6 +66,8 @@ export const ConfirmModifyHitlCard = ({
   onConfirm,
   onViewBookings,
   onRetry,
+  viewBookingsDisabled = false,
+  retryDisabled = false,
 }: ConfirmModifyHitlCardProps) => {
   const actionsDisabled = !canRespond || isSubmitting;
   const changes = buildModifyChangeRows(original, next, pricePerNight);
@@ -131,6 +135,8 @@ export const ConfirmModifyHitlCard = ({
       onConfirm={onConfirm}
       onViewBookings={onViewBookings}
       onRetry={onRetry}
+      viewBookingsDisabled={viewBookingsDisabled}
+      retryDisabled={retryDisabled}
     />
   );
 };

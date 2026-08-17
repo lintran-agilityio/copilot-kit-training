@@ -142,10 +142,10 @@ export const ConfirmCancelBookingModal = ({
         errorMessage={errorMessage}
         onCancel={handleDismiss}
         onConfirm={handleConfirm}
-        onViewBookings={
-          isActionable ? () => router.push(BOOKINGS_PAGE_PATH) : undefined
-        }
-        onRetry={isActionable ? handleRetry : undefined}
+        onViewBookings={() => router.push(BOOKINGS_PAGE_PATH)}
+        onRetry={handleRetry}
+        viewBookingsDisabled={!isActionable}
+        retryDisabled={!isActionable}
       />
     </EmbeddedWidget>
   );

@@ -6,7 +6,11 @@ import {
   createCopilotRuntimeHandler,
 } from "@copilotkit/runtime/v2";
 
-import { getCopilotkitAgents, latchThreadStop } from "agent/copilotkit";
+import {
+  abortThreadRuns,
+  getCopilotkitAgents,
+  latchThreadStop,
+} from "agent/copilotkit";
 import {
   getCurrentAgentRequest,
   runAgentRequestPipeline,
@@ -154,6 +158,7 @@ const handler = async (req: Request) => {
 
   if (stoppedThreadId) {
     latchThreadStop(stoppedThreadId);
+    abortThreadRuns(stoppedThreadId);
   }
 
   const { userId, sessionId, getToken } = await auth();

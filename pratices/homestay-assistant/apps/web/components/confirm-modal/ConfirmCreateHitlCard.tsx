@@ -52,6 +52,8 @@ export type ConfirmCreateHitlCardProps = {
   onConfirm: () => void;
   onViewBookings?: () => void;
   onRetry?: () => void;
+  viewBookingsDisabled?: boolean;
+  retryDisabled?: boolean;
 };
 
 type SettledCopy = {
@@ -131,6 +133,8 @@ export const ConfirmCreateHitlCard = ({
   onConfirm,
   onViewBookings,
   onRetry,
+  viewBookingsDisabled = false,
+  retryDisabled = false,
 }: ConfirmCreateHitlCardProps) => {
   const actionsDisabled = !canRespond || isSubmitting;
   const nights = countNightOfDates(checkInDate, checkOutDate);
@@ -208,6 +212,8 @@ export const ConfirmCreateHitlCard = ({
         onConfirm={onConfirm}
         onViewBookings={onViewBookings}
         onRetry={onRetry}
+        viewBookingsDisabled={viewBookingsDisabled}
+        retryDisabled={retryDisabled}
       />
     );
   }
@@ -275,6 +281,8 @@ export const ConfirmCreateHitlCard = ({
         onConfirm={onConfirm}
         onViewBookings={onViewBookings}
         onRetry={onRetry}
+        viewBookingsDisabled={viewBookingsDisabled}
+        retryDisabled={retryDisabled}
       />
     );
   }

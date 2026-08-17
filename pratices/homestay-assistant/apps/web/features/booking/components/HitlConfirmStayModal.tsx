@@ -203,10 +203,10 @@ const HitlConfirmCreateStayModal = ({
         errorMessage={errorMessage}
         onCancel={handleCancel}
         onConfirm={handleConfirm}
-        onViewBookings={
-          isActionable ? () => router.push(BOOKINGS_PAGE_PATH) : undefined
-        }
-        onRetry={isActionable ? handleRetry : undefined}
+        onViewBookings={() => router.push(BOOKINGS_PAGE_PATH)}
+        onRetry={handleRetry}
+        viewBookingsDisabled={!isActionable}
+        retryDisabled={!isActionable}
       />
     </EmbeddedWidget>
   );
@@ -372,10 +372,9 @@ const HitlConfirmModifyStayModal = ({
 
   const isPhaseSubmitting =
     isSubmitting || modifyPhase === HITL_CARD_PHASE.SUBMITTING;
-  const viewBookings = isActionable
-    ? () => router.push(BOOKINGS_PAGE_PATH)
-    : undefined;
-  const retry = isActionable ? handleRetry : undefined;
+  const viewBookings = () => router.push(BOOKINGS_PAGE_PATH);
+  const retry = handleRetry;
+  const isActionDisabled = !isActionable;
 
   // Without originals we cannot render before→after diffs — fall back to the
   // create-style summary of the proposed stay only.
@@ -402,6 +401,8 @@ const HitlConfirmModifyStayModal = ({
           onConfirm={handleConfirm}
           onViewBookings={viewBookings}
           onRetry={retry}
+          viewBookingsDisabled={isActionDisabled}
+          retryDisabled={isActionDisabled}
         />
       </EmbeddedWidget>
     );
@@ -425,6 +426,8 @@ const HitlConfirmModifyStayModal = ({
         onConfirm={handleConfirm}
         onViewBookings={viewBookings}
         onRetry={retry}
+        viewBookingsDisabled={isActionDisabled}
+        retryDisabled={isActionDisabled}
       />
     </EmbeddedWidget>
   );

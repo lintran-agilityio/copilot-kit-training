@@ -30,6 +30,8 @@ export type ConfirmCancelHitlCardProps = {
   onConfirm: () => void;
   onViewBookings?: () => void;
   onRetry?: () => void;
+  viewBookingsDisabled?: boolean;
+  retryDisabled?: boolean;
 };
 
 const CANCEL_TITLE = CONFIRM_CANCEL_BOOKING.title;
@@ -49,6 +51,8 @@ export const ConfirmCancelHitlCard = ({
   onConfirm,
   onViewBookings,
   onRetry,
+  viewBookingsDisabled = false,
+  retryDisabled = false,
 }: ConfirmCancelHitlCardProps) => {
   const actionsDisabled = !canRespond || isDeleting;
   const { roomName, checkInDate, checkOutDate, guests, totalPrice } = booking;
@@ -122,6 +126,8 @@ export const ConfirmCancelHitlCard = ({
       onConfirm={onConfirm}
       onViewBookings={onViewBookings}
       onRetry={onRetry}
+      viewBookingsDisabled={viewBookingsDisabled}
+      retryDisabled={retryDisabled}
     />
   );
 };

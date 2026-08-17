@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import {
   formatOtherTripwireAssistantContent,
   formatProcessorBlockAssistantContent,
@@ -43,6 +45,41 @@ import {
 import type { AgUiMastraAgent, AgUiMessage, ThreadMemoryPort } from "./types";
 
 const patchedAgents = new WeakSet<object>();
+
+type ActiveRunState = { runId: string | undefined };
+
+/**
+ * Scopes the run() invocation's runId to the actual async execution of that
+ * run (subscription onward), not just the clone instance. The clone-level
+ * `activeRunId` closure var below is reassigned per run() call with nothing
+ * enforcing one-run-per-clone — if a second run ever starts on the same clone
+ * before the first's processFullStream reads it, the closure read would
+ * silently pick up the wrong run's abort signal. processFullStream prefers
+ * this context over the closure var.
+ */
+const activeRunContext = new AsyncLocalStorage<ActiveRunState>();
+
+type SubscribableLike = { subscribe: (...args: unknown[]) => unknown };
+
+const isSubscribable = (value: unknown): value is SubscribableLike =>
+  !!value &&
+  typeof (value as { subscribe?: unknown }).subscribe === "function";
+
+/** Runs the run() Observable's actual (lazy) execution inside runState's ALS scope. */
+const scopeSubscriptionToRunState = <T>(
+  observable: T,
+  runState: ActiveRunState,
+): T => {
+  if (!isSubscribable(observable)) {
+    return observable;
+  }
+
+  const originalSubscribe = observable.subscribe.bind(observable);
+  observable.subscribe = (...args: unknown[]) =>
+    activeRunContext.run(runState, () => originalSubscribe(...args));
+
+  return observable;
+};
 
 /**
  * Installs stop/abort wiring, transcript filters, and tripwire interception
@@ -150,7 +187,7 @@ const patchAgUiAgent = (
 
       evictOldestAbortControllerIfNeeded(runId);
 
-      return originalRun(input);
+      return scopeSubscriptionToRunState(originalRun(input), { runId });
     };
   }
 
@@ -213,7 +250,7 @@ const patchAgUiAgent = (
   const originalStreamMastraAgent = aguiAgent.streamMastraAgent.bind(aguiAgent);
 
   aguiAgent.processFullStream = async (stream, callbacks, ...rest) => {
-    const runId = activeRunId;
+    const runId = activeRunContext.getStore()?.runId ?? activeRunId;
     const signal = getAbortControllerForRunId(runId)?.signal;
 
     let effectiveStream: AsyncIterable<unknown> = takeUntilAborted(
