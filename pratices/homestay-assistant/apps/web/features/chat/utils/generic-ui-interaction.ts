@@ -19,6 +19,11 @@ type MessageWithToolCalls = TranscriptMessage & {
 
 /**
  * Index of the assistant message that hosts this tool call, or -1 if absent.
+ *
+ * Scans backward (latest match) rather than forward: AG-UI replays tool
+ * calls from earlier turns into later transcript continuations (see
+ * transcript-filters.ts), so a toolCallId can appear more than once. Anchoring
+ * to the first occurrence would resolve to the stale, earlier-turn copy.
  */
 export const findToolCallHostMessageIndex = <T extends MessageWithToolCalls>(
   messages: T[] | undefined,
@@ -28,7 +33,7 @@ export const findToolCallHostMessageIndex = <T extends MessageWithToolCalls>(
     return -1;
   }
 
-  for (let index = 0; index < messages.length; index += 1) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
     const toolCalls = messages[index]?.toolCalls;
     if (!toolCalls?.length) {
       continue;
@@ -59,7 +64,9 @@ export const isToolCallInCurrentInteraction = <T extends MessageWithToolCalls>(
     return true;
   }
 
-  return hostIndex >= getCurrentTurnStartIndex(messages ?? []);
+  const turnStartIndex = getCurrentTurnStartIndex(messages ?? []);
+
+  return hostIndex >= turnStartIndex;
 };
 
 export const resolveGenericUiInteraction = <T extends MessageWithToolCalls>(
