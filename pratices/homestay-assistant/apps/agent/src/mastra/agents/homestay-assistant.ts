@@ -25,7 +25,7 @@ import {
   getRoomsTool,
 } from "@/mastra/tools/rooms";
 import { agentOutputProcessors } from "@/mastra/processors/agent-output-processors";
-import { securityInputProcessor } from "@/mastra/processors/prompt-injection.processors";
+import { securityInputProcessor } from "@/mastra/processors/security-input.processors";
 import { BookingFormPrefillProcessor } from "@/mastra/processors/booking-form-prefill.processor";
 
 export const homestayAssistant = new Agent({

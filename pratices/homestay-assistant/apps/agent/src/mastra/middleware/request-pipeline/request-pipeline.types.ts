@@ -1,6 +1,6 @@
 import type { RequestContext } from "@mastra/core/request-context";
 
-import type { MastraAuthContext } from "./authentication/authentication.types";
+import type { MastraAuthContext } from "../authentication/authentication.types";
 
 export type { MastraAuthContext };
 

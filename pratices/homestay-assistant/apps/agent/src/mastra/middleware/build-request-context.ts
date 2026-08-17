@@ -8,6 +8,18 @@ import { getAgentResourceId } from "@repo/utils";
 import { REQUEST_CONTEXT_KEYS } from "./constants";
 import type { MastraAuthContext } from "./authentication/authentication.types";
 
+export const attachAuthToRequestContext = (
+  requestContext: RequestContext,
+  auth: MastraAuthContext,
+): void => {
+  requestContext.set(REQUEST_CONTEXT_KEYS.AUTH, auth);
+  // Memory/threads persist as `${userId}:homestay-assistant`; keep that contract.
+  requestContext.set(
+    MASTRA_RESOURCE_ID_KEY,
+    getAgentResourceId(auth.userId, AGENT_KEYS.HOMESTAY_ASSISTANT),
+  );
+};
+
 type BuildRequestContextInput = {
   auth: MastraAuthContext;
 };
@@ -17,12 +29,7 @@ export const buildAgentRequestContext = ({
 }: BuildRequestContextInput): RequestContext => {
   const requestContext = new RequestContext();
 
-  requestContext.set(REQUEST_CONTEXT_KEYS.AUTH, auth);
-  // Memory/threads persist as `${userId}:homestay-assistant`; keep that contract.
-  requestContext.set(
-    MASTRA_RESOURCE_ID_KEY,
-    getAgentResourceId(auth.userId, AGENT_KEYS.HOMESTAY_ASSISTANT),
-  );
+  attachAuthToRequestContext(requestContext, auth);
 
   return requestContext;
 };

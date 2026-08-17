@@ -2,10 +2,10 @@ import type {
   AgentRequestPipelineResult,
   AgentRequestPipelineSuccess,
   AgentRequestState,
-} from "./types";
-import { buildAgentRequestContext } from "./build-request-context";
-import { AUTH_ERRORS } from "./constants";
-import { extractClerkToken, verifyClerkAuth } from "./verify-clerk-auth";
+} from "./request-pipeline.types";
+import { buildAgentRequestContext } from "../build-request-context";
+import { AUTH_ERRORS } from "../constants";
+import { extractClerkToken, verifyClerkAuth } from "../verify-clerk-auth";
 
 export { getCurrentAgentRequest, runWithAgentRequest } from "./agent-request-als";
 
