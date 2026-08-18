@@ -92,8 +92,9 @@ export const persistBlockedMessageId = async ({
 
     const thread = await memory.getThreadById({ threadId });
     const metadata = { ...(thread?.metadata ?? {}) };
+    const rawBlockedIds = metadata[THREAD_METADATA_BLOCKED_MESSAGE_IDS];
     const blockedMessageIds = normalizeBlockedMessageIds(
-      metadata[THREAD_METADATA_BLOCKED_MESSAGE_IDS],
+      Array.isArray(rawBlockedIds) ? rawBlockedIds : undefined,
     );
 
     if (blockedMessageIds.includes(messageId)) {

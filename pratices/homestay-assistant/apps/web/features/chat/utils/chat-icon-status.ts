@@ -9,6 +9,7 @@ import {
 
 // Types
 import type { ChatIconStatusKind } from "@/features/chat/constants";
+import type { MessageLike } from "@/features/chat/types";
 
 export type { ChatIconStatusKind };
 
@@ -19,14 +20,12 @@ export type ChatIconStatus =
   | { kind: typeof CHAT_ICON_STATUS.TYPING }
   | { kind: typeof CHAT_ICON_STATUS.COMPLETED };
 
-type ChatIconMessage = {
-  id: string;
-  role?: string;
-  content?: unknown;
-  toolCalls?: unknown;
-};
+type ChatIconMessage = MessageLike & { id: string };
 
 const COMPLETED_DISPLAY_MS = 2500;
+
+const hasToolCalls = (message: Pick<ChatIconMessage, "toolCalls">) =>
+  Boolean(message.toolCalls?.length);
 
 /**
  * How long the completed checkmark stays visible after a run finishes.
@@ -79,10 +78,8 @@ export const isCountableAssistantMessage = (
   }
 
   const text = getMessageTextContent(message.content).trim();
-  const hasToolCalls =
-    Array.isArray(message.toolCalls) && message.toolCalls.length > 0;
 
-  return Boolean(text) || hasToolCalls;
+  return Boolean(text) || hasToolCalls(message);
 };
 
 /**
@@ -114,7 +111,7 @@ export const hasActiveToolProcessing = (messages: ChatIconMessage[]) => {
     return false;
   }
 
-  const { role, toolCalls, content } = lastMessage;
+  const { role, content } = lastMessage;
 
   if (role === MESSAGE_ROLE.TOOL) {
     return true;
@@ -124,9 +121,7 @@ export const hasActiveToolProcessing = (messages: ChatIconMessage[]) => {
     return false;
   }
 
-  const hasToolCalls =
-    Array.isArray(toolCalls) && toolCalls.length > 0;
-  if (!hasToolCalls) {
+  if (!hasToolCalls(lastMessage)) {
     return false;
   }
 

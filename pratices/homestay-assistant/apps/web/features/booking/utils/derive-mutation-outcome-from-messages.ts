@@ -1,5 +1,6 @@
 import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
 import { parseToolResult } from "@repo/utils";
+import { z } from "zod";
 
 import { BOOKING_MUTATION_PHASE } from "@/features/booking/constants";
 import type {
@@ -12,7 +13,7 @@ import type {
   CreateBookingResult,
   UpdateBookingResult,
 } from "@/features/booking/types";
-import type { MessageLike } from "@/features/chat/types";
+import type { MessageLike, ToolArgumentsLike } from "@/features/chat/types";
 import {
   isCancelBookingSuccess,
   isCreateBookingSuccess,
@@ -27,43 +28,48 @@ import {
 
 type MutationToolHit = {
   toolCallId: string;
-  args: Record<string, unknown>;
+  args: MutationToolArguments;
   resultContent: string | null;
 };
+
+const mutationToolArgumentsSchema = z.object({
+  bookingId: z.string().optional().catch(undefined),
+  roomId: z.string().optional().catch(undefined),
+  checkInDate: z.string().optional().catch(undefined),
+  checkOutDate: z.string().optional().catch(undefined),
+  guests: z.number().finite().optional().catch(undefined),
+});
+
+type MutationToolArguments = z.infer<typeof mutationToolArgumentsSchema>;
 
 /**
  * Presentation-only: read mutation tool results from the CopilotKit transcript
  * so HITL cards can recover success/failed after refresh when Zustand is empty.
  * Does not rewrite agent.messages.
  */
-const parseToolArguments = (raw: unknown): Record<string, unknown> | null => {
+const parseToolArguments = (
+  raw: ToolArgumentsLike,
+): MutationToolArguments | null => {
   if (raw == null) {
     return null;
   }
 
-  if (typeof raw === "object" && !Array.isArray(raw)) {
-    return raw as Record<string, unknown>;
-  }
-
-  if (typeof raw !== "string") {
-    return null;
-  }
-
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(trimmed);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return null;
     }
-  } catch {
-    return null;
+
+    try {
+      const parsed = mutationToolArgumentsSchema.safeParse(JSON.parse(trimmed));
+      return parsed.success ? parsed.data : null;
+    } catch {
+      return null;
+    }
   }
 
-  return null;
+  const parsed = mutationToolArgumentsSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
 };
 
 const readToolResultContent = (
@@ -143,14 +149,7 @@ const pickHit = (
   findLastHit(
     hits,
     (hit) => hit.resultContent != null && matchesCorrelationKey(hit),
-  ) ??
-  findLastHit(hits, (hit) => hit.resultContent != null);
-
-const asOptionalString = (value: unknown): string | undefined =>
-  typeof value === "string" ? value : undefined;
-
-const asOptionalNumber = (value: unknown): number | undefined =>
-  typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  ) ?? findLastHit(hits, (hit) => hit.resultContent != null);
 
 /** Prefer live store outcome; fall back to transcript-derived outcome. */
 export const coalesceBookingCardOutcome = <T>(
@@ -168,10 +167,10 @@ export const deriveCreateBookingOutcomeFromMessages = (
   );
   const hit = pickHit(hits, (candidate) => {
     const candidateKey = buildCreateStayCorrelationKey({
-      roomId: asOptionalString(candidate.args.roomId),
-      checkInDate: asOptionalString(candidate.args.checkInDate),
-      checkOutDate: asOptionalString(candidate.args.checkOutDate),
-      guests: asOptionalNumber(candidate.args.guests),
+      roomId: candidate.args.roomId,
+      checkInDate: candidate.args.checkInDate,
+      checkOutDate: candidate.args.checkOutDate,
+      guests: candidate.args.guests,
     });
     return Boolean(correlationKey && candidateKey === correlationKey);
   });
@@ -183,10 +182,10 @@ export const deriveCreateBookingOutcomeFromMessages = (
   const resolvedCorrelationKey =
     correlationKey ??
     buildCreateStayCorrelationKey({
-      roomId: asOptionalString(hit.args.roomId),
-      checkInDate: asOptionalString(hit.args.checkInDate),
-      checkOutDate: asOptionalString(hit.args.checkOutDate),
-      guests: asOptionalNumber(hit.args.guests),
+      roomId: hit.args.roomId,
+      checkInDate: hit.args.checkInDate,
+      checkOutDate: hit.args.checkOutDate,
+      guests: hit.args.guests,
     }) ??
     hit.toolCallId;
 
@@ -220,7 +219,7 @@ export const deriveCancelBookingOutcomeFromMessages = (
   const hits = collectMutationToolHits(messages, TOOL_KEYS.BOOKING.CANCEL);
   const hit = pickHit(hits, (candidate) => {
     const candidateKey = buildCancelBookingCorrelationKey(
-      asOptionalString(candidate.args.bookingId),
+      candidate.args.bookingId,
     );
     return Boolean(correlationKey && candidateKey === correlationKey);
   });
@@ -231,7 +230,7 @@ export const deriveCancelBookingOutcomeFromMessages = (
 
   const resolvedCorrelationKey =
     correlationKey ??
-    buildCancelBookingCorrelationKey(asOptionalString(hit.args.bookingId)) ??
+    buildCancelBookingCorrelationKey(hit.args.bookingId) ??
     hit.toolCallId;
 
   if (isCancelBookingSuccess(hit.resultContent)) {
@@ -265,10 +264,10 @@ export const deriveModifyBookingOutcomeFromMessages = (
   );
   const hit = pickHit(hits, (candidate) => {
     const candidateKey = buildModifyStayCorrelationKey({
-      bookingId: asOptionalString(candidate.args.bookingId),
-      checkInDate: asOptionalString(candidate.args.checkInDate),
-      checkOutDate: asOptionalString(candidate.args.checkOutDate),
-      guests: asOptionalNumber(candidate.args.guests),
+      bookingId: candidate.args.bookingId,
+      checkInDate: candidate.args.checkInDate,
+      checkOutDate: candidate.args.checkOutDate,
+      guests: candidate.args.guests,
     });
     return Boolean(correlationKey && candidateKey === correlationKey);
   });
@@ -280,17 +279,16 @@ export const deriveModifyBookingOutcomeFromMessages = (
   const resolvedCorrelationKey =
     correlationKey ??
     buildModifyStayCorrelationKey({
-      bookingId: asOptionalString(hit.args.bookingId),
-      checkInDate: asOptionalString(hit.args.checkInDate),
-      checkOutDate: asOptionalString(hit.args.checkOutDate),
-      guests: asOptionalNumber(hit.args.guests),
+      bookingId: hit.args.bookingId,
+      checkInDate: hit.args.checkInDate,
+      checkOutDate: hit.args.checkOutDate,
+      guests: hit.args.guests,
     }) ??
     hit.toolCallId;
 
   if (isUpdateBookingSuccess(hit.resultContent)) {
     const parsed = parseToolResult<UpdateBookingResult>(hit.resultContent);
-    const bookingId =
-      parsed?.id?.trim() ?? asOptionalString(hit.args.bookingId)?.trim();
+    const bookingId = parsed?.id?.trim() ?? hit.args.bookingId?.trim();
     if (!bookingId) {
       return null;
     }

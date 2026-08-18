@@ -89,9 +89,9 @@ export const wasThreadRecentlyStopped = (
 
 /** Parse thread id from `AgentThreadLockedError` message when callers omit it. */
 export const threadIdFromLockedError = (
-  error: unknown,
+  error: Error | null | undefined,
 ): string | undefined => {
-  if (!(error instanceof Error)) {
+  if (!error) {
     return undefined;
   }
 
@@ -119,7 +119,7 @@ export const isStopRelatedRunErrorEvent = (
  * Prefer `isExpectedAgentError` at UI boundaries — that also covers post-Stop 409.
  */
 export const isStopRelatedAgentError = (
-  error: unknown,
+  error: Error,
   code?: string,
   context?: { runtimeErrorCode?: string } | null,
 ): boolean => {
@@ -147,12 +147,11 @@ export const isStopRelatedAgentError = (
  * `onRunFailed` and once as `agent_run_failed`, so match on the error name too.
  */
 export const isThreadLockedAgentError = (
-  error: unknown,
+  error: Error,
   code?: string,
 ): boolean => {
   return (
-    code === "agent_thread_locked" ||
-    (error instanceof Error && error.name === "AgentThreadLockedError")
+    code === "agent_thread_locked" || error.name === "AgentThreadLockedError"
   );
 };
 
@@ -161,7 +160,7 @@ export const isThreadLockedAgentError = (
  * Genuine concurrent-run locks (no recent Stop) return false so Retry can show.
  */
 export const isExpectedAgentError = (
-  error: unknown,
+  error: Error,
   code?: string,
   context?: { runtimeErrorCode?: string } | null,
   threadId?: string | null,
@@ -238,7 +237,10 @@ export const getTrailingAssistantMessageId = (
 ): string | undefined => {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message?.role === MESSAGE_ROLE.ASSISTANT && typeof message.id === "string") {
+    if (
+      message?.role === MESSAGE_ROLE.ASSISTANT &&
+      typeof message.id === "string"
+    ) {
       return message.id;
     }
   }
@@ -335,24 +337,26 @@ export const stopGeneration = ({
 /**
  * Run an agent and treat expected Stop / post-Stop lock errors as normal.
  */
-export const runAgentSafely = async (
-  run: () => Promise<unknown>,
-  onUnexpectedError?: (error: unknown) => void,
+export const runAgentSafely = async <TResult>(
+  run: () => Promise<TResult>,
+  onUnexpectedError?: (error: Error) => void,
   threadId?: string | null,
 ): Promise<void> => {
   try {
     await run();
   } catch (error) {
-    if (isExpectedAgentError(error, undefined, undefined, threadId)) {
+    const runError = error instanceof Error ? error : new Error(String(error));
+
+    if (isExpectedAgentError(runError, undefined, undefined, threadId)) {
       return;
     }
 
     if (onUnexpectedError) {
-      onUnexpectedError(error);
+      onUnexpectedError(runError);
       return;
     }
 
-    console.error("Agent run failed", error);
+    console.error("Agent run failed", runError);
   }
 };
 
@@ -363,9 +367,8 @@ type ChatSendKeyDown = {
   isRunning: boolean;
 };
 
-export const resolveAgentBusyMessage = (
-  isRunning: boolean,
-): string | null => (isRunning ? AGENT_BUSY_MESSAGE : null);
+export const resolveAgentBusyMessage = (isRunning: boolean): string | null =>
+  isRunning ? AGENT_BUSY_MESSAGE : null;
 
 /** True when Enter would submit chat while the agent is already running. */
 export const shouldBlockChatSendKeyDown = ({

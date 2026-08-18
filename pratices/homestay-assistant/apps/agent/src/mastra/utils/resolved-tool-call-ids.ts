@@ -2,8 +2,8 @@ import type { RequestContext } from "@mastra/core/request-context";
 import { AGENT_MEMORY_LAST_MESSAGES } from "@repo/constants";
 
 type StoredToolInvocation = {
-  toolCallId?: unknown;
-  state?: unknown;
+  toolCallId?: string;
+  state?: string;
 };
 
 type StoredMessage = {
@@ -19,15 +19,17 @@ type RecallFn = (args: {
 }) => Promise<{ messages?: StoredMessage[] }>;
 
 type MastraAgentLike = {
-  getMemory?: (args: { requestContext?: RequestContext }) => Promise<unknown>;
+  getMemory?: (args: {
+    requestContext?: RequestContext;
+  }) => Promise<object | null | undefined>;
 };
 
-const getRecall = (memory: unknown): RecallFn | undefined => {
+const getRecall = (memory: object | null | undefined): RecallFn | undefined => {
   if (!memory || typeof memory !== "object" || !("recall" in memory)) {
     return undefined;
   }
 
-  const { recall } = memory as { recall?: unknown };
+  const { recall } = memory;
 
   if (typeof recall !== "function") {
     return undefined;

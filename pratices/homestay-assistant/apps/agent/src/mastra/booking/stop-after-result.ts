@@ -1,18 +1,17 @@
 import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 
-import { asRecord, parseBookingMutationPayload, parseGetRoomDetailOutput } from "@/mastra/utils";
-import { createSuppressTextAfterToolResultFilter } from "./suppress-text-after-tool-result";
+import type { ToolResultPayload } from "@mastra/core/stream";
 
-type ToolResultPayloadLike = {
-  toolName?: string;
-  isError?: boolean;
-  result?: unknown;
-  providerMetadata?: {
-    mastra?: {
-      modelOutput?: unknown;
-    };
-  };
-};
+import {
+  asJsonObject,
+  asJsonValue,
+  parseBookingMutationPayload,
+  parseGetRoomDetailOutput,
+  type BookingMutationPayload,
+  type JsonObject,
+  type JsonValue,
+} from "@/mastra/utils";
+import { createSuppressTextAfterToolResultFilter } from "./suppress-text-after-tool-result";
 
 /**
  * Reads the tool's `toModelOutput` `{ type: "json", value: {...} }` shape.
@@ -20,15 +19,15 @@ type ToolResultPayloadLike = {
  * (where bookingCount/matchCount/replyHint live) is carried separately on
  * `payload.providerMetadata.mastra.modelOutput`.
  */
-const asModelOutputValue = (
-  payload: ToolResultPayloadLike,
-): Record<string, unknown> | null => {
-  const record = asRecord(payload.providerMetadata?.mastra?.modelOutput);
+const asModelOutputValue = (payload: ToolResultPayload): JsonObject | null => {
+  const record = asJsonObject(
+    asJsonValue(payload.providerMetadata?.mastra?.modelOutput) ?? null,
+  );
   if (!record) {
     return null;
   }
 
-  return asRecord(record.value) ?? record;
+  return asJsonObject(record.value) ?? record;
 };
 
 /**
@@ -37,9 +36,7 @@ const asModelOutputValue = (
  * 0/1/N there still needs a chat reply (error, missing field, or "choose one") —
  * neither purpose ever renders a Room List.
  */
-const isFindRoomResultWithMatches = (
-  payload: ToolResultPayloadLike,
-): boolean => {
+const isFindRoomResultWithMatches = (payload: ToolResultPayload): boolean => {
   if (
     payload.toolName !== TOOL_KEYS.GET.FIND_ROOM ||
     payload.isError
@@ -70,7 +67,7 @@ const isFindRoomResultWithMatches = (
  * Empty results are also excluded: the model still needs to say nothing matched.
  */
 const isGetBookingsResultWithMatches = (
-  payload: ToolResultPayloadLike,
+  payload: ToolResultPayload,
 ): boolean => {
   if (payload.toolName !== TOOL_KEYS.BOOKING.GET || payload.isError) {
     return false;
@@ -97,7 +94,7 @@ const isGetBookingsResultWithMatches = (
  * of relying on the model to comply.
  */
 export const applyListResultsHandoffStreamFilter =
-  createSuppressTextAfterToolResultFilter<ToolResultPayloadLike>(
+  createSuppressTextAfterToolResultFilter(
     "suppressListResultsText",
     (payload) =>
       isFindRoomResultWithMatches(payload) ||
@@ -108,10 +105,9 @@ export const applyListResultsHandoffStreamFilter =
 export type IterationToolResultLike = {
   name?: string;
   toolName?: string;
-  /** Framework tool payloads arrive as opaque JSON — narrowed at parse sites. */
-  result?: unknown;
-  output?: unknown;
-  error?: unknown;
+  result?: JsonValue;
+  output?: JsonValue;
+  error?: JsonValue;
   isError?: boolean;
 };
 
@@ -120,13 +116,9 @@ const toolNameOf = (tool: {
   toolName?: string;
 }): string | undefined => tool.toolName || tool.name;
 
-const payloadOf = (toolResult: IterationToolResultLike): unknown =>
-  toolResult.result ?? toolResult.output;
-
-
-type BookingMutationPayload = NonNullable<
-  ReturnType<typeof parseBookingMutationPayload>
->;
+const payloadOf = (
+  toolResult: IterationToolResultLike,
+): JsonValue | undefined => toolResult.result ?? toolResult.output;
 
 const isValidToolResult = (
   toolResult: IterationToolResultLike | null | undefined,
@@ -163,13 +155,13 @@ const hasRoomId = (toolResult: IterationToolResultLike): boolean => {
     return true;
   }
 
-  const record = asRecord(payload);
+  const record = asJsonObject(payload);
 
   if (!record) {
     return false;
   }
 
-  const nested = asRecord(record.value) ?? record;
+  const nested = asJsonObject(record.value) ?? record;
   const roomId = nested.roomId;
 
   return typeof roomId === "string" && roomId.trim().length > 0;
@@ -250,13 +242,13 @@ export const isActionableBookingUiToolSuccess = (
  * drop later assistant text chunks (BookingForm / HITL success is the response).
  */
 export const applyBookingFormHandoffStreamFilter =
-  createSuppressTextAfterToolResultFilter<ToolResultPayloadLike>(
+  createSuppressTextAfterToolResultFilter(
     "suppressActionableBookingUiText",
     (payload) =>
       isActionableBookingUiToolSuccess({
         name: payload.toolName,
         toolName: payload.toolName,
-        result: payload.result,
+        result: asJsonValue(payload.result),
         isError: payload.isError,
       }),
   );

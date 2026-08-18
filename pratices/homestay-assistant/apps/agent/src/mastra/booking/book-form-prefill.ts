@@ -5,7 +5,7 @@ import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import { addDaysYmd, parseBookingFormMessageHint } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import { asRecord, parseFindRoomOutput } from "@/mastra/utils";
+import { asJsonValue, asRecord, parseFindRoomOutput } from "@/mastra/utils";
 import {
   extractMessageText,
   findLatestUserMessage,
@@ -35,7 +35,7 @@ export const resolveContinuityStayHint = (
   }
 
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const parts = asRecord(messages[index]?.content)?.parts;
+    const parts = asRecord(asJsonValue(messages[index]?.content))?.parts;
     if (!Array.isArray(parts)) {
       continue;
     }

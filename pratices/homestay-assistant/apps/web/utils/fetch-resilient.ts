@@ -2,12 +2,16 @@ const RETRYABLE_ERROR_CODES = new Set(["ECONNRESET", "EPIPE", "ETIMEDOUT"]);
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 150;
 
-const isRetryableError = (error: unknown): boolean => {
-  const cause =
-    error instanceof TypeError
-      ? (error.cause as { code?: string } | undefined)
-      : undefined;
-  return Boolean(cause?.code && RETRYABLE_ERROR_CODES.has(cause.code));
+const getErrorCode = (error: Error): string | undefined =>
+  "code" in error && typeof error.code === "string" ? error.code : undefined;
+
+const isRetryableError = (error: Error): boolean => {
+  if (!(error instanceof TypeError) || !(error.cause instanceof Error)) {
+    return false;
+  }
+
+  const code = getErrorCode(error.cause);
+  return Boolean(code && RETRYABLE_ERROR_CODES.has(code));
 };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -26,7 +30,11 @@ export const fetchResilient = async (
     try {
       return await fetch(input, init);
     } catch (error) {
-      if (attempt >= MAX_RETRIES || !isRetryableError(error)) {
+      if (
+        !(error instanceof Error) ||
+        attempt >= MAX_RETRIES ||
+        !isRetryableError(error)
+      ) {
         throw error;
       }
       attempt += 1;

@@ -1,4 +1,5 @@
 import type { RequestContext } from "@mastra/core/request-context";
+import type { BlockedMessageMetadata } from "@repo/constants";
 
 export type AgUiToolCall = {
   id?: string;
@@ -14,7 +15,7 @@ export type AgUiMessageContent =
 export type AgUiMessage = {
   id?: string;
   role?: string;
-  metadata?: unknown;
+  metadata?: BlockedMessageMetadata;
   content?: AgUiMessageContent;
   toolCalls?: AgUiToolCall[];
   toolCallId?: string;

@@ -19,10 +19,21 @@ import {
 } from "@repo/constants";
 
 type BookingErrorShape = {
-  message?: unknown;
-  error?: unknown;
-  reason?: unknown;
+  message?: BookingErrorField;
+  error?: BookingErrorField;
+  reason?: BookingErrorField;
 };
+
+type BookingErrorField = string | null | undefined;
+
+type BookingFailureResult =
+  | CancelBookingResult
+  | CreateBookingResult
+  | UpdateBookingResult
+  | BookingErrorShape
+  | string
+  | null
+  | undefined;
 
 export type BuildBookingStayMessageArgs = {
   roomId: string;
@@ -32,7 +43,7 @@ export type BuildBookingStayMessageArgs = {
   guests: number;
 };
 
-const readErrorField = (value: unknown): string | null => {
+const readErrorField = (value: BookingErrorField): string | null => {
   if (typeof value !== "string") {
     return null;
   }
@@ -41,7 +52,10 @@ const readErrorField = (value: unknown): string | null => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
-const resolveFailureMessage = (result: unknown, fallback: string): string => {
+const resolveFailureMessage = (
+  result: BookingFailureResult,
+  fallback: string,
+): string => {
   if (result == null) {
     return fallback;
   }

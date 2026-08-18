@@ -283,9 +283,10 @@ const patchAgUiAgent = (
                 requestContext: aguiAgent.requestContext,
               });
 
-              const currentBlocked = aguiAgent.requestContext?.get(
-                THREAD_METADATA_BLOCKED_MESSAGE_IDS,
-              );
+              const currentBlocked = aguiAgent.requestContext?.get<
+                string,
+                string[] | undefined
+              >(THREAD_METADATA_BLOCKED_MESSAGE_IDS);
               const blockedSet = new Set<string>(
                 normalizeBlockedMessageIds(currentBlocked),
               );

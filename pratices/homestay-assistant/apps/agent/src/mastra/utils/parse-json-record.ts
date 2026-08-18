@@ -1,3 +1,6 @@
+import { asJsonValue, isJsonObject } from "./json-value";
+import type { JsonObject, JsonValue } from "./json-value";
+
 /**
  * Narrows a JSON-like value to a plain object record.
  * Accepts objects or JSON strings that parse to non-array objects.
@@ -6,10 +9,10 @@
  * @returns Record when parseable, otherwise null
  */
 export const asRecord = (
-  value: unknown,
-): Record<string, unknown> | null => {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+  value: JsonValue | undefined | null,
+): JsonObject | null => {
+  if (isJsonObject(value)) {
+    return value;
   }
 
   if (typeof value !== "string") {
@@ -17,10 +20,8 @@ export const asRecord = (
   }
 
   try {
-    const parsed: unknown = JSON.parse(value);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
+    const parsed = asJsonValue(JSON.parse(value));
+    return isJsonObject(parsed) ? parsed : null;
   } catch {
     return null;
   }

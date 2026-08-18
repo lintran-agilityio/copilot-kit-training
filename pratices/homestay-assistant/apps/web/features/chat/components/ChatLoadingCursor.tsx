@@ -8,14 +8,14 @@ import {
 
 import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
 import { ConversationItem } from "@/features/chat/components/ConversationItem";
+import type { MessageLike } from "@/features/chat/types";
 import { getMessageTextContent } from "@/features/copilot/config";
 import { cn } from "@repo/utils";
 import { MESSAGE_ROLE } from "@repo/constants";
 
-const hasVisibleAssistantText = (message: {
-  role?: string;
-  content?: unknown;
-}) => {
+const hasVisibleAssistantText = (
+  message: Pick<MessageLike, "role" | "content">,
+) => {
   if (message.role !== MESSAGE_ROLE.ASSISTANT) {
     return false;
   }

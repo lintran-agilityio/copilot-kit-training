@@ -10,14 +10,21 @@ import {
   getProcessorBlockAssistantDisplayText,
   isProcessorBlockAssistantContent,
 } from "@repo/constants";
+import type { MessageContentLike } from "@/features/chat/types";
 
 export { isUserMessageBlockedInTranscript } from "@repo/utils";
 
 /** Strip the durable `@@processor-block@@` marker for assistant bubble text. */
-export const getAssistantDisplayContent = (content: unknown): string => {
-  if (!isProcessorBlockAssistantContent(content)) {
-    return typeof content === "string" ? content : "";
+export const getAssistantDisplayContent = (
+  content: MessageContentLike,
+): string => {
+  if (typeof content !== "string") {
+    return "";
   }
 
-  return getProcessorBlockAssistantDisplayText(String(content));
+  if (!isProcessorBlockAssistantContent(content)) {
+    return content;
+  }
+
+  return getProcessorBlockAssistantDisplayText(content);
 };

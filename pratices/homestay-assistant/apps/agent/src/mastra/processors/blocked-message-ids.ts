@@ -16,8 +16,11 @@ type MastraAgentLike = {
 
 export const readBlockedMessageIdsFromMetadata = (
   metadata: Record<string, unknown> | undefined,
-) =>
-  normalizeBlockedMessageIds(metadata?.[THREAD_METADATA_BLOCKED_MESSAGE_IDS]);
+) => {
+  const value = metadata?.[THREAD_METADATA_BLOCKED_MESSAGE_IDS];
+
+  return normalizeBlockedMessageIds(Array.isArray(value) ? value : undefined);
+};
 
 export async function loadBlockedMessageIdsForThread({
   mastraAgent,
