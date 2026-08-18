@@ -1,6 +1,6 @@
 import type { Room } from "@/features/room/types/room";
 import { PREFIX_URL } from "@repo/types";
-import { getBaseUrl } from "@/utils";
+import { fetchResilient, getBaseUrl } from "@/utils";
 import { ROUTES } from "@repo/constants";
 
 type GetRoomsProps = {
@@ -17,7 +17,7 @@ export const getRooms = async ({
     : ROUTES.ROOMS;
   const baseUrl = getBaseUrl(via);
 
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetchResilient(`${baseUrl}${path}`, {
     cache: "no-store",
   });
 

@@ -3,7 +3,7 @@ import { PREFIX_URL } from "@repo/types";
 import { sanitizeBookingId } from "@repo/utils";
 
 import type { BookingResponse } from "@/features/booking/types/booking";
-import { getBaseUrl } from "@/utils";
+import { fetchResilient, getBaseUrl } from "@/utils";
 
 type CancelBookingProps = {
   bookingId: string;
@@ -30,7 +30,7 @@ export const cancelBookingById = async ({
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const response = await fetch(
+  const response = await fetchResilient(
     `${baseUrl}${ROUTES.BOOKINGS}/${encodeURIComponent(id)}`,
     {
       method: "DELETE",

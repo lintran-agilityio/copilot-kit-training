@@ -151,9 +151,20 @@ export const ChatAssistantMessage = ({
           ) : null}
 
           {toolCallsView ? (
-            <div data-chat-embedded-slot className="w-full">
-              {toolCallsView}
-            </div>
+            hasConversation ? (
+              <div data-chat-embedded-slot className="w-full">
+                {toolCallsView}
+              </div>
+            ) : (
+              <div
+                data-chat-embedded-slot
+                data-chat-message-row="assistant"
+                className="flex items-start justify-start gap-3 px-3"
+              >
+                <ChatAgentAvatar />
+                <div className="min-w-0 flex-1">{toolCallsView}</div>
+              </div>
+            )
           ) : null}
         </div>
       )}
