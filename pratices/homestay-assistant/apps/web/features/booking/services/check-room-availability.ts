@@ -1,7 +1,7 @@
 import { ROUTES } from "@repo/constants";
 
 import { PREFIX_URL } from "@repo/types";
-import { getBaseUrl } from "@/utils";
+import { fetchResilient, getBaseUrl } from "@/utils";
 
 import type {
   CheckRoomAvailabilityInput,
@@ -32,7 +32,7 @@ export const checkRoomAvailability = async ({
     params.set("excludeBookingId", excludeBookingId);
   }
   const baseUrl = getBaseUrl(via);
-  const response = await fetch(
+  const response = await fetchResilient(
     `${baseUrl}${ROUTES.BOOKING_AVAILABILITY}?${params}`,
     { cache: "no-store" },
   );

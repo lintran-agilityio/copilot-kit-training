@@ -1,4 +1,4 @@
-import { getBaseUrl } from "@/utils";
+import { fetchResilient, getBaseUrl } from "@/utils";
 import type { BookingResponse } from "@/features/booking/types/booking";
 import { PREFIX_URL } from "@repo/types";
 import { ROUTES } from "@repo/constants";
@@ -22,7 +22,7 @@ export const getMyBookings = async ({
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  const response = await fetch(`${baseUrl}${ROUTES.BOOKINGS}`, {
+  const response = await fetchResilient(`${baseUrl}${ROUTES.BOOKINGS}`, {
     cache: "no-store",
     headers,
     signal,
