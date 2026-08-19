@@ -1,16 +1,22 @@
 import { z } from "zod";
 
 import { BookingStatus } from "@repo/types";
-import { isTimeInFuture, isTimeTodayOrLater, sanitizeBookingId } from "@repo/utils";
 import {
-  type CheckRoomAvailabilityInput,
-  type CreateBookingInput,
-  type UpdateBookingInput,
+  isTimeInFuture,
+  isTimeTodayOrLater,
+  sanitizeBookingId,
+} from "@repo/utils";
+import type {
+  CreateBookingInput,
+  FindBookingsInput,
+  ModifyBookingChanges,
 } from "@repo/schemas";
 import {
   bookingSchema,
+  bookingResolutionSchema,
   checkRoomAvailabilityResponseSchema,
   type Booking,
+  type BookingResolution,
   type FindBookingByIdOutput,
 } from "@/mastra/schemas/booking";
 import {
@@ -18,7 +24,13 @@ import {
   TOOL_PURPOSE,
   type FindBookingByIdPurpose,
 } from "@repo/constants";
-import { get, post, del, update, assertClerkTokenForApi } from "@/mastra/services/common";
+import {
+  get,
+  post,
+  del,
+  update,
+  assertClerkTokenForApi,
+} from "@/mastra/services/common";
 import type { RequestContext } from "@mastra/core/request-context";
 import { getRoom } from "@/mastra/services/rooms.service";
 import { BOOKING_ERRORS } from "@/mastra/constants/messages";
@@ -29,8 +41,13 @@ export type ServiceContext = {
 };
 
 export type CreateBookingPayload = CreateBookingInput;
+export type UpdateBookingPayload = ModifyBookingChanges & {
+  bookingId: string;
+};
 export type GetBookingsParams = {
   roomId?: string;
+  /** Case-insensitive partial room-name match — resolves a cancel/modify target without a prior find_room call. */
+  roomName?: string;
   status?: BookingStatus;
   /** YYYY-MM-DD — stays where checkIn <= onDate < checkOut */
   onDate?: string;
@@ -63,10 +80,27 @@ export const getBookings = async (
   });
 };
 
-export type CheckRoomAvailabilityApiInput = Omit<
-  CheckRoomAvailabilityInput,
-  "flow"
->;
+/** Resolve zero, one, or many active bookings without asking the model to count. */
+export const findBookings = async (
+  params: FindBookingsInput = {},
+  serviceContext?: ServiceContext,
+): Promise<BookingResolution> => {
+  assertClerkTokenForApi(serviceContext?.requestContext);
+  return get(ROUTES.FIND_BOOKINGS, bookingResolutionSchema, {
+    searchParams: params,
+    errorMessage: "Failed to find bookings",
+    requestContext: serviceContext?.requestContext,
+    abortSignal: serviceContext?.abortSignal,
+  });
+};
+
+export type CheckRoomAvailabilityApiInput = {
+  roomId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  guests: number;
+  excludeBookingId?: string;
+};
 
 export const checkRoomAvailability = async (
   input: CheckRoomAvailabilityApiInput,
@@ -79,7 +113,7 @@ export const checkRoomAvailability = async (
   });
 
 export const updateBooking = async (
-  input: UpdateBookingInput,
+  input: UpdateBookingPayload,
   serviceContext?: ServiceContext,
 ): Promise<Booking> => {
   assertClerkTokenForApi(serviceContext?.requestContext);
@@ -88,9 +122,13 @@ export const updateBooking = async (
   return update(
     `${ROUTES.BOOKINGS}/${encodeURIComponent(bookingId)}`,
     {
-      checkInDate: input.checkInDate,
-      checkOutDate: input.checkOutDate,
-      guests: input.guests,
+      ...(input.checkInDate !== undefined
+        ? { checkInDate: input.checkInDate }
+        : {}),
+      ...(input.checkOutDate !== undefined
+        ? { checkOutDate: input.checkOutDate }
+        : {}),
+      ...(input.guests !== undefined ? { guests: input.guests } : {}),
     },
     bookingSchema,
     "Failed to update booking",

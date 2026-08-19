@@ -16,6 +16,7 @@ import {
   checkRoomAvailabilityTool,
   createBookingTool,
   findBookingByIdTool,
+  findBookingsTool,
   getBookingsTool,
   updateBookingTool,
 } from "@/mastra/tools/booking";
@@ -45,6 +46,7 @@ export const homestayAssistant = new Agent({
     [TOOL_KEYS.BOOKING.CREATE_BOOKING]: createBookingTool,
     [TOOL_KEYS.BOOKING.UPDATE_BOOKING]: updateBookingTool,
     [TOOL_KEYS.BOOKING.GET]: getBookingsTool,
+    [TOOL_KEYS.BOOKING.FIND]: findBookingsTool,
     [TOOL_KEYS.BOOKING.FIND_BY_ID]: findBookingByIdTool,
     [TOOL_KEYS.BOOKING.CANCEL]: cancelBookingTool,
   },

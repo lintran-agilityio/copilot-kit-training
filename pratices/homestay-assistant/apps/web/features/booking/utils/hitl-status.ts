@@ -2,7 +2,10 @@ import { ToolCallStatus } from "@copilotkit/react-core/v2";
 import { useCallback, useRef, useState } from "react";
 
 import { parseToolResult } from "@repo/utils";
-import { ConfirmBookingArgs, ConfirmModifyBookingArgs } from "@repo/schemas";
+import {
+  type ConfirmBookingArgs,
+  type ConfirmModifyBookingArgs,
+} from "@repo/schemas";
 import { HITL_DECISION_STATUS } from "@/constants";
 import { HitlToolResult } from "../types";
 import {
@@ -182,12 +185,12 @@ export const resolveHitlCardPhase = ({
 export const hasRoomStayFields = (args: Partial<RoomStayFields>) =>
   Boolean(
     args.room?.id?.trim() &&
-      args.room?.name?.trim() &&
-      typeof args.room?.pricePerNight === "number" &&
-      args.checkInDate?.trim() &&
-      args.checkOutDate?.trim() &&
-      typeof args.guests === "number" &&
-      args.guests > 0,
+    args.room?.name?.trim() &&
+    typeof args.room?.pricePerNight === "number" &&
+    args.checkInDate?.trim() &&
+    args.checkOutDate?.trim() &&
+    typeof args.guests === "number" &&
+    args.guests > 0,
   );
 
 export const hasRequiredCreateArgs = (

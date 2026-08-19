@@ -17,10 +17,13 @@ import {
   BookingResponseDto,
   CheckAvailabilityQueryDto,
   CreateBookingDto,
+  FindBookingsQueryDto,
   ListBookingsQueryDto,
   UpdateBookingDto,
+  type BookingResolution,
 } from '@/modules/booking/dto';
 import { toBookingResponseDto } from '@/modules/booking/mappers/booking.mapper';
+import { toBookingResolution } from '@/modules/booking/mappers/booking-resolution.mapper';
 import { BookingRepository } from '@/modules/booking/repositories/booking.repository';
 import { toRoomResponseDto } from '@/modules/rooms/mappers/room.mapper';
 
@@ -84,6 +87,14 @@ export class BookingService {
   ): Promise<BookingResponseDto[]> {
     const bookings = await this.bookingRepository.findAll({ ...query, userId });
     return bookings.map(toBookingResponseDto);
+  }
+
+  async findBookings(
+    query: FindBookingsQueryDto,
+    userId: string,
+  ): Promise<BookingResolution> {
+    const bookings = await this.findAll(query as ListBookingsQueryDto, userId);
+    return toBookingResolution(bookings);
   }
 
   async findById(id: string, userId: string): Promise<BookingResponseDto> {
@@ -185,7 +196,6 @@ export class BookingService {
         nextStatus === BookingStatus.CANCELLED ? now : booking.cancelledAt,
       updatedAt: now,
     });
-
     const refreshed = await this.bookingRepository.findById(updated.id);
     return toBookingResponseDto(refreshed ?? updated);
   }

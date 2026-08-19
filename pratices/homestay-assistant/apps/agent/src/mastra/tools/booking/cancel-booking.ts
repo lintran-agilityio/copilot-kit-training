@@ -20,7 +20,7 @@ export const cancelBookingTool = createTool({
     Cancel a booking by ID after show_cancel_dialog_confirm returns confirmed: true — only the signed-in owner's active (non-past) bookings can be cancelled.
       - Use bookingId from the show_cancel_dialog_confirm result.
       - ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT}
-      - Do NOT call get_bookings or show_cancellation_success — the same HITL card updates to success/failed and refreshes the bookings list automatically.
+      - Do NOT call get_bookings, find_bookings, or show_cancellation_success — the same HITL card updates to success/failed and refreshes the bookings list automatically.
     `,
   inputSchema: cancelBookingInputSchema,
   outputSchema: bookingSchema,

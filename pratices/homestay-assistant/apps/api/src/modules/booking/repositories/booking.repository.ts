@@ -37,6 +37,12 @@ export class BookingRepository {
       query.andWhere('booking.roomId = :roomId', { roomId: filters.roomId });
     }
 
+    if (filters.roomName?.trim()) {
+      query.andWhere('LOWER(room.name) LIKE LOWER(:roomName)', {
+        roomName: `%${filters.roomName.trim()}%`,
+      });
+    }
+
     if (filters.status) {
       query.andWhere('booking.status = :status', { status: filters.status });
     }

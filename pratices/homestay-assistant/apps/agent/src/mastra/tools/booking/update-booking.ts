@@ -26,10 +26,10 @@ export const updateBookingTool = createTool({
     - Do NOT call get_bookings — the same HITL card updates to success/failed and refreshes the bookings list automatically.`,
   inputSchema: updateBookingInputSchema,
   outputSchema: bookingSchema,
-  execute: async ({ bookingId, checkInDate, checkOutDate, guests }, context) => {
+  execute: async (params, context) => {
     throwIfAborted(context.abortSignal);
-
     const serviceContext = serviceContextFromTool(context);
+    const { bookingId, checkInDate, checkOutDate, guests } = params;
 
     // Prefer the HITL confirm result pinned by prepareStep — the model often
     // reuses stale draft/original dates when toolChoice forces this call.
@@ -46,8 +46,8 @@ export const updateBookingTool = createTool({
 
     await assertOwnedModifiableBooking(resolvedBookingId, serviceContext);
 
-    return commitIfNotAborted(context.abortSignal, () =>
-      updateBooking(
+    return commitIfNotAborted(context.abortSignal, async () => {
+      const updated = await updateBooking(
         {
           bookingId: resolvedBookingId,
           checkInDate: resolvedCheckIn,
@@ -55,7 +55,9 @@ export const updateBookingTool = createTool({
           guests: resolvedGuests,
         },
         serviceContext,
-      ),
+      );
+      return updated;
+    },
     );
   },
 });

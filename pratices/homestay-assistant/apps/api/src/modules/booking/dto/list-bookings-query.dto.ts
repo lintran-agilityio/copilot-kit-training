@@ -20,6 +20,16 @@ export class ListBookingsQueryDto {
   roomId?: string;
 
   @ApiProperty({
+    description: 'Filter by room name (case-insensitive partial match)',
+    required: false,
+    example: 'Misty Pavilion',
+  })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  roomName?: string;
+
+  @ApiProperty({
     description: 'Filter by booking status',
     enum: BookingStatus,
     required: false,
