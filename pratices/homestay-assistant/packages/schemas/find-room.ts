@@ -9,7 +9,7 @@ export const findRoomPurposeSchema = z
   .enum(FIND_ROOM_PURPOSE_VALUES)
   .optional()
   .describe(
-    'search = FIND/filter ("find/show Misty Pavilion") — Room List always. recommend = soft-book without a named room — Room List. book_resolve = BOOK name lookup only ("Book Misty Pavilion") — skip Room List when exactly 1 match; show list when >1; empty when 0. resolve = internal room-name → roomId lookup for cancel/modify without a bookingId (e.g. "modify guest number for Moonlight Loft") — Room List always suppressed regardless of match count; use the single match\'s id as get_bookings.roomId, or ask which room when there is more than one match. Never use book_resolve or resolve for find/show/tell-me-about.',
+    'search = FIND/filter ("find/show Misty Pavilion") — Room List always. recommend = soft-book without a named room — Room List. book_resolve = BOOK name lookup only ("I want to book Misty Pavilion for 1 guest this weekend") — pass name only; skip Room List when exactly 1 match, show list when >1, and continue the booking flow with the matched room id. resolve = internal room-name → roomId lookup for cancel/modify without a bookingId (e.g. "modify guest number for Moonlight Loft") — Room List always suppressed regardless of match count; use the single match\'s id as get_bookings.roomId, or ask which room when there is more than one match. Never use book_resolve or resolve for find/show/tell-me-about.',
   );
 
 /**

@@ -17,7 +17,8 @@ export const findRoomTool = createTool({
   description:
     `REQUIRED for room search/filter and date availability (including "show available rooms" / "what\'s available").
     Call find_room when the guest searches by room name and/or filters by date, guests, or room level, or asks for available rooms.
-    Pass purpose: "search" (or omit) for find/show, "recommend" for soft-book without a named room,`,
+    For a booking request with a specific room name (for example, "I want to book Orchid Twin Loft for 1 guest this weekend"), pass purpose: "book_resolve" and name only. This is a BOOK lookup: the UI must not render a Room List; use the single room id to continue the booking flow or open the Booking Form.
+    Pass purpose: "search" (or omit) only for find/show/filter requests, "recommend" for soft-book without a named room,`,
   inputSchema: findRoomInputSchema,
   outputSchema: findRoomOutputSchema,
   execute: async (inputData, context) => {

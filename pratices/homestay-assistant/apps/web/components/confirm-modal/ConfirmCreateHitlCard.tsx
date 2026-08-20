@@ -11,7 +11,6 @@ import {
   CONFIRM_BOOKING,
   CONFIRM_MODIFY_BOOKING,
   getFailureMessage,
-  MODEL_NAME,
   MODIFY_PENDING_TITLES,
   type HitlCardPhase,
 } from "@/features/booking/constants";
@@ -21,6 +20,7 @@ import {
 } from "@/features/booking/utils";
 import { countNightOfDates } from "@repo/utils";
 import { HITL_DECISION_STATUS } from "@/constants";
+import { MODEL_NAME } from "@repo/types";
 
 export type ConfirmCreateHitlCardProps = {
   roomName: string;

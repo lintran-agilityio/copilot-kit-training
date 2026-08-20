@@ -2,8 +2,13 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { CalendarCheck } from "lucide-react";
-import { ToolCallStatus } from "@copilotkit/react-core/v2";
 import {
+  ToolCallStatus,
+  useAgent,
+  useCopilotKit,
+} from "@copilotkit/react-core/v2";
+import {
+  AGENT_KEYS,
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
@@ -98,6 +103,8 @@ export const EditModifyBookingModal = ({
   result,
   toolCallId,
 }: EditModifyBookingModalProps) => {
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
+  const { copilotkit } = useCopilotKit();
   const { respondOnce, canRespond: canRespondHitl } =
     useHitlRespondOnce<EditModifyBookingResult>(respond);
   const setPendingModifyStay = useBookingStore(
@@ -208,13 +215,14 @@ export const EditModifyBookingModal = ({
     return null;
   }
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (!canRespond) {
       return;
     }
 
     setPendingModifyStay(null);
-    void respondOnce({ confirmed: false });
+    await respondOnce({ confirmed: false });
+    copilotkit.stopAgent({ agent });
   };
 
   const handleCheckInChange = (dateKey: string) => {

@@ -9,7 +9,7 @@ import {
 import type {
   CreateBookingInput,
   FindBookingsInput,
-  ModifyBookingChanges,
+  UpdateBookingInput,
 } from "@repo/schemas";
 import {
   bookingSchema,
@@ -41,7 +41,7 @@ export type ServiceContext = {
 };
 
 export type CreateBookingPayload = CreateBookingInput;
-export type UpdateBookingPayload = ModifyBookingChanges & {
+export type UpdateBookingPayload = Omit<UpdateBookingInput, "bookingId"> & {
   bookingId: string;
 };
 export type GetBookingsParams = {

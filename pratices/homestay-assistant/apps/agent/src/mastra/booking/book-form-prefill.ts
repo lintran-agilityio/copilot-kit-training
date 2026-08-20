@@ -2,14 +2,10 @@ import type { ProcessInputStepArgs } from "@mastra/core/processors";
 import type { RequestContext } from "@mastra/core/request-context";
 
 import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
-import { addDaysYmd, parseBookingFormMessageHint } from "@repo/utils";
+import { addDaysYmd } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { asJsonValue, asRecord, parseFindRoomOutput } from "@/mastra/utils";
-import {
-  extractMessageText,
-  findLatestUserMessage,
-} from "@/mastra/utils/latest-user-message";
 
 export type BookingFormStayHint = {
   checkInDate?: string;
@@ -71,46 +67,6 @@ export const resolveContinuityStayHint = (
   }
 
   return null;
-};
-
-/**
- * Parses a date and/or guest count stated directly in the guest's latest
- * message (e.g. "Book Heritage Master Suite room at 18th for 2 guests"), so
- * a later get_room_by_id call can prefill/focus the Booking Form with them.
- * find_room's book_resolve lookup intentionally omits date/guests from its
- * own args (see WORKFLOW — BOOK), so without this they were silently
- * discarded even though the guest stated them in the same message.
- */
-export const resolveCurrentMessageStayHint = (
-  messages: ProcessInputStepArgs["messages"] | undefined,
-  today: string,
-): BookingFormStayHint | null => {
-  const latestUserMessage = messages?.length
-    ? findLatestUserMessage(messages)
-    : undefined;
-
-  if (!latestUserMessage) {
-    return null;
-  }
-
-  const text = extractMessageText(latestUserMessage);
-
-  if (!text) {
-    return null;
-  }
-
-  const { checkInDate, guests } = parseBookingFormMessageHint(text, today);
-
-  if (!checkInDate && !guests) {
-    return null;
-  }
-
-  return {
-    ...(checkInDate
-      ? { checkInDate, checkOutDate: addDaysYmd(checkInDate, 1) }
-      : {}),
-    ...(guests ? { guests } : {}),
-  };
 };
 
 /** Pins a resolved stay hint so the forced get_room_by_id call can read it. */

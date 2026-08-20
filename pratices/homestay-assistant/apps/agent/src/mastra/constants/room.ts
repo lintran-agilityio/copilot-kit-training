@@ -14,7 +14,7 @@ export const ROOM_LEVEL_CATEGORY_WORD_GLOBAL =
  * (API returns [] for `name=at`).
  */
 export const ROOM_NAME_FILLER =
-  /\b(?:show|find|search|look|for|your|the|me|a|an|our|available|matching|rooms?|suites?|at|on|in|from|this|next|by|with|to|st|nd|rd|th)\b/gi;
+  /\b(?:show|find|search|look|for|your|the|me|a|an|our|available|matching|rooms?|suites?|guests?|at|on|in|from|this|next|by|with|to|st|nd|rd|th)\b/gi;
 
 /**
  * Weekdays, months, and relative date words — date expression parts, never room titles.

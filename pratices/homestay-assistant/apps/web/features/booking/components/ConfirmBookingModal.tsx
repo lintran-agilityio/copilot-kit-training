@@ -1,7 +1,7 @@
 "use client";
 
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
-
+import { MODEL_NAME } from "@repo/types";
 import { HitlConfirmStayModal } from "./HitlConfirmStayModal";
 import type {
   ConfirmBookingArgs,
@@ -25,7 +25,7 @@ export const ConfirmBookingModal = ({
   toolCallId,
 }: ConfirmBookingModalProps) => (
   <HitlConfirmStayModal
-    variant="create"
+    variant={MODEL_NAME.CREATE}
     status={status}
     args={args}
     respond={respond}

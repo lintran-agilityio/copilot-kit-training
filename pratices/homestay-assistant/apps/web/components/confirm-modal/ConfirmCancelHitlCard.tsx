@@ -8,11 +8,11 @@ import {
   CONFIRM_CANCEL_BOOKING,
   getFailureMessage,
   HITL_CARD_PHASE,
-  MODEL_NAME,
   type HitlCardPhase,
 } from "@/features/booking/constants";
 import type { HitlDecisionStatus } from "@/features/booking/utils";
 import type { BookingDetails } from "@/features/booking/types";
+import { MODEL_NAME } from "@repo/types";
 
 export type ConfirmCancelHitlCardProps = {
   booking: BookingDetails;

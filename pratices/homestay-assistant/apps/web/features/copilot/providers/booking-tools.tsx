@@ -19,6 +19,7 @@ import {
   type ConfirmBookingArgs,
   type EditModifyBookingArgs,
 } from "@repo/schemas";
+import { MODEL_NAME } from "@repo/types";
 import {
   CancelBookingByRoomModal,
   ModifyBookingByRoomModal,
@@ -90,7 +91,7 @@ export const BookingToolsProvider = () => {
       parameters: confirmModifyBookingSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
         <HitlConfirmStayModal
-          variant="modify"
+          variant={MODEL_NAME.MODIFY}
           status={status}
           args={args}
           respond={respond}

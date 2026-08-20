@@ -2,6 +2,7 @@ import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { getRoomByIdInputSchema } from "@repo/schemas";
+import { addDaysYmd } from "@repo/utils";
 import {
   clearBookingFormStayHint,
   readBookingFormStayHint,
@@ -50,28 +51,35 @@ export const getRoomByIdTool = createTool({
   outputSchema: getRoomDetailOutputSchema,
   execute: async (inputData, context) => {
     throwIfAborted(context.abortSignal);
-    const { roomId } = inputData;
+    const { roomId, checkInDate, checkOutDate, guests: statedGuests } = inputData;
     const room = await getRoom(roomId, serviceContextFromTool(context));
 
-    const stayHint = readBookingFormStayHint(context.requestContext);
+    // The model states check-in/guests directly when the guest's latest
+    // message named them; the continuity hint (a prior dated find_room in
+    // this conversation) only fills in when the model didn't.
+    const continuityHint = checkInDate
+      ? null
+      : readBookingFormStayHint(context.requestContext);
     clearBookingFormStayHint(context.requestContext);
 
-    if (!stayHint) {
+    const resolvedCheckIn = checkInDate ?? continuityHint?.checkInDate;
+    const resolvedCheckOut = checkInDate
+      ? (checkOutDate ?? addDaysYmd(checkInDate, 1))
+      : continuityHint?.checkOutDate;
+    const rawGuests = statedGuests ?? continuityHint?.guests;
+    const guests = rawGuests
+      ? Math.min(Math.max(1, rawGuests), room.capacity)
+      : undefined;
+
+    if (!resolvedCheckIn && !guests) {
       return { room };
     }
-
-    const guests = stayHint.guests
-      ? Math.min(Math.max(1, stayHint.guests), room.capacity)
-      : undefined;
 
     return {
       room: {
         ...room,
-        ...(stayHint.checkInDate && stayHint.checkOutDate
-          ? {
-              checkInDate: stayHint.checkInDate,
-              checkOutDate: stayHint.checkOutDate,
-            }
+        ...(resolvedCheckIn && resolvedCheckOut
+          ? { checkInDate: resolvedCheckIn, checkOutDate: resolvedCheckOut }
           : {}),
         ...(guests ? { guests } : {}),
       },

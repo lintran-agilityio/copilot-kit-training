@@ -3,7 +3,7 @@ import { createTool } from "@mastra/core/tools";
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { sanitizeBookingId } from "@repo/utils";
 import { updateBookingInputSchema } from "@repo/schemas";
-import { bookingSchema } from "@/mastra/schemas/booking";
+import { bookingMutationOutputSchema } from "@/mastra/schemas/booking";
 import {
   assertOwnedModifiableBooking,
   updateBooking,
@@ -12,10 +12,11 @@ import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { takePinnedStay } from "@/mastra/utils/resolve-pinned-stay";
 import {
   commitIfNotAborted,
+  runBookingMutation,
   serviceContextFromTool,
   throwIfAborted,
 } from "@/mastra/utils/abort";
-import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/utils/generic-ui-reply-hints";
+import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/constants";
 
 export const updateBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
@@ -25,7 +26,7 @@ export const updateBookingTool = createTool({
     - ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT}
     - Do NOT call get_bookings — the same HITL card updates to success/failed and refreshes the bookings list automatically.`,
   inputSchema: updateBookingInputSchema,
-  outputSchema: bookingSchema,
+  outputSchema: bookingMutationOutputSchema,
   execute: async (params, context) => {
     throwIfAborted(context.abortSignal);
     const serviceContext = serviceContextFromTool(context);
@@ -44,20 +45,20 @@ export const updateBookingTool = createTool({
     const resolvedCheckOut = pinned?.checkOutDate ?? checkOutDate;
     const resolvedGuests = pinned?.guests ?? guests;
 
-    await assertOwnedModifiableBooking(resolvedBookingId, serviceContext);
+    return runBookingMutation(async () => {
+      await assertOwnedModifiableBooking(resolvedBookingId, serviceContext);
 
-    return commitIfNotAborted(context.abortSignal, async () => {
-      const updated = await updateBooking(
-        {
-          bookingId: resolvedBookingId,
-          checkInDate: resolvedCheckIn,
-          checkOutDate: resolvedCheckOut,
-          guests: resolvedGuests,
-        },
-        serviceContext,
+      return commitIfNotAborted(context.abortSignal, () =>
+        updateBooking(
+          {
+            bookingId: resolvedBookingId,
+            checkInDate: resolvedCheckIn,
+            checkOutDate: resolvedCheckOut,
+            guests: resolvedGuests,
+          },
+          serviceContext,
+        ),
       );
-      return updated;
-    },
-    );
+    });
   },
 });

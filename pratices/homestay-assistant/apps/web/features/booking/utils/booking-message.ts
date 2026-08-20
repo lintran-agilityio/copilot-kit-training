@@ -3,20 +3,22 @@ import {
   buildActionPrompt,
   formatShortDateForDisplay,
 } from "@repo/utils";
-
-import { getFailureMessage, MODEL_NAME } from "@/features/booking/constants";
-import type {
-  CancelBookingResult,
-  CreateBookingResult,
-  UpdateBookingResult,
-  BookingResponse,
-} from "@/features/booking/types";
+import { MODEL_NAME } from "@repo/types";
 import {
   BOOKING_CANCEL_PROMPT_PREFIX,
   BOOKING_FORM_PROMPT_PREFIX,
   BOOKING_MODIFY_PROMPT_PREFIX,
   BOOKING_STAY_PROMPT_PREFIX,
 } from "@repo/constants";
+
+import { getFailureMessage } from "@/features/booking/constants";
+import type {
+  CancelBookingResult,
+  CreateBookingResult,
+  UpdateBookingResult,
+  BookingResponse,
+} from "@/features/booking/types";
+
 
 type BookingErrorShape = {
   message?: BookingErrorField;

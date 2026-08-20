@@ -7,7 +7,6 @@ import { ChangeSummary, ConfirmHitlCard } from "@/components/confirm-modal";
 import {
   CONFIRM_MODIFY_BOOKING,
   getFailureMessage,
-  MODEL_NAME,
   HITL_CARD_PHASE,
   type HitlCardPhase,
 } from "@/features/booking/constants";
@@ -16,6 +15,7 @@ import {
   buildModifyChangeRows,
   type HitlDecisionStatus,
 } from "@/features/booking/utils";
+import { MODEL_NAME } from "@repo/types";
 
 export type ConfirmModifyHitlCardProps = {
   roomName: string;

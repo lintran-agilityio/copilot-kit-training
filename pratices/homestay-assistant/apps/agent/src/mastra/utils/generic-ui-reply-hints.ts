@@ -115,14 +115,3 @@ export const buildFindBookingsReplyHint = (
 
   return `${matchCount} active bookings matched (result.bookings) — never guess. Hand off to the HITL picker (show_cancel_dialog_confirm / show_modify_dialog_select) with all of them and wait.`;
 };
-
-/**
- * create / update / cancel mutation success: same-card HITL Generic UI is the
- * response — no duplicate chat confirmation. Failures still need short chat text.
- */
-export const MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT =
-  "After success, do NOT send chat text confirming the mutation or restating dates/guests/total/room — the same HITL card already shows success (tools-only is allowed). Still send short chat text only for mutation failures.";
-
-/** @deprecated Prefer MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT */
-export const CREATE_BOOKING_CONFIRMATION_REPLY_REQUIREMENT =
-  MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT;

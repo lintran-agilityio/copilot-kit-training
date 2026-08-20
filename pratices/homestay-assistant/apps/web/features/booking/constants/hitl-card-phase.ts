@@ -12,12 +12,6 @@ export const HITL_CARD_PHASE = {
   EXPIRED: "expired",
 } as const;
 
-export enum MODEL_NAME {
-  CREATE = "create",
-  CANCEL = "cancel",
-  MODIFY = "modify",
-}
-
 export type HitlCardPhase =
   (typeof HITL_CARD_PHASE)[keyof typeof HITL_CARD_PHASE];
 

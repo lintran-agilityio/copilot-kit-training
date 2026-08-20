@@ -3,9 +3,11 @@
 import { useLayoutEffect } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
+import { parseToolResult } from "@repo/utils";
+import { MODEL_NAME } from "@repo/types";
+
 import { BookingUnavailable } from "@/components/confirm-modal";
 import { EmbeddedWidget } from "@/features/chat/components";
-import { parseToolResult } from "@repo/utils";
 import {
   CheckRoomAvailabilityToolProps,
   CheckRoomAvailabilityResult,
@@ -38,7 +40,7 @@ const useStashPendingModifyFromAvailability = (
     const availabilityResult =
       parseToolResult<CheckRoomAvailabilityResult>(result);
 
-    if (!availabilityResult || availabilityResult.flow !== "modify") {
+    if (!availabilityResult || availabilityResult.flow !== MODEL_NAME.MODIFY) {
       return;
     }
 
