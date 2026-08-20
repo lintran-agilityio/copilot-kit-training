@@ -21,6 +21,7 @@ export const findBookingByIdTool = createTool({
       - Use when bookingId: is in the message — including [booking-cancel] / [booking-modify] from BookingCard clicks.
       - Pass the UUID after bookingId: — never the room name or roomId (a room can have multiple bookings).
       - Pass purpose: "modify" for MODIFY lookups — a booking whose check-in has already started comes back as bookings: [] with reason: "not_modifiable" so the edit form is never opened for it; reply that it can only be cancelled instead. Omit (or "cancel") for CANCEL lookups, which allow an already-started booking.
+      - For MODIFY, also pass requestedCheckInDate / requestedCheckOutDate / requestedGuests for any field the guest's LATEST message explicitly states a new value for — omit fields not stated. The app decides automatically whether to open the edit form or skip straight to availability based on what you pass here; you never make that call yourself.
       - Returns bookings: [] when the booking is not found, not owned/active, or (purpose: "modify") not modifiable; result.room is included for MODIFY.
     `,
   inputSchema: findBookingByIdInputSchema,

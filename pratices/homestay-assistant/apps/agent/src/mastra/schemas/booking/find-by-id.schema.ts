@@ -16,6 +16,24 @@ export const findBookingByIdInputSchema = z.object({
     .describe(
       '"cancel" (or omit) allows any active booking, including one already checked in. "modify" additionally requires the stay not to have started yet — a booking whose check-in is today or past comes back as bookings: [] with reason: "not_modifiable" so the edit form is never opened for it.',
     ),
+  requestedCheckInDate: z
+    .string()
+    .optional()
+    .describe(
+      "MODIFY only. The NEW check-in (YYYY-MM-DD) the guest explicitly stated in the LATEST message. Omit entirely if no new check-in was stated — never invent, infer, reuse an old value, or guess from context. When present (with requestedCheckOutDate and/or requestedGuests), the app skips the edit form and goes straight to availability with your stated value(s) merged over the booking's current stay.",
+    ),
+  requestedCheckOutDate: z
+    .string()
+    .optional()
+    .describe(
+      "MODIFY only. The NEW check-out (YYYY-MM-DD) the guest explicitly stated in the LATEST message (including a computed date from a stated night/day extend or shorten). Omit entirely if no new check-out was stated — never invent, infer, reuse an old value, or guess from context.",
+    ),
+  requestedGuests: z
+    .number()
+    .optional()
+    .describe(
+      "MODIFY only. The NEW guest count the guest explicitly stated in the LATEST message. Omit entirely if no new guest count was stated — never invent, infer, reuse an old value, or guess from context.",
+    ),
 });
 
 export const findBookingByIdOutputSchema = z.object({

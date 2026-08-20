@@ -67,7 +67,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
       description:
-        "Open the edit form for MODIFY only when the guest has not stated a new value. Pass the authoritative bookingId, room, and current dates/guests from find_booking_by_id. On confirmed:true, pass result.requestedChanges unchanged to check_room_availability with flow=modify and excludeBookingId=bookingId; do not merge the full stay yourself. Skip this form for stated changes and pass only those explicit fields as requestedChanges. If confirmed:false, keep the booking unchanged.",
+        "Edit form for MODIFY — the app only routes you here when the guest has not stated a new value (a stated value skips this form entirely). Pass the authoritative bookingId, room, and current dates/guests straight from the find_booking_by_id result you just received. On confirmed:true, the app forces the next call to check_room_availability with the guest-edited stay and excludeBookingId=bookingId — you do not need to construct that call's args. If confirmed:false, keep the booking unchanged.",
       parameters: editModifyBookingSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
         <EditModifyBookingModal
@@ -87,7 +87,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
       description:
-        "After check_room_availability returns nextAction=CONFIRM_MODIFY_BOOKING, show the read-only before→after card. Pass exactly { room: result.room, draft: result.modifyDraft }; never reconstruct, merge, or replace any draft field from UI state or memory. Wait for explicit confirmation. On confirmed:true, call update_booking with { bookingId, checkInDate, checkOutDate, guests } from the confirmed result. On confirmed:false, call no mutation and keep the booking unchanged.",
+        "After check_room_availability returns nextAction=CONFIRM_MODIFY_BOOKING, show the read-only before→after card. Pass { bookingId, room, checkInDate, checkOutDate, guests } from check_room_availability.result, plus originalCheckInDate/originalCheckOutDate/originalGuests from that same result when present — never reconstruct, merge, or replace any field from UI state or memory. Wait for explicit confirmation. On confirmed:true, the app forces the next call to update_booking with the confirmed fields. On confirmed:false, call no mutation and keep the booking unchanged.",
       parameters: confirmModifyBookingSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
         <HitlConfirmStayModal
