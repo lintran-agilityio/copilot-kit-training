@@ -7,6 +7,7 @@ import {
   resolveContinuityStayHint,
   stashBookingFormStayHint,
 } from "@/mastra/booking/book-form-prefill";
+import { resolveCorroboratedBookFacts } from "@/mastra/booking/booking-resolver";
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
@@ -55,11 +56,13 @@ const resolveFindByIdTransition = (
  * BOOK only: after find_room(book_resolve) resolves exactly one room, decide
  * deterministically whether the check-in date AND guest count are already
  * known — from this turn's stated values (echoed on the find_room result;
- * see normalizeFindRoomInput/findRoomTool) or from an earlier dated/guest-
- * count find_room this conversation (resolveContinuityStayHint) — so the
- * platform forces exactly ONE of check_room_availability / get_room_by_id as
- * the next call. This is the one BOOK junction that used to rely entirely on
- * prose ("decide from the latest message"), which let the model call both
+ * see normalizeFindRoomInput/findRoomTool, corroborated against the guest's
+ * own latest message via resolveCorroboratedBookFacts — see booking-resolver
+ * for why the echoed values alone are not trusted) or from an earlier dated/
+ * guest-count find_room this conversation (resolveContinuityStayHint) — so
+ * the platform forces exactly ONE of check_room_availability / get_room_by_id
+ * as the next call. This is the one BOOK junction that used to rely entirely
+ * on prose ("decide from the latest message"), which let the model call both
  * tools in the same step (double UI) or reopen the form despite guests
  * already being known from an earlier turn.
  */
@@ -80,8 +83,15 @@ const resolveFindRoomBookTransition = (
       : undefined;
   if (!roomId) return null;
 
-  const statedCheckIn = typeof output.date === "string" && output.date ? output.date : undefined;
-  const statedGuests = typeof output.guests === "number" && output.guests > 0 ? output.guests : undefined;
+  const echoedCheckIn = typeof output.date === "string" && output.date ? output.date : undefined;
+  const echoedGuests = typeof output.guests === "number" && output.guests > 0 ? output.guests : undefined;
+  const corroborated = resolveCorroboratedBookFacts({
+    messages: args.messages,
+    statedCheckIn: echoedCheckIn,
+    statedGuests: echoedGuests,
+  });
+  const statedCheckIn = corroborated.checkInDate;
+  const statedGuests = corroborated.guests;
 
   const continuityHint = statedCheckIn && statedGuests ? null : resolveContinuityStayHint(args.messages);
   const checkInDate = statedCheckIn ?? continuityHint?.checkInDate;
