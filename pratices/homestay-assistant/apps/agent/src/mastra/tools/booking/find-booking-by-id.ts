@@ -1,6 +1,7 @@
 import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
+import { TOOL_PURPOSE } from "@repo/constants";
 import { sanitizeBookingId } from "@repo/utils";
 import {
   findBookingByIdInputSchema,
@@ -8,7 +9,10 @@ import {
 } from "@/mastra/schemas/booking";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { findBookingById } from "@/mastra/services";
-import { takePinnedBookingId } from "@/mastra/utils/resolve-pinned-stay";
+import {
+  takePinnedBookingId,
+  takePinnedModifyRequestedFields,
+} from "@/mastra/utils/resolve-pinned-stay";
 import {
   serviceContextFromTool,
   throwIfAborted,
@@ -24,17 +28,41 @@ export const findBookingByIdTool = createTool({
     `,
   inputSchema: findBookingByIdInputSchema,
   outputSchema: findBookingByIdOutputSchema,
-  execute: async ({ bookingId, purpose }, context) => {
+  execute: async (
+    { bookingId, purpose, requestedCheckInDate, requestedCheckOutDate, requestedGuests },
+    context,
+  ) => {
     throwIfAborted(context.abortSignal);
 
     // Prefer the id pinned by prepareStep from the modify picker / sole match.
-    const pinnedBookingId = takePinnedBookingId(
-      context.requestContext,
-      REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID,
-    );
+    // Both pins below are MODIFY-only — never set for a CANCEL call — but the
+    // purpose check makes that a structural guarantee, not just a coincidence
+    // of what step-machine happens to set today.
+    const isModify = purpose === TOOL_PURPOSE.FIND_BOOKING_BY_ID.MODIFY;
+    const pinnedBookingId = isModify
+      ? takePinnedBookingId(context.requestContext, REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID)
+      : null;
+    // Same idea for the requested-change fields: a picker pick's forced
+    // follow-up call shouldn't have to re-derive what the guest already
+    // stated before the picker opened — fall back to what was pinned then.
+    const pinnedRequestedFields = isModify
+      ? takePinnedModifyRequestedFields(context.requestContext, REQUEST_CONTEXT_KEYS.PENDING_MODIFY_REQUESTED_FIELDS)
+      : null;
 
     const id = sanitizeBookingId(pinnedBookingId ?? bookingId);
+    const resolvedCheckInDate = isModify ? requestedCheckInDate ?? pinnedRequestedFields?.checkInDate : undefined;
+    const resolvedCheckOutDate = isModify ? requestedCheckOutDate ?? pinnedRequestedFields?.checkOutDate : undefined;
+    const resolvedGuests = isModify ? requestedGuests ?? pinnedRequestedFields?.guests : undefined;
 
-    return await findBookingById(id, serviceContextFromTool(context), purpose);
+    const result = await findBookingById(id, serviceContextFromTool(context), purpose);
+console.log('resolvedCheckInDate====> isModify', resolvedCheckInDate, isModify)
+console.log('resolvedCheckOutDate====>', resolvedCheckOutDate)
+console.log('resolvedGuests====>', resolvedGuests)
+    return {
+      ...result,
+      ...(resolvedCheckInDate ? { requestedCheckInDate: resolvedCheckInDate } : {}),
+      ...(resolvedCheckOutDate ? { requestedCheckOutDate: resolvedCheckOutDate } : {}),
+      ...(resolvedGuests !== undefined ? { requestedGuests: resolvedGuests } : {}),
+    };
   },
 });

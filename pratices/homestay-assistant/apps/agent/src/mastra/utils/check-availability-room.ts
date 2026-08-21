@@ -288,8 +288,6 @@ export const evaluateAvailabilityCandidate = async (
   candidate: AvailabilityCandidate,
   context: ToolContext,
 ): Promise<AvailabilityEvaluation> => {
-  const result = await checkCandidateAvailability(candidate, context);
-
   const originalStay = await resolveCandidateOriginalStay(candidate, context);
   const modifyMode = candidate.type === MODEL_NAME.MODIFY;
   const availableCandidate = {
@@ -297,25 +295,33 @@ export const evaluateAvailabilityCandidate = async (
     checkOutDate: candidate.checkOutDate,
     guests: candidate.guests,
   };
-  const { available, guestsWithinCapacity, room } = result;
-
   const stayUnchanged = Boolean(
     modifyMode &&
     originalStay &&
     isSameModifyStay(availableCandidate, originalStay),
   );
 
+  const result = await checkCandidateAvailability(candidate, context);
+  const { available, guestsWithinCapacity, room } = result;
+
+  // A no-op does not need an availability decision. The API still receives
+  // excludeBookingId, but an unrelated overlap or stale room state must not
+  // turn an unchanged booking into a BookingUnavailable response.
+  const effectiveAvailable = stayUnchanged ? true : available;
+  const effectiveGuestsWithinCapacity = stayUnchanged
+    ? true
+    : guestsWithinCapacity;
+
   const nextAction = resolveModifyAvailabilityNextAction({
-    available,
-    guestsWithinCapacity,
+    available: effectiveAvailable,
+    guestsWithinCapacity: effectiveGuestsWithinCapacity,
     isModify: modifyMode,
     stayUnchanged,
   });
-
   return {
     ...availableCandidate,
-    available,
-    guestsWithinCapacity,
+    available: effectiveAvailable,
+    guestsWithinCapacity: effectiveGuestsWithinCapacity,
     room,
     stayUnchanged,
     nextAction,

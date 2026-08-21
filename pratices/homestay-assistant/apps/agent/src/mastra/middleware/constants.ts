@@ -34,6 +34,16 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   PENDING_MODIFY_BOOKING_ID: "pendingModifyBookingId",
   /**
+   * requestedCheckInDate/requestedCheckOutDate/requestedGuests captured from
+   * the guest's own show_modify_dialog_select call (the picker for an
+   * ambiguous MODIFY match) — carried across the HITL pick pause so the
+   * forced find_booking_by_id call that follows confirmed:true doesn't
+   * depend on the model re-stating them several tool-calls later, several
+   * turns removed from the guest's original wording. See step-machine's
+   * pinModifyBookingId.
+   */
+  PENDING_MODIFY_REQUESTED_FIELDS: "pendingModifyRequestedFields",
+  /**
    * Optional {checkInDate, checkOutDate} pinned before get_room_by_id forces
    * open the Booking Form for a named-room BOOK resolution — sourced
    * deterministically from the latest dated find_room (search/recommend)

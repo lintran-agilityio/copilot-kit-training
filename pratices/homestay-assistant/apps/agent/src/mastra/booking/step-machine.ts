@@ -27,8 +27,11 @@ const FIND_BY_ID_REQUESTED_FIELDS = [
  * MODIFY only: after find_booking_by_id resolves exactly one booking, decide
  * deterministically whether the guest already stated a new value (skip the
  * form, go straight to availability) or not (open edit_modify_booking) —
- * based on which requested* fields the model populated, never on re-reading
- * the guest's phrasing a step later.
+ * based on which requested* fields resolved on the OUTPUT (findBookingByIdTool
+ * echoes back its own args merged with whatever was pinned from an earlier
+ * show_modify_dialog_select pick — see PENDING_MODIFY_REQUESTED_FIELDS),
+ * never on this call's raw `input` alone or on re-reading the guest's
+ * phrasing a step later.
  */
 const resolveFindByIdTransition = (
   input: Record<string, unknown> | null,
@@ -40,7 +43,7 @@ const resolveFindByIdTransition = (
   if (bookings.length !== 1) return null;
 
   const hasStatedChange = FIND_BY_ID_REQUESTED_FIELDS.some((field) => {
-    const value = input?.[field];
+    const value = output[field];
     return value !== undefined && value !== null && value !== "";
   });
 
@@ -161,7 +164,6 @@ const pinConfirmedStay = (args: ProcessInputStepArgs, result: ToolResult) => {
 const pinModifyCandidateFromResolution = (args: ProcessInputStepArgs, result: ToolResult) => {
   if (!args.requestContext) return;
   const output = asRecord(result.output);
-  const input = asRecord(result.input);
   const bookings = Array.isArray(output?.bookings) ? (output!.bookings as unknown[]) : [];
   const booking = asRecord(bookings[0]);
   if (!booking) return;
@@ -174,9 +176,13 @@ const pinModifyCandidateFromResolution = (args: ProcessInputStepArgs, result: To
   const guests = typeof booking.guests === "number" ? booking.guests : undefined;
   if (!roomId || !bookingId || !checkInDate || !checkOutDate || guests === undefined) return;
 
-  const requestedCheckInDate = typeof input?.requestedCheckInDate === "string" ? input.requestedCheckInDate : undefined;
-  const requestedCheckOutDate = typeof input?.requestedCheckOutDate === "string" ? input.requestedCheckOutDate : undefined;
-  const requestedGuests = typeof input?.requestedGuests === "number" ? input.requestedGuests : undefined;
+  // Read off the OUTPUT, not this call's raw input — findBookingByIdTool
+  // echoes back whichever requested* fields resolved, whether the model set
+  // them on this specific call or they were carried over via
+  // PENDING_MODIFY_REQUESTED_FIELDS from an earlier show_modify_dialog_select pick.
+  const requestedCheckInDate = typeof output?.requestedCheckInDate === "string" ? output.requestedCheckInDate : undefined;
+  const requestedCheckOutDate = typeof output?.requestedCheckOutDate === "string" ? output.requestedCheckOutDate : undefined;
+  const requestedGuests = typeof output?.requestedGuests === "number" ? output.requestedGuests : undefined;
 
   args.requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE, {
     roomId,
@@ -192,13 +198,32 @@ const pinModifyCandidateFromResolution = (args: ProcessInputStepArgs, result: To
   });
 };
 
-/** Pins the picker's chosen booking id so find_booking_by_id prefers it over a possibly-stale model-supplied id. */
+/**
+ * Pins the picker's chosen booking id so find_booking_by_id prefers it over a
+ * possibly-stale model-supplied id. Also carries forward whichever
+ * requested* fields the guest already stated when show_modify_dialog_select
+ * was called (its own input, from BEFORE the HITL pause) — so the forced
+ * find_booking_by_id call right after confirmed:true doesn't have to
+ * re-derive them from a guest message several tool-calls back.
+ */
 const pinModifyBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
   if (!args.requestContext) return;
   const output = asRecord(result.output);
   const bookingId = typeof output?.bookingId === "string" ? output.bookingId : undefined;
   if (!bookingId) return;
   args.requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID, bookingId);
+
+  const input = asRecord(result.input);
+  const requestedCheckInDate = typeof input?.requestedCheckInDate === "string" ? input.requestedCheckInDate : undefined;
+  const requestedCheckOutDate = typeof input?.requestedCheckOutDate === "string" ? input.requestedCheckOutDate : undefined;
+  const requestedGuests = typeof input?.requestedGuests === "number" ? input.requestedGuests : undefined;
+  if (requestedCheckInDate || requestedCheckOutDate || requestedGuests !== undefined) {
+    args.requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_REQUESTED_FIELDS, {
+      checkInDate: requestedCheckInDate,
+      checkOutDate: requestedCheckOutDate,
+      guests: requestedGuests,
+    });
+  }
 };
 
 export const enforceBookingStep = (args: ProcessInputStepArgs): ProcessInputStepResult | undefined => {

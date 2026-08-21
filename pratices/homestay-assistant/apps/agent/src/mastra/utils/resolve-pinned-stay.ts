@@ -171,3 +171,43 @@ export const takePinnedBookingId = (
   clearPinnedStay(requestContext, key);
   return pinnedBookingId;
 };
+
+/** Partial stated-change fields pinned across the MODIFY picker's HITL pause — see PENDING_MODIFY_REQUESTED_FIELDS. */
+export type PinnedModifyRequestedFields = {
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+};
+
+/**
+ * Reads the pinned MODIFY requested-change fields (from show_modify_dialog_select's
+ * own args) and immediately clears them.
+ *
+ * @param requestContext - Agent request context
+ * @param key - Request-context key for the pinned fields
+ * @returns Whichever of checkInDate/checkOutDate/guests were pinned, or null if none
+ */
+export const takePinnedModifyRequestedFields = (
+  requestContext: RequestContext | undefined,
+  key: (typeof REQUEST_CONTEXT_KEYS)[keyof typeof REQUEST_CONTEXT_KEYS],
+): PinnedModifyRequestedFields | null => {
+  const value = requestContext?.get(key);
+  clearPinnedStay(requestContext, key);
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const fields = value as Partial<PinnedModifyRequestedFields>;
+  const checkInDate =
+    typeof fields.checkInDate === "string" ? fields.checkInDate : undefined;
+  const checkOutDate =
+    typeof fields.checkOutDate === "string" ? fields.checkOutDate : undefined;
+  const guests = typeof fields.guests === "number" ? fields.guests : undefined;
+
+  if (!checkInDate && !checkOutDate && guests === undefined) {
+    return null;
+  }
+
+  return { checkInDate, checkOutDate, guests };
+};

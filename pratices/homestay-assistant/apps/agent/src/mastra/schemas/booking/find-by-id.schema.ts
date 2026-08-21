@@ -59,6 +59,24 @@ export const findBookingByIdOutputSchema = z.object({
     .describe(
       'Only set when bookings is empty AND purpose was "modify" AND the booking exists/is active but its check-in is today or past. Reply that the stay has already started and can no longer be modified, and offer to cancel instead — do not treat this as a generic not-found.',
     ),
+  requestedCheckInDate: z
+    .string()
+    .optional()
+    .describe(
+      "Echoed back from this call's own requestedCheckInDate, or carried over from an earlier show_modify_dialog_select pick when this call omitted it — the app's routing decision (edit form vs straight to availability) is based on this resolved value, not on what you passed to this specific call.",
+    ),
+  requestedCheckOutDate: z
+    .string()
+    .optional()
+    .describe(
+      "Echoed back from this call's own requestedCheckOutDate, or carried over from an earlier show_modify_dialog_select pick when this call omitted it.",
+    ),
+  requestedGuests: z
+    .number()
+    .optional()
+    .describe(
+      "Echoed back from this call's own requestedGuests, or carried over from an earlier show_modify_dialog_select pick when this call omitted it.",
+    ),
 });
 
 export type FindBookingByIdInput = z.infer<typeof findBookingByIdInputSchema>;
