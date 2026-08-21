@@ -9,6 +9,8 @@ export const TOOL_KEYS = {
   },
   BOOKING: {
     GET: "get_bookings",
+    /** Resolve zero, one, or many active booking matches by optional room name. */
+    FIND: "find_bookings",
     /** Mastra registration key (LLM tool name) — cancels after show_cancel_dialog_confirm returns confirmed: true. */
     CANCEL: "cancel_booking",
     /** Mastra createTool id + registration / useRenderTool name — create booking after confirm_booking returns confirmed: true. */

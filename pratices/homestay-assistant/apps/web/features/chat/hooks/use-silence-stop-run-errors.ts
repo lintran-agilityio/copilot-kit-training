@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
+import type { AgentSubscriber, RunAgentResult } from "@ag-ui/client";
 
 import {
   isExpectedAgentError,
@@ -12,33 +13,9 @@ type UseSilenceStopRunErrorsOptions = {
   agentId: string;
 };
 
-type RunErrorEventLike = {
-  code?: string;
-  message?: string;
-};
-
-type AgentErrorSubscriber = {
-  onRunErrorEvent?: (params: {
-    event?: RunErrorEventLike;
-  }) => void | Promise<void>;
-  [key: string]: unknown;
-};
-
-type PatchableAgent = {
-  threadId?: string;
-  connectAgent?: (
-    params: unknown,
-    subscriber?: AgentErrorSubscriber,
-  ) => Promise<unknown>;
-  runAgent?: (
-    params: unknown,
-    subscriber?: AgentErrorSubscriber,
-  ) => Promise<unknown>;
-};
-
 const wrapErrorSubscriber = (
-  subscriber: AgentErrorSubscriber | undefined,
-): AgentErrorSubscriber | undefined => {
+  subscriber: AgentSubscriber | undefined,
+): AgentSubscriber | undefined => {
   if (!subscriber?.onRunErrorEvent) {
     return subscriber;
   }
@@ -54,10 +31,15 @@ const wrapErrorSubscriber = (
         return;
       }
 
-      await originalOnRunErrorEvent(params);
+      return originalOnRunErrorEvent(params);
     },
   };
 };
+
+const emptyRunResult = (): RunAgentResult => ({
+  result: undefined,
+  newMessages: [],
+});
 
 /**
  * Filters expected Stop / post-Stop errors out of CopilotKit's agent methods
@@ -71,49 +53,36 @@ export const useSilenceStopRunErrors = ({
   const { agent } = useAgent({ agentId });
 
   useEffect(() => {
-    const patchable = agent as PatchableAgent;
-    const originalConnectAgent = patchable.connectAgent?.bind(patchable);
-    const originalRunAgent = patchable.runAgent?.bind(patchable);
+    const originalConnectAgent = agent.connectAgent.bind(agent);
+    const originalRunAgent = agent.runAgent.bind(agent);
 
-    if (originalConnectAgent) {
-      patchable.connectAgent = (params, subscriber) =>
-        originalConnectAgent(params, wrapErrorSubscriber(subscriber));
-    }
+    agent.connectAgent = (parameters, subscriber) =>
+      originalConnectAgent(parameters, wrapErrorSubscriber(subscriber));
 
-    if (originalRunAgent) {
-      patchable.runAgent = async (params, subscriber) => {
-        try {
-          return await originalRunAgent(
-            params,
-            wrapErrorSubscriber(subscriber),
-          );
-        } catch (error) {
-          // Follow-up run after Stop often hits Intelligence 409 while the
-          // old lock is still held. Swallow so AbstractAgent's "Agent
-          // execution failed" path does not leave a user-facing failure.
-          if (
-            isExpectedAgentError(
-              error,
-              undefined,
-              undefined,
-              patchable.threadId,
-            )
-          ) {
-            return undefined;
-          }
-
-          throw error;
+    agent.runAgent = async (parameters, subscriber) => {
+      try {
+        return await originalRunAgent(
+          parameters,
+          wrapErrorSubscriber(subscriber),
+        );
+      } catch (error) {
+        // Follow-up run after Stop often hits Intelligence 409 while the
+        // old lock is still held. Swallow so AbstractAgent's "Agent
+        // execution failed" path does not leave a user-facing failure.
+        if (
+          error instanceof Error &&
+          isExpectedAgentError(error, undefined, undefined, agent.threadId)
+        ) {
+          return emptyRunResult();
         }
-      };
-    }
+
+        throw error;
+      }
+    };
 
     return () => {
-      if (originalConnectAgent) {
-        patchable.connectAgent = originalConnectAgent;
-      }
-      if (originalRunAgent) {
-        patchable.runAgent = originalRunAgent;
-      }
+      agent.connectAgent = originalConnectAgent;
+      agent.runAgent = originalRunAgent;
     };
   }, [agent]);
 };

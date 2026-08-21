@@ -1,6 +1,6 @@
 import type { BookingPickerCopy } from "@/features/booking/constants";
 import { type HitlDecisionStatus } from "./hitl-status";
-import type { ConfirmModifyBookingArgs, ModifyBookingPickerItem } from "@repo/schemas";
+import type { ModifyBookingPickerItem } from "@repo/schemas";
 import { parseToolResult } from "@repo/utils";
 import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
 import type {
@@ -123,8 +123,9 @@ const readToolResultContent = (
 };
 
 /**
- * Hydrate modify-picker rows from the latest get_bookings tool result in the
- * transcript (presentation only — does not rewrite agent.messages).
+ * Hydrate modify-picker rows from the latest find_bookings (or legacy
+ * get_bookings) tool result in the transcript (presentation only — does not
+ * rewrite agent.messages).
  *
  * Used when show_modify_dialog_select passes bookingIds[] (small args) instead
  * of full bookings[] rows that truncate mid-stream.
@@ -149,7 +150,7 @@ export const resolveModifyPickerBookingsFromMessages = (
     }
 
     for (const toolCall of [...(message.toolCalls ?? [])].reverse()) {
-      if (toolCall.function?.name !== TOOL_KEYS.BOOKING.GET || !toolCall.id) {
+      if (toolCall.function?.name !== TOOL_KEYS.BOOKING.FIND || !toolCall.id) {
         continue;
       }
 

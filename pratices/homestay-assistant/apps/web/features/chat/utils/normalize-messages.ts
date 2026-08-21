@@ -1,36 +1,34 @@
 import { MESSAGE_ROLE, MessageRole } from "@repo/constants";
-import type { MessageLike, ToolCallLike } from "@/features/chat/types";
+import type {
+  ChatToolCall,
+  MessageLike,
+  ToolArgumentsLike,
+  ToolCallLike,
+} from "@/features/chat/types";
 
-type CopilotKitToolCall = {
-  id: string;
-  type: "function";
-  function: {
-    name: string;
-    arguments: string;
-  };
-};
+const EMPTY_JSON_OBJECT = "{}";
 
-const toArgumentsString = (value: unknown) => {
+const toArgumentsString = (value: ToolArgumentsLike) => {
   if (typeof value === "string") {
     return value;
   }
 
   if (value === undefined || value === null) {
-    return "{}";
+    return EMPTY_JSON_OBJECT;
   }
 
   if (typeof value === "object") {
     return JSON.stringify(value);
   }
 
-  return "{}";
+  return EMPTY_JSON_OBJECT;
 };
 
 const extractFirstJsonObject = (args: string): string => {
   const start = args.indexOf("{");
 
   if (start === -1) {
-    return "{}";
+    return EMPTY_JSON_OBJECT;
   }
 
   let depth = 0;
@@ -65,14 +63,14 @@ const extractFirstJsonObject = (args: string): string => {
     }
   }
 
-  return "{}";
+  return EMPTY_JSON_OBJECT;
 };
 
-const sanitizeToolArguments = (value: unknown) => {
+const sanitizeToolArguments = (value: ToolArgumentsLike) => {
   const args = toArgumentsString(value).trim();
 
   if (!args) {
-    return "{}";
+    return EMPTY_JSON_OBJECT;
   }
 
   try {
@@ -85,14 +83,24 @@ const sanitizeToolArguments = (value: unknown) => {
       JSON.parse(candidate);
       return candidate;
     } catch {
-      return "{}";
+      return EMPTY_JSON_OBJECT;
     }
   }
 };
 
+const isNormalizedToolCall = (
+  toolCall: ToolCallLike,
+): toolCall is ChatToolCall =>
+  typeof toolCall.id === "string" &&
+  toolCall.type === "function" &&
+  typeof toolCall.function === "object" &&
+  toolCall.function !== null &&
+  typeof toolCall.function.name === "string" &&
+  typeof toolCall.function.arguments === "string";
+
 const normalizeToolCall = (
   toolCall: ToolCallLike | null | undefined,
-): CopilotKitToolCall | null => {
+): ChatToolCall | null => {
   if (!toolCall || typeof toolCall !== "object") {
     return null;
   }
@@ -112,11 +120,10 @@ const normalizeToolCall = (
       // Already in AG-UI shape — keep the original reference so repeated
       // normalize passes do not churn object identity / JSON key order.
       if (
-        toolCall.type === "function" &&
-        typeof fn.arguments === "string" &&
+        isNormalizedToolCall(toolCall) &&
         fn.arguments === argumentsValue
       ) {
-        return toolCall as CopilotKitToolCall;
+        return toolCall;
       }
 
       return {
@@ -136,9 +143,7 @@ const normalizeToolCall = (
       type: "function",
       function: {
         name: toolCall.name,
-        arguments: sanitizeToolArguments(
-          toolCall.arguments ?? toolCall.args,
-        ),
+        arguments: sanitizeToolArguments(toolCall.arguments ?? toolCall.args),
       },
     };
   }
@@ -146,15 +151,12 @@ const normalizeToolCall = (
   return null;
 };
 
-const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
-  if (!message || typeof message !== "object") {
-    return message;
-  }
+const normalizeMessage = <TMessage extends MessageLike>(
+  message: TMessage,
+): TMessage => {
+  const rawToolCalls = message.toolCalls;
 
-  const candidate = message as MessageLike & Record<string, unknown>;
-  const rawToolCalls = candidate.toolCalls;
-
-  if (candidate.role !== MESSAGE_ROLE.ASSISTANT || !Array.isArray(rawToolCalls)) {
+  if (message.role !== MESSAGE_ROLE.ASSISTANT || !Array.isArray(rawToolCalls)) {
     return message;
   }
 
@@ -167,7 +169,7 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
 
   const toolCalls = rawToolCalls
     .map(normalizeToolCall)
-    .filter((toolCall): toolCall is CopilotKitToolCall => toolCall !== null);
+    .filter((toolCall): toolCall is ChatToolCall => toolCall !== null);
 
   if (!toolCalls.length) {
     return message;
@@ -184,12 +186,12 @@ const normalizeMessage = <TMessage>(message: TMessage): TMessage => {
   }
 
   return {
-    ...candidate,
+    ...message,
     toolCalls,
   } as TMessage;
 };
 
-const getMessageContent = (message: { content?: unknown }) => {
+const getMessageContent = (message: Pick<MessageLike, "content">) => {
   if (typeof message.content === "string") {
     return message.content;
   }
@@ -197,21 +199,16 @@ const getMessageContent = (message: { content?: unknown }) => {
   return "";
 };
 
-const hasToolCalls = (message: { toolCalls?: unknown }) =>
+const hasToolCalls = (message: Pick<MessageLike, "toolCalls">) =>
   Array.isArray(message.toolCalls) && message.toolCalls.length > 0;
 
 export const normalize = (value: string) => {
   return value.trim().replace(/[^\w\s]/g, "").toLocaleLowerCase();
 };
 
-const mergeAssistantDuplicates = <
-  TMessage extends {
-    id: string;
-    role?: string;
-    content?: unknown;
-    toolCalls?: unknown;
-  },
->(
+type IdentifiedMessage = MessageLike & { id: string };
+
+const mergeAssistantDuplicates = <TMessage extends IdentifiedMessage>(
   existing: TMessage,
   incoming: TMessage,
 ): TMessage => {
@@ -247,14 +244,7 @@ const mergeAssistantDuplicates = <
  * with the same id). Assistant pairs keep the richer content/toolCalls.
  * Preserves first-seen order.
  */
-export const dedupeMessagesById = <
-  TMessage extends {
-    id?: string;
-    role?: string;
-    content?: unknown;
-    toolCalls?: unknown;
-  },
->(
+export const dedupeMessagesById = <TMessage extends MessageLike>(
   messages: TMessage[],
 ): TMessage[] => {
   const result: TMessage[] = [];
@@ -281,8 +271,8 @@ export const dedupeMessagesById = <
       existing.role === MESSAGE_ROLE.ASSISTANT
     ) {
       result[existingIndex] = mergeAssistantDuplicates(
-        existing as TMessage & { id: string },
-        message as TMessage & { id: string },
+        existing as TMessage & IdentifiedMessage,
+        message as TMessage & IdentifiedMessage,
       );
       continue;
     }
@@ -298,11 +288,7 @@ export const dedupeMessagesById = <
  * same normalized text and have no toolCalls. Distinct tool turns stay intact.
  */
 export const collapseConsecutiveIdenticalAssistants = <
-  TMessage extends {
-    role?: string;
-    content?: unknown;
-    toolCalls?: unknown;
-  },
+  TMessage extends MessageLike,
 >(
   messages: TMessage[],
 ): TMessage[] => {
@@ -342,14 +328,7 @@ export const collapseConsecutiveIdenticalAssistants = <
  * Same-id assistant rows keep the richer content/toolCalls instead of
  * letting an empty hydration payload overwrite a finished reply.
  */
-export const mergeHydratedMessages = <
-  TMessage extends {
-    id: string;
-    role?: string;
-    content?: unknown;
-    toolCalls?: unknown;
-  },
->(
+export const mergeHydratedMessages = <TMessage extends IdentifiedMessage>(
   liveMessages: TMessage[],
   hydratedMessages: TMessage[],
 ): TMessage[] => {
@@ -401,25 +380,16 @@ export const mergeHydratedMessages = <
   return orderedIds.map((id) => byId.get(id)!);
 };
 
-export const normalizeMessages = <
-  TMessage extends {
-    id?: string;
-    role?: string;
-    content?: unknown;
-    toolCalls?: unknown;
-  },
->(
+export const normalizeMessages = <TMessage extends MessageLike>(
   messages: TMessage[],
 ): TMessage[] =>
   collapseConsecutiveIdenticalAssistants(
     dedupeMessagesById(messages.map(normalizeMessage)),
   );
 
-type ChatMessageRole = MessageRole | "reasoning" | string;
-
 type ChatMessageLike = {
   id: string;
-  role: ChatMessageRole;
+  role: string;
 };
 
 const GROUPED_TOP_SPACING = "pt-1.5";
@@ -429,7 +399,7 @@ const WIDGET_TOP_SPACING = "pt-3";
 
 const isSameSenderGroup = (
   currentRole: Extract<MessageRole, "user" | "assistant">,
-  previousRole: ChatMessageRole | undefined,
+  previousRole: ChatMessageLike["role"] | undefined,
 ) => {
   if (!previousRole) {
     return false;

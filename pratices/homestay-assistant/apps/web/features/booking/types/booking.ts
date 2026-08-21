@@ -109,6 +109,13 @@ export type UpdateBookingParameters = {
   checkInDate?: string;
   checkOutDate?: string;
   guests?: number;
+  confirmation?: {
+    confirmed: true;
+    bookingId: string;
+    checkInDate: string;
+    checkOutDate: string;
+    guests: number;
+  };
 };
 
 export type UpdateBookingToolProps = ToolRendererProps<UpdateBookingResult> & {

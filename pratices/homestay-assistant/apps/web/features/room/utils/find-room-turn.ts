@@ -1,18 +1,8 @@
-import { hasLaterToolCallInTurn } from "@/features/chat/utils";
 import { TOOL_KEYS } from "@repo/constants";
 import { getCurrentTurn } from "@repo/utils";
 
-type ToolCallLike = {
-  id?: string;
-  function?: { name?: string };
-};
-
-type MessageLike = {
-  role?: string;
-  toolCallId?: string;
-  toolCalls?: ToolCallLike[];
-  content?: unknown;
-};
+import type { MessageLike } from "@/features/chat/types";
+import { hasLaterToolCallInTurn } from "@/features/chat/utils";
 
 const FIND_ROOM = TOOL_KEYS.GET.FIND_ROOM;
 

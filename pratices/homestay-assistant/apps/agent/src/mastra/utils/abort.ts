@@ -49,3 +49,30 @@ export const commitIfNotAborted = <T>(
   throwIfAborted(signal);
   return mutate();
 };
+
+/**
+ * Runs a create/update/cancel booking mutation and converts an expected
+ * failure (ownership/state checks, API errors) into a returned `{ message }`
+ * result instead of letting it throw out of the tool. A thrown error becomes
+ * a `tool-error` stream chunk, and the AG-UI/Mastra bridge only forwards
+ * `tool-error` for background-task tool calls — for a normal HITL mutation
+ * call it never reaches the frontend, so the confirm card's tool-call status
+ * never flips to Complete and stays stuck on "submitting" forever, even
+ * though the model still sees the error and can reply in chat. AbortError is
+ * rethrown so Stop still actually halts the run.
+ */
+export const runBookingMutation = async <T>(
+  mutate: () => Promise<T>,
+): Promise<T | { message: string }> => {
+  try {
+    return await mutate();
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
+
+    return {
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+};

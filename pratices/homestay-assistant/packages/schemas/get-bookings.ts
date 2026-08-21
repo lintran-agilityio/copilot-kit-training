@@ -4,6 +4,12 @@ import { GET_BOOKINGS_PURPOSE_VALUES } from "@repo/constants";
 
 export const getBookingsInputSchema = z.object({
   roomId: z.string().optional().describe("Filter by room ID"),
+  roomName: z
+    .string()
+    .optional()
+    .describe(
+      "Filter by room name (case-insensitive partial match). Use this to resolve a cancel/modify target named by room — never call find_room to look up the roomId first.",
+    ),
   status: z
     .enum(Object.values(BookingStatus) as [string, ...string[]])
     .optional()

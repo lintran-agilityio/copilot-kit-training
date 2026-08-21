@@ -27,14 +27,20 @@ const isLocalHost = (host: string): boolean => {
 };
 
 const publicHostFromRequest = (request: Request): string | null => {
-  const forwarded = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const forwarded = request.headers
+    .get("x-forwarded-host")
+    ?.split(",")[0]
+    ?.trim();
   const host = forwarded || request.headers.get("host")?.trim();
 
   return host || null;
 };
 
 const wsProtocolFromRequest = (request: Request): "ws" | "wss" => {
-  const forwarded = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const forwarded = request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim();
 
   if (forwarded === "https" || forwarded === "http") {
     return forwarded === "https" ? "wss" : "ws";
@@ -53,7 +59,9 @@ export const shouldProxyIntelligenceRealtime = (request: Request): boolean => {
   return !isLocalHost(host);
 };
 
-export const sameOriginIntelligenceClientWsUrl = (request: Request): string | null => {
+export const sameOriginIntelligenceClientWsUrl = (
+  request: Request,
+): string | null => {
   const host = publicHostFromRequest(request);
 
   if (!host || isLocalHost(host)) {
@@ -63,25 +71,18 @@ export const sameOriginIntelligenceClientWsUrl = (request: Request): string | nu
   return `${wsProtocolFromRequest(request)}://${host}${PROXY_SUFFIX}`;
 };
 
-type IntelligenceRealtimeBody = {
-  /** `/info` shape. */
-  intelligence?: {
-    wsUrl?: string;
-    [key: string]: unknown;
-  };
-  /** `agent/{id}/run` and `agent/{id}/connect` join-credential envelope. */
-  realtime?: {
-    clientUrl?: string;
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-};
+type JsonValue = string | number | boolean | null | JsonValue[] | JsonObject;
 
-const hasStringField = (
-  value: unknown,
-  key: string,
-): value is Record<string, unknown> =>
-  !!value && typeof value === "object" && typeof (value as Record<string, unknown>)[key] === "string";
+type JsonObject = { [key: string]: JsonValue | undefined };
+
+const hasStringField = <TKey extends string>(
+  value: JsonValue | undefined,
+  key: TKey,
+): value is JsonObject & Record<TKey, string> =>
+  !!value &&
+  typeof value === "object" &&
+  !Array.isArray(value) &&
+  typeof value[key] === "string";
 
 /**
  * Points every managed realtime URL in a runtime JSON body at our proxy.
@@ -89,29 +90,31 @@ const hasStringField = (
  */
 export const rewriteIntelligenceRealtimeUrlsInBody = (
   request: Request,
-  body: unknown,
-): unknown => {
+  body: JsonValue,
+): JsonValue => {
   const proxyUrl = sameOriginIntelligenceClientWsUrl(request);
 
-  if (!proxyUrl || !body || typeof body !== "object") {
+  if (!proxyUrl || !body || typeof body !== "object" || Array.isArray(body)) {
     return body;
   }
 
-  const payload = body as IntelligenceRealtimeBody;
-  const rewritesInfo = hasStringField(payload.intelligence, "wsUrl");
-  const rewritesRealtime = hasStringField(payload.realtime, "clientUrl");
+  const payload = body;
+  const intelligence = hasStringField(payload.intelligence, "wsUrl")
+    ? payload.intelligence
+    : null;
+  const realtime = hasStringField(payload.realtime, "clientUrl")
+    ? payload.realtime
+    : null;
 
-  if (!rewritesInfo && !rewritesRealtime) {
+  if (!intelligence && !realtime) {
     return body;
   }
 
   return {
     ...payload,
-    ...(rewritesInfo
-      ? { intelligence: { ...payload.intelligence, wsUrl: proxyUrl } }
+    ...(intelligence
+      ? { intelligence: { ...intelligence, wsUrl: proxyUrl } }
       : {}),
-    ...(rewritesRealtime
-      ? { realtime: { ...payload.realtime, clientUrl: proxyUrl } }
-      : {}),
+    ...(realtime ? { realtime: { ...realtime, clientUrl: proxyUrl } } : {}),
   };
 };

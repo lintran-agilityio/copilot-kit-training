@@ -34,6 +34,16 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   PENDING_MODIFY_BOOKING_ID: "pendingModifyBookingId",
   /**
+   * requestedCheckInDate/requestedCheckOutDate/requestedGuests captured from
+   * the guest's own show_modify_dialog_select call (the picker for an
+   * ambiguous MODIFY match) — carried across the HITL pick pause so the
+   * forced find_booking_by_id call that follows confirmed:true doesn't
+   * depend on the model re-stating them several tool-calls later, several
+   * turns removed from the guest's original wording. See step-machine's
+   * pinModifyBookingId.
+   */
+  PENDING_MODIFY_REQUESTED_FIELDS: "pendingModifyRequestedFields",
+  /**
    * Optional {checkInDate, checkOutDate} pinned before get_room_by_id forces
    * open the Booking Form for a named-room BOOK resolution — sourced
    * deterministically from the latest dated find_room (search/recommend)
@@ -41,6 +51,17 @@ export const REQUEST_CONTEXT_KEYS = {
    * defaulting to today. Guest can still edit it before booking.
    */
   PENDING_BOOKING_FORM_STAY_HINT: "pendingBookingFormStayHint",
+  /**
+   * {roomId, checkInDate, guests} pinned before check_room_availability is
+   * forced (flow=create) for a named-room BOOK resolution once find_room
+   * (book_resolve) resolves the room AND the check-in date + guest count are
+   * both already known (stated this turn or from an earlier dated/guest-count
+   * find_room) — used to override stale/incorrect LLM args deterministically,
+   * the same way PENDING_MODIFY_CANDIDATE does for modify. checkOutDate is
+   * intentionally not pinned: only the model's own args (or the +1 day
+   * default) carry a guest-stated stay length.
+   */
+  PENDING_CREATE_CANDIDATE: "pendingCreateCandidate",
 } as const;
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";

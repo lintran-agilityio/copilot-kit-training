@@ -10,6 +10,7 @@ import {
 
 import { EmbeddedWidget } from "@/features/chat/components";
 import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
+import type { MessageLike } from "@/features/chat/types";
 import {
   hasBookingPickerFields,
   resolveModifyPickerBookingsFromMessages,
@@ -71,17 +72,7 @@ export const ModifyBookingByRoomModal = ({
   const bookingsFromMessages = useMemo(
     () =>
       resolveModifyPickerBookingsFromMessages(
-        agent.messages as
-          | {
-              role?: string;
-              content?: unknown;
-              toolCallId?: string;
-              toolCalls?: {
-                id?: string;
-                function?: { name?: string; arguments?: unknown };
-              }[];
-            }[]
-          | undefined,
+        agent.messages as MessageLike[] | undefined,
         args.bookingIds,
       ),
     [agent.messages, args.bookingIds],

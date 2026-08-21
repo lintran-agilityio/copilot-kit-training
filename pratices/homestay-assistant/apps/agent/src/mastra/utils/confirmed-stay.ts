@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { asNonEmptyString, asPositiveInt } from "./common";
-import { asRecord } from "./parse-json-record";
+import { asJsonObject, type JsonValue } from "./json-value";
 
 /**
  * Parsed HITL stay payload used to override LLM tool args in booking flows.
@@ -34,8 +34,10 @@ const confirmedStayPayloadSchema = z.object({
  * @param output - Tool result payload (object or JSON string)
  * @returns Confirmed stay fields, or null when the result is not usable
  */
-export const parseConfirmedStay = (output: unknown): ConfirmedStay | null => {
-  const record = asRecord(output);
+export const parseConfirmedStay = (
+  output: JsonValue | undefined,
+): ConfirmedStay | null => {
+  const record = asJsonObject(output);
   if (!record) {
     return null;
   }

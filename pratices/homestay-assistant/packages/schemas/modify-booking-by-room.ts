@@ -37,6 +37,24 @@ export const modifyBookingByRoomSchema = z.object({
     .describe(
       "Room display name, date cue, or \"your bookings\" when disambiguating multiple get_bookings matches for modify",
     ),
+  requestedCheckInDate: z
+    .string()
+    .optional()
+    .describe(
+      "The NEW check-in (YYYY-MM-DD) the guest explicitly stated in the LATEST message, same extraction rule as find_booking_by_id's field of the same name. Pass it here too (not only later on find_booking_by_id) — the app carries it across the picker so the guest doesn't have to restate it after choosing a booking. Omit entirely if no new check-in was stated.",
+    ),
+  requestedCheckOutDate: z
+    .string()
+    .optional()
+    .describe(
+      "The NEW check-out (YYYY-MM-DD) the guest explicitly stated in the LATEST message (including a computed date from a stated night/day extend or shorten), same extraction rule as find_booking_by_id's field of the same name. Pass it here too — the app carries it across the picker. Omit entirely if no new check-out was stated.",
+    ),
+  requestedGuests: z
+    .number()
+    .optional()
+    .describe(
+      "The NEW guest count the guest explicitly stated in the LATEST message, same extraction rule as find_booking_by_id's field of the same name. Pass it here too — the app carries it across the picker. Omit entirely if no new guest count was stated.",
+    ),
 });
 
 export type ModifyBookingByRoomArgs = z.infer<typeof modifyBookingByRoomSchema>;

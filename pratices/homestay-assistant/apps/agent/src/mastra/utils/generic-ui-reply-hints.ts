@@ -34,7 +34,7 @@ export const buildFindRoomReplyHint = (
       return "No room matched that name — Room List is suppressed. Reply with ONE short sentence that no room by that name exists; do NOT call get_bookings. Do NOT invent a roomId.";
     }
     if (matchCount === 1) {
-      return "Room resolved for cancel/modify lookup — Room List is suppressed (do NOT say cards were shown). Use rooms[0].id as roomId and continue the cancel/modify workflow's get_bookings call in the SAME turn — do NOT ask the guest to confirm the room name first.";
+      return "Room resolved for a booking lookup — Room List is suppressed (do NOT say cards were shown). Use rooms[0].id as roomId and continue the pending get_bookings call in the SAME turn — do NOT ask the guest to confirm the room name first. (Cancel/Modify never take this path — they resolve directly via find_bookings({ roomName }), never find_room.)";
     }
     return `Multiple rooms matched that name (${matchCount}) — Room List is suppressed. Reply with ONE short sentence naming the matching rooms and asking which one they mean; do NOT call get_bookings until they pick.`;
   }
@@ -46,15 +46,15 @@ export const buildFindRoomReplyHint = (
     if (matchCount === 1) {
       return (
         "Room resolved for booking — Room List is suppressed (do NOT say cards were shown). " +
-        "Check the LATEST user message only (not older searches, continuity dates, or working memory): " +
-        "does it state an explicit check-in date (or a resolvable relative date like today/tomorrow/weekend/weekday) " +
-        "AND a guest count for this room? " +
-        "If BOTH are present (full info): skip the Booking Form — call check_room_availability (flow=create) next " +
-        "with those values (checkOutDate defaults to checkInDate + 1 day only when no stay length was stated), " +
-        "then confirm_booking when available. " +
-        "If EITHER is missing (partial info): call get_room_by_id next to open the Booking Form so the guest " +
-        "sets/confirms the missing field(s) — do NOT invent a missing check-in date or guest count, and do NOT " +
-        "ask for it in chat instead. " +
+        "The platform has already deterministically decided the next step (from this message's stated check-in " +
+        "date/guest count, or an earlier dated/guest-count search this conversation) and forces exactly ONE tool " +
+        "call next — you cannot choose a different one and must not attempt both: " +
+        "check_room_availability (flow=create) when check-in date AND guest count are both already known — pass " +
+        "them back plus a checkOutDate reflecting any stay length stated in the LATEST message (default " +
+        "checkInDate + 1 day only when none was stated), then confirm_booking when available; " +
+        "OR get_room_by_id to open the Booking Form when either is still unknown — pass whichever of " +
+        "checkInDate/guests IS stated in the latest message as its args so the form opens prefilled, leave the " +
+        "rest for the guest to fill in. " +
         "Reply with at most one short guest-facing sentence (tools-only is also fine) either way. Never list room details in text."
       );
     }
@@ -83,7 +83,7 @@ export const buildGetBookingsReplyHint = (
     if (bookingCount === 0) {
       return "No active bookings matched — the booking-list card is suppressed. Reply with ONE short sentence that there are no matching active bookings. Do NOT invent one from chat history.";
     }
-    return "Booking-list card is suppressed for this internal resolve fetch — do NOT say cards were shown or list booking details in text. Continue the cancel/modify workflow with the resolved booking(s) (find_booking_by_id on a single match, or the HITL picker on multiple matches).";
+    return "Booking-list card is suppressed for this internal resolve fetch — do NOT say cards were shown or list booking details in text. CANCEL: a single match is already fully resolved — go straight to show_cancel_dialog_confirm, do NOT call find_booking_by_id again. MODIFY: call find_booking_by_id (purpose: modify) on a single match to apply the not-modifiable gate. Multiple matches (either workflow) → hand off to the HITL picker (show_cancel_dialog_confirm / show_modify_dialog_select) with all matches — never guess.";
   }
 
   if (bookingCount === 0) {
@@ -93,13 +93,25 @@ export const buildGetBookingsReplyHint = (
   return "Booking cards are already rendered in chat — the cards ARE the response: do NOT restate names, dates, or prices in text, and do NOT send an acknowledgement sentence either (tools-only is allowed).";
 };
 
-/**
- * create / update / cancel mutation success: same-card HITL Generic UI is the
- * response — no duplicate chat confirmation. Failures still need short chat text.
- */
-export const MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT =
-  "After success, do NOT send chat text confirming the mutation or restating dates/guests/total/room — the same HITL card already shows success (tools-only is allowed). Still send short chat text only for mutation failures.";
+export type FindBookingsReplyStatus = "not_found" | "resolved" | "ambiguous";
 
-/** @deprecated Prefer MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT */
-export const CREATE_BOOKING_CONFIRMATION_REPLY_REQUIREMENT =
-  MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT;
+/**
+ * Model-facing hint after find_bookings — the internal cancel/modify booking
+ * target resolver. It never renders its own UI; the HITL that follows
+ * (show_cancel_dialog_confirm / show_modify_dialog_select, or find_booking_by_id
+ * for a single modify match) is the response.
+ */
+export const buildFindBookingsReplyHint = (
+  status: FindBookingsReplyStatus,
+  matchCount: number,
+): string => {
+  if (status === "not_found") {
+    return "No active bookings matched — reply with ONE short sentence that there are no matching active bookings. Do NOT invent one from chat history.";
+  }
+
+  if (status === "resolved") {
+    return "Exactly one active booking matched (result.booking) — this is the resolved target, not a rendered card. CANCEL: go straight to show_cancel_dialog_confirm with this booking, do NOT call find_booking_by_id again. MODIFY: call find_booking_by_id (purpose: modify) with this booking's id to apply the not-modifiable gate.";
+  }
+
+  return `${matchCount} active bookings matched (result.bookings) — never guess. Hand off to the HITL picker (show_cancel_dialog_confirm / show_modify_dialog_select) with all of them and wait.`;
+};

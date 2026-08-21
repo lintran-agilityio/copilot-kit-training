@@ -9,6 +9,7 @@ import {
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
+import { MODEL_NAME } from "@repo/types";
 
 import {
   ConfirmCreateHitlCard,
@@ -54,7 +55,7 @@ import type { HitlToolResult } from "@/features/booking/types";
 
 type HitlConfirmStayModalProps =
   | {
-      variant: "create";
+      variant: MODEL_NAME.CREATE;
       status: ToolCallStatus;
       args: Partial<ConfirmBookingArgs>;
       respond?: (result: ConfirmBookingResult) => Promise<void>;
@@ -62,7 +63,7 @@ type HitlConfirmStayModalProps =
       toolCallId?: string;
     }
   | {
-      variant: "modify";
+      variant: MODEL_NAME.MODIFY;
       status: ToolCallStatus;
       args: Partial<ConfirmModifyBookingArgs>;
       respond?: (result: ConfirmModifyBookingResult) => Promise<void>;
@@ -434,7 +435,7 @@ const HitlConfirmModifyStayModal = ({
 };
 
 export const HitlConfirmStayModal = (props: HitlConfirmStayModalProps) => {
-  if (props.variant === "create") {
+  if (props.variant === MODEL_NAME.CREATE) {
     return (
       <HitlConfirmCreateStayModal
         status={props.status}

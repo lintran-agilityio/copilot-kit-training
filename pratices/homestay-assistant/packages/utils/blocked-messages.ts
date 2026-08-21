@@ -9,26 +9,42 @@
 import {
   isBlockedMessageMetadata,
   isProcessorBlockAssistantContent,
+  type BlockedMessageMetadata,
 } from "@repo/constants";
 
 export type BlockedMessageLike = {
   id?: string;
   role?: string;
-  content?: unknown;
-  metadata?: unknown;
+  content?: string;
+  metadata?: BlockedMessageMetadata;
 };
 
-export const normalizeBlockedMessageIds = (value: unknown): string[] => {
+type BlockedMessageIdentity = Pick<
+  BlockedMessageLike,
+  "id" | "role" | "metadata"
+>;
+
+const readStringContent = (message: object): string | undefined => {
+  if (!("content" in message) || typeof message.content !== "string") {
+    return undefined;
+  }
+
+  return message.content;
+};
+
+export const normalizeBlockedMessageIds = (
+  value?: readonly string[] | null,
+): string[] => {
   if (!Array.isArray(value)) {
     return [];
   }
 
-  return value.filter((entry): entry is string => typeof entry === "string");
+  return value.filter((entry) => typeof entry === "string");
 };
 
 /** True when a user message is blocked by id set and/or metadata.blocked. */
 export const isBlockedUserMessage = (
-  message: BlockedMessageLike,
+  message: BlockedMessageIdentity,
   blockedIds?: ReadonlySet<string>,
 ): boolean => {
   if (message.role !== "user") {
@@ -42,7 +58,7 @@ export const isBlockedUserMessage = (
   return isBlockedMessageMetadata(message.metadata);
 };
 
-export const excludeBlockedUserMessages = <T extends BlockedMessageLike>(
+export const excludeBlockedUserMessages = <T extends BlockedMessageIdentity>(
   messages: readonly T[],
   blockedIds?: ReadonlySet<string>,
 ): T[] =>
@@ -52,8 +68,8 @@ export const excludeBlockedUserMessages = <T extends BlockedMessageLike>(
  * Presentation: metadata/id policy, or the following assistant reply is a
  * processor-block marker written by the AG-UI tripwire path.
  */
-export const isUserMessageBlockedInTranscript = (
-  messages: readonly BlockedMessageLike[] | undefined,
+export const isUserMessageBlockedInTranscript = <T extends BlockedMessageIdentity>(
+  messages: readonly T[] | undefined,
   messageId: string,
   blockedIds?: ReadonlySet<string>,
 ): boolean => {
@@ -81,6 +97,6 @@ export const isUserMessageBlockedInTranscript = (
 
   return (
     next?.role === "assistant" &&
-    isProcessorBlockAssistantContent(next.content)
+    isProcessorBlockAssistantContent(readStringContent(next))
   );
 };

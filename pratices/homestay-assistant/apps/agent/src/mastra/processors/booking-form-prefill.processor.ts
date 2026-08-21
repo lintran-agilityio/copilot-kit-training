@@ -1,20 +1,16 @@
 import type { ProcessInputStepArgs, Processor } from "@mastra/core/processors";
-import { formatTodayYmd } from "@repo/utils";
 
 import {
   resolveContinuityStayHint,
-  resolveCurrentMessageStayHint,
   stashBookingFormStayHint,
-  type BookingFormStayHint,
 } from "@/mastra/booking/book-form-prefill";
 
 /**
  * Runs before every step so a later get_room_by_id call (which opens the
- * Booking Form) can prefill/focus the check-in date and guest count the
- * guest already stated in their BOOK message ("Book Heritage Master Suite
- * room at 18th"). The date stated in the *current* message always wins;
- * an earlier unrelated dated search only fills in when the current message
- * has no date of its own.
+ * Booking Form) can fall back to an earlier dated find_room in this
+ * conversation when the model doesn't pass its own checkInDate/guests args
+ * (see WORKFLOW — BOOK "partial info" — the model states check-in/guests
+ * directly on get_room_by_id when the guest's latest message named them).
  */
 export class BookingFormPrefillProcessor implements Processor {
   id = "booking-form-prefill";
@@ -22,18 +18,9 @@ export class BookingFormPrefillProcessor implements Processor {
   name = "Booking Form Prefill";
 
   processInputStep({ messages, requestContext }: ProcessInputStepArgs) {
-    const today = formatTodayYmd();
-    const currentHint = resolveCurrentMessageStayHint(messages, today);
-    const continuityHint = currentHint?.checkInDate
-      ? null
-      : resolveContinuityStayHint(messages);
+    const continuityHint = resolveContinuityStayHint(messages);
 
-    const merged: BookingFormStayHint = {
-      ...continuityHint,
-      ...currentHint,
-    };
-
-    stashBookingFormStayHint(requestContext, merged);
+    stashBookingFormStayHint(requestContext, continuityHint);
 
     return messages;
   }

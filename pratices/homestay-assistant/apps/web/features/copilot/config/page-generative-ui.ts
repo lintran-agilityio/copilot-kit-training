@@ -23,6 +23,7 @@ const { ACTION, BOOKING, GET } = TOOL_KEYS;
 /** Mastra backend tools — LLM registration keys. */
 const MASTRA_BACKEND_TOOL_NAMES = [
   BOOKING.FIND_BY_ID,
+  BOOKING.FIND,
   BOOKING.GET,
   BOOKING.CANCEL,
   BOOKING.CREATE_BOOKING,

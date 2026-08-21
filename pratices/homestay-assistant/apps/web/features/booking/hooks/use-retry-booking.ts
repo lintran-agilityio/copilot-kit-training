@@ -6,12 +6,13 @@ import {
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
+import { MODEL_NAME } from "@repo/types";
 
 import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
 import { FLOW_KEY } from "@/constants";
 import { useSendAgentMessage } from "@/hooks";
 import { useBookingStore } from "../stores";
-import { getRetryMessage, MODEL_NAME } from "../constants";
+import { getRetryMessage } from "../constants";
 
 // Request Booking
 export const useRequestRoomBooking = () => {

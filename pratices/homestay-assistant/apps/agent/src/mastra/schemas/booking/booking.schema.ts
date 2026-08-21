@@ -28,3 +28,21 @@ export const bookingSchema = z.object({
 });
 
 export type Booking = z.infer<typeof bookingSchema>;
+
+/**
+ * Returned (not thrown) shape for expected create/update/cancel failures
+ * (e.g. booking already started, not found). A thrown Error becomes a
+ * `tool-error` stream chunk that the AG-UI bridge never forwards to the
+ * frontend for a normal tool call, leaving the HITL card stuck in
+ * "submitting" — mutation tools must return this instead of throwing.
+ */
+export const bookingMutationErrorSchema = z.object({
+  message: z.string(),
+});
+
+export type BookingMutationError = z.infer<typeof bookingMutationErrorSchema>;
+
+export const bookingMutationOutputSchema = z.union([
+  bookingSchema,
+  bookingMutationErrorSchema,
+]);

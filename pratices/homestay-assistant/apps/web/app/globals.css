@@ -310,6 +310,18 @@ a {
 }
 
 /* Embedded widgets are timeline blocks — never inherit message-bubble chrome */
+/*
+ * Keep headless tool renderers mounted for their effects, but remove the empty
+ * assistant row (including its avatar) when they produce no visible DOM.
+ */
+[data-sidebar-chat]
+  [data-chat-timeline-entry="assistant"]:has(
+    > [data-chat-tool-only-row] > [data-chat-tool-content]:empty
+  ),
+[data-sidebar-chat] [data-chat-embedded-slot]:empty {
+  display: none;
+}
+
 [data-sidebar-chat] [data-chat-embedded-widget],
 [data-sidebar-chat] [data-chat-tool-ui] {
   background: transparent;

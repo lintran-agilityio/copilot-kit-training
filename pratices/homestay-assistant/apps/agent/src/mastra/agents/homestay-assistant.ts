@@ -8,7 +8,7 @@ import {
 } from "@repo/constants";
 import {
   homestayAssistantPrompt,
-  withCurrentDateInstructions,
+  withDateContext,
 } from "@/mastra/utils";
 import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants";
 import {
@@ -16,6 +16,7 @@ import {
   checkRoomAvailabilityTool,
   createBookingTool,
   findBookingByIdTool,
+  findBookingsTool,
   getBookingsTool,
   updateBookingTool,
 } from "@/mastra/tools/booking";
@@ -27,16 +28,20 @@ import {
 import { agentOutputProcessors } from "@/mastra/processors/agent-output-processors";
 import { securityInputProcessor } from "@/mastra/processors/security-input.processors";
 import { BookingFormPrefillProcessor } from "@/mastra/processors/booking-form-prefill.processor";
+import { enforceBookingStep } from "@/mastra/booking/step-machine";
 
 export const homestayAssistant = new Agent({
   id: AGENT_KEYS.HOMESTAY_ASSISTANT,
   name: "Homestay Assistant",
   description:
     "Public chat agent that coordinates room discovery and booking flows (prompt-guided tool routing + HITL).",
-  instructions: () => withCurrentDateInstructions(homestayAssistantPrompt),
+  instructions: () => withDateContext(homestayAssistantPrompt),
   model: process.env.AI_MODEL || "openai/gpt-4o-mini",
   // Rate-limit responses are transient; Mastra applies bounded backoff retries.
   maxRetries: 2,
+  defaultOptions: {
+    prepareStep: enforceBookingStep,
+  },
   tools: {
     [TOOL_KEYS.GET.ROOMS]: getRoomsTool,
     [TOOL_KEYS.GET.FIND_ROOM]: findRoomTool,
@@ -45,6 +50,7 @@ export const homestayAssistant = new Agent({
     [TOOL_KEYS.BOOKING.CREATE_BOOKING]: createBookingTool,
     [TOOL_KEYS.BOOKING.UPDATE_BOOKING]: updateBookingTool,
     [TOOL_KEYS.BOOKING.GET]: getBookingsTool,
+    [TOOL_KEYS.BOOKING.FIND]: findBookingsTool,
     [TOOL_KEYS.BOOKING.FIND_BY_ID]: findBookingByIdTool,
     [TOOL_KEYS.BOOKING.CANCEL]: cancelBookingTool,
   },

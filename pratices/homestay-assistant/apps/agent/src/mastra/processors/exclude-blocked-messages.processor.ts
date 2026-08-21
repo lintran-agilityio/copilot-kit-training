@@ -1,6 +1,10 @@
 import type { MastraDBMessage } from "@mastra/core/agent";
 import type { Processor } from "@mastra/core/processors";
 import {
+  isBlockedMessageMetadata,
+  type BlockedMessageMetadata,
+} from "@repo/constants";
+import {
   isBlockedUserMessage,
   normalizeBlockedMessageIds,
 } from "@repo/utils";
@@ -8,15 +12,15 @@ import {
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 
 /** Mastra stores message metadata under content.metadata — keep nesting here. */
-const readMessageMetadata = (message: MastraDBMessage) => {
+const readMessageMetadata = (
+  message: MastraDBMessage,
+): BlockedMessageMetadata | undefined => {
   const content = message.content;
 
   if (content && typeof content === "object" && "metadata" in content) {
-    const metadata = (content as { metadata?: unknown }).metadata;
+    const { metadata } = content;
 
-    if (metadata && typeof metadata === "object") {
-      return metadata;
-    }
+    return isBlockedMessageMetadata(metadata) ? metadata : undefined;
   }
 
   return undefined;
@@ -34,9 +38,12 @@ export class ExcludeBlockedMessagesProcessor implements Processor {
     messages: MastraDBMessage[];
     requestContext?: { get: (key: string) => unknown };
   }) {
+    const rawBlockedIds = requestContext?.get(
+      REQUEST_CONTEXT_KEYS.BLOCKED_MESSAGE_IDS,
+    );
     const blockedIds = new Set(
       normalizeBlockedMessageIds(
-        requestContext?.get(REQUEST_CONTEXT_KEYS.BLOCKED_MESSAGE_IDS),
+        Array.isArray(rawBlockedIds) ? rawBlockedIds : undefined,
       ),
     );
 

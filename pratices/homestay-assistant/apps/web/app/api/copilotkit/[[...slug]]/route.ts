@@ -50,7 +50,7 @@ const maybeRewriteRealtimeUrls = async (
   }
 
   try {
-    const body: unknown = await response.clone().json();
+    const body = await response.clone().json();
     const rewritten = rewriteIntelligenceRealtimeUrlsInBody(req, body);
 
     if (rewritten === body) {

@@ -45,6 +45,64 @@ export const readPinnedStay = (
   };
 };
 
+/** Deterministically-resolved CREATE candidate — see PENDING_CREATE_CANDIDATE. */
+export type PinnedCreateCandidate = {
+  roomId: string;
+  checkInDate: string;
+  guests: number;
+};
+
+/**
+ * Reads the pinned BOOK create-candidate from request context.
+ *
+ * @param requestContext - Agent request context
+ * @returns The pinned candidate when present and well-formed, otherwise null
+ */
+export const readPinnedCreateCandidate = (
+  requestContext: RequestContext | undefined,
+): PinnedCreateCandidate | null => {
+  const value = requestContext?.get(
+    REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE,
+  );
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const candidate = value as Partial<PinnedCreateCandidate>;
+
+  if (
+    typeof candidate.roomId !== "string" ||
+    !candidate.roomId ||
+    typeof candidate.checkInDate !== "string" ||
+    !candidate.checkInDate ||
+    typeof candidate.guests !== "number" ||
+    candidate.guests <= 0
+  ) {
+    return null;
+  }
+
+  return {
+    roomId: candidate.roomId,
+    checkInDate: candidate.checkInDate,
+    guests: candidate.guests,
+  };
+};
+
+/**
+ * Reads the pinned BOOK create-candidate and immediately clears it.
+ *
+ * @param requestContext - Agent request context
+ * @returns The pinned candidate when present and well-formed, otherwise null
+ */
+export const takePinnedCreateCandidate = (
+  requestContext: RequestContext | undefined,
+): PinnedCreateCandidate | null => {
+  const pinned = readPinnedCreateCandidate(requestContext);
+  clearPinnedStay(requestContext, REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE);
+  return pinned;
+};
+
 /**
  * Reads a pinned booking id from request context.
  *
@@ -112,4 +170,44 @@ export const takePinnedBookingId = (
   const pinnedBookingId = readPinnedBookingId(requestContext, key);
   clearPinnedStay(requestContext, key);
   return pinnedBookingId;
+};
+
+/** Partial stated-change fields pinned across the MODIFY picker's HITL pause — see PENDING_MODIFY_REQUESTED_FIELDS. */
+export type PinnedModifyRequestedFields = {
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+};
+
+/**
+ * Reads the pinned MODIFY requested-change fields (from show_modify_dialog_select's
+ * own args) and immediately clears them.
+ *
+ * @param requestContext - Agent request context
+ * @param key - Request-context key for the pinned fields
+ * @returns Whichever of checkInDate/checkOutDate/guests were pinned, or null if none
+ */
+export const takePinnedModifyRequestedFields = (
+  requestContext: RequestContext | undefined,
+  key: (typeof REQUEST_CONTEXT_KEYS)[keyof typeof REQUEST_CONTEXT_KEYS],
+): PinnedModifyRequestedFields | null => {
+  const value = requestContext?.get(key);
+  clearPinnedStay(requestContext, key);
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const fields = value as Partial<PinnedModifyRequestedFields>;
+  const checkInDate =
+    typeof fields.checkInDate === "string" ? fields.checkInDate : undefined;
+  const checkOutDate =
+    typeof fields.checkOutDate === "string" ? fields.checkOutDate : undefined;
+  const guests = typeof fields.guests === "number" ? fields.guests : undefined;
+
+  if (!checkInDate && !checkOutDate && guests === undefined) {
+    return null;
+  }
+
+  return { checkInDate, checkOutDate, guests };
 };

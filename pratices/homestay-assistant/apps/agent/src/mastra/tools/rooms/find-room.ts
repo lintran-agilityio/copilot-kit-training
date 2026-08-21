@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 
-import { TOOL_KEYS } from "@repo/constants/tool-keys";
+import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import {
   findRoomInputSchema,
   findRoomOutputSchema,
@@ -12,16 +12,44 @@ import {
   throwIfAborted,
 } from "@/mastra/utils/abort";
 
+const NAME_ONLY_PURPOSES = new Set<string | undefined>([
+  TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE,
+  TOOL_PURPOSE.FIND_ROOM.RESOLVE,
+]);
+
 export const findRoomTool = createTool({
   id: TOOL_KEYS.GET.FIND_ROOM,
-  description:
-    'REQUIRED for room search/filter and date availability (including "show available rooms" / "what\'s available"). Call find_room when the guest searches by room name and/or filters by date, guests, or room level, or asks for available rooms. Pass purpose: "search" (or omit) for find/show, "recommend" for soft-book without a named room, "book_resolve" ONLY when BOOK resolves a specific room name (Room List suppressed on exactly 1 match), "resolve" ONLY to resolve a named room to its roomId for a cancel/modify request that has no bookingId and no roomId yet (e.g. "modify guest number for Moonlight Loft") — Room List always suppressed; use the single match\'s id as get_bookings.roomId, or ask which room when there is more than one match. Never call get_bookings with a bare room name — it only filters by roomId, so resolve the name first. Soft-book without a room title → omit name; weekdays/months (Mon, Monday, Aug, …) are date parts — never name. guests = party size: rooms with capacity >= guests match (a capacity-4 room is valid for 3 guests) — NEVER treat guests as exact capacity equality. If they say available/what\'s available without a date, pass date = CURRENT DATE today (YYYY-MM-DD). Luxury / premium / top-floor / penthouse → pass level: 4 ONLY (never those words as name — name is literal room-name search). Do NOT use get_rooms for availability or name/date/filter queries. For search/recommend, results render as room cards in chat automatically — the cards ARE the response; do NOT write room names or a list in text, and do NOT add an acknowledgement/summary sentence either — tools-only is allowed when matches are found. Follow replyHint after calling. Do NOT call update_room_list after find_room — it can duplicate the chat list. NEVER call find_room again in the same turn to "show" or re-present those results. When nothing matched, still send one short chat sentence saying so. For plain "show all rooms" catalog browse with no availability wording, prefer get_rooms instead.',
+  description: `
+    Find rooms matching the guest's request.
+
+    Use when the guest:
+    - searches for rooms
+    - asks which rooms are available
+    - filters rooms by name, date, guests, or room level
+    - requests a booking for a specific named room
+
+    Purpose:
+    - search: find/show/filter rooms for the guest
+    - book_resolve: resolve a specific named room for a booking flow
+    - recommend: find suitable rooms when no specific room was requested
+  `,
+  strict: true,
   inputSchema: findRoomInputSchema,
   outputSchema: findRoomOutputSchema,
-  execute: async (inputData, context) => {
+  execute: async (input, context) => {
     throwIfAborted(context.abortSignal);
     // inputSchema already runs normalizeFindRoomInput
-    return findRooms(inputData, serviceContextFromTool(context));
+    if (NAME_ONLY_PURPOSES.has(input.purpose)) {
+      // date/guests on `input` here are stated hints only (see
+      // normalizeFindRoomInput) — never let them filter a named-room lookup,
+      // just echo them back for the BOOK step machine to route on.
+      const result = await findRooms(
+        { purpose: input.purpose, name: input.name },
+        serviceContextFromTool(context),
+      );
+      return { ...result, date: input.date, guests: input.guests };
+    }
+    return findRooms(input, serviceContextFromTool(context));
   },
   toModelOutput: toFindRoomModelOutput,
 });

@@ -1,4 +1,5 @@
 import { ToolRendererProps } from "@/features/copilot/types";
+import { MODEL_NAME } from "@repo/types";
 
 export type CheckRoomAvailabilityInput = {
   roomId: string;
@@ -6,7 +7,7 @@ export type CheckRoomAvailabilityInput = {
   checkOutDate: string;
   guests?: number;
   /** Agent-tool only; not sent to the HTTP availability API. */
-  flow?: "create" | "modify";
+  flow?: MODEL_NAME.CREATE | MODEL_NAME.MODIFY;
   excludeBookingId?: string;
 };
 
@@ -14,7 +15,7 @@ export type CheckRoomAvailabilityResult = {
   available?: boolean;
   guestsWithinCapacity?: boolean;
   nextAction?: "confirm_booking" | "CONFIRM_MODIFY_BOOKING" | "stop_booking";
-  flow?: "create" | "modify";
+  flow?: MODEL_NAME.CREATE | MODEL_NAME.MODIFY;
   room?: {
     name?: string;
     capacity?: number;

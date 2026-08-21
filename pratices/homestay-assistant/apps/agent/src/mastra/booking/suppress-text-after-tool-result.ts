@@ -1,14 +1,19 @@
-export type StreamChunkLike = {
-  type: string;
-  payload?: unknown;
-};
+import type { ProcessOutputStreamArgs } from "@mastra/core/processors";
+import type { ChunkType, ToolResultPayload } from "@mastra/core/stream";
 
-export const asToolResultPayload = <TPayload extends object>(
-  payload: unknown,
-): TPayload =>
-  (payload && typeof payload === "object" ? payload : {}) as TPayload;
+const ASSISTANT_TEXT_CHUNK_TYPES = [
+  "text-delta",
+  "text-start",
+  "text-end",
+] as const;
 
-const isAssistantTextChunkType = (type: string) =>
+type AssistantTextChunkType = (typeof ASSISTANT_TEXT_CHUNK_TYPES)[number];
+
+type StreamProcessorState = ProcessOutputStreamArgs["state"];
+
+const isAssistantTextChunkType = (
+  type: ChunkType["type"],
+): type is AssistantTextChunkType =>
   type === "text-delta" || type === "text-start" || type === "text-end";
 
 /**
@@ -19,21 +24,17 @@ const isAssistantTextChunkType = (type: string) =>
  * by a redundant chat bubble.
  */
 export const createSuppressTextAfterToolResultFilter =
-  <TPayload extends object>(
-    stateKey: string,
-    shouldSuppress: (payload: TPayload) => boolean,
-  ) =>
   (
-    part: StreamChunkLike,
-    state: Record<string, unknown>,
-  ): { emit: boolean } => {
-    if (part.type === "tool-result") {
-      if (shouldSuppress(asToolResultPayload<TPayload>(part.payload))) {
-        state[stateKey] = true;
-      }
+    stateKey: string,
+    shouldSuppress: (payload: ToolResultPayload) => boolean,
+  ) =>
+  (part: ChunkType, state: StreamProcessorState): { emit: boolean } => {
+    const { type } = part;
+    if (type === "tool-result" && shouldSuppress(part.payload)) {
+      state[stateKey] = true;
     }
 
-    if (state[stateKey] === true && isAssistantTextChunkType(part.type)) {
+    if (state[stateKey] && isAssistantTextChunkType(type)) {
       return { emit: false };
     }
 

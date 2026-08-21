@@ -4,7 +4,7 @@ import {
   roomSchema,
 } from "@repo/schemas";
 
-import { normalizeFindRoomInput } from "@/mastra/utils/find-room";
+import { normalizeFindRoomInput } from "@/mastra/utils/room";
 
 /**
  * Mastra inputSchema — sanitize name/date together so a date cue stuffed into
