@@ -45,6 +45,64 @@ export const readPinnedStay = (
   };
 };
 
+/** Deterministically-resolved CREATE candidate — see PENDING_CREATE_CANDIDATE. */
+export type PinnedCreateCandidate = {
+  roomId: string;
+  checkInDate: string;
+  guests: number;
+};
+
+/**
+ * Reads the pinned BOOK create-candidate from request context.
+ *
+ * @param requestContext - Agent request context
+ * @returns The pinned candidate when present and well-formed, otherwise null
+ */
+export const readPinnedCreateCandidate = (
+  requestContext: RequestContext | undefined,
+): PinnedCreateCandidate | null => {
+  const value = requestContext?.get(
+    REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE,
+  );
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const candidate = value as Partial<PinnedCreateCandidate>;
+
+  if (
+    typeof candidate.roomId !== "string" ||
+    !candidate.roomId ||
+    typeof candidate.checkInDate !== "string" ||
+    !candidate.checkInDate ||
+    typeof candidate.guests !== "number" ||
+    candidate.guests <= 0
+  ) {
+    return null;
+  }
+
+  return {
+    roomId: candidate.roomId,
+    checkInDate: candidate.checkInDate,
+    guests: candidate.guests,
+  };
+};
+
+/**
+ * Reads the pinned BOOK create-candidate and immediately clears it.
+ *
+ * @param requestContext - Agent request context
+ * @returns The pinned candidate when present and well-formed, otherwise null
+ */
+export const takePinnedCreateCandidate = (
+  requestContext: RequestContext | undefined,
+): PinnedCreateCandidate | null => {
+  const pinned = readPinnedCreateCandidate(requestContext);
+  clearPinnedStay(requestContext, REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE);
+  return pinned;
+};
+
 /**
  * Reads a pinned booking id from request context.
  *

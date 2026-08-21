@@ -39,8 +39,30 @@ const toGetRoomsModelOutput = (output: GetRoomsOutput) => {
 
 export const getRoomsTool = createTool({
   id: TOOL_KEYS.GET.ROOMS,
-  description:
-    'Fetch all rooms for plain catalog browse only ("show all rooms" / "browse all" — no name/date/guest/level filters and no "available" wording). Do NOT use for search/filter, "available rooms", or date availability — use find_room with date (default today) instead. After calling: (1) pass result.roomIds to update_room_list (IDs only — never rebuild room objects), (2) always reply in chat with one short sentence that rooms are ready on the grid — never end the turn with tools only. Never claim rooms are ready if you skipped update_room_list.',
+  description: `
+    Fetch the complete room catalog.
+
+    Use only for plain catalog browsing, such as:
+    - "show all rooms"
+    - "browse all rooms"
+
+    Do not use for:
+    - room search or filtering
+    - room name lookup
+    - guest/capacity filtering
+    - room level filtering
+    - available rooms
+    - date availability
+
+    Use find_room for filtered or availability searches.
+
+    After a successful call with rooms:
+    1. Pass the returned roomIds to update_room_list.
+    2. Reply with one short sentence saying the rooms are ready on the grid.
+    3. Do not list room names, prices, or details in chat.
+
+    If no rooms are returned, reply with one short sentence saying no rooms are available.
+  `.trim(),
   inputSchema: getRoomsInputSchema,
   outputSchema: getRoomsOutputSchema,
   execute: async (_input, context) => {

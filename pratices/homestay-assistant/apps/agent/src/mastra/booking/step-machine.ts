@@ -1,7 +1,12 @@
 import type { ProcessInputStepArgs, ProcessInputStepResult } from "@mastra/core/processors";
 import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
+import { addDaysYmd } from "@repo/utils";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { parseConfirmedStay } from "@/mastra/utils/confirmed-stay";
+import {
+  resolveContinuityStayHint,
+  stashBookingFormStayHint,
+} from "@/mastra/booking/book-form-prefill";
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
@@ -44,6 +49,58 @@ const resolveFindByIdTransition = (
       ? TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY
       : TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
   };
+};
+
+/**
+ * BOOK only: after find_room(book_resolve) resolves exactly one room, decide
+ * deterministically whether the check-in date AND guest count are already
+ * known — from this turn's stated values (echoed on the find_room result;
+ * see normalizeFindRoomInput/findRoomTool) or from an earlier dated/guest-
+ * count find_room this conversation (resolveContinuityStayHint) — so the
+ * platform forces exactly ONE of check_room_availability / get_room_by_id as
+ * the next call. This is the one BOOK junction that used to rely entirely on
+ * prose ("decide from the latest message"), which let the model call both
+ * tools in the same step (double UI) or reopen the form despite guests
+ * already being known from an earlier turn.
+ */
+const resolveFindRoomBookTransition = (
+  input: Record<string, unknown> | null,
+  output: Record<string, unknown>,
+  args: ProcessInputStepArgs,
+) => {
+  if (input?.purpose !== TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE) return null;
+
+  const rooms = Array.isArray(output.rooms) ? output.rooms : [];
+  if (rooms.length !== 1) return null;
+
+  const room = rooms[0];
+  const roomId =
+    room && typeof room === "object" && !Array.isArray(room) && typeof (room as Record<string, unknown>).id === "string"
+      ? ((room as Record<string, unknown>).id as string)
+      : undefined;
+  if (!roomId) return null;
+
+  const statedCheckIn = typeof output.date === "string" && output.date ? output.date : undefined;
+  const statedGuests = typeof output.guests === "number" && output.guests > 0 ? output.guests : undefined;
+
+  const continuityHint = statedCheckIn && statedGuests ? null : resolveContinuityStayHint(args.messages);
+  const checkInDate = statedCheckIn ?? continuityHint?.checkInDate;
+  const guests = statedGuests ?? continuityHint?.guests;
+
+  if (checkInDate && guests) {
+    return {
+      type: "call" as const,
+      toolName: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
+      pin: { roomId, checkInDate, guests },
+    };
+  }
+
+  stashBookingFormStayHint(args.requestContext, {
+    ...(checkInDate ? { checkInDate, checkOutDate: addDaysYmd(checkInDate, 1) } : {}),
+    ...(guests ? { guests } : {}),
+  });
+
+  return { type: "call" as const, toolName: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID };
 };
 
 export const resolveBookingStepTransition = ({ toolName, input, output }: ToolResult) => {
@@ -139,6 +196,24 @@ export const enforceBookingStep = (args: ProcessInputStepArgs): ProcessInputStep
 
   const result = lastStepResult(args);
   if (!result) return undefined;
+
+  if (result.toolName === TOOL_KEYS.GET.FIND_ROOM) {
+    const bookTransition = resolveFindRoomBookTransition(
+      asRecord(result.input),
+      asRecord(result.output) ?? {},
+      args,
+    );
+    if (!bookTransition) return undefined;
+    if (!args.tools?.[bookTransition.toolName]) return undefined;
+    if (bookTransition.pin) {
+      args.requestContext?.set(REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE, bookTransition.pin);
+    }
+    return {
+      activeTools: [bookTransition.toolName],
+      toolChoice: { type: "tool", toolName: bookTransition.toolName },
+    };
+  }
+
   const transition = resolveBookingStepTransition(result);
   if (!transition) return undefined;
   if (transition.type === "stop") return { activeTools: [], toolChoice: "none" };

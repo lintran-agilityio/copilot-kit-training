@@ -46,15 +46,15 @@ export const buildFindRoomReplyHint = (
     if (matchCount === 1) {
       return (
         "Room resolved for booking — Room List is suppressed (do NOT say cards were shown). " +
-        "Check the LATEST user message only (not older searches, continuity dates, or working memory): " +
-        "does it state an explicit check-in date (or a resolvable relative date like today/tomorrow/weekend/weekday) " +
-        "AND a guest count for this room? " +
-        "If BOTH are present (full info): skip the Booking Form — call check_room_availability (flow=create) next " +
-        "with those values (checkOutDate defaults to checkInDate + 1 day only when no stay length was stated), " +
-        "then confirm_booking when available. " +
-        "If EITHER is missing (partial info): call get_room_by_id next to open the Booking Form so the guest " +
-        "sets/confirms the missing field(s) — do NOT invent a missing check-in date or guest count, and do NOT " +
-        "ask for it in chat instead. " +
+        "The platform has already deterministically decided the next step (from this message's stated check-in " +
+        "date/guest count, or an earlier dated/guest-count search this conversation) and forces exactly ONE tool " +
+        "call next — you cannot choose a different one and must not attempt both: " +
+        "check_room_availability (flow=create) when check-in date AND guest count are both already known — pass " +
+        "them back plus a checkOutDate reflecting any stay length stated in the LATEST message (default " +
+        "checkInDate + 1 day only when none was stated), then confirm_booking when available; " +
+        "OR get_room_by_id to open the Booking Form when either is still unknown — pass whichever of " +
+        "checkInDate/guests IS stated in the latest message as its args so the form opens prefilled, leave the " +
+        "rest for the guest to fill in. " +
         "Reply with at most one short guest-facing sentence (tools-only is also fine) either way. Never list room details in text."
       );
     }

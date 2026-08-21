@@ -1,6 +1,6 @@
 import { createTool } from "@mastra/core/tools";
 
-import { TOOL_KEYS } from "@repo/constants/tool-keys";
+import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import {
   findRoomInputSchema,
   findRoomOutputSchema,
@@ -12,19 +12,44 @@ import {
   throwIfAborted,
 } from "@/mastra/utils/abort";
 
+const NAME_ONLY_PURPOSES = new Set<string | undefined>([
+  TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE,
+  TOOL_PURPOSE.FIND_ROOM.RESOLVE,
+]);
+
 export const findRoomTool = createTool({
   id: TOOL_KEYS.GET.FIND_ROOM,
-  description:
-    `REQUIRED for room search/filter and date availability (including "show available rooms" / "what\'s available").
-    Call find_room when the guest searches by room name and/or filters by date, guests, or room level, or asks for available rooms.
-    For a booking request with a specific room name (for example, "I want to book Orchid Twin Loft for 1 guest this weekend"), pass purpose: "book_resolve" and name only. This is a BOOK lookup: the UI must not render a Room List; use the single room id to continue the booking flow or open the Booking Form.
-    Pass purpose: "search" (or omit) only for find/show/filter requests, "recommend" for soft-book without a named room,`,
+  description: `
+    Find rooms matching the guest's request.
+
+    Use when the guest:
+    - searches for rooms
+    - asks which rooms are available
+    - filters rooms by name, date, guests, or room level
+    - requests a booking for a specific named room
+
+    Purpose:
+    - search: find/show/filter rooms for the guest
+    - book_resolve: resolve a specific named room for a booking flow
+    - recommend: find suitable rooms when no specific room was requested
+  `,
+  strict: true,
   inputSchema: findRoomInputSchema,
   outputSchema: findRoomOutputSchema,
-  execute: async (inputData, context) => {
+  execute: async (input, context) => {
     throwIfAborted(context.abortSignal);
     // inputSchema already runs normalizeFindRoomInput
-    return findRooms(inputData, serviceContextFromTool(context));
+    if (NAME_ONLY_PURPOSES.has(input.purpose)) {
+      // date/guests on `input` here are stated hints only (see
+      // normalizeFindRoomInput) — never let them filter a named-room lookup,
+      // just echo them back for the BOOK step machine to route on.
+      const result = await findRooms(
+        { purpose: input.purpose, name: input.name },
+        serviceContextFromTool(context),
+      );
+      return { ...result, date: input.date, guests: input.guests };
+    }
+    return findRooms(input, serviceContextFromTool(context));
   },
   toModelOutput: toFindRoomModelOutput,
 });

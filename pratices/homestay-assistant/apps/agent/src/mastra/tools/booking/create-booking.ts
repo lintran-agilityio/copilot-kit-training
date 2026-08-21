@@ -5,6 +5,7 @@ import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { createBookingInputSchema } from "@repo/schemas";
 import { bookingMutationOutputSchema } from "@/mastra/schemas/booking";
 import { createBooking } from "@/mastra/services";
+import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/constants";
 import {
   resolveCreateBookingInput,
   buildCreateBookingCommand,
@@ -19,8 +20,10 @@ import {
 export const createBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.CREATE_BOOKING,
   description: `
-    Create a confirmed booking for a room and stay.
+    Create a confirmed booking for a room and stay after confirm_booking returns confirmed: true.
     The booking is created for the signed-in user.
+      - ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT}
+      - The same confirm HITL card updates in place to success/failed — do not expect a separate success card.
   `,
   inputSchema: createBookingInputSchema,
   outputSchema: bookingMutationOutputSchema,

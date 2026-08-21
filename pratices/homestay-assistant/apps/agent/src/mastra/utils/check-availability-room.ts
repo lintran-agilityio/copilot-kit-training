@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import type { RequestContext } from "@mastra/core/request-context";
 
-import { getBusinessDates } from "@repo/utils";
+import { addDaysYmd, getBusinessDates } from "@repo/utils";
 import { checkRoomAvailabilityInputSchema } from "@repo/schemas";
 import { MODEL_NAME } from "@repo/types";
 import { assertOwnedActiveBooking, checkRoomAvailability } from "../services";
@@ -11,7 +11,11 @@ import {
   ModifyStayFields,
   resolveModifyAvailabilityNextAction,
 } from "../booking";
-import { clearPinnedStay, readPinnedStay } from "./resolve-pinned-stay";
+import {
+  clearPinnedStay,
+  readPinnedCreateCandidate,
+  readPinnedStay,
+} from "./resolve-pinned-stay";
 import { REQUEST_CONTEXT_KEYS } from "../middleware";
 import type {
   CheckRoomAvailabilityOutput,
@@ -67,19 +71,30 @@ type ModifyCandidateInput = {
   excludeBookingId: string;
 };
 
+type CreateCandidateInput = {
+  roomId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  guests: number;
+  flow: MODEL_NAME.CREATE;
+  excludeBookingId?: undefined;
+};
+
 /**
- * After edit_modify_booking / stated-modify, prepareStep pins the guest-
- * selected stay so stale LLM args (original booking / working memory) cannot
- * win. Clears the pin once read so it only applies to this call.
+ * After edit_modify_booking / stated-modify, or after find_room(book_resolve)
+ * resolves a BOOK with a known check-in + guest count, prepareStep pins the
+ * resolved stay so stale/incorrect LLM args (original booking, working
+ * memory, a re-read of the wrong message) cannot win. Clears the pin once
+ * read so it only applies to this call.
  */
 const resolveCandidateInput = (
   input: RawCandidateInput,
   requestContext: RequestContext | undefined,
 ): {
-  resolved: RawCandidateInput | ModifyCandidateInput;
+  resolved: RawCandidateInput | ModifyCandidateInput | CreateCandidateInput;
   pinnedOriginal: ModifyStayFields | null;
 } => {
-  const pinned = readPinnedStay(
+  const pinnedModify = readPinnedStay(
     requestContext,
     REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE,
   );
@@ -87,30 +102,52 @@ const resolveCandidateInput = (
     requestContext,
     REQUEST_CONTEXT_KEYS.PENDING_MODIFY_ORIGINAL,
   );
-  const roomId = pinned?.roomId;
-  const bookingId = pinned?.bookingId;
+  const roomId = pinnedModify?.roomId;
+  const bookingId = pinnedModify?.bookingId;
 
-  if (!pinned || !roomId || !bookingId) {
-    return { resolved: input, pinnedOriginal };
+  if (pinnedModify && roomId && bookingId) {
+    clearPinnedStay(
+      requestContext,
+      REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE,
+    );
+    clearPinnedStay(requestContext, REQUEST_CONTEXT_KEYS.PENDING_MODIFY_ORIGINAL);
+
+    return {
+      resolved: {
+        roomId,
+        checkInDate: pinnedModify.checkInDate,
+        checkOutDate: pinnedModify.checkOutDate,
+        guests: pinnedModify.guests,
+        flow: MODEL_NAME.MODIFY,
+        excludeBookingId: bookingId,
+      },
+      pinnedOriginal,
+    };
   }
 
-  clearPinnedStay(
-    requestContext,
-    REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE,
-  );
-  clearPinnedStay(requestContext, REQUEST_CONTEXT_KEYS.PENDING_MODIFY_ORIGINAL);
+  const pinnedCreate = readPinnedCreateCandidate(requestContext);
+  if (pinnedCreate) {
+    clearPinnedStay(requestContext, REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE);
 
-  return {
-    resolved: {
-      roomId,
-      checkInDate: pinned.checkInDate,
-      checkOutDate: pinned.checkOutDate,
-      guests: pinned.guests,
-      flow: MODEL_NAME.MODIFY,
-      excludeBookingId: bookingId,
-    },
-    pinnedOriginal,
-  };
+    // checkOutDate is never pinned — only the model's own stated stay length
+    // (from THIS call's args) or the +1 day default reflects the guest's
+    // actual request.
+    const statedCheckOut =
+      typeof input.checkOutDate === "string" ? input.checkOutDate.trim() : "";
+
+    return {
+      resolved: {
+        roomId: pinnedCreate.roomId,
+        checkInDate: pinnedCreate.checkInDate,
+        checkOutDate: statedCheckOut || addDaysYmd(pinnedCreate.checkInDate, 1),
+        guests: pinnedCreate.guests,
+        flow: MODEL_NAME.CREATE,
+      },
+      pinnedOriginal,
+    };
+  }
+
+  return { resolved: input, pinnedOriginal };
 };
 
 /**

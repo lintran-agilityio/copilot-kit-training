@@ -17,11 +17,14 @@ const YMD_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Scans the full conversation (every turn, not just the current one) for the
- * most recent dated FIND/RECOMMEND `find_room` result, so a later named-room
- * BOOK resolution can prefill the Booking Form with that date instead of
- * defaulting to today. `book_resolve` lookups never carry a `date` (see
- * WORKFLOW — BOOK), so they are skipped automatically as the scan walks
- * backward past the triggering book_resolve call.
+ * most recent dated and/or guest-count-bearing FIND/RECOMMEND `find_room`
+ * result, so a later named-room BOOK resolution can (a) prefill the Booking
+ * Form with that date/guests instead of defaulting to today / asking again,
+ * and (b) let the BOOK step machine skip the form entirely when the date and
+ * guest count are both already known — even when they came from different
+ * earlier turns. `book_resolve` lookups are skipped by this scan (the
+ * triggering call's own stated date/guests are read directly from its
+ * result, not via continuity).
  */
 export const resolveContinuityStayHint = (
   messages: ProcessInputStepArgs["messages"] | undefined,
@@ -30,13 +33,24 @@ export const resolveContinuityStayHint = (
     return null;
   }
 
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
+  let checkInDate: string | undefined;
+  let guests: number | undefined;
+
+  for (
+    let index = messages.length - 1;
+    index >= 0 && (!checkInDate || !guests);
+    index -= 1
+  ) {
     const parts = asRecord(asJsonValue(messages[index]?.content))?.parts;
     if (!Array.isArray(parts)) {
       continue;
     }
 
-    for (let cursor = parts.length - 1; cursor >= 0; cursor -= 1) {
+    for (
+      let cursor = parts.length - 1;
+      cursor >= 0 && (!checkInDate || !guests);
+      cursor -= 1
+    ) {
       const part = asRecord(parts[cursor]);
       if (part?.type !== "tool-invocation") {
         continue;
@@ -51,22 +65,29 @@ export const resolveContinuityStayHint = (
       }
 
       const parsed = parseFindRoomOutput(invocation.result);
-      if (
-        !parsed?.date ||
-        parsed.purpose === TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE ||
-        !YMD_PATTERN.test(parsed.date)
-      ) {
+      if (!parsed || parsed.purpose === TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE) {
         continue;
       }
 
-      return {
-        checkInDate: parsed.date,
-        checkOutDate: addDaysYmd(parsed.date, 1),
-      };
+      if (!checkInDate && parsed.date && YMD_PATTERN.test(parsed.date)) {
+        checkInDate = parsed.date;
+      }
+      if (!guests && parsed.guests) {
+        guests = parsed.guests;
+      }
     }
   }
 
-  return null;
+  if (!checkInDate && !guests) {
+    return null;
+  }
+
+  return {
+    ...(checkInDate
+      ? { checkInDate, checkOutDate: addDaysYmd(checkInDate, 1) }
+      : {}),
+    ...(guests ? { guests } : {}),
+  };
 };
 
 /** Pins a resolved stay hint so the forced get_room_by_id call can read it. */
