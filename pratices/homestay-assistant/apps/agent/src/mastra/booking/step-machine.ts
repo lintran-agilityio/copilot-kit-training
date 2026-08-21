@@ -6,8 +6,8 @@ import { parseConfirmedStay } from "@/mastra/utils/confirmed-stay";
 import {
   resolveContinuityStayHint,
   stashBookingFormStayHint,
+  resolveCorroboratedBookFacts,
 } from "@/mastra/booking/book-form-prefill";
-import { resolveCorroboratedBookFacts } from "@/mastra/booking/booking-resolver";
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
