@@ -17,12 +17,10 @@ import {
 export const findBookingByIdTool = createTool({
   id: TOOL_KEYS.BOOKING.FIND_BY_ID,
   description: `
-    Find the signed-in user's active booking(s) by booking ID.
-      - Use when bookingId: is in the message — including [booking-cancel] / [booking-modify] from BookingCard clicks.
-      - Pass the UUID after bookingId: — never the room name or roomId (a room can have multiple bookings).
-      - Pass purpose: "modify" for MODIFY lookups — a booking whose check-in has already started comes back as bookings: [] with reason: "not_modifiable" so the edit form is never opened for it; reply that it can only be cancelled instead. Omit (or "cancel") for CANCEL lookups, which allow an already-started booking.
-      - For MODIFY, also pass requestedCheckInDate / requestedCheckOutDate / requestedGuests for any field the guest's LATEST message explicitly states a new value for — omit fields not stated. The app decides automatically whether to open the edit form or skip straight to availability based on what you pass here; you never make that call yourself.
-      - Returns bookings: [] when the booking is not found, not owned/active, or (purpose: "modify") not modifiable; result.room is included for MODIFY.
+    Look up one specific active booking by its ID, for a CANCEL or MODIFY action.
+      - Use only when a bookingId is already known — a bookingId: value in the message (including [booking-cancel] / [booking-modify] from BookingCard clicks), or a booking id chosen via a prior find_bookings result. If you only have a room name (no id), call find_bookings instead. For a guest-facing "show/list my bookings" request, call get_bookings instead — never this tool.
+      - purpose selects CANCEL vs MODIFY eligibility rules; see the purpose parameter.
+      - For MODIFY, also set requestedCheckInDate / requestedCheckOutDate / requestedGuests when the guest's LATEST message states a new value for that field; see those parameters for how the app uses them.
     `,
   inputSchema: findBookingByIdInputSchema,
   outputSchema: findBookingByIdOutputSchema,

@@ -14,12 +14,12 @@ export const findBookingsTool = createTool({
   id: TOOL_KEYS.BOOKING.FIND,
   description: `
     Resolve the signed-in user's active booking target for CANCEL/MODIFY, optionally by room name — never used for a guest-facing show/list bookings request (that's get_bookings).
+    User identity always comes from the server session — never pass or invent a userId.
       - roomName is an optional case-insensitive partial match.
       - not_found means there are no matching active bookings.
       - resolved contains the only matching booking.
       - ambiguous contains every matching booking; never choose one for the guest.
-    User identity always comes from the server session - never pass or invent a userId.
-  `,
+    `,
   inputSchema: findBookingsInputSchema,
   outputSchema: bookingResolutionSchema,
   execute: async (params, context) => {

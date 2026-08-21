@@ -1,11 +1,9 @@
 import { createTool } from "@mastra/core/tools";
-import { getBookingsInputSchema } from "@repo/schemas";
+
 import { TOOL_KEYS } from "@repo/constants";
+import { getBookingsInputSchema } from "@repo/schemas";
 import { getBookingsOutputSchema } from "@/mastra/schemas/booking";
-import {
-  getBookings,
-  type GetBookingsParams,
-} from "@/mastra/services";
+import { getBookings, type GetBookingsParams } from "@/mastra/services";
 import {
   serviceContextFromTool,
   throwIfAborted,
@@ -15,11 +13,11 @@ import {
 export const getBookingsTool = createTool({
   id: TOOL_KEYS.BOOKING.GET,
   description: `
-    Get the signed-in user's bookings, optionally filtered by room, date, and status. User identity always comes from the server session — never pass or invent a userId.
-      - roomId (optional) scopes results to a specific room.
+    Get the signed-in user's bookings for a guest-facing show/list my bookings request, optionally filtered by room, date, and status. User identity always comes from the server session — never pass or invent a userId.
+      - roomId / roomName (optional) scope results to a specific room; see the roomName parameter.
       - status (optional) filters by booking status.
-      - onDate (YYYY-MM-DD, optional) returns bookings whose stay includes that date.
-      - purpose: "list" (or omit) for a guest-facing show/list my bookings request. "resolve" when this call only resolves the target booking for cancel/modify/change-room with no bookingId — suppresses the booking-list card so the HITL that follows is the sole response.
+      - onDate (optional) returns bookings whose stay includes that date; see the onDate parameter.
+      - purpose selects list vs resolve behavior; see the purpose parameter.
     `,
   inputSchema: getBookingsInputSchema,
   outputSchema: getBookingsOutputSchema,
@@ -27,9 +25,14 @@ export const getBookingsTool = createTool({
     const { abortSignal } = context;
     throwIfAborted(abortSignal);
 
-    const { roomId, status, onDate, purpose } = params;
+    const { roomId, roomName, status, onDate, purpose } = params;
     const bookings = await getBookings(
-      { roomId, status: status as GetBookingsParams["status"], onDate },
+      {
+        roomId,
+        roomName,
+        status: status as GetBookingsParams["status"],
+        onDate,
+      },
       serviceContextFromTool(context),
     );
 
