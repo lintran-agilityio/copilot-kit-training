@@ -1,3 +1,4 @@
+import { MODEL_NAME } from "@repo/types";
 /**
  * Shared HITL confirm-card UI phase model.
  * Used by create / cancel / modify same-card flows:
