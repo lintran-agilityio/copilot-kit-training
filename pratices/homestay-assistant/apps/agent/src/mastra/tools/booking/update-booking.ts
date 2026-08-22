@@ -6,13 +6,14 @@ import { updateBookingInputSchema } from "@repo/schemas";
 import { bookingMutationOutputSchema } from "@/mastra/schemas/booking";
 import { assertOwnedModifiableBooking, updateBooking } from "@/mastra/services";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import { MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT } from "@/mastra/constants";
+import { HITL_REPLY_SUCCESS } from "@/mastra/constants";
 import {
   commitIfNotAborted,
   runBookingMutation,
   serviceContextFromTool,
   takePinnedStay,
   throwIfAborted,
+  toUpdateBookingModelOutput
 } from "@/mastra/utils";
 
 export const updateBookingTool = createTool({
@@ -20,7 +21,7 @@ export const updateBookingTool = createTool({
   description: `
     Update an existing booking's dates/guests by bookingId after CONFIRM_MODIFY_BOOKING returns confirmed: true — only the signed-in owner's active bookings whose check-in has not started yet can be updated (throws once check-in is today or past). roomId is not updatable.
       - Use bookingId, checkInDate, checkOutDate, and guests from the CONFIRM_MODIFY_BOOKING result.
-      - ${MUTATION_SUCCESS_HITL_REPLY_REQUIREMENT}
+      - ${HITL_REPLY_SUCCESS.UPDATE}
       - Do NOT call get_bookings — the same HITL card updates to success/failed and refreshes the bookings list automatically.
     `,
   inputSchema: updateBookingInputSchema,
@@ -61,4 +62,5 @@ export const updateBookingTool = createTool({
       );
     });
   },
+  toModelOutput: toUpdateBookingModelOutput,
 });

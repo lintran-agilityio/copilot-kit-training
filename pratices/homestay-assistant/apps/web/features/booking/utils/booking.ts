@@ -1,6 +1,15 @@
 import { BookingStatus } from "@repo/types";
-import { isTimeInFuture, isTimeTodayOrLater, parseToolResult } from "@repo/utils";
-import { CancelBookingResult, CheckRoomAvailabilityResult, CreateBookingResult, UpdateBookingResult } from "../types";
+import {
+  isTimeInFuture,
+  isTimeTodayOrLater,
+  parseToolResult,
+} from "@repo/utils";
+import {
+  CancelBookingResult,
+  CheckRoomAvailabilityResult,
+  CreateBookingResult,
+  UpdateBookingResult,
+} from "../types";
 import { BookingUnavailableReason } from "@repo/schemas";
 
 export type BookingStatusMeta = {
@@ -15,8 +24,7 @@ export const getBookingStatusMeta = (status: string): BookingStatusMeta => {
     case BookingStatus.CONFIRMED.toUpperCase():
       return {
         label: "Confirmed",
-        className:
-          "border-emerald-500/30 bg-emerald-500/15 text-emerald-300",
+        className: "border-emerald-500/30 bg-emerald-500/15 text-emerald-300",
       };
     case BookingStatus.PENDING.toUpperCase():
       return {
@@ -61,7 +69,7 @@ export const isCheckRoomAvailabilityFailure = (
 
 /**
  * True when BookingUnavailableNotice has every field it needs to draw a card.
- * Shared with the chat text-suppression rule so the two cannot drift apart.
+ * Keeping this check here prevents rendering a partial unavailable notice.
  */
 export const canRenderBookingUnavailableCard = (
   result?: CheckRoomAvailabilityResult | string | null,
@@ -75,10 +83,10 @@ export const canRenderBookingUnavailableCard = (
 
   return Boolean(
     parsed?.room?.name?.trim() &&
-      parsed?.checkInDate?.trim() &&
-      parsed?.checkOutDate?.trim() &&
-      Number.isFinite(guests) &&
-      guests > 0,
+    parsed?.checkInDate?.trim() &&
+    parsed?.checkOutDate?.trim() &&
+    Number.isFinite(guests) &&
+    guests > 0,
   );
 };
 
@@ -126,9 +134,7 @@ export const isUpdateBookingSuccess = (
     return true;
   }
 
-  return (
-    parsed.status.toLowerCase() !== BookingStatus.CANCELLED.toLowerCase()
-  );
+  return parsed.status.toLowerCase() !== BookingStatus.CANCELLED.toLowerCase();
 };
 
 export const isBookingCancellable = (status: string, checkOutDate: string) => {
@@ -163,7 +169,7 @@ export type BookingPickerFields = {
 export const hasBookingPickerFields = (booking: BookingPickerFields) =>
   Boolean(
     booking.bookingId?.trim() &&
-      booking.roomName?.trim() &&
-      booking.checkInDate?.trim() &&
-      booking.checkOutDate?.trim(),
+    booking.roomName?.trim() &&
+    booking.checkInDate?.trim() &&
+    booking.checkOutDate?.trim(),
   );

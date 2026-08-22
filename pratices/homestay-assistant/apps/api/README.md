@@ -36,6 +36,7 @@ cp .env.example .env
 | Variable | Description | Default / example |
 | --- | --- | --- |
 | `DATABASE_URL` | Postgres connection string | `postgresql://postgres:postgres@localhost:5432/homestay_assistant?schema=public` |
+| `CLERK_SECRET_KEY` | Clerk secret key used to verify web session tokens | required for authenticated routes |
 | `PORT` | HTTP port | `5001` |
 
 ## Setup

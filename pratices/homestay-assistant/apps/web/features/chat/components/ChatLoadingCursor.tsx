@@ -9,11 +9,6 @@ import {
 import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
 import { ConversationItem } from "@/features/chat/components/ConversationItem";
 import type { MessageLike } from "@/features/chat/types";
-import {
-  isResolvedBookingListToolResultTurn,
-  isResolvedFindRoomToolResultTurn,
-  isResolvedTerminalToolResultTurn,
-} from "@/features/chat/utils/terminal-booking-mutation";
 import { getMessageTextContent } from "@/features/copilot/config";
 import { cn } from "@repo/utils";
 import { MESSAGE_ROLE } from "@repo/constants";
@@ -44,19 +39,6 @@ export const ChatLoadingCursor = ({
   const lastMessage = agent.messages.at(-1);
 
   if (lastMessage && hasVisibleAssistantText(lastMessage)) {
-    return <div hidden aria-hidden {...props} />;
-  }
-
-  // agent.isRunning can get stuck true after a silent tools-only turn (the
-  // app tells the model to skip trailing chat text once a Generic UI card —
-  // Room List, booking list, or a booking-mutation success card — already
-  // answers). When the transcript itself proves that terminal turn resolved,
-  // trust that over isRunning.
-  if (
-    isResolvedTerminalToolResultTurn(agent.messages) ||
-    isResolvedBookingListToolResultTurn(agent.messages) ||
-    isResolvedFindRoomToolResultTurn(agent.messages)
-  ) {
     return <div hidden aria-hidden {...props} />;
   }
 

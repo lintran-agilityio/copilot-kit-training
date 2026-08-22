@@ -55,9 +55,6 @@ export const findBookingByIdTool = createTool({
     const resolvedGuests = isModify ? requestedGuests ?? pinnedRequestedFields?.guests : undefined;
 
     const result = await findBookingById(id, serviceContextFromTool(context), purpose);
-console.log('resolvedCheckInDate====> isModify', resolvedCheckInDate, isModify)
-console.log('resolvedCheckOutDate====>', resolvedCheckOutDate)
-console.log('resolvedGuests====>', resolvedGuests)
     return {
       ...result,
       ...(resolvedCheckInDate ? { requestedCheckInDate: resolvedCheckInDate } : {}),

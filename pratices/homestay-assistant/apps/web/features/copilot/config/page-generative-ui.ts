@@ -13,10 +13,7 @@ import {
 import { getUiActionPromptDisplayText } from "@repo/utils";
 
 import { getLatestFindRoomToolCallIdInCurrentTurn } from "@/features/room/utils";
-import type {
-  MessageLike,
-  ToolCallLike,
-} from "@/features/chat/types";
+import type { MessageLike, ToolCallLike } from "@/features/chat/types";
 
 const { ACTION, BOOKING, GET } = TOOL_KEYS;
 
@@ -86,17 +83,15 @@ export { PAGE_ROOMS_PROMPT_PREFIX };
 export const isPageOnlyGenerativeTool = (toolName: string) =>
   CHAT_HIDDEN_TOOLS.has(toolName);
 
-/** Minimal tool-call shape shared by chat rendering and text suppression. */
+/** Minimal tool-call shape used by chat rendering. */
 export type ChatVisibleToolCall = ToolCallLike;
 
 type ChatMessageForToolVisibility = Pick<
   MessageLike,
   "id" | "role" | "toolCalls"
 >;
-
-
 /**
- * Filters toolCalls for chat rendering (and text-suppression parity).
+ * Filters toolCalls for chat rendering.
  * When `messages` is provided, keeps only the latest `find_room` in the
  * current turn (`getCurrentTurn` via `getLatestFindRoomToolCallIdInCurrentTurn`)
  * so continuations that replay find_room with a new toolCallId do not stack
@@ -148,7 +143,8 @@ export const getChatVisibleToolCalls = <T extends ChatVisibleToolCall>(
 
   return visible.filter(
     (toolCall) =>
-      toolCall.function?.name !== GET.FIND_ROOM || toolCall.id === lastFindRoomId,
+      toolCall.function?.name !== GET.FIND_ROOM ||
+      toolCall.id === lastFindRoomId,
   );
 };
 
