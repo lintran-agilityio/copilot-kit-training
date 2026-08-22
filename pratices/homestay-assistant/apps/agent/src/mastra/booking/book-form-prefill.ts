@@ -54,8 +54,8 @@ const getContinuityStayFromPart = (
     return null;
   }
 
-  const checkInDate = isValidYmd(result.date) ? result.date : undefined;
-  const guests = result.guests;
+  const { date, guests } = result;
+  const checkInDate = isValidYmd(date) ? date : undefined;
 
   if (!checkInDate && !guests) {
     return null;
