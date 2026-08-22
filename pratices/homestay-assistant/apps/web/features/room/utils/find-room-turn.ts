@@ -63,7 +63,7 @@ export const getLatestFindRoomToolCallIdInCurrentTurn = (
  * another tool ran later in the same turn (get_bookings, find_booking_by_id,
  * a picker, a confirm dialog, ...) even if the call forgot to pass purpose.
  * Shared by FindRoomNotice (find_room) and MyBookingsNotice (get_bookings),
- * whose resolve-suppression rules are otherwise identical.
+ * whose resolve-visibility rules are otherwise identical.
  */
 export const shouldSuppressForResolve = <TPurpose>(
   purpose: TPurpose | undefined,
@@ -71,4 +71,3 @@ export const shouldSuppressForResolve = <TPurpose>(
   messages: MessageLike[] | undefined,
   toolCallId: string | undefined,
 ) => purpose === resolvePurpose || hasLaterToolCallInTurn(messages, toolCallId);
-

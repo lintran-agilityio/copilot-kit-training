@@ -1,8 +1,11 @@
 import { createTool } from "@mastra/core/tools";
 
-import { TOOL_KEYS } from "@repo/constants";
+import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import { getBookingsInputSchema } from "@repo/schemas";
-import { GetBookingsOutput, getBookingsOutputSchema } from "@/mastra/schemas/booking";
+import {
+  GetBookingsOutput,
+  getBookingsOutputSchema,
+} from "@/mastra/schemas/booking";
 import { getBookings, type GetBookingsParams } from "@/mastra/services";
 import {
   buildGetBookingsReplyHint,
@@ -11,11 +14,10 @@ import {
 } from "@/mastra/utils";
 
 /**
- * Adds bookingCount/purpose/replyHint alongside the raw bookings so the
- * prompt can enforce list-vs-resolve behavior structurally (see
- * stop-after-list-results.ts, which reads bookingCount off this shape).
- * Unlike find_room's slim output, bookings stay in full here — the model
- * needs id/roomId/dates/guests/totalPrice to build multi-match HITL picker args.
+ * Guest-facing list turns expose only count/purpose/replyHint to the model. The
+ * UI still receives the complete raw execute() result for rendering, while the
+ * model cannot restate booking details already visible in the cards. Internal
+ * resolve turns retain the bookings needed for tool chaining.
  */
 export const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
   const bookingCount = output.bookings.length;
@@ -26,7 +28,9 @@ export const toGetBookingsModelOutput = (output: GetBookingsOutput) => {
       bookingCount,
       purpose: output.purpose,
       replyHint: buildGetBookingsReplyHint(bookingCount, output.purpose),
-      bookings: output.bookings,
+      ...(output.purpose === TOOL_PURPOSE.GET_BOOKINGS.RESOLVE
+        ? { bookings: output.bookings }
+        : {}),
     },
   };
 };

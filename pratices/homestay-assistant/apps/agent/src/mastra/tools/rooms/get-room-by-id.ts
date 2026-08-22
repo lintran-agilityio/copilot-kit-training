@@ -11,16 +11,12 @@ import {
   serviceContextFromTool,
   throwIfAborted,
   resolveRoomStay,
-  buildGetRoomByIdReplyHint
+  REPLY_HINT_GET_ROOM_BY_ID,
 } from "@/mastra/utils";
 
-
 /**
- * Slim payload for the model: only the fields needed for tool chaining.
- * Rich fields (description, imageUrl, amenities, pricePerNight) are omitted
- * so the LLM cannot re-list them in chat — the UI already renders the full
- * RoomDetail card. An explicit replyHint overrides any stale context-window
- * pattern (e.g. a previous find_room response).
+ * The UI receives the full raw result. The model only receives the room id and
+ * companion-copy instruction, preventing it from repeating visible card data.
  */
 export const toGetRoomByIdModelOutput = (output: GetRoomDetailOutput) => {
   const { room } = output;
@@ -29,9 +25,7 @@ export const toGetRoomByIdModelOutput = (output: GetRoomDetailOutput) => {
     type: "json" as const,
     value: {
       roomId: room.id,
-      name: room.name,
-      capacity: room.capacity,
-      replyHint: buildGetRoomByIdReplyHint(room.name),
+      replyHint: REPLY_HINT_GET_ROOM_BY_ID,
     },
   };
 };
@@ -61,16 +55,9 @@ export const getRoomByIdTool = createTool({
   execute: async (input, context) => {
     throwIfAborted(context.abortSignal);
 
-    const room = await getRoom(
-      input.roomId,
-      serviceContextFromTool(context),
-    );
+    const room = await getRoom(input.roomId, serviceContextFromTool(context));
 
-    const stay = resolveRoomStay(
-      input,
-      context.requestContext,
-      room,
-    );
+    const stay = resolveRoomStay(input, context.requestContext, room);
 
     return {
       room: {

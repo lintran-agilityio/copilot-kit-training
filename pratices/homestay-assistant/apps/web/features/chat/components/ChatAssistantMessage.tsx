@@ -5,7 +5,10 @@ import {
   type CopilotChatToolCallsViewProps,
 } from "@copilotkit/react-core/v2";
 
-import { MESSAGE_ROLE, isProcessorBlockAssistantContent } from "@repo/constants";
+import {
+  MESSAGE_ROLE,
+  isProcessorBlockAssistantContent,
+} from "@repo/constants";
 
 import {
   getChatVisibleToolCalls,
@@ -20,7 +23,6 @@ import { ConversationItem } from "@/features/chat/components/ConversationItem";
 import {
   getAssistantDisplayContent,
   getMessageTopSpacing,
-  isSupersededByToolCard,
 } from "@/features/chat/utils";
 
 import { cn } from "@repo/utils";
@@ -97,11 +99,7 @@ export const ChatAssistantMessage = ({
     return toolName ? isPageOnlyGenerativeTool(toolName) : false;
   });
 
-  // A rendered success card already answers the guest; drop the duplicate text.
-
-  const textContent = isSupersededByToolCard(messages, message.id)
-    ? ""
-    : displayTextContent;
+  const textContent = displayTextContent;
 
   const hasVisibleContent = Boolean(textContent) || chatToolCalls.length > 0;
 
@@ -138,18 +136,6 @@ export const ChatAssistantMessage = ({
             }),
           )}
         >
-          {hasConversation && markdownRenderer ? (
-            <div
-              data-chat-message-row="assistant"
-              className="flex items-start justify-start gap-3 px-3"
-            >
-              <ChatAgentAvatar />
-              <ConversationItem role="assistant">
-                {markdownRenderer}
-              </ConversationItem>
-            </div>
-          ) : null}
-
           {toolCallsView ? (
             hasConversation ? (
               <div data-chat-embedded-slot className="w-full">
@@ -168,6 +154,18 @@ export const ChatAssistantMessage = ({
                 </div>
               </div>
             )
+          ) : null}
+
+          {hasConversation && markdownRenderer ? (
+            <div
+              data-chat-message-row="assistant"
+              className="flex items-start justify-start gap-3 px-3"
+            >
+              <ChatAgentAvatar />
+              <ConversationItem role="assistant">
+                {markdownRenderer}
+              </ConversationItem>
+            </div>
           ) : null}
         </div>
       )}

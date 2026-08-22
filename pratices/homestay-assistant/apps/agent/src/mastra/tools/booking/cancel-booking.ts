@@ -6,12 +6,14 @@ import { cancelBookingInputSchema } from "@repo/schemas";
 import { bookingMutationOutputSchema } from "@/mastra/schemas/booking";
 import { assertOwnedActiveBooking, cancelBooking } from "@/mastra/services";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
+import { HITL_REPLY_SUCCESS } from "@/mastra/constants";
 import {
   commitIfNotAborted,
   runBookingMutation,
   serviceContextFromTool,
   throwIfAborted,
   takePinnedBookingId,
+  toCancelBookingModelOutput,
 } from "@/mastra/utils";
 
 export const cancelBookingTool = createTool({
@@ -19,6 +21,7 @@ export const cancelBookingTool = createTool({
   description: `
     Cancel an active booking by ID.
     Only the signed-in owner can cancel their own active, non-past booking.
+    ${HITL_REPLY_SUCCESS.CANCEL}
     `,
   inputSchema: cancelBookingInputSchema,
   outputSchema: bookingMutationOutputSchema,
@@ -45,4 +48,5 @@ export const cancelBookingTool = createTool({
       );
     });
   },
+  toModelOutput: toCancelBookingModelOutput,
 });

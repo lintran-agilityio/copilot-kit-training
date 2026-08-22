@@ -119,10 +119,7 @@ const normalizeToolCall = (
 
       // Already in AG-UI shape — keep the original reference so repeated
       // normalize passes do not churn object identity / JSON key order.
-      if (
-        isNormalizedToolCall(toolCall) &&
-        fn.arguments === argumentsValue
-      ) {
+      if (isNormalizedToolCall(toolCall) && fn.arguments === argumentsValue) {
         return toolCall;
       }
 
@@ -177,9 +174,7 @@ const normalizeMessage = <TMessage extends MessageLike>(
 
   const unchanged =
     toolCalls.length === rawToolCalls.length &&
-    toolCalls.every(
-      (toolCall, index) => toolCall === rawToolCalls[index],
-    );
+    toolCalls.every((toolCall, index) => toolCall === rawToolCalls[index]);
 
   if (unchanged) {
     return message;
@@ -203,7 +198,10 @@ const hasToolCalls = (message: Pick<MessageLike, "toolCalls">) =>
   Array.isArray(message.toolCalls) && message.toolCalls.length > 0;
 
 export const normalize = (value: string) => {
-  return value.trim().replace(/[^\w\s]/g, "").toLocaleLowerCase();
+  return value
+    .trim()
+    .replace(/[^\w\s]/g, "")
+    .toLocaleLowerCase();
 };
 
 type IdentifiedMessage = MessageLike & { id: string };
@@ -409,7 +407,9 @@ const isSameSenderGroup = (
     return previousRole === MESSAGE_ROLE.USER;
   }
 
-  return previousRole === MESSAGE_ROLE.ASSISTANT || previousRole === "reasoning";
+  return (
+    previousRole === MESSAGE_ROLE.ASSISTANT || previousRole === "reasoning"
+  );
 };
 
 type MessageTopSpacingOptions = {
@@ -493,17 +493,3 @@ export const hasLaterToolCallInTurn = (
 
   return false;
 };
-
-/**
- * Formerly hid assistant text when a dedicated success/unavailable card already
- * answered the turn. Create/cancel/update notices are headless (HITL same-card
- * phases), and actionable Booking Form opening copy is stopped at Mastra
- * (`replyHint` / GENERIC UI RENDERING) — not by blanking chat text here.
- *
- * Always returns false so confirmation, search, availability, and clarification
- * sentences still render. Kept as a named hook for ChatAssistantMessage.
- */
-export const isSupersededByToolCard = (
-  _messages: MessageLike[] | undefined,
-  _messageId: string,
-) => false;
