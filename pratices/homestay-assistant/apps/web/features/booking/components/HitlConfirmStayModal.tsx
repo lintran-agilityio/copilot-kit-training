@@ -112,6 +112,9 @@ const HitlConfirmCreateStayModal = ({
   );
 
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
+  // A transport may keep isRunning true while HITL awaits respond(). Keep the
+  // current prompt usable, then lock it as soon as respond() is consumed.
+  const isAgentBusy = agent.isRunning && !canRespond;
   const hasArgs = hasRequiredCreateArgs(args);
   const correlationKey = hasArgs
     ? buildCreateStayCorrelationKey({
@@ -137,13 +140,17 @@ const HitlConfirmCreateStayModal = ({
       });
 
   const handleCancel = () => {
+    if (isAgentBusy) {
+      return;
+    }
+
     finalizeBookingForms("cancelled");
     resetBooking();
     handleDismiss();
   };
 
   const handleConfirm = () => {
-    if (!hasArgs || !correlationKey) {
+    if (isAgentBusy || !hasArgs || !correlationKey) {
       return;
     }
 
@@ -158,12 +165,20 @@ const HitlConfirmCreateStayModal = ({
   };
 
   const handleRetry = () => {
-    if (!correlationKey || isRetrying || !isActionable) {
+    if (isAgentBusy || !correlationKey || isRetrying || !isActionable) {
       return;
     }
 
     markSubmitting(correlationKey);
     retryCreateBooking();
+  };
+
+  const handleViewBookings = () => {
+    if (isAgentBusy) {
+      return;
+    }
+
+    router.push(BOOKINGS_PAGE_PATH);
   };
 
   useReportHomestayAgentUiFocus(
@@ -202,9 +217,10 @@ const HitlConfirmCreateStayModal = ({
         failureReason={createOutcome?.errorMessage}
         totalPriceOverride={createOutcome?.totalPrice}
         errorMessage={errorMessage}
+        allActionsDisabled={isAgentBusy}
         onCancel={handleCancel}
         onConfirm={handleConfirm}
-        onViewBookings={() => router.push(BOOKINGS_PAGE_PATH)}
+        onViewBookings={handleViewBookings}
         onRetry={handleRetry}
         viewBookingsDisabled={!isActionable}
         retryDisabled={!isActionable}
@@ -253,6 +269,9 @@ const HitlConfirmModifyStayModal = ({
     result,
     toolCallId,
   );
+  // Executing is the active user-decision phase, so its open run must not
+  // disable the controls needed to resolve that run.
+  const isAgentBusy = agent.isRunning && !canRespond;
 
   const hasArgs = hasRequiredModifyArgs(args);
   // Prefer dates/guests the guest chose in edit_modify_booking over tool args
@@ -343,12 +362,16 @@ const HitlConfirmModifyStayModal = ({
   );
 
   const clearPendingAndDismiss = () => {
+    if (isAgentBusy) {
+      return;
+    }
+
     setPendingModifyStay(null);
     handleDismiss();
   };
 
   const handleConfirm = () => {
-    if (!correlationKey) {
+    if (isAgentBusy || !correlationKey) {
       return;
     }
 
@@ -363,7 +386,7 @@ const HitlConfirmModifyStayModal = ({
   };
 
   const handleRetry = () => {
-    if (!correlationKey || isRetrying || !isActionable) {
+    if (isAgentBusy || !correlationKey || isRetrying || !isActionable) {
       return;
     }
 
@@ -373,7 +396,13 @@ const HitlConfirmModifyStayModal = ({
 
   const isPhaseSubmitting =
     isSubmitting || modifyPhase === HITL_CARD_PHASE.SUBMITTING;
-  const viewBookings = () => router.push(BOOKINGS_PAGE_PATH);
+  const viewBookings = () => {
+    if (isAgentBusy) {
+      return;
+    }
+
+    router.push(BOOKINGS_PAGE_PATH);
+  };
   const retry = handleRetry;
   const isActionDisabled = !isActionable;
 
@@ -398,6 +427,7 @@ const HitlConfirmModifyStayModal = ({
           modifyPhase={modifyPhase}
           failureReason={modifyOutcome?.errorMessage}
           errorMessage={errorMessage}
+          allActionsDisabled={isAgentBusy}
           onCancel={clearPendingAndDismiss}
           onConfirm={handleConfirm}
           onViewBookings={viewBookings}
@@ -423,6 +453,7 @@ const HitlConfirmModifyStayModal = ({
         modifyPhase={modifyPhase}
         failureReason={modifyOutcome?.errorMessage}
         errorMessage={errorMessage}
+        allActionsDisabled={isAgentBusy}
         onCancel={clearPendingAndDismiss}
         onConfirm={handleConfirm}
         onViewBookings={viewBookings}

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ToolCallStatus } from "@copilotkit/react-core/v2";
+import { ToolCallStatus, useAgent } from "@copilotkit/react-core/v2";
 import {
+  AGENT_KEYS,
   HOMESTAY_AGENT_TASK_STATUS,
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
@@ -51,6 +52,7 @@ export const CancelBookingByRoomModal = ({
   result,
   toolCallId,
 }: CancelBookingByRoomModalProps) => {
+  const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(
     null,
   );
@@ -69,6 +71,7 @@ export const CancelBookingByRoomModal = ({
     toolCallId,
     result,
   );
+  const isAgentBusy = agent.isRunning && !canRespond;
 
   const bookings = (args.bookings ?? []).filter(hasBookingPickerFields);
   const hasArgs = bookings.length > 0;
@@ -85,6 +88,10 @@ export const CancelBookingByRoomModal = ({
   const confirmRespond = (bookingItem: BookingDetails) =>
     canRespond
       ? async (cancelResult: { confirmed: boolean; bookingId?: string }) => {
+          if (isAgentBusy) {
+            return;
+          }
+
           if (cancelResult.confirmed && cancelResult.bookingId) {
             await respondOnce({
               confirmed: true,
@@ -97,6 +104,20 @@ export const CancelBookingByRoomModal = ({
           await respondOnce({ confirmed: false, reason: "declined" });
         }
       : undefined;
+
+  const handleSelectBooking = (booking: BookingDetails) => {
+    if (!canRespond || isAgentBusy) {
+      return;
+    }
+
+    setSelectedBooking(booking);
+  };
+
+  const handleKeepBookingsWhenIdle = () => {
+    if (!isAgentBusy) {
+      handleKeepBookings();
+    }
+  };
 
   // After completion, prefer the confirmed booking card when we know which one.
   if (isComplete) {
@@ -174,10 +195,10 @@ export const CancelBookingByRoomModal = ({
         title={CANCEL_BOOKING_PICKER.title}
         description={CANCEL_BOOKING_PICKER.description(args.queryName ?? "")}
         bookings={bookings.map(toBookingDetails)}
-        disabled={!canRespond}
-        onSelect={setSelectedBooking}
+        disabled={!canRespond || isAgentBusy}
+        onSelect={handleSelectBooking}
         keepLabel={CANCEL_BOOKING_PICKER.keepLabel}
-        onKeep={handleKeepBookings}
+        onKeep={handleKeepBookingsWhenIdle}
       />
     </EmbeddedWidget>
   );

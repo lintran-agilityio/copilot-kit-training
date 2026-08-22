@@ -187,7 +187,9 @@ export const EditModifyBookingModal = ({
     setDatesSeed(nextSeed);
   }, [hasArgs, initialCheckIn, initialCheckOut, initialGuests, room]);
 
-  const canRespond = canRespondHitl && ready && room != null;
+  const canRespondToCurrentHitl = canRespondHitl && ready && room != null;
+  const isAgentBusy = agent.isRunning && !canRespondToCurrentHitl;
+  const canRespond = canRespondToCurrentHitl && !isAgentBusy;
 
   const { canProceed, estimatedTotal } = useRoomBookingEstimate({
     checkInDate,

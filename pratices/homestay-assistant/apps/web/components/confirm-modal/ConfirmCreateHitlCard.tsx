@@ -52,6 +52,7 @@ export type ConfirmCreateHitlCardProps = {
   onConfirm: () => void;
   onViewBookings?: () => void;
   onRetry?: () => void;
+  allActionsDisabled?: boolean;
   viewBookingsDisabled?: boolean;
   retryDisabled?: boolean;
 };
@@ -133,6 +134,7 @@ export const ConfirmCreateHitlCard = ({
   onConfirm,
   onViewBookings,
   onRetry,
+  allActionsDisabled = false,
   viewBookingsDisabled = false,
   retryDisabled = false,
 }: ConfirmCreateHitlCardProps) => {
@@ -206,6 +208,7 @@ export const ConfirmCreateHitlCard = ({
         cancelLabel={CREATE_LABEL.cancel}
         viewBookingsLabel={CREATE_LABEL.viewBookings}
         retryLabel={CREATE_LABEL.retry}
+        allActionsDisabled={allActionsDisabled}
         actionsDisabled={actionsDisabled}
         errorMessage={errorMessage}
         onCancel={onCancel}
@@ -275,6 +278,7 @@ export const ConfirmCreateHitlCard = ({
         cancelLabel={MODIFY_LABEL.cancel}
         viewBookingsLabel={MODIFY_LABEL.viewBookings}
         retryLabel={MODIFY_LABEL.retry}
+        allActionsDisabled={allActionsDisabled}
         actionsDisabled={actionsDisabled}
         errorMessage={errorMessage}
         onCancel={onCancel}
@@ -324,7 +328,7 @@ export const ConfirmCreateHitlCard = ({
             variant="outline"
             size="sm"
             className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white cursor-pointer"
-            disabled={actionsDisabled}
+            disabled={allActionsDisabled || actionsDisabled}
             onClick={onCancel}
           >
             {CREATE_LABEL.cancel}
@@ -333,7 +337,7 @@ export const ConfirmCreateHitlCard = ({
             type="button"
             size="sm"
             className="gap-1.5 bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
-            disabled={actionsDisabled}
+            disabled={allActionsDisabled || actionsDisabled}
             onClick={onConfirm}
           >
             <CalendarCheck className="size-3.5" />
