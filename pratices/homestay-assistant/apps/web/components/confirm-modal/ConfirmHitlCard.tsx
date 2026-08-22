@@ -46,6 +46,8 @@ export type ConfirmHitlCardProps = {
   icon: LucideIcon;
   confirmVariant?: "default" | "destructive";
   confirmIcon?: LucideIcon;
+  /** Disables every action in every rendered phase. */
+  allActionsDisabled?: boolean;
   actionsDisabled?: boolean;
   confirmDisabled?: boolean;
   /** Grays out View bookings instead of unmounting it — avoids stuck UI when actionability flips transiently. */
@@ -91,6 +93,7 @@ export const ConfirmHitlCard = ({
   icon: Icon,
   confirmVariant = "default",
   confirmIcon: ConfirmIcon,
+  allActionsDisabled = false,
   actionsDisabled = false,
   confirmDisabled = false,
   viewBookingsDisabled = false,
@@ -125,7 +128,7 @@ export const ConfirmHitlCard = ({
                 type="button"
                 size="sm"
                 className="bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
-                disabled={viewBookingsDisabled}
+                disabled={allActionsDisabled || viewBookingsDisabled}
                 onClick={onViewBookings}
               >
                 {viewBookingsLabel}
@@ -156,7 +159,7 @@ export const ConfirmHitlCard = ({
                 type="button"
                 size="sm"
                 className="bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
-                disabled={retryDisabled}
+                disabled={allActionsDisabled || retryDisabled}
                 onClick={onRetry}
               >
                 {retryLabel}
@@ -240,7 +243,7 @@ export const ConfirmHitlCard = ({
                 variant="outline"
                 size="sm"
                 className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white cursor-pointer"
-                disabled={actionsDisabled}
+                disabled={allActionsDisabled || actionsDisabled}
                 onClick={onCancel}
               >
                 {cancelLabel}
@@ -250,7 +253,9 @@ export const ConfirmHitlCard = ({
                   type="button"
                   variant="destructive"
                   size="sm"
-                  disabled={actionsDisabled || confirmDisabled}
+                  disabled={
+                    allActionsDisabled || actionsDisabled || confirmDisabled
+                  }
                   onClick={onConfirm}
                   className="cursor-pointer"
                 >
@@ -261,7 +266,9 @@ export const ConfirmHitlCard = ({
                   type="button"
                   size="sm"
                   className="gap-1.5 bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
-                  disabled={actionsDisabled || confirmDisabled}
+                  disabled={
+                    allActionsDisabled || actionsDisabled || confirmDisabled
+                  }
                   onClick={onConfirm}
                 >
                   {ConfirmIcon ? (

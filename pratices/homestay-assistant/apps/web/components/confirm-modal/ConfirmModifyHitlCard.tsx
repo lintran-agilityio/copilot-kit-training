@@ -40,6 +40,7 @@ export type ConfirmModifyHitlCardProps = {
   onConfirm: () => void;
   onViewBookings?: () => void;
   onRetry?: () => void;
+  allActionsDisabled?: boolean;
   viewBookingsDisabled?: boolean;
   retryDisabled?: boolean;
 };
@@ -66,6 +67,7 @@ export const ConfirmModifyHitlCard = ({
   onConfirm,
   onViewBookings,
   onRetry,
+  allActionsDisabled = false,
   viewBookingsDisabled = false,
   retryDisabled = false,
 }: ConfirmModifyHitlCardProps) => {
@@ -128,6 +130,7 @@ export const ConfirmModifyHitlCard = ({
       cancelLabel={CONFIRM_MODIFY_BOOKING.label.cancel}
       viewBookingsLabel={CONFIRM_MODIFY_BOOKING.label.viewBookings}
       retryLabel={CONFIRM_MODIFY_BOOKING.label.retry}
+      allActionsDisabled={allActionsDisabled}
       actionsDisabled={actionsDisabled}
       confirmDisabled={changes.length === 0}
       errorMessage={errorMessage}

@@ -31,7 +31,7 @@ export const findBookingsTool = createTool({
     value: {
       ...output,
       replyHint: buildFindBookingsReplyHint(
-        output.status,
+        output.status as Parameters<typeof buildFindBookingsReplyHint>[0],
         output.status === "resolved" ? 1 : output.bookings.length,
       ),
     },

@@ -63,6 +63,7 @@ export const ModifyBookingByRoomModal = ({
     toolCallId,
     result,
   );
+  const isAgentBusy = agent.isRunning && !canRespond;
 
   const bookingsFromArgs = useMemo(
     () => (args.bookings ?? []).filter(hasBookingPickerFields),
@@ -94,7 +95,7 @@ export const ModifyBookingByRoomModal = ({
   }
 
   const handleSelectBooking = (booking: BookingDetails) => {
-    if (!canRespond) {
+    if (!canRespond || isAgentBusy) {
       return;
     }
 
@@ -103,6 +104,12 @@ export const ModifyBookingByRoomModal = ({
       bookingId: booking.bookingId,
       roomName: booking.roomName,
     });
+  };
+
+  const handleKeepBookingsWhenIdle = () => {
+    if (!isAgentBusy) {
+      handleKeepBookings();
+    }
   };
 
   if (isComplete) {
@@ -155,10 +162,10 @@ export const ModifyBookingByRoomModal = ({
         title={MODIFY_BOOKING_PICKER.title}
         description={MODIFY_BOOKING_PICKER.description(args.queryName ?? "")}
         bookings={bookings}
-        disabled={!canRespond}
+        disabled={!canRespond || isAgentBusy}
         onSelect={handleSelectBooking}
         keepLabel={MODIFY_BOOKING_PICKER.keepLabel}
-        onKeep={handleKeepBookings}
+        onKeep={handleKeepBookingsWhenIdle}
       />
     </EmbeddedWidget>
   );

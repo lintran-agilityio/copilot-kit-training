@@ -75,6 +75,9 @@ export const ConfirmCancelBookingModal = ({
     result,
     toolCallId,
   );
+  // Keep the currently awaited HITL actionable; once respond() is consumed,
+  // an active run disables this card's remaining actions.
+  const isAgentBusy = agent.isRunning && !canRespond;
 
   const hasArgs = hasRequiredBooking(bookingItem);
   const correlationKey = hasArgs
@@ -97,7 +100,7 @@ export const ConfirmCancelBookingModal = ({
         });
 
   const handleConfirm = () => {
-    if (!bookingItem.bookingId || !correlationKey) {
+    if (isAgentBusy || !bookingItem.bookingId || !correlationKey) {
       return;
     }
 
@@ -109,12 +112,24 @@ export const ConfirmCancelBookingModal = ({
   };
 
   const handleRetry = () => {
-    if (!correlationKey || isRetrying || !isActionable) {
+    if (isAgentBusy || !correlationKey || isRetrying || !isActionable) {
       return;
     }
 
     markSubmitting(correlationKey);
     retryCancelBooking();
+  };
+
+  const handleDismissWhenIdle = () => {
+    if (!isAgentBusy) {
+      handleDismiss();
+    }
+  };
+
+  const handleViewBookings = () => {
+    if (!isAgentBusy) {
+      router.push(BOOKINGS_PAGE_PATH);
+    }
   };
 
   if (!shouldRenderHitlCard(status, hasArgs) || !shouldRender || !hasArgs) {
@@ -140,9 +155,10 @@ export const ConfirmCancelBookingModal = ({
         cancelPhase={cancelPhase}
         failureReason={cancelOutcome?.errorMessage}
         errorMessage={errorMessage}
-        onCancel={handleDismiss}
+        allActionsDisabled={isAgentBusy}
+        onCancel={handleDismissWhenIdle}
         onConfirm={handleConfirm}
-        onViewBookings={() => router.push(BOOKINGS_PAGE_PATH)}
+        onViewBookings={handleViewBookings}
         onRetry={handleRetry}
         viewBookingsDisabled={!isActionable}
         retryDisabled={!isActionable}
