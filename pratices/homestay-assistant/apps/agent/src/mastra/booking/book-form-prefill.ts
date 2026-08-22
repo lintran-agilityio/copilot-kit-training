@@ -93,14 +93,26 @@ export const resolveContinuityStayHint = (
   let hint: BookingFormStayHint = {};
 
   for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
-    const parts = getMessageParts(messages[messageIndex]);
+    const message = messages[messageIndex];
+
+    if (!message) {
+      continue;
+    }
+
+    const parts = getMessageParts(message);
 
     if (!parts) {
       continue;
     }
 
     for (let partIndex = parts.length - 1; partIndex >= 0; partIndex -= 1) {
-      const candidate = getContinuityStayFromPart(parts[partIndex]);
+      const part = parts[partIndex];
+
+      if (part === undefined) {
+        continue;
+      }
+
+      const candidate = getContinuityStayFromPart(part);
 
       if (!candidate) {
         continue;

@@ -1,6 +1,6 @@
 import type { BookingPickerCopy } from "@/features/booking/constants";
 import { type HitlDecisionStatus } from "./hitl-status";
-import type { ModifyBookingPickerItem } from "@repo/schemas";
+import type { ModifyBookingPickerItem, ConfirmModifyBookingArgs } from "@repo/schemas";
 import { parseToolResult } from "@repo/utils";
 import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
 import type {
