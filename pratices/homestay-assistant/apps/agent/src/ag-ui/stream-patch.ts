@@ -435,7 +435,20 @@ const patchAgUiAgent = (
             argsTextByToolCallId.delete(toolCallId);
           }
         }
-        await originalOnRunFinished?.(traceId);
+
+        try {
+          await originalOnRunFinished?.(traceId);
+        } finally {
+          // RUN_FINISHED is the terminal event for the whole run (unlike
+          // processFullStream, which multi-step/tool loops can invoke more
+          // than once per runId) — safe to release the controller here so
+          // completed runs don't sit in the maps until the count-based
+          // eviction happens to pick them.
+          const finishedRunId = activeRunContext.getStore()?.runId ?? activeRunId;
+          if (finishedRunId) {
+            unregisterRunAbortController(input.threadId, finishedRunId);
+          }
+        }
       },
     };
 
