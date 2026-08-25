@@ -137,7 +137,8 @@ export const resolveBookingStepTransition = ({ toolName, input, output }: ToolRe
     [TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT]: TOOL_KEYS.BOOKING.FIND_BY_ID,
   };
   if (followUps[toolName]) return result.confirmed === true ? { type: "call" as const, toolName: followUps[toolName]! } : { type: "stop" as const };
-  if ([TOOL_KEYS.BOOKING.CREATE_BOOKING, TOOL_KEYS.BOOKING.UPDATE_BOOKING, TOOL_KEYS.BOOKING.CANCEL].includes(toolName as never)) return { type: "stop" as const };
+  const terminalTools: readonly string[] = [TOOL_KEYS.BOOKING.CREATE_BOOKING, TOOL_KEYS.BOOKING.UPDATE_BOOKING, TOOL_KEYS.BOOKING.CANCEL];
+  if (terminalTools.includes(toolName)) return { type: "stop" as const };
   return null;
 };
 

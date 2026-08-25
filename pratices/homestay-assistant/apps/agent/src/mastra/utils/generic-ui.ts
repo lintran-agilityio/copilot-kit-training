@@ -159,15 +159,15 @@ export const buildFindBookingsReplyHint = (
 
 // Generic UI model
 type MutationOutputRecord = {
-  id?: unknown;
-  roomId?: unknown;
-  checkInDate?: unknown;
-  checkOutDate?: unknown;
-  guests?: unknown;
-  totalPrice?: unknown;
-  status?: unknown;
-  room?: unknown;
-  message?: unknown;
+  id?: string;
+  roomId?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+  totalPrice?: number;
+  status?: string;
+  room?: { name?: string } | null;
+  message?: string;
 };
 enum BookingMutationOperation {
   CREATE = "create",
@@ -175,8 +175,35 @@ enum BookingMutationOperation {
   CANCEL = "cancel",
 }
 
-const asMutationOutputRecord = (output: unknown): MutationOutputRecord =>
-  output && typeof output === "object" ? (output as MutationOutputRecord) : {};
+const asString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
+const asNumber = (value: unknown): number | undefined =>
+  typeof value === "number" ? value : undefined;
+
+const asMutationOutputRecord = (output: unknown): MutationOutputRecord => {
+  if (!output || typeof output !== "object") {
+    return {};
+  }
+
+  const record = output as Record<string, unknown>;
+  const room =
+    record.room && typeof record.room === "object"
+      ? { name: asString((record.room as Record<string, unknown>).name) }
+      : undefined;
+
+  return {
+    id: asString(record.id),
+    roomId: asString(record.roomId),
+    checkInDate: asString(record.checkInDate),
+    checkOutDate: asString(record.checkOutDate),
+    guests: asNumber(record.guests),
+    totalPrice: asNumber(record.totalPrice),
+    status: asString(record.status),
+    room,
+    message: asString(record.message),
+  };
+};
 
 const isMutationSuccess = (output: MutationOutputRecord) =>
   typeof output.id === "string" && output.id.trim().length > 0;
@@ -222,11 +249,7 @@ const pickMutationCorrelationFields = (
 };
 
 const getMutationRoomName = (output: MutationOutputRecord) => {
-  if (!output.room || typeof output.room !== "object") {
-    return undefined;
-  }
-
-  const name = (output.room as { name?: unknown }).name;
+  const name = output.room?.name;
   return typeof name === "string" && name.trim() ? name.trim() : undefined;
 };
 

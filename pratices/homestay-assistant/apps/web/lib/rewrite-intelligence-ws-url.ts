@@ -26,6 +26,27 @@ const isLocalHost = (host: string): boolean => {
   );
 };
 
+/**
+ * Hosts this deployment is actually reachable at. `x-forwarded-host` (and,
+ * behind Fly's proxy, `host` itself) is client-suppliable and must not be
+ * trusted as-is: it's what decides the WS URL we hand back to the browser,
+ * so an unchecked value lets a request pick an arbitrary host for that URL.
+ * Defaults to the Fly app's own domain (see fly.web.toml); override/extend
+ * with a comma-separated ALLOWED_PUBLIC_HOSTS for custom domains.
+ */
+const ALLOWED_PUBLIC_HOSTS = (
+  process.env.ALLOWED_PUBLIC_HOSTS ?? "homestay-web.fly.dev"
+)
+  .split(",")
+  .map((host) => host.trim().toLowerCase())
+  .filter(Boolean);
+
+const isAllowedHost = (host: string): boolean => {
+  const hostname = host.split(":")[0]?.toLowerCase() ?? "";
+
+  return isLocalHost(host) || ALLOWED_PUBLIC_HOSTS.includes(hostname);
+};
+
 const publicHostFromRequest = (request: Request): string | null => {
   const forwarded = request.headers
     .get("x-forwarded-host")
@@ -33,7 +54,7 @@ const publicHostFromRequest = (request: Request): string | null => {
     ?.trim();
   const host = forwarded || request.headers.get("host")?.trim();
 
-  return host || null;
+  return host && isAllowedHost(host) ? host : null;
 };
 
 const wsProtocolFromRequest = (request: Request): "ws" | "wss" => {

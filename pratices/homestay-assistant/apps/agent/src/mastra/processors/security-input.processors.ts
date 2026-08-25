@@ -10,7 +10,7 @@ import { ExcludeBlockedMessagesProcessor } from "./exclude-blocked-messages.proc
 import { UserMessageTokenLimitProcessor } from "./user-message-token-limit.processor";
 
 const promptInjectionProcessor = new PromptInjectionDetector({
-  model: process.env.AI_MODEL || "openai/gpt-4o-mini",
+  model: process.env.AI_SECURITY_MODEL || "openai/gpt-4o-mini",
   threshold: 0.8,
   strategy: "block",
   lastMessageOnly: true,
