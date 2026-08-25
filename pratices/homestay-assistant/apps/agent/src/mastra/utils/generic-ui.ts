@@ -16,7 +16,8 @@ export enum FindBookingsReplyStatus {
 }
 
 /** Companion copy after Room Detail / Booking Form renders. */
-export const REPLY_HINT_GET_ROOM_BY_ID = 'Room Detail / Booking Form Generic UI is already rendered. Reply with exactly ONE very short sentence in the guest\'s language acknowledging that the details are ready or offering help. Do NOT mention the room name, price, capacity, amenities, description, dates, guests, controls, or any previous result. Do NOT use bullets or markdown. English example: "The room details are ready; let me know if you need help."';
+export const REPLY_HINT_GET_ROOM_BY_ID =
+  'Room Detail / Booking Form Generic UI is already rendered. Reply with exactly ONE very short sentence in the guest\'s language acknowledging that the details are ready or offering help. Do NOT mention the room name, price, capacity, amenities, description, dates, guests, controls, or any previous result. Do NOT use bullets or markdown. English example: "The room details are ready; let me know if you need help."';
 
 const buildResolveReplyHint = (matchCount: number): string => {
   switch (matchCount) {
@@ -35,10 +36,10 @@ const buildResolveReplyHint = (matchCount: number): string => {
       );
     default:
       return (
-      `Multiple rooms matched that name (${matchCount}) — Room List is suppressed. ` +
-      "Reply with ONE short sentence naming the matching rooms and asking which one they mean; " +
-      "do NOT call get_bookings until they pick."
-    );
+        `Multiple rooms matched that name (${matchCount}) — Room List is suppressed. ` +
+        "Reply with ONE short sentence naming the matching rooms and asking which one they mean; " +
+        "do NOT call get_bookings until they pick."
+      );
   }
 };
 
@@ -67,10 +68,10 @@ const buildBookResolveReplyHint = (matchCount: number): string => {
       );
     default:
       return (
-      `Multiple rooms matched (${matchCount}) — Room cards are rendered so the guest can pick one. ` +
-      "Do NOT call check_room_availability until a specific room is selected. " +
-      "Reply with ONE short sentence asking them to choose. Never list room names in text."
-    );
+        `Multiple rooms matched (${matchCount}) — Room cards are rendered so the guest can pick one. ` +
+        "Do NOT call check_room_availability until a specific room is selected. " +
+        "Reply with ONE short sentence asking them to choose. Never list room names in text."
+      );
   }
 };
 
@@ -84,7 +85,7 @@ const buildBrowseReplyHint = (matchCount: number): string => {
 
   return (
     "Room cards are already rendered in chat — do NOT call find_room again this turn or call update_room_list. " +
-    'Reply with exactly ONE very short sentence in the guest\'s language acknowledging the options. ' +
+    "Reply with exactly ONE very short sentence in the guest's language acknowledging the options. " +
     "Do NOT mention the match count, room names, prices, dates, guests, amenities, or any other card detail. " +
     'Do NOT use bullets or markdown. English example: "Here are the matching rooms."'
   );
@@ -135,7 +136,6 @@ export const buildGetBookingsReplyHint = (
   return 'Booking cards are already rendered in chat. Reply with exactly ONE very short sentence in the guest\'s language acknowledging the list or offering help. Do NOT mention the count or restate names, dates, guests, prices, statuses, or IDs. Do NOT use bullets or markdown. English example: "Your current bookings are shown; let me know if you need help."';
 };
 
-
 /**
  * Model-facing hint after find_bookings — the internal cancel/modify booking
  * target resolver. It never renders its own UI; the HITL that follows
@@ -160,7 +160,14 @@ export const buildFindBookingsReplyHint = (
 // Generic UI model
 type MutationOutputRecord = {
   id?: unknown;
+  roomId?: unknown;
+  checkInDate?: unknown;
+  checkOutDate?: unknown;
+  guests?: unknown;
+  totalPrice?: unknown;
+  status?: unknown;
   room?: unknown;
+  message?: unknown;
 };
 enum BookingMutationOperation {
   CREATE = "create",
@@ -173,6 +180,46 @@ const asMutationOutputRecord = (output: unknown): MutationOutputRecord =>
 
 const isMutationSuccess = (output: MutationOutputRecord) =>
   typeof output.id === "string" && output.id.trim().length > 0;
+
+/**
+ * Fields the frontend needs to recover mutation outcome (bookingId,
+ * correlation-key fields, error message) from `agent.messages` — the
+ * *persisted* transcript, which carries this same toModelOutput value, not
+ * the raw tool output. Included alongside `success`/`roomName`/`replyHint`
+ * so CreateBookingNotice/UpdateBookingNotice and
+ * deriveCreateBookingOutcomeFromMessages (apps/web) can resolve a booking id
+ * after a refresh/remount clears the live Zustand outcome store — the model
+ * is still told via replyHint not to narrate any of these.
+ */
+const pickMutationCorrelationFields = (
+  output: MutationOutputRecord,
+  success: boolean,
+) => {
+  const {
+    id,
+    roomId,
+    checkInDate,
+    checkOutDate,
+    status,
+    guests,
+    message,
+    totalPrice,
+  } = output;
+
+  return success
+    ? {
+        id,
+        ...(roomId !== undefined ? { roomId } : {}),
+        ...(checkInDate !== undefined ? { checkInDate } : {}),
+        ...(checkOutDate !== undefined ? { checkOutDate } : {}),
+        ...(guests !== undefined ? { guests } : {}),
+        ...(totalPrice !== undefined ? { totalPrice } : {}),
+        ...(status !== undefined ? { status } : {}),
+      }
+    : typeof message === "string"
+      ? { message }
+      : {};
+};
 
 const getMutationRoomName = (output: MutationOutputRecord) => {
   if (!output.room || typeof output.room !== "object") {
@@ -225,6 +272,7 @@ const toNamedBookingMutationModelOutput = (
     value: {
       success,
       ...(roomName ? { roomName } : {}),
+      ...pickMutationCorrelationFields(record, success),
       replyHint: success
         ? roomName
           ? `The existing HITL card already shows success. Reply with exactly ONE short sentence in the guest's language ${copy.instruction} and naming roomName exactly once. English pattern: "${copy.withRoom(roomName)}" Do NOT repeat dates, guests, total, status, IDs, or any other card field.`
