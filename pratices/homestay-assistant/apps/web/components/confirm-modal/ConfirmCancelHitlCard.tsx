@@ -5,7 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import { ConfirmHitlCard } from "@/components/confirm-modal/ConfirmHitlCard";
 import { StaySummary } from "@/components/confirm-modal/StaySummary";
 import {
-  CONFIRM_CANCEL_BOOKING,
+  CONFIRM_BOOKING,
   getFailureMessage,
   HITL_CARD_PHASE,
   type HitlCardPhase,
@@ -35,8 +35,7 @@ export type ConfirmCancelHitlCardProps = {
   retryDisabled?: boolean;
 };
 
-const CANCEL_TITLE = CONFIRM_CANCEL_BOOKING.title;
-const CANCEL_LABEL = CONFIRM_CANCEL_BOOKING.label;
+const { title: CANCEL_TITLE, label: CANCEL_LABEL } = CONFIRM_BOOKING.CANCEL;
 
 /**
  * Cancel HITL card. Inline chat card — not a modal overlay.

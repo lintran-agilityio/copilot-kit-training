@@ -182,6 +182,21 @@ export const resolveBookingStepTransition = ({ toolName, input, output }: ToolRe
 
 const lastStepResult = (args: ProcessInputStepArgs): ToolResult | null => (args.steps.at(-1)?.toolResults.at(-1) as ToolResult | undefined) ?? null;
 
+/**
+ * A forced transition silently no-ops when the target tool isn't in
+ * `args.tools` — normally because the frontend hasn't mounted the matching
+ * `useHumanInTheLoop`/`useRenderTool` registration for this run (see
+ * apps/web/features/copilot/providers/booking-tools.tsx). That's a real gap:
+ * the booking flow just stalls with no forced tool call and no error. Warn
+ * so it's visible in logs instead of only showing up as "the agent stopped
+ * responding" from the guest's side.
+ */
+const warnMissingTool = (toolName: string, afterToolName?: string) => {
+  console.warn(
+    `[BookingStepMachine] Wanted to force "${toolName}"${afterToolName ? ` after "${afterToolName}"` : ""}, but it isn't registered in this run's tools — is BookingToolsProvider mounted on the frontend? Skipping the forced transition.`,
+  );
+};
+
 const pinConfirmedStay = (args: ProcessInputStepArgs, result: ToolResult) => {
   const stay = parseConfirmedStay(result.output as never);
   if (!stay || !args.requestContext) return;
@@ -265,6 +280,19 @@ const pinModifyBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
   }
 };
 
+/**
+ * Pins the cancel dialog's confirmed booking id so cancel_booking prefers it
+ * over a possibly-stale model-supplied id — the CANCEL analogue of
+ * pinModifyBookingId.
+ */
+const pinCancelBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
+  if (!args.requestContext) return;
+  const output = asUnknownRecord(result.output);
+  const bookingId = typeof output?.bookingId === "string" ? output.bookingId : undefined;
+  if (!bookingId) return;
+  args.requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_CANCEL_BOOKING_ID, bookingId);
+};
+
 export const enforceBookingStep = (args: ProcessInputStepArgs): ProcessInputStepResult | undefined => {
   if (args.abortSignal?.aborted) return { activeTools: [], toolChoice: "none" };
 
@@ -278,7 +306,10 @@ export const enforceBookingStep = (args: ProcessInputStepArgs): ProcessInputStep
       args,
     );
     if (!bookTransition) return undefined;
-    if (!args.tools?.[bookTransition.toolName]) return undefined;
+    if (!args.tools?.[bookTransition.toolName]) {
+      warnMissingTool(bookTransition.toolName, result.toolName);
+      return undefined;
+    }
     if (bookTransition.pin) {
       args.requestContext?.set(REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE, bookTransition.pin);
     }
@@ -291,12 +322,17 @@ export const enforceBookingStep = (args: ProcessInputStepArgs): ProcessInputStep
   const transition = resolveBookingStepTransition(result);
   if (!transition) return undefined;
   if (transition.type === "stop") return { activeTools: [], toolChoice: "none" };
-  if (!args.tools?.[transition.toolName]) return undefined;
+  if (!args.tools?.[transition.toolName]) {
+    warnMissingTool(transition.toolName, result.toolName);
+    return undefined;
+  }
 
   if (result.toolName === TOOL_KEYS.BOOKING.FIND_BY_ID && transition.toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
     pinModifyCandidateFromResolution(args, result);
   } else if (result.toolName === TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT && transition.toolName === TOOL_KEYS.BOOKING.FIND_BY_ID) {
     pinModifyBookingId(args, result);
+  } else if (result.toolName === TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM && transition.toolName === TOOL_KEYS.BOOKING.CANCEL) {
+    pinCancelBookingId(args, result);
   } else {
     pinConfirmedStay(args, result);
   }

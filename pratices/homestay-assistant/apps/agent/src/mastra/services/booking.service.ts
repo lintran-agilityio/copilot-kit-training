@@ -31,6 +31,7 @@ import {
   del,
   update,
   assertClerkTokenForApi,
+  ApiError,
 } from "@/mastra/services/common";
 import type { RequestContext } from "@mastra/core/request-context";
 import { getRoom } from "@/mastra/services/rooms.service";
@@ -207,7 +208,13 @@ const loadOwnedBooking = async (
     if (isAbortError(error)) {
       throw error;
     }
-    throw new Error(BOOKING_ERRORS.NOT_FOUND);
+    // Only a genuine 404 means "no such booking" — a 401/5xx/network failure
+    // is a real outage and must surface as such, not be misreported as
+    // not-found (the guest would be told their booking doesn't exist).
+    if (error instanceof ApiError && error.status === 404) {
+      throw new Error(BOOKING_ERRORS.NOT_FOUND);
+    }
+    throw error;
   }
 };
 
@@ -303,6 +310,13 @@ export const findBookingById = async (
     if (isAbortError(error)) {
       throw error;
     }
-    return { bookings: [], bookingId: id, queryName: "" };
+    // A genuine 404 means no such booking. Any other failure (401/5xx/network)
+    // is a real outage — report it distinctly via `reason: "lookup_failed"`
+    // rather than the same empty result as not-found, so the guest hears
+    // "please try again" instead of "that booking doesn't exist".
+    if (error instanceof ApiError && error.status === 404) {
+      return { bookings: [], bookingId: id, queryName: "" };
+    }
+    return { bookings: [], bookingId: id, queryName: "", reason: "lookup_failed" };
   }
 };

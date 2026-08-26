@@ -23,7 +23,7 @@ import type {
   ModifyBookingByRoomResult,
 } from "@repo/schemas";
 import type { BookingDetails, HitlToolResult } from "@/features/booking/types";
-import { MODIFY_BOOKING_PICKER } from "@/features/booking/constants";
+import { PICKER_BOOKING } from "@/features/booking/constants";
 import { BookingPickerCard } from "./BookingPickerCard";
 import { HITL_DECISION_STATUS } from "@/constants";
 
@@ -64,6 +64,8 @@ export const ModifyBookingByRoomModal = ({
     result,
   );
   const isAgentBusy = agent.isRunning && !canRespond;
+  const { completed, title, description, keepLabel } = PICKER_BOOKING.MODIFY;
+
 
   const bookingsFromArgs = useMemo(
     () => (args.bookings ?? []).filter(hasBookingPickerFields),
@@ -133,20 +135,20 @@ export const ModifyBookingByRoomModal = ({
       <EmbeddedWidget>
         <BookingPickerCard
           title={resolvePickerCompletedTitle(
-            MODIFY_BOOKING_PICKER,
+            completed,
             decisionStatus,
             expiredBySupersede,
           )}
           description={
             expiredBySupersede
-              ? MODIFY_BOOKING_PICKER.completed.expiredBody(
+              ? completed.expiredBody(
                   args.queryName ?? "",
                 )
               : decisionStatus === HITL_DECISION_STATUS.REJECTED
-                ? MODIFY_BOOKING_PICKER.completed.keptAll(args.queryName ?? "")
+                ? completed.keptAll(args.queryName ?? "")
                 : completedBooking
                   ? `${completedBooking.roomName} · ${completedBooking.checkInDate} → ${completedBooking.checkOutDate}`
-                  : MODIFY_BOOKING_PICKER.completed.multiMatch(
+                  : completed.multiMatch(
                       args.queryName ?? "",
                     )
           }
@@ -159,12 +161,12 @@ export const ModifyBookingByRoomModal = ({
   return (
     <EmbeddedWidget>
       <BookingPickerCard
-        title={MODIFY_BOOKING_PICKER.title}
-        description={MODIFY_BOOKING_PICKER.description(args.queryName ?? "")}
+        title={title}
+        description={description(args.queryName ?? "")}
         bookings={bookings}
         disabled={!canRespond || isAgentBusy}
         onSelect={handleSelectBooking}
-        keepLabel={MODIFY_BOOKING_PICKER.keepLabel}
+        keepLabel={keepLabel}
         onKeep={handleKeepBookingsWhenIdle}
       />
     </EmbeddedWidget>

@@ -54,10 +54,10 @@ export const findBookingByIdOutputSchema = z.object({
       "Full room object when booking is found — pass to edit_modify_booking for the modify form. Do not call get_room_by_id in a modify turn.",
     ),
   reason: z
-    .enum(["not_modifiable"])
+    .enum(["not_modifiable", "lookup_failed"])
     .optional()
     .describe(
-      'Only set when bookings is empty AND purpose was "modify" AND the booking exists/is active but its check-in is today or past. Reply that the stay has already started and can no longer be modified, and offer to cancel instead — do not treat this as a generic not-found.',
+      'Only set when bookings is empty. "not_modifiable": purpose was "modify" and the booking exists/is active but its check-in is today or past — reply that the stay has already started and can no longer be modified, and offer to cancel instead. "lookup_failed": the lookup itself failed (network/server error), NOT that the booking does not exist — apologize briefly and ask the guest to try again in a moment; never say the booking was not found or does not exist.',
     ),
   requestedCheckInDate: z
     .string()

@@ -6,7 +6,7 @@ import {
   type FindRoomInput,
   type FindRoomOutput,
 } from "@/mastra/schemas/rooms";
-import { get, type ApiRequestContext } from "@/mastra/services/common";
+import { get, ApiError, type ApiRequestContext } from "@/mastra/services/common";
 
 export type RoomServiceContext = ApiRequestContext;
 
@@ -29,10 +29,9 @@ export const getRooms = async (
       throw error;
     }
     // Older API returned 404 "No rooms found" for empty filters — treat as
-    // empty. Any other failure (5xx, network error) must surface, not be
+    // empty. Any other failure (401/5xx/network error) must surface, not be
     // disguised as "no rooms today".
-    const message = error instanceof Error ? error.message : String(error);
-    if (!/no rooms found/i.test(message)) {
+    if (!(error instanceof ApiError) || error.status !== 404) {
       throw error;
     }
     const today = formatTodayYmd();
@@ -80,8 +79,7 @@ export const findRooms = async (
       throw error;
     }
     // Older API returned 404 "No rooms found" for empty filters — treat as empty.
-    const message = error instanceof Error ? error.message : String(error);
-    if (/no rooms found/i.test(message)) {
+    if (error instanceof ApiError && error.status === 404) {
       return { rooms: [], ...withPurpose };
     }
     throw error;

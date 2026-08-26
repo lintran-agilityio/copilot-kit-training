@@ -8,10 +8,9 @@ import { ConfirmHitlCard } from "@/components/confirm-modal/ConfirmHitlCard";
 import { ConfirmHitlHeader } from "@/components/confirm-modal/ConfirmHitlHeader";
 import { StaySummary } from "@/components/confirm-modal/StaySummary";
 import {
-  CONFIRM_BOOKING,
-  CONFIRM_MODIFY_BOOKING,
   getFailureMessage,
   MODIFY_PENDING_TITLES,
+  CONFIRM_BOOKING,
   type HitlCardPhase,
 } from "@/features/booking/constants";
 import {
@@ -62,10 +61,8 @@ type SettledCopy = {
   description: ReactNode;
 };
 
-const CREATE_TITLE = CONFIRM_BOOKING.title;
-const CREATE_LABEL = CONFIRM_BOOKING.label;
-const MODIFY_TITLE = CONFIRM_MODIFY_BOOKING.title;
-const MODIFY_LABEL = CONFIRM_MODIFY_BOOKING.label;
+const { title: CREATE_TITLE, label: CREATE_LABEL, } = CONFIRM_BOOKING.CREATE;
+const { title: MODIFY_TITLE, label: MODIFY_LABEL, } = CONFIRM_BOOKING.MODIFY;
 
 const getSettledCopy = (
   decisionStatus: HitlDecisionStatus,

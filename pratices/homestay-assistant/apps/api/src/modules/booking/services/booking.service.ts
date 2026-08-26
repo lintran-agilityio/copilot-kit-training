@@ -12,6 +12,7 @@ import { UserEntity } from '@/database/entities/user.entity';
 import { parseDateRange, toDateKey } from '@/utils';
 import { RoomsRepository } from '@/modules/rooms/repositories/rooms.repository';
 import { RoomEntity } from '@/modules/rooms/entities/room.entity';
+import { BookingEntity } from '@/modules/booking/entities/booking.entity';
 import {
   AvailabilityResponseDto,
   BookingResponseDto,
@@ -171,6 +172,15 @@ export class BookingService {
     const nextStatus = dto.status ?? booking.status;
 
     if (nextStatus !== BookingStatus.CANCELLED) {
+      const isStayChange =
+        dto.checkInDate !== undefined ||
+        dto.checkOutDate !== undefined ||
+        dto.guests !== undefined;
+
+      if (isStayChange) {
+        this.assertModifiable(booking);
+      }
+
       const shouldRecheckAvailability =
         dto.checkInDate !== undefined || dto.checkOutDate !== undefined;
 
@@ -202,6 +212,20 @@ export class BookingService {
 
   async cancel(id: string, userId: string): Promise<BookingResponseDto> {
     return this.update(id, { status: BookingStatus.CANCELLED }, userId);
+  }
+
+  /**
+   * Mirrors the Mastra agent's isModifiableBooking gate at the API boundary —
+   * a direct PATCH caller (bypassing the agent) must not be able to change
+   * dates/guests on a booking whose stay has already started. Cancellation is
+   * exempt (checked by callers via nextStatus before invoking this).
+   */
+  private assertModifiable(booking: BookingEntity): void {
+    if (booking.checkInDate <= toDateKey(new Date())) {
+      throw new BadRequestException(
+        'Booking can no longer be modified — the stay has already started',
+      );
+    }
   }
 
   private async getOwnedBookingOrThrow(id: string, userId: string) {

@@ -87,6 +87,19 @@ const buildUrl = (path: string, searchParams?: SearchParams) => {
   return url;
 };
 
+/** Thrown on a non-ok API response; carries the HTTP status so callers can
+ * distinguish "not found" (404) from a genuine failure (401/5xx/etc) instead
+ * of pattern-matching the error message text. */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 const parseApiErrorMessage = async (response: Response): Promise<string> => {
   try {
     const body = (await response.json()) as {
@@ -126,7 +139,7 @@ const request = async <T>(
   if (!response.ok) {
     const apiMessage = await parseApiErrorMessage(response);
     const detail = apiMessage || `${errorMessage} (${response.status})`;
-    throw new Error(detail);
+    throw new ApiError(detail, response.status);
   }
 
   const data = await response.json();

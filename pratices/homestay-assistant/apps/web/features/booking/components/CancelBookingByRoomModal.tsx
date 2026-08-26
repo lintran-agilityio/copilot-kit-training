@@ -21,7 +21,7 @@ import type {
   CancelBookingByRoomResult,
 } from "@repo/schemas";
 import type { BookingDetails, HitlToolResult } from "@/features/booking/types";
-import { CANCEL_BOOKING_PICKER } from "@/features/booking/constants";
+import { PICKER_BOOKING } from "@/features/booking/constants";
 import { BookingPickerCard } from "./BookingPickerCard";
 import { ConfirmCancelBookingModal } from "./ConfirmCancelBookingModal";
 import { HITL_DECISION_STATUS } from "@/constants";
@@ -75,6 +75,9 @@ export const CancelBookingByRoomModal = ({
 
   const bookings = (args.bookings ?? []).filter(hasBookingPickerFields);
   const hasArgs = bookings.length > 0;
+  const {
+    CANCEL: { completed, title, description, keepLabel },
+  } = PICKER_BOOKING;
 
   useReportHomestayAgentUiFocus(isAwaitingCancel, "cancel-flow", {
     type: HOMESTAY_AGENT_TASK_TYPE.CANCEL,
@@ -144,20 +147,16 @@ export const CancelBookingByRoomModal = ({
       <EmbeddedWidget>
         <BookingPickerCard
           title={resolvePickerCompletedTitle(
-            CANCEL_BOOKING_PICKER,
+            completed,
             decisionStatus,
             expiredBySupersede,
           )}
           description={
             expiredBySupersede
-              ? CANCEL_BOOKING_PICKER.completed.expiredBody(
-                  args.queryName ?? "",
-                )
+              ? completed.expiredBody(args.queryName ?? "")
               : decisionStatus === HITL_DECISION_STATUS.REJECTED
-                ? CANCEL_BOOKING_PICKER.completed.keptAll(args.queryName ?? "")
-                : CANCEL_BOOKING_PICKER.completed.multiMatch(
-                    args.queryName ?? "",
-                  )
+                ? completed.keptAll(args.queryName ?? "")
+                : completed.multiMatch(args.queryName ?? "")
           }
           bookings={bookings.map(toBookingDetails)}
         />
@@ -192,12 +191,12 @@ export const CancelBookingByRoomModal = ({
   return (
     <EmbeddedWidget>
       <BookingPickerCard
-        title={CANCEL_BOOKING_PICKER.title}
-        description={CANCEL_BOOKING_PICKER.description(args.queryName ?? "")}
+        title={title}
+        description={description(args.queryName ?? "")}
         bookings={bookings.map(toBookingDetails)}
         disabled={!canRespond || isAgentBusy}
         onSelect={handleSelectBooking}
-        keepLabel={CANCEL_BOOKING_PICKER.keepLabel}
+        keepLabel={keepLabel}
         onKeep={handleKeepBookingsWhenIdle}
       />
     </EmbeddedWidget>

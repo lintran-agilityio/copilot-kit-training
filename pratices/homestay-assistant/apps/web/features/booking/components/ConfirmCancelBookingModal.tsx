@@ -8,7 +8,7 @@ import { ConfirmCancelHitlCard } from "@/components/confirm-modal";
 import { EmbeddedWidget } from "@/features/chat/components";
 import {
   BOOKINGS_PAGE_PATH,
-  CONFIRM_CANCEL_BOOKING,
+  CONFIRM_BOOKING,
   HITL_CARD_PHASE,
 } from "@/features/booking/constants";
 import {
@@ -71,7 +71,7 @@ export const ConfirmCancelBookingModal = ({
   } = useHitlConfirmDialog(
     status,
     respond,
-    CONFIRM_CANCEL_BOOKING.error.confirm,
+    CONFIRM_BOOKING.CANCEL.error.confirm,
     result,
     toolCallId,
   );

@@ -5,7 +5,7 @@ import { CalendarCheck } from "lucide-react";
 
 import { ChangeSummary, ConfirmHitlCard } from "@/components/confirm-modal";
 import {
-  CONFIRM_MODIFY_BOOKING,
+  CONFIRM_BOOKING,
   getFailureMessage,
   HITL_CARD_PHASE,
   type HitlCardPhase,
@@ -45,6 +45,8 @@ export type ConfirmModifyHitlCardProps = {
   retryDisabled?: boolean;
 };
 
+const { title: MODIFY_TITLE, label: MODIFY_LABEL } = CONFIRM_BOOKING.MODIFY;
+
 /**
  * Modify HITL card with before → after ChangeSummary.
  * Inline chat card — not a modal overlay.
@@ -54,10 +56,10 @@ export const ConfirmModifyHitlCard = ({
   pricePerNight,
   original,
   next,
-  title = CONFIRM_MODIFY_BOOKING.title.review,
+  title = MODIFY_TITLE.review,
   description,
-  confirmLabel = CONFIRM_MODIFY_BOOKING.label.confirm,
-  submittingLabel = CONFIRM_MODIFY_BOOKING.label.submitting,
+  confirmLabel = MODIFY_LABEL.confirm,
+  submittingLabel = MODIFY_LABEL.submitting,
   isSubmitting = false,
   canRespond = true,
   errorMessage = null,
@@ -93,14 +95,14 @@ export const ConfirmModifyHitlCard = ({
       description={reviewDescription}
       confirmLabel={confirmLabel}
       submittingLabel={submittingLabel}
-      submittingTitle={CONFIRM_MODIFY_BOOKING.title.submitting}
+      submittingTitle={MODIFY_TITLE.submitting}
       submittingDescription={
         <>
           Please wait while we update your stay at{" "}
           <span className="font-medium text-zinc-200">{roomName}</span>.
         </>
       }
-      successTitle={CONFIRM_MODIFY_BOOKING.title.success}
+      successTitle={MODIFY_TITLE.success}
       successDescription={
         <>
           Your stay at{" "}
@@ -108,18 +110,18 @@ export const ConfirmModifyHitlCard = ({
           updated.
         </>
       }
-      failedTitle={CONFIRM_MODIFY_BOOKING.title.failed}
+      failedTitle={MODIFY_TITLE.failed}
       failureMessage={
         failureReason?.trim() || getFailureMessage(MODEL_NAME.MODIFY)
       }
-      cancelledTitle={CONFIRM_MODIFY_BOOKING.title.rejected}
+      cancelledTitle={MODIFY_TITLE.rejected}
       cancelledDescription={
         <>
           You cancelled confirmation for{" "}
           <span className="font-medium text-zinc-200">{roomName}</span>.
         </>
       }
-      expiredTitle={CONFIRM_MODIFY_BOOKING.title.expired}
+      expiredTitle={MODIFY_TITLE.expired}
       expiredDescription={
         <>
           This confirmation for{" "}
@@ -127,9 +129,9 @@ export const ConfirmModifyHitlCard = ({
           longer available.
         </>
       }
-      cancelLabel={CONFIRM_MODIFY_BOOKING.label.cancel}
-      viewBookingsLabel={CONFIRM_MODIFY_BOOKING.label.viewBookings}
-      retryLabel={CONFIRM_MODIFY_BOOKING.label.retry}
+      cancelLabel={MODIFY_LABEL.cancel}
+      viewBookingsLabel={MODIFY_LABEL.viewBookings}
+      retryLabel={MODIFY_LABEL.retry}
       allActionsDisabled={allActionsDisabled}
       actionsDisabled={actionsDisabled}
       confirmDisabled={changes.length === 0}

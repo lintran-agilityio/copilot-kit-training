@@ -10,6 +10,12 @@ import {
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
 import { MODEL_NAME } from "@repo/types";
+import type {
+  ConfirmBookingArgs,
+  ConfirmBookingResult,
+  ConfirmModifyBookingArgs,
+  ConfirmModifyBookingResult,
+} from "@repo/schemas";
 
 import {
   ConfirmCreateHitlCard,
@@ -19,7 +25,6 @@ import { EmbeddedWidget } from "@/features/chat/components";
 import {
   BOOKINGS_PAGE_PATH,
   CONFIRM_BOOKING,
-  CONFIRM_MODIFY_BOOKING,
   HITL_CARD_PHASE,
 } from "@/features/booking/constants";
 import {
@@ -31,7 +36,7 @@ import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useCreateBookingCardStore } from "@/features/booking/stores/create-booking-card-store";
 import { useModifyBookingCardStore } from "@/features/booking/stores/modify-booking-card-store";
 import { useArtifactStore } from "@/features/chat/stores/artifact-store";
-import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks/use-report-homestay-agent-ui-focus";
+import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
 import {
   buildCreateStayCorrelationKey,
   buildModifyChangeRows,
@@ -45,12 +50,6 @@ import {
   resolveOriginalStay,
   shouldRenderHitlCard,
 } from "@/features/booking/utils";
-import type {
-  ConfirmBookingArgs,
-  ConfirmBookingResult,
-  ConfirmModifyBookingArgs,
-  ConfirmModifyBookingResult,
-} from "@repo/schemas";
 import type { HitlToolResult } from "@/features/booking/types";
 
 type HitlConfirmStayModalProps =
@@ -85,6 +84,12 @@ const HitlConfirmCreateStayModal = ({
   toolCallId?: string;
 }) => {
   const router = useRouter();
+  const {
+    title: CREATE_TITLE,
+    label: CREATE_LABEL,
+    error: CREATE_ERROR,
+  } = CONFIRM_BOOKING.CREATE;
+
   const resetBooking = useBookingStore((state) => state.resetBooking);
   const finalizeBookingForms = useArtifactStore(
     (state) => state.finalizeBookingForms,
@@ -103,13 +108,7 @@ const HitlConfirmCreateStayModal = ({
     decisionStatus,
     handleDismiss,
     confirm,
-  } = useHitlConfirmDialog(
-    status,
-    respond,
-    CONFIRM_BOOKING.error.confirm,
-    result,
-    toolCallId,
-  );
+  } = useHitlConfirmDialog(status, respond, CREATE_ERROR.confirm, result, toolCallId);
 
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   // A transport may keep isRunning true while HITL awaits respond(). Keep the
@@ -125,7 +124,9 @@ const HitlConfirmCreateStayModal = ({
       })
     : null;
   const storeCreateOutcome = useCreateBookingCardStore((state) =>
-    correlationKey ? (state.outcomesByCorrelationKey[correlationKey] ?? null) : null,
+    correlationKey
+      ? (state.outcomesByCorrelationKey[correlationKey] ?? null)
+      : null,
   );
   const createOutcome = coalesceBookingCardOutcome(
     storeCreateOutcome,
@@ -205,9 +206,9 @@ const HitlConfirmCreateStayModal = ({
         checkOutDate={checkOutDate}
         guests={guests}
         pricePerNight={room.pricePerNight}
-        title={CONFIRM_BOOKING.title.review}
-        confirmLabel={CONFIRM_BOOKING.label.confirm}
-        submittingLabel={CONFIRM_BOOKING.label.submitting}
+        title={CREATE_TITLE.review}
+        confirmLabel={CREATE_LABEL.confirm}
+        submittingLabel={CREATE_LABEL.submitting}
         isSubmitting={
           isSubmitting || createPhase === HITL_CARD_PHASE.SUBMITTING
         }
@@ -242,7 +243,13 @@ const HitlConfirmModifyStayModal = ({
   result?: HitlToolResult<ConfirmModifyBookingResult>;
   toolCallId?: string;
 }) => {
+  const {
+    title: MODIFY_TITLE,
+    label: MODIFY_LABEL,
+    error: MODIFY_ERROR,
+  } = CONFIRM_BOOKING.MODIFY;
   const router = useRouter();
+
   const pendingModifyStay = useBookingStore((state) => state.pendingModifyStay);
   const setPendingModifyStay = useBookingStore(
     (state) => state.setPendingModifyStay,
@@ -265,7 +272,7 @@ const HitlConfirmModifyStayModal = ({
   } = useHitlConfirmDialog(
     status,
     respond,
-    CONFIRM_MODIFY_BOOKING.error.confirm,
+    MODIFY_ERROR.confirm,
     result,
     toolCallId,
   );
@@ -287,17 +294,18 @@ const HitlConfirmModifyStayModal = ({
     ? (stayFromEdit?.checkOutDate ?? args.checkOutDate)
     : "";
   const guests = hasArgs ? (stayFromEdit?.guests ?? args.guests) : 0;
-  const correlationKey =
-    hasArgs
-      ? buildModifyStayCorrelationKey({
-          bookingId: args.bookingId,
-          checkInDate,
-          checkOutDate,
-          guests,
-        })
-      : null;
+  const correlationKey = hasArgs
+    ? buildModifyStayCorrelationKey({
+        bookingId: args.bookingId,
+        checkInDate,
+        checkOutDate,
+        guests,
+      })
+    : null;
   const storeModifyOutcome = useModifyBookingCardStore((state) =>
-    correlationKey ? (state.outcomesByCorrelationKey[correlationKey] ?? null) : null,
+    correlationKey
+      ? (state.outcomesByCorrelationKey[correlationKey] ?? null)
+      : null,
   );
   const modifyOutcome = coalesceBookingCardOutcome(
     storeModifyOutcome,
@@ -417,10 +425,10 @@ const HitlConfirmModifyStayModal = ({
           checkOutDate={checkOutDate}
           guests={guests}
           pricePerNight={room.pricePerNight}
-          title={CONFIRM_MODIFY_BOOKING.title.review}
+          title={MODIFY_TITLE.review}
           description={description}
-          confirmLabel={CONFIRM_MODIFY_BOOKING.label.confirm}
-          submittingLabel={CONFIRM_MODIFY_BOOKING.label.submitting}
+          confirmLabel={MODIFY_LABEL.confirm}
+          submittingLabel={MODIFY_LABEL.submitting}
           isSubmitting={isPhaseSubmitting}
           canRespond={canRespond}
           decisionStatus={decisionStatus}

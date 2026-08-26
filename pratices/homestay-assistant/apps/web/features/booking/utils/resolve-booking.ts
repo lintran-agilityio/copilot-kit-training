@@ -1,8 +1,8 @@
-import type { BookingPickerCopy } from "@/features/booking/constants";
-import { type HitlDecisionStatus } from "./hitl-status";
 import type { ModifyBookingPickerItem, ConfirmModifyBookingArgs } from "@repo/schemas";
 import { parseToolResult } from "@repo/utils";
 import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
+import type { BookingPickerCopy } from "@/features/booking/constants";
+import { type HitlDecisionStatus } from "./hitl-status";
 import type {
   ModifyStaySnapshot,
   PendingModifyStay,
@@ -28,11 +28,11 @@ type GetBookingsToolResult = {
 
 /** Title for a settled cancel/modify disambiguation picker (completed state). */
 export const resolvePickerCompletedTitle = (
-  copy: BookingPickerCopy,
+  completed: BookingPickerCopy["completed"],
   decisionStatus: HitlDecisionStatus,
   expiredBySupersede: boolean,
 ) => {
-  const { expiredTitle, rejectedTitle, approvedTitle } = copy.completed;
+  const { expiredTitle, rejectedTitle, approvedTitle } = completed;
   if (expiredBySupersede) {
     return expiredTitle;
   }

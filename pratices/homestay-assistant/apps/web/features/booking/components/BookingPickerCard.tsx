@@ -33,7 +33,7 @@ const BookingPickerRow = ({
 
   if (!onSelect) {
     return (
-      <div className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs">
+      <div className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs cursor-pointer">
         {content}
       </div>
     );
@@ -43,7 +43,7 @@ const BookingPickerRow = ({
     <button
       type="button"
       disabled={disabled}
-      className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs transition hover:bg-white/[0.05] disabled:opacity-50"
+      className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs transition hover:bg-white/[0.05] disabled:opacity-50 cursor-pointer"
       onClick={onSelect}
     >
       {content}
