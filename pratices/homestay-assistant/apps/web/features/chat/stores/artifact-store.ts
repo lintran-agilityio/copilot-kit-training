@@ -7,6 +7,7 @@ import {
   type Artifact,
   type ArtifactStatus,
 } from "@/features/chat/types/artifact";
+import { generateId } from "@/utils";
 
 type ArtifactStore = {
   artifacts: Record<string, Artifact>;
@@ -86,7 +87,7 @@ const findLatestIdleBookingForm = (
 export const useArtifactStore = create<ArtifactStore>()((set, get) => ({
   ...initialState,
 
-  registerBookingForm: (roomId, id = crypto.randomUUID()) => {
+  registerBookingForm: (roomId, id = generateId()) => {
     const now = Date.now();
     set((state) => {
       const artifacts = expireInteractive(state.artifacts, id);

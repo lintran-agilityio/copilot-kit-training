@@ -45,6 +45,7 @@ import {
 import { SuggestionBar } from "@/components/suggestions";
 import { ThreadLoadingStateView } from "@/features/threads/components";
 import { useChatSession } from "@/features/threads/hooks/useChatSession";
+import { generateId } from "@/utils";
 
 type CopilotKitErrorPayload = {
   error: Error;
@@ -169,7 +170,7 @@ export const ChatSidebarContent = ({
     currentAgent.threadId = activeThreadId;
 
     currentAgent.addMessage({
-      id: crypto.randomUUID(),
+      id: generateId(),
       role: MESSAGE_ROLE.USER,
       content: pendingMessage,
     });

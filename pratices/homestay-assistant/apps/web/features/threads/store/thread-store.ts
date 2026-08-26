@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import type { Thread, ThreadLoadingState } from "@/features/threads/types";
 import { dedupeThreadsById } from "@/features/threads/utils";
+import { generateId } from "@/utils";
 
 /**
  * Single source of truth for threads.
@@ -63,7 +64,7 @@ export const useThreadStore = create<ThreadStoreState>()((set, get) => ({
   reloadToken: 0,
 
   createDraftThread: (scopeKey) => {
-    const threadId = crypto.randomUUID();
+    const threadId = generateId();
 
     set((state) => ({
       activeThreadIds: {

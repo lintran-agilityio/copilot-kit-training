@@ -13,6 +13,7 @@ import { getAgentResourceId } from "@repo/utils";
 import { useChatStore } from "@/features/chat/stores/chat-store";
 import { useThreadStore } from "@/features/threads/store/thread-store";
 import { runAgentSafely, rejectIfAgentRunning } from "@/features/chat/utils";
+import { generateId } from "@/utils";
 
 export type UseSendAgentMessageOptions = {
   /** Runs before the message is dispatched, e.g. to set UI focus for the flow. */
@@ -68,7 +69,7 @@ export const useSendAgentMessage = ({
       agent.threadId = threadId;
 
       agent.addMessage({
-        id: crypto.randomUUID(),
+        id: generateId(),
         role: MESSAGE_ROLE.USER,
         content: message,
       });

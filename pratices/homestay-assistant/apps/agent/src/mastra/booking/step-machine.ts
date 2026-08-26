@@ -12,7 +12,7 @@ import {
   stashBookingFormStayHint,
   resolveCorroboratedBookFacts,
 } from "@/mastra/booking/book-form-prefill";
-import { forceTool, hasTool, stopToolExecution } from "../utils";
+import { forceTool, hasTool, stopToolExecution } from "../utils/parse-tool-output";
 
 const lastStepResult = (args: ProcessInputStepArgs): ToolResult | null =>
   (args.steps.at(-1)?.toolResults.at(-1) as ToolResult | undefined) ?? null;

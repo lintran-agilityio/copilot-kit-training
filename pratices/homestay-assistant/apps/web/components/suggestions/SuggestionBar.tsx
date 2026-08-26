@@ -14,6 +14,7 @@ import {
 import { CopilotSuggestion } from "@/components/suggestions/CopilotSuggestion";
 import { prepareBookingFormMessage } from "@/features/booking/utils";
 import { ChatSuggestion } from "@/features/chat/types";
+import { generateId } from "@/utils";
 import {
   scheduleScrollChatToEnd,
   runAgentSafely,
@@ -66,7 +67,7 @@ export const SuggestionBar = ({
     }
 
     agent.addMessage({
-      id: crypto.randomUUID(),
+      id: generateId(),
       role: MESSAGE_ROLE.USER,
       content: resolveOutboundPrompt(prompt),
     });

@@ -20,12 +20,9 @@ import {
 import { addDaysYmd } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import { asRecord, asUnknownRecord, JsonValue } from "@/mastra/utils";
-import {
-  extractMessageText,
-  findLatestUserMessage,
-  parseFindRoomOutput
-} from "@/mastra/utils";
+import { asRecord, asUnknownRecord, JsonValue } from "@/mastra/utils/json-value";
+import { extractMessageText, findLatestUserMessage } from "@/mastra/utils/latest-user-message";
+import { parseFindRoomOutput } from "@/mastra/utils/parse-tool-output";
 
 export type BookingFormStayHint = {
   checkInDate?: string;
