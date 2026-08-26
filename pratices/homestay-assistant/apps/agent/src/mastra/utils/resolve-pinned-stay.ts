@@ -90,20 +90,6 @@ export const readPinnedCreateCandidate = (
 };
 
 /**
- * Reads the pinned BOOK create-candidate and immediately clears it.
- *
- * @param requestContext - Agent request context
- * @returns The pinned candidate when present and well-formed, otherwise null
- */
-export const takePinnedCreateCandidate = (
-  requestContext: RequestContext | undefined,
-): PinnedCreateCandidate | null => {
-  const pinned = readPinnedCreateCandidate(requestContext);
-  clearPinnedStay(requestContext, REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE);
-  return pinned;
-};
-
-/**
  * Reads a pinned booking id from request context.
  *
  * @param requestContext - Agent request context

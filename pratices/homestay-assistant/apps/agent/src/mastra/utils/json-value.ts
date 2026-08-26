@@ -61,7 +61,7 @@ export const isJsonObject = (
  * Narrows a JSON value to a plain object. Also accepts a JSON-string object,
  * matching the string form that sometimes arrives on tool results.
  */
-export const asJsonObject = (
+export const asRecord = (
   value: JsonValue | undefined | null,
 ): JsonObject | null => {
   if (isJsonObject(value)) {
@@ -80,3 +80,11 @@ export const asJsonObject = (
     return null;
   }
 };
+
+/**
+ * Narrows an arbitrary unknown value (not yet a JsonValue) to a plain object,
+ * combining `asJsonValue` + `asRecord`. Use this for raw tool input/output
+ * fields typed `unknown`; use `asRecord` directly when already a JsonValue.
+ */
+export const asUnknownRecord = (value: unknown): JsonObject | null =>
+  asRecord(asJsonValue(value));

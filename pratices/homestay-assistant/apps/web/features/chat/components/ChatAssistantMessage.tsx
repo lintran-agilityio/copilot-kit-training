@@ -13,6 +13,7 @@ import {
 import {
   getChatVisibleToolCalls,
   getMessageTextContent,
+  isChatHeadlessMountTool,
   isHiddenAgentPrompt,
   isPageOnlyGenerativeTool,
 } from "@/features/copilot/config";
@@ -109,7 +110,15 @@ export const ChatAssistantMessage = ({
 
   const hasConversation = Boolean(textContent);
 
-  const hasWidgets = chatToolCalls.length > 0;
+  // Headless bridge tools (cancel/update/create_booking notices) always
+  // render null — they must still mount (their useEffect drives the HITL
+  // card store + cache invalidation) but must not claim an avatar row.
+  const visibleWidgetToolCalls = chatToolCalls.filter(
+    (toolCall) => !isChatHeadlessMountTool(toolCall.function?.name),
+  );
+  const hasWidgets = visibleWidgetToolCalls.length > 0;
+  const isHeadlessOnlyTurn =
+    chatToolCalls.length > 0 && !hasWidgets && !hasConversation;
 
   const displayMessage =
     textContent && textContent !== rawTextContent
@@ -125,50 +134,59 @@ export const ChatAssistantMessage = ({
       className={cn("!bg-transparent p-0", className)}
       toolCallsView={ChatToolCallsView}
     >
-      {({ markdownRenderer, toolCallsView }) => (
-        <div
-          data-chat-timeline-entry="assistant"
-          className={cn(
-            "flex flex-col gap-2.5",
+      {({ markdownRenderer, toolCallsView }) =>
+        isHeadlessOnlyTurn ? (
+          // Only a headless bridge tool (cancel/update/create_booking notice)
+          // fired this turn — mount it so its side effects run, but claim no
+          // timeline space: no avatar row, no top spacing.
+          <div hidden aria-hidden data-chat-timeline-entry="assistant-headless">
+            {toolCallsView}
+          </div>
+        ) : (
+          <div
+            data-chat-timeline-entry="assistant"
+            className={cn(
+              "flex flex-col gap-2.5",
 
-            getMessageTopSpacing(messages, message.id, "assistant", {
-              widgetOnly: hasWidgets && !hasConversation,
-            }),
-          )}
-        >
-          {toolCallsView ? (
-            hasConversation ? (
-              <div data-chat-embedded-slot className="w-full">
-                {toolCallsView}
-              </div>
-            ) : (
+              getMessageTopSpacing(messages, message.id, "assistant", {
+                widgetOnly: hasWidgets && !hasConversation,
+              }),
+            )}
+          >
+            {toolCallsView ? (
+              hasConversation ? (
+                <div data-chat-embedded-slot className="w-full">
+                  {toolCallsView}
+                </div>
+              ) : (
+                <div
+                  data-chat-embedded-slot
+                  data-chat-message-row="assistant"
+                  data-chat-tool-only-row
+                  className="flex items-start justify-start gap-3 px-3"
+                >
+                  <ChatAgentAvatar />
+                  <div data-chat-tool-content className="min-w-0 flex-1">
+                    {toolCallsView}
+                  </div>
+                </div>
+              )
+            ) : null}
+
+            {hasConversation && markdownRenderer ? (
               <div
-                data-chat-embedded-slot
                 data-chat-message-row="assistant"
-                data-chat-tool-only-row
                 className="flex items-start justify-start gap-3 px-3"
               >
                 <ChatAgentAvatar />
-                <div data-chat-tool-content className="min-w-0 flex-1">
-                  {toolCallsView}
-                </div>
+                <ConversationItem role="assistant">
+                  {markdownRenderer}
+                </ConversationItem>
               </div>
-            )
-          ) : null}
-
-          {hasConversation && markdownRenderer ? (
-            <div
-              data-chat-message-row="assistant"
-              className="flex items-start justify-start gap-3 px-3"
-            >
-              <ChatAgentAvatar />
-              <ConversationItem role="assistant">
-                {markdownRenderer}
-              </ConversationItem>
-            </div>
-          ) : null}
-        </div>
-      )}
+            ) : null}
+          </div>
+        )
+      }
     </CopilotChatAssistantMessage>
   );
 };

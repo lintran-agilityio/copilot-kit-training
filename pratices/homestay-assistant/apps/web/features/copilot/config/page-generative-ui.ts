@@ -78,10 +78,26 @@ export const CHAT_VISIBLE_GENERATIVE_TOOLS = new Set([
   ...RENDER_BACKEND_TOOLS,
 ]);
 
+/**
+ * Backend tools whose `useRenderTool` component is a headless bridge (always
+ * renders null; publishes outcome to a HITL card store instead of drawing
+ * chat UI). Their render fn must still mount — that is what runs the side
+ * effects — but they must not claim an avatar row / top spacing, or the
+ * timeline shows a blank gap where their "widget" would be.
+ */
+export const CHAT_HEADLESS_MOUNT_TOOLS = new Set([
+  BOOKING.CANCEL,
+  BOOKING.UPDATE_BOOKING,
+  BOOKING.CREATE_BOOKING,
+]);
+
 export { PAGE_ROOMS_PROMPT_PREFIX };
 
 export const isPageOnlyGenerativeTool = (toolName: string) =>
   CHAT_HIDDEN_TOOLS.has(toolName);
+
+export const isChatHeadlessMountTool = (toolName?: string) =>
+  Boolean(toolName) && CHAT_HEADLESS_MOUNT_TOOLS.has(toolName as string);
 
 /** Minimal tool-call shape used by chat rendering. */
 export type ChatVisibleToolCall = ToolCallLike;

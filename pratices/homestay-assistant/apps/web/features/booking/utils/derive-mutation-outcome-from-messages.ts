@@ -2,7 +2,10 @@ import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
 import { parseToolResult } from "@repo/utils";
 import { z } from "zod";
 
-import { BOOKING_MUTATION_PHASE } from "@/features/booking/constants";
+import {
+  BOOKING_MUTATION_PHASE,
+  type BookingMutationPhase,
+} from "@/features/booking/constants";
 import type {
   CreateBookingCardOutcome,
   CancelBookingCardOutcome,
@@ -151,11 +154,28 @@ const pickHit = (
     (hit) => hit.resultContent != null && matchesCorrelationKey(hit),
   ) ?? findLastHit(hits, (hit) => hit.resultContent != null);
 
-/** Prefer live store outcome; fall back to transcript-derived outcome. */
-export const coalesceBookingCardOutcome = <T>(
+/**
+ * Prefer a settled (success/failed) outcome over a still-"submitting" one;
+ * the store's optimistic submitting placeholder (written on confirm click,
+ * before the mutation tool call resolves) must not permanently hide a
+ * settled outcome the transcript already has — e.g. when the store never
+ * gets its own success/failed update (missed publish, race between
+ * concurrent bookings), the card would otherwise stay stuck on "Creating
+ * booking…" forever even though the tool result — and the assistant's
+ * chat reply — already confirm success.
+ */
+export const coalesceBookingCardOutcome = <
+  T extends { phase: BookingMutationPhase },
+>(
   storeOutcome: T | null | undefined,
   transcriptOutcome: T | null | undefined,
-): T | null => storeOutcome ?? transcriptOutcome ?? null;
+): T | null => {
+  if (storeOutcome && storeOutcome.phase !== BOOKING_MUTATION_PHASE.SUBMITTING) {
+    return storeOutcome;
+  }
+
+  return transcriptOutcome ?? storeOutcome ?? null;
+};
 
 export const deriveCreateBookingOutcomeFromMessages = (
   messages: MessageLike[] | undefined,

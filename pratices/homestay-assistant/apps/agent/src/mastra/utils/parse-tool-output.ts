@@ -16,34 +16,8 @@ import {
   type FindRoomOutput,
   type GetRoomDetailOutput,
 } from "@/mastra/schemas/rooms";
-import type { JsonValue, JsonObject } from "@/mastra/utils/json-value";
-import { asJsonValue, isJsonObject } from "./json-value";
-
-/**
- * Narrows a JSON-like value to a plain object record.
- * Accepts objects or JSON strings that parse to non-array objects.
- *
- * @param value - Raw tool input/output or field
- * @returns Record when parseable, otherwise null
- */
-export const asRecord = (
-  value: JsonValue | undefined | null,
-): JsonObject | null => {
-  if (isJsonObject(value)) {
-    return value;
-  }
-
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  try {
-    const parsed = asJsonValue(JSON.parse(value));
-    return isJsonObject(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-};
+import type { JsonValue } from "@/mastra/utils/json-value";
+import { asRecord } from "./json-value";
 
 const coercePayload = (output: JsonValue | undefined): JsonValue | undefined =>
   asRecord(output) ?? output;

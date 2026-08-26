@@ -9,11 +9,7 @@ import {
 } from "@repo/constants";
 
 export type FindRoomReplyPurpose = FindRoomPurpose | undefined;
-export enum FindBookingsReplyStatus {
-  NOT_FOUND = "not_found",
-  RESOLVED = "resolved",
-  AMBIGUOUS = "ambiguous",
-}
+export type FindBookingsReplyStatus = "not_found" | "resolved" | "ambiguous";
 
 /** Companion copy after Room Detail / Booking Form renders. */
 export const REPLY_HINT_GET_ROOM_BY_ID =
@@ -147,9 +143,9 @@ export const buildFindBookingsReplyHint = (
   matchCount: number,
 ): string => {
   switch (status) {
-    case FindBookingsReplyStatus.NOT_FOUND:
+    case "not_found":
       return "No active bookings matched — reply with ONE short sentence that there are no matching active bookings. Do NOT invent one from chat history.";
-    case FindBookingsReplyStatus.RESOLVED:
+    case "resolved":
       return "Exactly one active booking matched (result.booking) — this is the resolved target, not a rendered card. CANCEL: go straight to show_cancel_dialog_confirm with this booking, do NOT call find_booking_by_id again. MODIFY: call find_booking_by_id (purpose: modify) with this booking's id to apply the not-modifiable gate.";
 
     default:

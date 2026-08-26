@@ -1,11 +1,25 @@
 import type { ProcessInputStepArgs } from "@mastra/core/processors";
 import type { RequestContext } from "@mastra/core/request-context";
 
-import { BARE_DAY_CUE, LAST_WEEKEND_CUE, MONTH_DAY_CUE, NEXT_WEEKEND_CUE, TOOL_KEYS, TOOL_PURPOSE, WEEKEND_CUE } from "@repo/constants";
+import {
+  BARE_DAY_CUE,
+  LAST_WEEKEND_CUE,
+  MONTH_DAY_CUE,
+  NEXT_WEEKEND_CUE,
+  TOOL_KEYS,
+  TOOL_PURPOSE,
+  WEEKEND_CUE,
+} from "@repo/constants";
 import { addDaysYmd } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import { asJsonValue, asRecord, extractMessageText, findLatestUserMessage, parseFindRoomOutput } from "@/mastra/utils";
+import {
+  asRecord,
+  asUnknownRecord,
+  extractMessageText,
+  findLatestUserMessage,
+  parseFindRoomOutput,
+} from "@/mastra/utils";
 import type { JsonValue } from "@/mastra/utils/json-value";
 import { MastraDBMessage } from "@mastra/core/memory";
 
@@ -20,7 +34,7 @@ const YMD_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const getMessageParts = (
   message: ProcessInputStepArgs["messages"][number],
 ): JsonValue[] | null => {
-  const content = asRecord(asJsonValue(message?.content));
+  const content = asUnknownRecord(message?.content);
   const parts = content?.parts;
 
   return Array.isArray(parts) ? parts : null;
@@ -33,7 +47,7 @@ const isValidYmd = (value: unknown): value is string => {
 const getContinuityStayFromPart = (
   part: JsonValue,
 ): BookingFormStayHint | null => {
-  const record = asRecord(asJsonValue(part));
+  const record = asRecord(part);
 
   if (record?.type !== "tool-invocation") {
     return null;
@@ -92,7 +106,11 @@ export const resolveContinuityStayHint = (
 
   let hint: BookingFormStayHint = {};
 
-  for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
+  for (
+    let messageIndex = messages.length - 1;
+    messageIndex >= 0;
+    messageIndex -= 1
+  ) {
     const message = messages[messageIndex];
 
     if (!message) {
@@ -141,10 +159,7 @@ export const stashBookingFormStayHint = (
     return;
   }
 
-  requestContext.set(
-    REQUEST_CONTEXT_KEYS.PENDING_BOOKING_FORM_STAY_HINT,
-    hint,
-  );
+  requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_BOOKING_FORM_STAY_HINT, hint);
 };
 
 /** Reads the pinned stay hint; malformed/missing values return null. */

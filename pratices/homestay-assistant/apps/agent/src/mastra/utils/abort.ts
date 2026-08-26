@@ -7,9 +7,9 @@
  */
 
 import type { RequestContext } from "@mastra/core/request-context";
-import { RUN_STOPPED_BY_USER_MESSAGE } from "@repo/utils";
+import { isAbortError, RUN_STOPPED_BY_USER_MESSAGE } from "@repo/utils";
 
-export const isAbortSignalAborted = (
+const isAbortSignalAborted = (
   signal: AbortSignal | null | undefined,
 ): boolean => Boolean(signal?.aborted);
 
@@ -67,7 +67,7 @@ export const runBookingMutation = async <T>(
   try {
     return await mutate();
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    if (isAbortError(error)) {
       throw error;
     }
 

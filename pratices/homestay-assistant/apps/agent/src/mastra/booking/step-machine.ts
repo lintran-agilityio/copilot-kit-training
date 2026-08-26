@@ -3,17 +3,12 @@ import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import { addDaysYmd } from "@repo/utils";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { parseConfirmedStay } from "@/mastra/utils/confirmed-stay";
+import { asRecord, asUnknownRecord } from "@/mastra/utils";
 import {
   resolveContinuityStayHint,
   stashBookingFormStayHint,
   resolveCorroboratedBookFacts,
 } from "@/mastra/booking/book-form-prefill";
-
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
-  if (typeof value !== "string") return null;
-  try { return asRecord(JSON.parse(value)); } catch { return null; }
-};
 
 type ToolResult = { toolName?: string; input?: unknown; output?: unknown };
 
@@ -116,29 +111,72 @@ const resolveFindRoomBookTransition = (
   return { type: "call" as const, toolName: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID };
 };
 
-export const resolveBookingStepTransition = ({ toolName, input, output }: ToolResult) => {
-  const result = asRecord(output);
-  if (!toolName || !result) return null;
-  if (toolName === TOOL_KEYS.BOOKING.FIND_BY_ID) {
-    return resolveFindByIdTransition(asRecord(input), result);
+const CONFIRMATION_FOLLOW_UPS: Record<string, string> = {
+  [TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING]: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
+  [TOOL_KEYS.ACTION.CONFIRM_BOOKING]: TOOL_KEYS.BOOKING.CREATE_BOOKING,
+  [TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING]: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
+  [TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]: TOOL_KEYS.BOOKING.CANCEL,
+  [TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT]: TOOL_KEYS.BOOKING.FIND_BY_ID,
+};
+
+const TERMINAL_TOOLS: readonly string[] = [
+  TOOL_KEYS.BOOKING.CREATE_BOOKING,
+  TOOL_KEYS.BOOKING.UPDATE_BOOKING,
+  TOOL_KEYS.BOOKING.CANCEL,
+];
+
+const resolveCheckAvailabilityTransition = (
+  input: Record<string, unknown> | null,
+  result: Record<string, unknown>,
+) => {
+  const { nextAction, available, guestsWithinCapacity, flow } = result;
+  if (
+    nextAction === TOOL_KEYS.ACTION.CONFIRM_BOOKING ||
+    nextAction === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
+  ) {
+    return { type: "call" as const, toolName: String(nextAction) };
   }
-  if (toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
-    if (result.nextAction === TOOL_KEYS.ACTION.CONFIRM_BOOKING || result.nextAction === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING) return { type: "call" as const, toolName: String(result.nextAction) };
-    if (result.nextAction === "stop_booking" || result.available !== true || result.guestsWithinCapacity !== true) return { type: "stop" as const };
-    const availabilityInput = asRecord(input);
-    const isModify = result.flow === "modify" || availabilityInput?.flow === "modify" || typeof availabilityInput?.excludeBookingId === "string";
-    return { type: "call" as const, toolName: isModify ? TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING : TOOL_KEYS.ACTION.CONFIRM_BOOKING };
+
+  if (
+    nextAction === "stop_booking" ||
+    available !== true ||
+    guestsWithinCapacity !== true
+  ) {
+    return { type: "stop" as const };
   }
-  const followUps: Record<string, string> = {
-    [TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING]: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
-    [TOOL_KEYS.ACTION.CONFIRM_BOOKING]: TOOL_KEYS.BOOKING.CREATE_BOOKING,
-    [TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING]: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
-    [TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]: TOOL_KEYS.BOOKING.CANCEL,
-    [TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT]: TOOL_KEYS.BOOKING.FIND_BY_ID,
+
+  const isModify =
+    flow === "modify" ||
+    input?.flow === "modify" ||
+    typeof input?.excludeBookingId === "string";
+
+  return {
+    type: "call" as const,
+    toolName: isModify ? TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING : TOOL_KEYS.ACTION.CONFIRM_BOOKING,
   };
-  if (followUps[toolName]) return result.confirmed === true ? { type: "call" as const, toolName: followUps[toolName]! } : { type: "stop" as const };
-  const terminalTools: readonly string[] = [TOOL_KEYS.BOOKING.CREATE_BOOKING, TOOL_KEYS.BOOKING.UPDATE_BOOKING, TOOL_KEYS.BOOKING.CANCEL];
-  if (terminalTools.includes(toolName)) return { type: "stop" as const };
+};
+
+export const resolveBookingStepTransition = ({ toolName, input, output }: ToolResult) => {
+  const result = asUnknownRecord(output);
+  if (!toolName || !result) return null;
+
+  if (toolName === TOOL_KEYS.BOOKING.FIND_BY_ID) {
+    return resolveFindByIdTransition(asUnknownRecord(input), result);
+  }
+
+  if (toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
+    return resolveCheckAvailabilityTransition(asUnknownRecord(input), result);
+  }
+
+  const followUpTool = CONFIRMATION_FOLLOW_UPS[toolName];
+  if (followUpTool) {
+    return result.confirmed === true
+      ? { type: "call" as const, toolName: followUpTool }
+      : { type: "stop" as const };
+  }
+
+  if (TERMINAL_TOOLS.includes(toolName)) return { type: "stop" as const };
+
   return null;
 };
 
@@ -164,9 +202,9 @@ const pinConfirmedStay = (args: ProcessInputStepArgs, result: ToolResult) => {
  */
 const pinModifyCandidateFromResolution = (args: ProcessInputStepArgs, result: ToolResult) => {
   if (!args.requestContext) return;
-  const output = asRecord(result.output);
+  const output = asUnknownRecord(result.output);
   const bookings = Array.isArray(output?.bookings) ? (output!.bookings as unknown[]) : [];
-  const booking = asRecord(bookings[0]);
+  const booking = asUnknownRecord(bookings[0]);
   if (!booking) return;
 
   const room = asRecord(output?.room);
@@ -209,12 +247,12 @@ const pinModifyCandidateFromResolution = (args: ProcessInputStepArgs, result: To
  */
 const pinModifyBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
   if (!args.requestContext) return;
-  const output = asRecord(result.output);
+  const output = asUnknownRecord(result.output);
   const bookingId = typeof output?.bookingId === "string" ? output.bookingId : undefined;
   if (!bookingId) return;
   args.requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID, bookingId);
 
-  const input = asRecord(result.input);
+  const input = asUnknownRecord(result.input);
   const requestedCheckInDate = typeof input?.requestedCheckInDate === "string" ? input.requestedCheckInDate : undefined;
   const requestedCheckOutDate = typeof input?.requestedCheckOutDate === "string" ? input.requestedCheckOutDate : undefined;
   const requestedGuests = typeof input?.requestedGuests === "number" ? input.requestedGuests : undefined;
@@ -235,8 +273,8 @@ export const enforceBookingStep = (args: ProcessInputStepArgs): ProcessInputStep
 
   if (result.toolName === TOOL_KEYS.GET.FIND_ROOM) {
     const bookTransition = resolveFindRoomBookTransition(
-      asRecord(result.input),
-      asRecord(result.output) ?? {},
+      asUnknownRecord(result.input),
+      asUnknownRecord(result.output) ?? {},
       args,
     );
     if (!bookTransition) return undefined;

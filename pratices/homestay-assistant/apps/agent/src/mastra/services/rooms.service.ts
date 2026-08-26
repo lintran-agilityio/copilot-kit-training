@@ -1,6 +1,6 @@
 import { ROUTES } from "@repo/constants";
 import { roomSchema, type Room } from "@repo/schemas";
-import { formatTodayYmd } from "@repo/utils";
+import { formatTodayYmd, isAbortError } from "@repo/utils";
 import {
   roomsListResponseSchema,
   type FindRoomInput,
@@ -25,7 +25,7 @@ export const getRooms = async (
       abortSignal: serviceContext?.abortSignal,
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    if (isAbortError(error)) {
       throw error;
     }
     // Older API returned 404 "No rooms found" for empty filters — treat as
@@ -76,7 +76,7 @@ export const findRooms = async (
       ...withPurpose,
     };
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    if (isAbortError(error)) {
       throw error;
     }
     // Older API returned 404 "No rooms found" for empty filters — treat as empty.

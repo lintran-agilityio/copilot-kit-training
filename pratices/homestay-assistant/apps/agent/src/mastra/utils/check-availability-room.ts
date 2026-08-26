@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import type { RequestContext } from "@mastra/core/request-context";
 
-import { addDaysYmd, getBusinessDates } from "@repo/utils";
+import { addDaysYmd, getBusinessDates, isAbortError } from "@repo/utils";
 import { checkRoomAvailabilityInputSchema } from "@repo/schemas";
 import { MODEL_NAME } from "@repo/types";
 import { assertOwnedActiveBooking, checkRoomAvailability } from "../services";
@@ -151,21 +151,16 @@ const resolveCandidateInput = (
 };
 
 /**
- * Pre-change stay for a modify candidate. Prefers the pinned original from
- * the stated-modify / picker fast path; falls back to the booking's real
- * current stay so a genuine no-op modify is still caught even when the model
- * called this tool directly instead of going through that path. Best-effort
- * only — ownership/existence is re-asserted before the mutation in update_booking.
+ * Pre-change stay for a modify candidate, from the booking's real current
+ * stay, so a genuine no-op modify is still caught even when the model called
+ * this tool directly instead of going through the stated-modify / picker
+ * fast path. Best-effort only — ownership/existence is re-asserted before
+ * the mutation in update_booking.
  */
 const resolveOriginalStay = async (
   bookingId: string,
-  pinnedOriginal: ModifyStayFields | null,
   context: ToolContext,
 ): Promise<ModifyStayFields | null> => {
-  if (pinnedOriginal) {
-    return pinnedOriginal;
-  }
-
   if (!bookingId) {
     return null;
   }
@@ -181,7 +176,7 @@ const resolveOriginalStay = async (
       guests: booking.guests,
     };
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    if (isAbortError(error)) {
       throw error;
     }
     return null;
@@ -281,7 +276,7 @@ const resolveCandidateOriginalStay = async (
     return candidate.originalStay;
   }
 
-  return resolveOriginalStay(candidate.bookingId, null, context);
+  return resolveOriginalStay(candidate.bookingId, context);
 };
 
 export const evaluateAvailabilityCandidate = async (

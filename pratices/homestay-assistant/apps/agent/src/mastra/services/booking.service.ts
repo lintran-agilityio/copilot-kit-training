@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { BookingStatus } from "@repo/types";
 import {
+  isAbortError,
   isTimeInFuture,
   isTimeTodayOrLater,
   sanitizeBookingId,
@@ -203,7 +204,7 @@ const loadOwnedBooking = async (
       },
     );
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    if (isAbortError(error)) {
       throw error;
     }
     throw new Error(BOOKING_ERRORS.NOT_FOUND);
@@ -299,7 +300,7 @@ export const findBookingById = async (
       room,
     };
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    if (isAbortError(error)) {
       throw error;
     }
     return { bookings: [], bookingId: id, queryName: "" };

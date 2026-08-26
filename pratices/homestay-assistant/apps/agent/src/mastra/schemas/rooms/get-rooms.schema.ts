@@ -3,8 +3,6 @@ import { roomSchema } from "@repo/schemas";
 
 export const getRoomsInputSchema = z.object({});
 
-export type GetRoomsInput = z.infer<typeof getRoomsInputSchema>;
-
 export const getRoomsOutputSchema = z.object({
   rooms: z.array(roomSchema),
 });
