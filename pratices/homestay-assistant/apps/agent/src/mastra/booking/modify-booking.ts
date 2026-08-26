@@ -1,5 +1,5 @@
 export type ModifyAvailabilityNextAction =
-  | "CONFIRM_MODIFY_BOOKING"
+  | "confirm_modify_booking"
   | "confirm_booking"
   | "stop_booking";
 
@@ -19,7 +19,7 @@ export type ModifyStayFields = {
 
 /**
  * Chooses nextAction after availability. Modify with a no-op candidate
- * (same as originals) must stop — never open CONFIRM_MODIFY_BOOKING.
+ * (same as originals) must stop — never open confirm_modify_booking.
  */
 export const resolveModifyAvailabilityNextAction = ({
   available,
@@ -31,11 +31,11 @@ export const resolveModifyAvailabilityNextAction = ({
     return "stop_booking";
   }
 
-  if (available && guestsWithinCapacity) {
-    return isModify ? "CONFIRM_MODIFY_BOOKING" : "confirm_booking";
+  if (!available && !guestsWithinCapacity) {
+    return "stop_booking";
   }
-
-  return "stop_booking";
+  
+  return isModify ? "confirm_modify_booking" : "confirm_booking";
 };
 
 /**

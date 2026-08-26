@@ -6,18 +6,18 @@ import {
 } from "@repo/utils";
 import {
   LAST_WEEKEND_CUE,
+  LEADING_DATE_GLUE,
   NEXT_WEEKEND_CUE,
   WEEKEND_CUE,
+  YMD_PATTERN,
 } from "@repo/constants";
-
-const YMD = /^\d{4}-\d{2}-\d{2}$/;
-
-/**
- * Guest phrasing the model often copies into `find_room.date`
- * ("from 15th", "on Aug 15"). Stripped only in FIND sanitize so
- * LIST_MY_BOOKINGS preposition rules stay unchanged.
- */
-const LEADING_DATE_GLUE = /^(?:from|on|at|for)(?:\s+the)?\s+/i;
+import {
+  ROOM_CALENDAR_WORD,
+  ROOM_CALENDAR_WORD_GLOBAL,
+  ROOM_LEVEL_CATEGORY_WORD,
+  ROOM_LEVEL_CATEGORY_WORD_GLOBAL,
+  ROOM_NAME_FILLER,
+} from "@repo/constants";
 
 const businessDatesFor = (todayOverride?: string) => {
   if (!todayOverride) {
@@ -47,7 +47,7 @@ export const sanitizeFindRoomDate = (
     return undefined;
   }
 
-  if (YMD.test(trimmed)) {
+  if (YMD_PATTERN.test(trimmed)) {
     return trimmed;
   }
 
@@ -85,4 +85,59 @@ export const sanitizeFindRoomDate = (
 
   // Unrecognized non-YMD — drop so we do not 400 the rooms API.
   return undefined;
+};
+
+
+/** Strip calendar / category / filler / digits so only a plausible room title remains. */
+export const residualRoomName = (name: string): string =>
+  name
+    .replace(ROOM_CALENDAR_WORD_GLOBAL, " ")
+    .replace(ROOM_LEVEL_CATEGORY_WORD_GLOBAL, " ")
+    .replace(ROOM_NAME_FILLER, " ")
+    .replace(/\d+/g, " ")
+    // Ordinal crumbs left after digit strip ("16th" → "th") must not become LIKE filters.
+    .replace(/\b(?:st|nd|rd|th)\b/gi, " ")
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** True when `name` is only calendar language (e.g. "Mon", "Aug 10", "this weekend"). */
+export const isCalendarOnlyRoomName = (name: string): boolean =>
+  ROOM_CALENDAR_WORD.test(name) && residualRoomName(name).length === 0;
+
+/**
+ * True when `name` is category language (luxury/top-floor), not a room title.
+ * LLMs often put these in `name`, which returns zero API matches.
+ */
+export const isRoomLevelCategoryName = (name: string): boolean =>
+  ROOM_LEVEL_CATEGORY_WORD.test(name) && residualRoomName(name).length === 0;
+
+/**
+ * Drop inferred non-titles from `find_room.name`.
+ * Calendar-only → undefined; category-only → undefined (caller may set level).
+ * Mixed ("Mon Courtyard") → residual title only.
+ */
+export const sanitizeFindRoomName = (
+  name: string | undefined,
+): string | undefined => {
+  const trimmed = name?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (isCalendarOnlyRoomName(trimmed) || isRoomLevelCategoryName(trimmed)) {
+    return undefined;
+  }
+
+  const residual = residualRoomName(trimmed);
+  if (!residual) {
+    return undefined;
+  }
+
+  // Only rewrite when calendar/category tokens were present; keep original casing otherwise.
+  if (residual.toLowerCase() === trimmed.toLowerCase()) {
+    return trimmed;
+  }
+
+  return residual;
 };

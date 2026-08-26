@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "predev": "pnpm exec turbo run build --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start"

@@ -6,7 +6,7 @@ export type ModifyStayCorrelationKeyInput = {
 };
 
 /**
- * Stable key correlating CONFIRM_MODIFY_BOOKING HITL with update_booking.
+ * Stable key correlating confirm_modify_booking HITL with update_booking.
  * Prefer exact key match; store falls back to latest pending when args drift.
  */
 export const buildModifyStayCorrelationKey = (

@@ -1,35 +1,37 @@
 import type { ProcessInputStepArgs } from "@mastra/core/processors";
 import type { RequestContext } from "@mastra/core/request-context";
+import { MastraDBMessage } from "@mastra/core/memory";
 
 import {
   BARE_DAY_CUE,
   LAST_WEEKEND_CUE,
-  MONTH_DAY_CUE,
+  DATE_CUE,
   NEXT_WEEKEND_CUE,
   TOOL_KEYS,
   TOOL_PURPOSE,
   WEEKEND_CUE,
+  YMD_PATTERN,
+  TODAY_TONIGHT_TOMORROW_CUE,
+  VI_DATE_CUE,
+  WEEKDAY_CUE,
+  YMD_DATE_CUE,
+  GUEST_COUNT_CUE,
 } from "@repo/constants";
 import { addDaysYmd } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
+import { asRecord, asUnknownRecord, JsonValue } from "@/mastra/utils";
 import {
-  asRecord,
-  asUnknownRecord,
   extractMessageText,
   findLatestUserMessage,
-  parseFindRoomOutput,
+  parseFindRoomOutput
 } from "@/mastra/utils";
-import type { JsonValue } from "@/mastra/utils/json-value";
-import { MastraDBMessage } from "@mastra/core/memory";
 
 export type BookingFormStayHint = {
   checkInDate?: string;
   checkOutDate?: string;
   guests?: number;
 };
-
-const YMD_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const getMessageParts = (
   message: ProcessInputStepArgs["messages"][number],
@@ -207,28 +209,6 @@ export const clearBookingFormStayHint = (
 };
 
 /**
- * Deterministic "Booking Resolver" boundary: the BOOK step machine must never
- * trust `find_room(book_resolve)`'s echoed `date`/`guests` at face value as
- * "the guest stated this" — those fields are model-filled tool args, and an
- * eager model sometimes fills them with an invented default (guests: 1,
- * date: today) despite the prompt explicitly forbidding it (see
- * intent-playbook.ts's BOOK INTENT PRIORITY ❌ example). The model stays the
- * only place that classifies intent / extracts candidate values (prompt
- * layer); this module is the only place that decides whether those values
- * are actually grounded in the guest's own words (code layer) before the
- * step machine is allowed to skip the Booking Form.
- */
-
-const TODAY_TONIGHT_TOMORROW_CUE = /\b(today|tonight|tomorrow)\b/i;
-
-/** Vietnamese equivalents for hôm nay / tối nay / ngày mai / cuối tuần / thứ N / chủ nhật / "ngày N". */
-const VI_DATE_CUE =
-  /\b(hôm\s*nay|tối\s*nay|ngày\s*mai|cuối\s*tuần|th(ứ|u)\s*[2-7]|chủ\s*nhật|ngày\s*\d{1,2})\b/i;
-
-const WEEKDAY_CUE =
-  /\b(mon|tues?|wed(?:nes)?|thur?s?|fri|sat(?:ur)?|sun)(day)?\b/i;
-
-/**
  * Whether the guest's own latest message contains SOME recognizable check-in
  * date cue at all (word/phrase, not the resolved value — the model already
  * resolved that into `find_room.date`). Used only to corroborate that a
@@ -245,15 +225,11 @@ export const hasStatedCheckInCue = (text: string): boolean => {
     NEXT_WEEKEND_CUE.test(text) ||
     LAST_WEEKEND_CUE.test(text) ||
     WEEKDAY_CUE.test(text) ||
-    MONTH_DAY_CUE.test(text) ||
+    DATE_CUE.test(text) ||
     BARE_DAY_CUE.test(text) ||
-    /\d{4}-\d{2}-\d{2}/.test(text)
+    YMD_DATE_CUE.test(text)
   );
 };
-
-/** "3 guests", "for 2 people", "2 khách", "3 người" — a party-size cue in the guest's own words. */
-const GUEST_COUNT_CUE =
-  /\d+\s*(?:guests?|people|persons?|pax|adults?|khách|người)\b/i;
 
 /**
  * Whether the guest's own latest message states a party size at all. Used

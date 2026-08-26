@@ -19,8 +19,8 @@ import {
 export const updateBookingTool = createTool({
   id: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
   description: `
-    Update an existing booking's dates/guests by bookingId after CONFIRM_MODIFY_BOOKING returns confirmed: true — only the signed-in owner's active bookings whose check-in has not started yet can be updated (throws once check-in is today or past). roomId is not updatable.
-      - Use bookingId, checkInDate, checkOutDate, and guests from the CONFIRM_MODIFY_BOOKING result.
+    Update an existing booking's dates/guests by bookingId after confirm_modify_booking returns confirmed: true — only the signed-in owner's active bookings whose check-in has not started yet can be updated (throws once check-in is today or past). roomId is not updatable.
+      - Use bookingId, checkInDate, checkOutDate, and guests from the confirm_modify_booking result.
       - ${HITL_REPLY_SUCCESS.UPDATE}
       - Do NOT call get_bookings — the same HITL card updates to success/failed and refreshes the bookings list automatically.
     `,

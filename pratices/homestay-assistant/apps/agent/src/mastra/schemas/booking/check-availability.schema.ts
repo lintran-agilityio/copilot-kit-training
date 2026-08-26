@@ -23,7 +23,7 @@ export const checkRoomAvailabilityResponseSchema = z.object({
 
 export const bookingAvailabilityNextActionSchema = z.enum([
   "confirm_booking",
-  "CONFIRM_MODIFY_BOOKING",
+  "confirm_modify_booking",
   "stop_booking",
 ]);
 
@@ -33,37 +33,37 @@ export const checkRoomAvailabilityOutputSchema =
       "Mandatory step-machine transition: call the named confirm tool immediately, or stop when stop_booking is returned.",
     ),
     flow: bookingAvailabilityFlowSchema.describe(
-      "Echo of the resolved flow — create never routes to CONFIRM_MODIFY_BOOKING; modify never routes to confirm_booking.",
+      "Echo of the resolved flow — create never routes to confirm_modify_booking; modify never routes to confirm_booking.",
     ),
     bookingId: z
       .string()
       .optional()
       .describe(
-        "Set for flow=modify — the booking being updated (excludeBookingId). Pass to CONFIRM_MODIFY_BOOKING.",
+        "Set for flow=modify — the booking being updated (excludeBookingId). Pass to confirm_modify_booking.",
       ),
     originalCheckInDate: z
       .string()
       .optional()
       .describe(
-        "Pre-change check-in for flow=modify — pass to CONFIRM_MODIFY_BOOKING so the UI can show old → new.",
+        "Pre-change check-in for flow=modify — pass to confirm_modify_booking so the UI can show old → new.",
       ),
     originalCheckOutDate: z
       .string()
       .optional()
       .describe(
-        "Pre-change check-out for flow=modify — pass to CONFIRM_MODIFY_BOOKING so the UI can show old → new.",
+        "Pre-change check-out for flow=modify — pass to confirm_modify_booking so the UI can show old → new.",
       ),
     originalGuests: z
       .number()
       .optional()
       .describe(
-        "Pre-change guests for flow=modify — pass to CONFIRM_MODIFY_BOOKING so the UI can show old → new.",
+        "Pre-change guests for flow=modify — pass to confirm_modify_booking so the UI can show old → new.",
       ),
     stayUnchanged: z
       .boolean()
       .optional()
       .describe(
-        "True for flow=modify when the candidate stay equals the pre-change originals. nextAction is stop_booking — reply that nothing needs changing; never open CONFIRM_MODIFY_BOOKING or suggest other edits.",
+        "True for flow=modify when the candidate stay equals the pre-change originals. nextAction is stop_booking — reply that nothing needs changing; never open confirm_modify_booking or suggest other edits.",
       ),
   });
 

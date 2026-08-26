@@ -1,14 +1,21 @@
-import type { ProcessInputStepArgs, ProcessInputStepResult } from "@mastra/core/processors";
+import type {
+  ProcessInputStepArgs,
+  ProcessInputStepResult,
+} from "@mastra/core/processors";
 import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import { addDaysYmd } from "@repo/utils";
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import { parseConfirmedStay } from "@/mastra/utils/confirmed-stay";
-import { asRecord, asUnknownRecord } from "@/mastra/utils";
+import { asRecord, asUnknownRecord } from "@/mastra/utils/json-value";
 import {
   resolveContinuityStayHint,
   stashBookingFormStayHint,
   resolveCorroboratedBookFacts,
 } from "@/mastra/booking/book-form-prefill";
+import { forceTool, hasTool, stopToolExecution } from "../utils";
+
+const lastStepResult = (args: ProcessInputStepArgs): ToolResult | null =>
+  (args.steps.at(-1)?.toolResults.at(-1) as ToolResult | undefined) ?? null;
 
 type ToolResult = { toolName?: string; input?: unknown; output?: unknown };
 
@@ -17,6 +24,39 @@ const FIND_BY_ID_REQUESTED_FIELDS = [
   "requestedCheckOutDate",
   "requestedGuests",
 ] as const;
+
+type TransitionRule = {
+  from: string;
+  to: string;
+  effect: TransitionSideEffect;
+};
+
+type LastStepResult = NonNullable<ReturnType<typeof lastStepResult>>;
+
+type ToolTransition = {
+  type: "tool";
+  toolName: string;
+  pin?: unknown;
+};
+
+type StopTransition = {
+  type: "stop";
+};
+
+type EnforcedTransition = ToolTransition | StopTransition;
+
+type TransitionSideEffect = (
+  args: ProcessInputStepArgs,
+  result: LastStepResult,
+) => void;
+type BookingStepTransition =
+  | {
+      type: "stop";
+    }
+  | {
+      type: "tool";
+      toolName: string;
+    };
 
 /**
  * MODIFY only: after find_booking_by_id resolves exactly one booking, decide
@@ -76,13 +116,20 @@ const resolveFindRoomBookTransition = (
 
   const room = rooms[0];
   const roomId =
-    room && typeof room === "object" && !Array.isArray(room) && typeof (room as Record<string, unknown>).id === "string"
+    room &&
+    typeof room === "object" &&
+    !Array.isArray(room) &&
+    typeof (room as Record<string, unknown>).id === "string"
       ? ((room as Record<string, unknown>).id as string)
       : undefined;
   if (!roomId) return null;
 
-  const echoedCheckIn = typeof output.date === "string" && output.date ? output.date : undefined;
-  const echoedGuests = typeof output.guests === "number" && output.guests > 0 ? output.guests : undefined;
+  const echoedCheckIn =
+    typeof output.date === "string" && output.date ? output.date : undefined;
+  const echoedGuests =
+    typeof output.guests === "number" && output.guests > 0
+      ? output.guests
+      : undefined;
   const corroborated = resolveCorroboratedBookFacts({
     messages: args.messages,
     statedCheckIn: echoedCheckIn,
@@ -91,7 +138,10 @@ const resolveFindRoomBookTransition = (
   const statedCheckIn = corroborated.checkInDate;
   const statedGuests = corroborated.guests;
 
-  const continuityHint = statedCheckIn && statedGuests ? null : resolveContinuityStayHint(args.messages);
+  const continuityHint =
+    statedCheckIn && statedGuests
+      ? null
+      : resolveContinuityStayHint(args.messages);
   const checkInDate = statedCheckIn ?? continuityHint?.checkInDate;
   const guests = statedGuests ?? continuityHint?.guests;
 
@@ -104,7 +154,9 @@ const resolveFindRoomBookTransition = (
   }
 
   stashBookingFormStayHint(args.requestContext, {
-    ...(checkInDate ? { checkInDate, checkOutDate: addDaysYmd(checkInDate, 1) } : {}),
+    ...(checkInDate
+      ? { checkInDate, checkOutDate: addDaysYmd(checkInDate, 1) }
+      : {}),
     ...(guests ? { guests } : {}),
   });
 
@@ -112,7 +164,8 @@ const resolveFindRoomBookTransition = (
 };
 
 const CONFIRMATION_FOLLOW_UPS: Record<string, string> = {
-  [TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING]: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
+  [TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING]:
+    TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
   [TOOL_KEYS.ACTION.CONFIRM_BOOKING]: TOOL_KEYS.BOOKING.CREATE_BOOKING,
   [TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING]: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
   [TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]: TOOL_KEYS.BOOKING.CANCEL,
@@ -152,35 +205,32 @@ const resolveCheckAvailabilityTransition = (
 
   return {
     type: "call" as const,
-    toolName: isModify ? TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING : TOOL_KEYS.ACTION.CONFIRM_BOOKING,
+    toolName: isModify
+      ? TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
+      : TOOL_KEYS.ACTION.CONFIRM_BOOKING,
   };
 };
 
-export const resolveBookingStepTransition = ({ toolName, input, output }: ToolResult) => {
-  const result = asUnknownRecord(output);
-  if (!toolName || !result) return null;
+export const resolveBookingTransition = (
+  result: LastStepResult,
+): EnforcedTransition | undefined => {
+  const transition = resolveBookingStepTransition(result);
 
-  if (toolName === TOOL_KEYS.BOOKING.FIND_BY_ID) {
-    return resolveFindByIdTransition(asUnknownRecord(input), result);
+  if (!transition) {
+    return undefined;
   }
 
-  if (toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
-    return resolveCheckAvailabilityTransition(asUnknownRecord(input), result);
+  if (transition.type === "stop") {
+    return {
+      type: "stop",
+    };
   }
 
-  const followUpTool = CONFIRMATION_FOLLOW_UPS[toolName];
-  if (followUpTool) {
-    return result.confirmed === true
-      ? { type: "call" as const, toolName: followUpTool }
-      : { type: "stop" as const };
-  }
-
-  if (TERMINAL_TOOLS.includes(toolName)) return { type: "stop" as const };
-
-  return null;
+  return {
+    type: "tool",
+    toolName: transition.toolName,
+  };
 };
-
-const lastStepResult = (args: ProcessInputStepArgs): ToolResult | null => (args.steps.at(-1)?.toolResults.at(-1) as ToolResult | undefined) ?? null;
 
 /**
  * A forced transition silently no-ops when the target tool isn't in
@@ -200,11 +250,12 @@ const warnMissingTool = (toolName: string, afterToolName?: string) => {
 const pinConfirmedStay = (args: ProcessInputStepArgs, result: ToolResult) => {
   const stay = parseConfirmedStay(result.output as never);
   if (!stay || !args.requestContext) return;
-  const key = result.toolName === TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING
-    ? REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE
-    : result.toolName === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
-      ? REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY
-      : REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY;
+  const key =
+    result.toolName === TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING
+      ? REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE
+      : result.toolName === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
+        ? REQUEST_CONTEXT_KEYS.PENDING_UPDATE_STAY
+        : REQUEST_CONTEXT_KEYS.PENDING_CREATE_STAY;
   args.requestContext.set(key, stay);
 };
 
@@ -215,28 +266,58 @@ const pinConfirmedStay = (args: ProcessInputStepArgs, result: ToolResult) => {
  * (resolveCandidateInput) applies them deterministically instead of trusting
  * the model to re-merge/re-type them correctly when it calls that tool.
  */
-const pinModifyCandidateFromResolution = (args: ProcessInputStepArgs, result: ToolResult) => {
+const pinModifyCandidateFromResolution = (
+  args: ProcessInputStepArgs,
+  result: ToolResult,
+) => {
   if (!args.requestContext) return;
   const output = asUnknownRecord(result.output);
-  const bookings = Array.isArray(output?.bookings) ? (output!.bookings as unknown[]) : [];
+  const bookings = Array.isArray(output?.bookings)
+    ? (output!.bookings as unknown[])
+    : [];
   const booking = asUnknownRecord(bookings[0]);
   if (!booking) return;
 
   const room = asRecord(output?.room);
-  const roomId = typeof room?.id === "string" ? room.id : typeof booking.roomId === "string" ? booking.roomId : undefined;
-  const bookingId = typeof booking.bookingId === "string" ? booking.bookingId : undefined;
-  const checkInDate = typeof booking.checkInDate === "string" ? booking.checkInDate : undefined;
-  const checkOutDate = typeof booking.checkOutDate === "string" ? booking.checkOutDate : undefined;
-  const guests = typeof booking.guests === "number" ? booking.guests : undefined;
-  if (!roomId || !bookingId || !checkInDate || !checkOutDate || guests === undefined) return;
+  const roomId =
+    typeof room?.id === "string"
+      ? room.id
+      : typeof booking.roomId === "string"
+        ? booking.roomId
+        : undefined;
+  const bookingId =
+    typeof booking.bookingId === "string" ? booking.bookingId : undefined;
+  const checkInDate =
+    typeof booking.checkInDate === "string" ? booking.checkInDate : undefined;
+  const checkOutDate =
+    typeof booking.checkOutDate === "string" ? booking.checkOutDate : undefined;
+  const guests =
+    typeof booking.guests === "number" ? booking.guests : undefined;
+  if (
+    !roomId ||
+    !bookingId ||
+    !checkInDate ||
+    !checkOutDate ||
+    guests === undefined
+  )
+    return;
 
   // Read off the OUTPUT, not this call's raw input — findBookingByIdTool
   // echoes back whichever requested* fields resolved, whether the model set
   // them on this specific call or they were carried over via
   // PENDING_MODIFY_REQUESTED_FIELDS from an earlier show_modify_dialog_select pick.
-  const requestedCheckInDate = typeof output?.requestedCheckInDate === "string" ? output.requestedCheckInDate : undefined;
-  const requestedCheckOutDate = typeof output?.requestedCheckOutDate === "string" ? output.requestedCheckOutDate : undefined;
-  const requestedGuests = typeof output?.requestedGuests === "number" ? output.requestedGuests : undefined;
+  const requestedCheckInDate =
+    typeof output?.requestedCheckInDate === "string"
+      ? output.requestedCheckInDate
+      : undefined;
+  const requestedCheckOutDate =
+    typeof output?.requestedCheckOutDate === "string"
+      ? output.requestedCheckOutDate
+      : undefined;
+  const requestedGuests =
+    typeof output?.requestedGuests === "number"
+      ? output.requestedGuests
+      : undefined;
 
   args.requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_CANDIDATE, {
     roomId,
@@ -263,20 +344,40 @@ const pinModifyCandidateFromResolution = (args: ProcessInputStepArgs, result: To
 const pinModifyBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
   if (!args.requestContext) return;
   const output = asUnknownRecord(result.output);
-  const bookingId = typeof output?.bookingId === "string" ? output.bookingId : undefined;
+  const bookingId =
+    typeof output?.bookingId === "string" ? output.bookingId : undefined;
   if (!bookingId) return;
-  args.requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID, bookingId);
+  args.requestContext.set(
+    REQUEST_CONTEXT_KEYS.PENDING_MODIFY_BOOKING_ID,
+    bookingId,
+  );
 
   const input = asUnknownRecord(result.input);
-  const requestedCheckInDate = typeof input?.requestedCheckInDate === "string" ? input.requestedCheckInDate : undefined;
-  const requestedCheckOutDate = typeof input?.requestedCheckOutDate === "string" ? input.requestedCheckOutDate : undefined;
-  const requestedGuests = typeof input?.requestedGuests === "number" ? input.requestedGuests : undefined;
-  if (requestedCheckInDate || requestedCheckOutDate || requestedGuests !== undefined) {
-    args.requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_MODIFY_REQUESTED_FIELDS, {
-      checkInDate: requestedCheckInDate,
-      checkOutDate: requestedCheckOutDate,
-      guests: requestedGuests,
-    });
+  const requestedCheckInDate =
+    typeof input?.requestedCheckInDate === "string"
+      ? input.requestedCheckInDate
+      : undefined;
+  const requestedCheckOutDate =
+    typeof input?.requestedCheckOutDate === "string"
+      ? input.requestedCheckOutDate
+      : undefined;
+  const requestedGuests =
+    typeof input?.requestedGuests === "number"
+      ? input.requestedGuests
+      : undefined;
+  if (
+    requestedCheckInDate ||
+    requestedCheckOutDate ||
+    requestedGuests !== undefined
+  ) {
+    args.requestContext.set(
+      REQUEST_CONTEXT_KEYS.PENDING_MODIFY_REQUESTED_FIELDS,
+      {
+        checkInDate: requestedCheckInDate,
+        checkOutDate: requestedCheckOutDate,
+        guests: requestedGuests,
+      },
+    );
   }
 };
 
@@ -288,57 +389,219 @@ const pinModifyBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
 const pinCancelBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
   if (!args.requestContext) return;
   const output = asUnknownRecord(result.output);
-  const bookingId = typeof output?.bookingId === "string" ? output.bookingId : undefined;
+  const bookingId =
+    typeof output?.bookingId === "string" ? output.bookingId : undefined;
   if (!bookingId) return;
-  args.requestContext.set(REQUEST_CONTEXT_KEYS.PENDING_CANCEL_BOOKING_ID, bookingId);
+  args.requestContext.set(
+    REQUEST_CONTEXT_KEYS.PENDING_CANCEL_BOOKING_ID,
+    bookingId,
+  );
 };
 
-export const enforceBookingStep = (args: ProcessInputStepArgs): ProcessInputStepResult | undefined => {
-  if (args.abortSignal?.aborted) return { activeTools: [], toolChoice: "none" };
+const TRANSITION_SIDE_EFFECT_RULES: readonly TransitionRule[] = [
+  {
+    from: TOOL_KEYS.BOOKING.FIND_BY_ID,
+    to: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
+    effect: pinModifyCandidateFromResolution,
+  },
+  {
+    from: TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT,
+    to: TOOL_KEYS.BOOKING.FIND_BY_ID,
+    effect: pinModifyBookingId,
+  },
+  {
+    from: TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
+    to: TOOL_KEYS.BOOKING.CANCEL,
+    effect: pinCancelBookingId,
+  },
+];
 
-  const result = lastStepResult(args);
-  if (!result) return undefined;
+type CallOrStopTransition =
+  | { type: "call"; toolName: string }
+  | { type: "stop" }
+  | null;
 
-  if (result.toolName === TOOL_KEYS.GET.FIND_ROOM) {
-    const bookTransition = resolveFindRoomBookTransition(
-      asUnknownRecord(result.input),
-      asUnknownRecord(result.output) ?? {},
-      args,
+const toBookingStepTransition = (
+  transition: CallOrStopTransition,
+): BookingStepTransition | undefined => {
+  if (!transition) return undefined;
+
+  return transition.type === "stop"
+    ? { type: "stop" }
+    : { type: "tool", toolName: transition.toolName };
+};
+
+/**
+ * Resolves the generic booking workflow transition.
+ */
+const resolveBookingStepTransition = (
+  result: LastStepResult,
+): BookingStepTransition | undefined => {
+  const { toolName, input, output } = result;
+  const outputRecord = asUnknownRecord(output);
+  if (!toolName || !outputRecord) return undefined;
+
+  if (toolName === TOOL_KEYS.BOOKING.FIND_BY_ID) {
+    return toBookingStepTransition(
+      resolveFindByIdTransition(asUnknownRecord(input), outputRecord),
     );
-    if (!bookTransition) return undefined;
-    if (!args.tools?.[bookTransition.toolName]) {
-      warnMissingTool(bookTransition.toolName, result.toolName);
-      return undefined;
-    }
-    if (bookTransition.pin) {
-      args.requestContext?.set(REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE, bookTransition.pin);
-    }
-    return {
-      activeTools: [bookTransition.toolName],
-      toolChoice: { type: "tool", toolName: bookTransition.toolName },
-    };
   }
 
-  const transition = resolveBookingStepTransition(result);
-  if (!transition) return undefined;
-  if (transition.type === "stop") return { activeTools: [], toolChoice: "none" };
-  if (!args.tools?.[transition.toolName]) {
-    warnMissingTool(transition.toolName, result.toolName);
+  if (toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
+    return toBookingStepTransition(
+      resolveCheckAvailabilityTransition(asUnknownRecord(input), outputRecord),
+    );
+  }
+
+  const followUpTool = CONFIRMATION_FOLLOW_UPS[toolName];
+  if (followUpTool) {
+    return outputRecord.confirmed === true
+      ? { type: "tool", toolName: followUpTool }
+      : { type: "stop" };
+  }
+
+  if (TERMINAL_TOOLS.includes(toolName)) return { type: "stop" };
+
+  return undefined;
+};
+
+/**
+ * Resolves the booking transition after FIND_ROOM.
+ *
+ * FIND_ROOM is special because its transition depends on both
+ * the tool input/output and the current agent state.
+ */
+const resolveFindRoomTransition = (
+  args: ProcessInputStepArgs,
+  result: LastStepResult,
+): ToolTransition | undefined => {
+  const transition = resolveFindRoomBookTransition(
+    asUnknownRecord(result.input),
+    asUnknownRecord(result.output) ?? {},
+    args,
+  );
+
+  if (!transition) {
     return undefined;
   }
 
-  if (result.toolName === TOOL_KEYS.BOOKING.FIND_BY_ID && transition.toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
-    pinModifyCandidateFromResolution(args, result);
-  } else if (result.toolName === TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT && transition.toolName === TOOL_KEYS.BOOKING.FIND_BY_ID) {
-    pinModifyBookingId(args, result);
-  } else if (result.toolName === TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM && transition.toolName === TOOL_KEYS.BOOKING.CANCEL) {
-    pinCancelBookingId(args, result);
-  } else {
-    pinConfirmedStay(args, result);
+  return {
+    type: "tool",
+    toolName: transition.toolName,
+    pin: transition.pin,
+  };
+};
+
+/**
+ * Resolves the transition that should be enforced after the last tool step.
+ *
+ * This function is intentionally side-effect free.
+ */
+export const resolveEnforcedTransition = (
+  args: ProcessInputStepArgs,
+  result: LastStepResult,
+): EnforcedTransition | undefined => {
+  if (result.toolName === TOOL_KEYS.GET.FIND_ROOM) {
+    return resolveFindRoomTransition(args, result);
   }
 
-  return {
-    activeTools: [transition.toolName],
-    toolChoice: { type: "tool", toolName: transition.toolName },
-  };
+  return resolveBookingTransition(result);
+};
+
+/**
+ * Emits the existing warning when a transition points to
+ * a tool that is not available in the current step.
+ */
+export const validateTransitionTool = (
+  args: ProcessInputStepArgs,
+  result: LastStepResult,
+  transition: ToolTransition,
+): boolean => {
+  if (hasTool(args, transition.toolName)) {
+    return true;
+  }
+
+  warnMissingTool(transition.toolName, result.toolName);
+
+  return false;
+};
+
+const resolveTransitionSideEffect = (
+  result: LastStepResult,
+  transition: ToolTransition,
+): TransitionSideEffect | undefined => {
+  const rule = TRANSITION_SIDE_EFFECT_RULES.find(
+    ({ from, to }) => from === result.toolName && to === transition.toolName,
+  );
+
+  return rule?.effect;
+};
+
+/**
+ * Applies state changes associated with a resolved transition.
+ *
+ * Transition resolution remains pure; this function owns all
+ * request-context mutations / booking candidate pinning.
+ */
+const applyTransitionSideEffects = (
+  args: ProcessInputStepArgs,
+  result: LastStepResult,
+  transition: ToolTransition,
+): void => {
+  applyPendingCreateCandidate(args, transition);
+
+  const sideEffect = resolveTransitionSideEffect(result, transition);
+
+  if (sideEffect) {
+    sideEffect(args, result);
+    return;
+  }
+
+  pinConfirmedStay(args, result);
+};
+
+const applyPendingCreateCandidate = (
+  args: ProcessInputStepArgs,
+  transition: ToolTransition,
+): void => {
+  if (!transition.pin) {
+    return;
+  }
+
+  args.requestContext?.set(
+    REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE,
+    transition.pin,
+  );
+};
+
+export const enforceBookingStep = (
+  args: ProcessInputStepArgs,
+): ProcessInputStepResult | undefined => {
+  if (args.abortSignal?.aborted) {
+    return stopToolExecution();
+  }
+
+  const result = lastStepResult(args);
+
+  if (!result) {
+    return undefined;
+  }
+
+  const transition = resolveEnforcedTransition(args, result);
+
+  if (!transition) {
+    return undefined;
+  }
+
+  if (transition.type === "stop") {
+    return stopToolExecution();
+  }
+
+  if (!validateTransitionTool(args, result, transition)) {
+    return undefined;
+  }
+
+  applyTransitionSideEffects(args, result, transition);
+
+  return forceTool(transition.toolName);
 };

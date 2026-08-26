@@ -14,7 +14,7 @@ export type CheckRoomAvailabilityInput = {
 export type CheckRoomAvailabilityResult = {
   available?: boolean;
   guestsWithinCapacity?: boolean;
-  nextAction?: "confirm_booking" | "CONFIRM_MODIFY_BOOKING" | "stop_booking";
+  nextAction?: "confirm_booking" | "confirm_modify_booking" | "stop_booking";
   flow?: MODEL_NAME.CREATE | MODEL_NAME.MODIFY;
   room?: {
     name?: string;

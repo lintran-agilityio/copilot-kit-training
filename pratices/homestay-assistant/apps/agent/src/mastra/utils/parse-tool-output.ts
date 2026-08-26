@@ -11,13 +11,19 @@ import {
   type GetBookingsOutput,
 } from "@/mastra/schemas/booking";
 import {
-  findRoomOutputSchema,
   getRoomDetailOutputSchema,
-  type FindRoomOutput,
   type GetRoomDetailOutput,
-} from "@/mastra/schemas/rooms";
+} from "@/mastra/schemas/rooms/get-room-detail.schema";
+import {
+  findRoomOutputSchema,
+  type FindRoomOutput,
+} from "@/mastra/schemas/rooms/find-room-output.schema";
 import type { JsonValue } from "@/mastra/utils/json-value";
 import { asRecord } from "./json-value";
+import {
+  ProcessInputStepArgs,
+  ProcessInputStepResult,
+} from "@mastra/core/processors";
 
 const coercePayload = (output: JsonValue | undefined): JsonValue | undefined =>
   asRecord(output) ?? output;
@@ -76,3 +82,27 @@ export const parseBookingMutationPayload = (
   const parsed = bookingMutationPayloadSchema.safeParse(nested);
   return parsed.success ? parsed.data : null;
 };
+
+export const hasTool = (
+  args: ProcessInputStepArgs,
+  toolName: string,
+): boolean => Boolean(args.tools?.[toolName]);
+
+/**
+ * Forces the next model step to execute a specific tool.
+ */
+export const forceTool = (toolName: string): ProcessInputStepResult => ({
+  activeTools: [toolName],
+  toolChoice: {
+    type: "tool",
+    toolName,
+  },
+});
+
+/**
+ * Prevents the model from selecting or executing any tool.
+ */
+export const stopToolExecution = (): ProcessInputStepResult => ({
+  activeTools: [],
+  toolChoice: "none",
+});

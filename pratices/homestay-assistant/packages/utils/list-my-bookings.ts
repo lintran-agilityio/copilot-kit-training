@@ -5,7 +5,7 @@ import {
   toYmd,
 } from "./date.js";
 import {
-  MONTH_DAY_CUE,
+  DATE_CUE,
   MONTH_FIRST_DATE,
   DAY_FIRST_DATE,
   BARE_DAY_CUE,
@@ -75,7 +75,7 @@ export const parseListMyBookingsOnDate = (
 
   if (!text) return null;
 
-  const monthDayMatch = MONTH_DAY_CUE.exec(text);
+  const monthDayMatch = DATE_CUE.exec(text);
 
   if (monthDayMatch?.[1]) {
     const parsed = parseMonthDayPhrase(monthDayMatch[1], today);

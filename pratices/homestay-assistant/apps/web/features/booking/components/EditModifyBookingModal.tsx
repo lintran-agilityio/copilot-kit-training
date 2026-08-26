@@ -66,7 +66,7 @@ const hasRequiredArgs = (args: Partial<EditModifyBookingArgs>) =>
   );
 
 // APPROVED is handled by an earlier return (the form hides itself once the
-// guest confirms — see the CONFIRM_MODIFY_BOOKING hand-off above), so this
+// guest confirms — see the confirm_modify_booking hand-off above), so this
 // only ever renders REJECTED or EXPIRED settled copy.
 const getSettledCopy = (
   decisionStatus: HitlDecisionStatus,
@@ -212,7 +212,7 @@ export const EditModifyBookingModal = ({
 
   if (isComplete && decisionStatus === HITL_DECISION_STATUS.APPROVED) {
     // After the guest confirms new dates/guests, hide this form — the
-    // CONFIRM_MODIFY_BOOKING diff card is the next step (no leftover
+    // confirm_modify_booking diff card is the next step (no leftover
     // "Confirmed by you" card stacked above it).
     return null;
   }
@@ -260,7 +260,7 @@ export const EditModifyBookingModal = ({
     setErrorMessage(null);
 
     try {
-      // Persist the guest-selected stay + originals so CONFIRM_MODIFY_BOOKING
+      // Persist the guest-selected stay + originals so confirm_modify_booking
       // can render before→after diffs without trusting stale LLM args.
       setPendingModifyStay({
         bookingId,

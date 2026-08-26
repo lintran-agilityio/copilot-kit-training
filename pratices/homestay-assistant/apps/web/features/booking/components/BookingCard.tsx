@@ -15,7 +15,10 @@ import type { BookingResponse } from "@/features/booking/types/booking";
 import { FALLBACK_ROOM_IMAGE, resolveRoomImage } from "@/features/room/utils";
 import { cn, formatPrice, formatShortDateForDisplay } from "@repo/utils";
 import { Button } from "@/components/ui/button";
-import { isBookingCancellable, isBookingModifiable } from "@/features/booking/utils";
+import {
+  isBookingCancellable,
+  isBookingModifiable,
+} from "@/features/booking/utils";
 
 type BookingCardProps = {
   booking: BookingResponse;
@@ -70,13 +73,14 @@ export const BookingCard = ({
         <Image
           src={url}
           alt={room?.name ?? "Booked room"}
-          fill
+          width={800}
+          height={500}
           sizes="(max-width: 768px) 100vw, 300px"
           onError={() => {
             setUrl(FALLBACK_ROOM_IMAGE);
           }}
           loading="eager"
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
 
         <div

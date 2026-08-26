@@ -59,11 +59,11 @@ export const TOOL_KEYS = {
     EDIT_MODIFY_BOOKING: "edit_modify_booking",
     /**
      * Frontend HITL — confirm booking modification after availability check
-     * with excludeBookingId. Uppercase by convention — matches the literal
-     * `nextAction` value check_room_availability/modify-booking.ts return and
-     * the render-tool `name` registered in booking-tools.tsx.
+     * with excludeBookingId. Matches the literal `nextAction` value
+     * check_room_availability/modify-booking.ts return and the render-tool
+     * `name` registered in booking-tools.tsx.
      */
-    CONFIRM_MODIFY_BOOKING: "CONFIRM_MODIFY_BOOKING",
+    CONFIRM_MODIFY_BOOKING: "confirm_modify_booking",
     /** Frontend generative UI — render the room list from get_rooms/find_room ids. */
     UPDATE_ROOM_LIST: "update_room_list",
   },

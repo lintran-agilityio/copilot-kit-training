@@ -1,16 +1,18 @@
 import { TOOL_PURPOSE } from "@repo/constants";
-import { LUXURY_ROOM_LEVEL } from "@/mastra/constants";
 import type { FindRoomInput } from "@repo/schemas";
 import type { FindRoomOutput, GetRoomDetailOutput } from "@/mastra/schemas/rooms";
 import { buildFindRoomReplyHint } from "./generic-ui";
-import { sanitizeFindRoomDate } from "./sanitize-find-room-date";
 import {
   isCalendarOnlyRoomName,
   isRoomLevelCategoryName,
   sanitizeFindRoomName,
-} from "./sanitize-find-room-name";
+  sanitizeFindRoomDate
+} from "./sanitize-find-room";
 import { clearBookingFormStayHint, readBookingFormStayHint } from "../booking";
 import { addDaysYmd } from "@repo/utils";
+
+/** Top-floor / luxury category → floor level in seed catalog. */
+export const LUXURY_ROOM_LEVEL = 4;
 
 /**
  * `book_resolve` / `resolve` are name-only room lookups (a specific room was

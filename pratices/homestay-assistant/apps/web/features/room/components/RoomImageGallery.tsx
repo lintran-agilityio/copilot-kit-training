@@ -5,10 +5,7 @@ import Image from "next/image";
 import { ChevronRight, Images } from "lucide-react";
 
 import { cn } from "@repo/utils";
-import {
-  FALLBACK_ROOM_IMAGE,
-  resolveRoomImage,
-} from "@/features/room/utils";
+import { FALLBACK_ROOM_IMAGE, resolveRoomImage } from "@/features/room/utils";
 import { DEFAULT_ROOM_GALLERY_IMAGES, ROOM_GALLERY_IMAGES } from "@/mocks/room";
 
 type RoomImageGalleryProps = {
@@ -59,7 +56,10 @@ export const RoomImageGallery = ({
 
   const visibleThumbCount = 5;
   const canScrollThumbs = images.length > visibleThumbCount;
-  const visibleThumbs = images.slice(thumbStart, thumbStart + visibleThumbCount);
+  const visibleThumbs = images.slice(
+    thumbStart,
+    thumbStart + visibleThumbCount,
+  );
 
   const handleNextThumbs = () => {
     if (!canScrollThumbs) {
@@ -77,13 +77,14 @@ export const RoomImageGallery = ({
         <Image
           src={resolveImage(activeImage)}
           alt={`${name} — photo ${activeIndex + 1}`}
-          fill
+          width={1200}
+          height={600}
           sizes="(max-width: 1024px) 80vw, 50vw"
           onError={() => {
             markImageFailed(activeImage);
           }}
           loading="lazy"
-          className="object-cover transition-opacity duration-300"
+          className="size-full object-cover transition-opacity duration-300"
         />
 
         <span
@@ -135,8 +136,7 @@ export const RoomImageGallery = ({
             })}
           </div>
 
-          {canScrollThumbs &&
-          thumbStart + visibleThumbCount < images.length ? (
+          {canScrollThumbs && thumbStart + visibleThumbCount < images.length ? (
             <button
               type="button"
               aria-label="Show more thumbnails"

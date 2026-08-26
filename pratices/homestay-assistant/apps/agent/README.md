@@ -40,7 +40,7 @@ One agent today — no specialist agents under `agents/` yet.
 | Rooms | `get_rooms`, `find_room`, `get_room_by_id` |
 | Bookings | `check_room_availability`, `create_booking`, `update_booking`, `get_bookings`, `find_bookings`, `find_booking_by_id`, `cancel_booking` |
 
-Frontend HITL tools (`confirm_booking`, `edit_modify_booking`, `CONFIRM_MODIFY_BOOKING`, `show_cancel_dialog_confirm`, `update_room_list`) are registered in the web app.
+Frontend HITL tools (`confirm_booking`, `edit_modify_booking`, `confirm_modify_booking`, `show_cancel_dialog_confirm`, `update_room_list`) are registered in the web app.
 
 Tool implementations call `API_URL` via services in `src/mastra/services/`.
 

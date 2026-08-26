@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Image, { type StaticImageData } from "next/image";
 
-import { RoomBookingPricePerNight, RoomBookingSummaryHeader } from "@/features/room/components";
 import {
-  FALLBACK_ROOM_IMAGE,
-  resolveRoomImage,
-} from "@/features/room/utils";
+  RoomBookingPricePerNight,
+  RoomBookingSummaryHeader,
+} from "@/features/room/components";
+import { FALLBACK_ROOM_IMAGE, resolveRoomImage } from "@/features/room/utils";
 
 type RoomBookingPreviewCardProps = {
   name: string;
@@ -38,9 +38,10 @@ export const RoomBookingPreviewCard = ({
         <Image
           src={resolvedImage}
           alt={name}
-          fill
+          width={800}
+          height={500}
           sizes="(max-width: 768px) 100vw, 512px"
-          className="object-cover"
+          className="size-full object-cover"
           onError={() => setResolvedImage(FALLBACK_ROOM_IMAGE)}
         />
       </div>
