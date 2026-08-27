@@ -7,6 +7,7 @@ import { getAgentResourceId } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "./constants";
 import type { MastraAuthContext } from "./authentication/authentication.types";
+import type { PromptFlowHint } from "./prompt-flow-hint";
 
 export const attachAuthToRequestContext = (
   requestContext: RequestContext,
@@ -22,14 +23,20 @@ export const attachAuthToRequestContext = (
 
 type BuildRequestContextInput = {
   auth: MastraAuthContext;
+  promptFlowHint?: PromptFlowHint;
 };
 
 export const buildAgentRequestContext = ({
   auth,
+  promptFlowHint,
 }: BuildRequestContextInput): RequestContext => {
   const requestContext = new RequestContext();
 
   attachAuthToRequestContext(requestContext, auth);
+
+  if (promptFlowHint) {
+    requestContext.set(REQUEST_CONTEXT_KEYS.PROMPT_FLOW_HINT, promptFlowHint);
+  }
 
   return requestContext;
 };

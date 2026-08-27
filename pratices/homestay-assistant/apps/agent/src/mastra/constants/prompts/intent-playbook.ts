@@ -5,7 +5,11 @@
  * - This file: intent routing, tone, language, playbook order (golden wording).
  * - Web Zustand UI focus stack: suggestion pills only — not booking authority.
  *
- * Phase 4: structure/comments/aliases only. Do not trim playbook strings yet.
+ * Section order and wording are golden — changes need a regression pass
+ * across BOOK/MODIFY/CANCEL/LIST before shipping (see buildHomestayAssistantPrompt
+ * in utils/building-instruction.ts, which conditionally drops the WORKFLOW_*
+ * sections a request's [book-stay]/[booking-modify]/[booking-cancel] tag
+ * guarantees are irrelevant).
  */
 
 export type AgentInstructionSections = Record<string, string>;
@@ -124,12 +128,7 @@ Book intent
 └── room unknown → RECOMMEND / soft-book → find_room (never check_room_availability / confirm_booking / create_booking)
 \`\`\`
 
-✅ "Book a room this weekend" / "Reserve a room for 2 guests" / "I'd like to stay this Saturday" → RECOMMEND (\`find_room\`)
-✅ "Book Heritage Suite" / "Book Courtyard Duplex" / \`[book-stay]\` → BOOK path (\`[book-stay]\` runs availability→confirm immediately; a bare room name with no stated date/guests opens the Booking Form)
-✅ "gonna to book a Bamboo Family room for 3 guests at next weekend" / "I want to book Heritage Suite for 2 guests this Saturday" → BOOK path, full info: a specific room, a date cue, and a guest count are all in the SAME message — \`find_room({ name, purpose: "book_resolve", date, guests })\` → 1 match → the platform forces \`check_room_availability\` (\`flow=create\`, resolving "next weekend"/"this Saturday" to an absolute date) → \`confirm_booking\` when available
-❌ "Book a room this weekend" → \`check_room_availability\` / \`confirm_booking\` / \`create_booking\`
-❌ "gonna to book a Bamboo Family room for 3 guests at next weekend" → \`find_room\` with \`purpose: "search"\`/\`"recommend"\` (Room List) — wrong: a named room means BOOK, even though guests and a date cue are also present
-❌ "Book Heritage Master Suite" (no dates/guests stated) → agent invents \`checkOutDate\` = check-in + 1 day and \`guests: 1\`, then calls \`confirm_booking\` — wrong; never invent a guest count. A bare named-room match with no stated date/guests must open the Booking Form instead
+✅ "Book a room this weekend" → RECOMMEND (\`find_room\`); "Book Heritage Suite" / \`[book-stay]\` → BOOK path. ❌ Never run \`check_room_availability\`/\`confirm_booking\` for the no-room case, and never invent a guest count for a bare named-room match. Full examples: see WORKFLOW — BOOK / WORKFLOW — RECOMMEND.
 
 ### ⚠️ SHOW/LIST MY BOOKINGS OVERRIDE (highest priority after priority triggers for booking list language)
 If the latest message matches explicit list/show language for the guest's **own bookings/reservations** — e.g. show/list/view/open my booking(s)/reservation(s), "what are my bookings", including date cues ("at 15", "on August 15", "on the 15th"):
@@ -197,16 +196,14 @@ Classify by what the guest wants to **do**, not by whether a room name appears.
 
 ✅ Examples:
 + "find Moonlight room" → \`find_room\` ONLY (no \`get_room_by_id\`)
-+ "book Bamboo Family room for 3 guests next weekend" → Book (new stay), NOT Search — named room wins over the guests/date cues; full info (date + guests in the same message) → \`find_room({ name, purpose: "book_resolve", date, guests })\` → 1 match → the platform forces \`check_room_availability\` → \`confirm_booking\`
++ "book Bamboo Family room for 3 guests next weekend" → Book (new stay), NOT Search — named room wins over the guests/date cues (full BOOK examples: see WORKFLOW — BOOK)
 + "tell me about Moonlight" / "show Moonlight details" → detail → \`find_room\` → one match → \`get_room_by_id\`
 + "show all rooms" → browse → \`get_rooms\`
-+ "show me available rooms" / "what's available" / "available rooms" → search → \`find_room\` with \`date\` = CURRENT DATE today (never \`get_rooms\`)
-+ "show me available rooms from today" → search → \`find_room\` with \`date\` = CURRENT DATE, never \`get_rooms\`
++ "show me available rooms" [/ "from today"] → search → \`find_room\` with \`date\` = CURRENT DATE today (never \`get_rooms\`)
 + "Show your top-floor luxury suites" → \`find_room\` with \`level: 4\` ONLY — never \`name: "luxury"\` / \`"top-floor"\` / \`"suite"\`
 + "book a room this weekend" → RECOMMEND: ask guests if unknown → \`find_room\` (never BOOK/HITL yet)
 + "Reserve a room for 2 guests" → RECOMMEND: ask date if unknown → \`find_room\`
-+ "Book Courtyard Duplex" (no date/guests stated) → BOOK path: \`find_room({ name, purpose: "book_resolve" })\` → 1 match → Booking Form opens (\`get_room_by_id\`) — never ask dates/guests in chat, never invent them
-+ "book Heritage July 1–3 for 2 guests" → BOOK path, full info: named room + explicit check-in/check-out + guests all stated → \`find_room({ name, purpose: "book_resolve", date: "Jul 1", guests: 2 })\` → 1 match → the platform forces \`check_room_availability\` (\`flow=create\`, checkInDate=Jul 1, checkOutDate=Jul 3 from the stated stay length, guests=2) → \`confirm_booking\` when available → create when confirmed
++ "Book Courtyard Duplex" (no date/guests stated) → BOOK path, partial info → Booking Form opens (\`get_room_by_id\`); "book Heritage July 1–3 for 2 guests" → BOOK path, full info → \`check_room_availability\` → \`confirm_booking\` directly (see WORKFLOW — BOOK for both in full)
 + "[booking-cancel] bookingId: …" → cancel priority trigger chain
 + "Change my booking dates" → modify (not \`create_booking\`)
 + "I want to change the room for one of my bookings" → ALWAYS \`find_bookings\` first; \`not_found\` → no active bookings (never "cancel that booking"); \`resolved\`/\`ambiguous\` → clarify cannot swap room`,
@@ -631,7 +628,6 @@ ${SHARED_SCOPE_REFUSAL}
 ⚠️ Never invent availability — only \`check_room_availability\` (and related results) decide if a stay is free.
 ⚠️ Book / reserve **without** a specific room → RECOMMEND (\`find_room\`); never start BOOK/HITL until the guest selects a room.
 ⚠️ Never default unknown guests to 1 — always ask when guests are missing (applies to RECOMMEND search collection; BOOK never asks in chat — it opens the Booking Form when guests are missing).
-⚠️ BOOK: \`[book-stay]\` already carries room + dates + guests chosen in the Booking Form and goes straight to \`check_room_availability\`. Every other named-room resolution (bare room name, \`roomId:\`) either continues straight to \`check_room_availability\` (check-in date + guests both stated in the latest message) or opens the Booking Form (either missing) — never asks for or invents dates/guests in chat.
 - Guest count must fit \`room.capacity\`; \`availableSlots\` is inventory — not guest validation.
 - Guests may only view, modify, or cancel their own bookings (enforced by tools using the signed-in session).
 - Do not \`create_booking\` until \`confirm_booking\` → \`confirmed: true\`.
@@ -662,8 +658,9 @@ When the guest has no clear intent, offer:
  */
 
 /**
- * Canonical playbook section keys. `WORKFLOW_*` keys remain as deprecated aliases
- * so existing imports keep working; prefer `PLAYBOOK_*` in new code.
+ * Short, canonical aliases for the WORKFLOW_* keys above — this is what
+ * building-instruction.ts and prompt-flow-hint.ts key off of. Prefer these
+ * over MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_* in new code.
  */
 export const MANAGE_AGENT_PLAYBOOK_SECTIONS = {
   BOUNDARY: MANAGE_AGENT_INSTRUCTION_SECTIONS.WORKFLOW_BOUNDARY,

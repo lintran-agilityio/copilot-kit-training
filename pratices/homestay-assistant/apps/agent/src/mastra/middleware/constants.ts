@@ -62,6 +62,16 @@ export const REQUEST_CONTEXT_KEYS = {
    * default) carry a guest-stated stay length.
    */
   PENDING_CREATE_CANDIDATE: "pendingCreateCandidate",
+  /**
+   * Deterministic workflow hint ('book' | 'modify' | 'cancel') detected from
+   * the incoming request's own [book-stay]/[book-form]/[booking-cancel]/
+   * [booking-modify] tag (see @repo/constants/prompt-tags and
+   * detectPromptFlowHint) — read by buildHomestayAssistantPrompt to skip the
+   * OTHER workflow playbook sections that tag guarantees are irrelevant this
+   * turn. Undefined for any untagged/free-text message — full prompt, no
+   * behavior change.
+   */
+  PROMPT_FLOW_HINT: "promptFlowHint",
 } as const;
 
 export const CLERK_TOKEN_HEADER = "x-clerk-token";
