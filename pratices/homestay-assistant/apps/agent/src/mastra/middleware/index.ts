@@ -9,6 +9,7 @@ export type {
 export * from "./constants";
 export * from "./verify-clerk-auth";
 export * from "./build-request-context";
+export * from "./prompt-flow-hint";
 export * from "./request-pipeline/request-pipeline";
 
 export * from "./server-middleware.types";

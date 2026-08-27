@@ -5,6 +5,7 @@ import type {
 } from "./request-pipeline.types";
 import { buildAgentRequestContext } from "../build-request-context";
 import { AUTH_ERRORS } from "../constants";
+import { detectPromptFlowHint } from "../prompt-flow-hint";
 import { extractClerkToken, verifyClerkAuth } from "../verify-clerk-auth";
 
 export { getCurrentAgentRequest, runWithAgentRequest } from "./agent-request-als";
@@ -54,8 +55,11 @@ export const runAgentRequestPipeline = async ({
     };
   }
 
+  const promptFlowHint = await detectPromptFlowHint(request);
+
   const requestContext = buildAgentRequestContext({
     auth: result.auth,
+    promptFlowHint,
   });
 
   return {

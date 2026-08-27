@@ -6,11 +6,10 @@ import {
   AGENT_MEMORY_LAST_MESSAGES,
   TOOL_KEYS,
 } from "@repo/constants";
-import {
-  homestayAssistantPrompt,
-  withDateContext,
-} from "@/mastra/utils";
+import { buildHomestayAssistantPrompt, withDateContext } from "@/mastra/utils";
 import { BOOKING_WORKING_MEMORY_TEMPLATE } from "@/mastra/constants";
+import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
+import type { PromptFlowHint } from "@/mastra/middleware/prompt-flow-hint";
 import {
   cancelBookingTool,
   checkRoomAvailabilityTool,
@@ -35,7 +34,14 @@ export const homestayAssistant = new Agent({
   name: "Homestay Assistant",
   description:
     "Public chat agent that coordinates room discovery and booking flows (prompt-guided tool routing + HITL).",
-  instructions: () => withDateContext(homestayAssistantPrompt),
+  instructions: ({ requestContext }) =>
+    withDateContext(
+      buildHomestayAssistantPrompt(
+        requestContext.get(REQUEST_CONTEXT_KEYS.PROMPT_FLOW_HINT) as
+          | PromptFlowHint
+          | undefined,
+      ),
+    ),
   model: process.env.AI_MODEL || "openai/gpt-4o-mini",
   // Rate-limit responses are transient; Mastra applies bounded backoff retries.
   maxRetries: 2,
