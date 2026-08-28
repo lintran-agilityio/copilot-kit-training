@@ -4,12 +4,17 @@ import type { HTMLAttributes } from "react";
 import {
   useAgent,
   useCopilotChatConfiguration,
+  useCopilotKit,
 } from "@copilotkit/react-core/v2";
 
 import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
 import { ConversationItem } from "@/features/chat/components/ConversationItem";
 import type { MessageLike } from "@/features/chat/types";
-import { getMessageTextContent } from "@/features/copilot/config";
+import {
+  getChatVisibleToolCalls,
+  getMessageTextContent,
+  isChatInlineLoadingToolCall,
+} from "@/features/copilot/config";
 import { cn } from "@repo/utils";
 import { MESSAGE_ROLE } from "@repo/constants";
 
@@ -26,7 +31,20 @@ const hasVisibleAssistantText = (
 /**
  * Agent-running indicator for the CopilotChat message list `cursor` slot.
  * Replaces CopilotKit's default single pulse dot with an assistant-style typing row.
- * Hidden once the latest assistant message already has visible text (streaming).
+ *
+ * Hidden only when the latest turn ALREADY shows its own indicator, so the dots
+ * are never a duplicate and never replace an otherwise-empty gap:
+ *   - visible streaming assistant text, or
+ *   - a chat-visible tool call that is actually on screen right now:
+ *       • an inline-loading tool (find_room / get_bookings / get_room_by_id) —
+ *         its skeleton paints from `InProgress`, or
+ *       • any visible tool that has reached `Executing` (HITL modal mounted) or
+ *         `Complete` (result card / unavailable notice).
+ *
+ * Still shown while the agent is "thinking, nothing rendered yet": a fresh user
+ * turn, a page-only tool (get_rooms / find_booking_by_id), an in-flight
+ * check_room_availability, or a HITL tool still in `InProgress` (modal not yet
+ * mounted) — exactly the cases the screenshots flagged as a confusing blank.
  *
  * Always returns an Element (never null) — CopilotChat's cursor slot requires that.
  */
@@ -36,10 +54,58 @@ export const ChatLoadingCursor = ({
 }: HTMLAttributes<HTMLDivElement>) => {
   const agentId = useCopilotChatConfiguration()?.agentId;
   const { agent } = useAgent({ agentId });
-  const lastMessage = agent.messages.at(-1);
+  const { executingToolCallIds } = useCopilotKit();
+  const messages = agent.messages as MessageLike[];
+  const lastMessage = messages.at(-1);
 
   if (lastMessage && hasVisibleAssistantText(lastMessage)) {
     return <div hidden aria-hidden {...props} />;
+  }
+
+  // Walk back past trailing `tool` results to the message that owns the current
+  // turn. A trailing user message (fresh turn, still thinking) falls through and
+  // keeps the dots.
+  const turnOwner = [...messages]
+    .reverse()
+    .find((message) => message.role !== MESSAGE_ROLE.TOOL);
+
+  // The turn owner already has visible text (a `tool` result was appended after
+  // it, so `lastMessage` above missed it) — the reply is on screen, no dots.
+  if (turnOwner && hasVisibleAssistantText(turnOwner)) {
+    return <div hidden aria-hidden {...props} />;
+  }
+
+  if (turnOwner?.role === MESSAGE_ROLE.ASSISTANT) {
+    const resolvedToolCallIds = new Set(
+      messages
+        .filter((message) => message.role === MESSAGE_ROLE.TOOL)
+        .map((message) => message.toolCallId)
+        .filter(Boolean),
+    );
+
+    const hasRenderedWidget = getChatVisibleToolCalls(
+      turnOwner.toolCalls,
+      messages,
+    ).some((toolCall) => {
+      if (!toolCall.id) {
+        return false;
+      }
+
+      // Complete (result card) or Executing (HITL modal / frontend handler up).
+      if (
+        resolvedToolCallIds.has(toolCall.id) ||
+        executingToolCallIds.has(toolCall.id)
+      ) {
+        return true;
+      }
+
+      // Skeleton tools paint from InProgress, before the run reports Executing.
+      return isChatInlineLoadingToolCall(toolCall);
+    });
+
+    if (hasRenderedWidget) {
+      return <div hidden aria-hidden {...props} />;
+    }
   }
 
   return (

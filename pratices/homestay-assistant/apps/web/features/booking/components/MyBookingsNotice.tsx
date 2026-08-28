@@ -43,7 +43,15 @@ export const MyBookingsNotice = ({
     status === ToolCallStatus.Executing ||
     status === ToolCallStatus.InProgress
   ) {
-    if (suppressForResolve) {
+    // Only a guest-facing LIST call renders the bookings card, so only it gets
+    // a loading skeleton. A resolve lookup, or a `purpose` that has not
+    // streamed far enough to confirm LIST, renders nothing — no skeleton flash
+    // before the cancel / modify HITL. `purpose` is the first field in
+    // getBookingsInputSchema, so an explicit LIST call still shows it at once.
+    if (
+      suppressForResolve ||
+      parameters?.purpose !== TOOL_PURPOSE.GET_BOOKINGS.LIST
+    ) {
       return null;
     }
 

@@ -12,7 +12,12 @@ import {
 import { AGENT_URLS } from "@repo/constants";
 import { ROUTES } from "@/constants";
 import { homestayA2UICatalog } from "@/features/copilot/a2ui/homestay-a2ui-catalog";
-import { isExpectedAgentError } from "@/features/chat/utils/agent-run";
+import { RATE_LIMIT_MESSAGE } from "@/features/chat/constants";
+import {
+  isExpectedAgentError,
+  isRateLimitAgentError,
+} from "@/features/chat/utils/agent-run";
+import { useChatStore } from "@/features/chat/stores/chat-store";
 import { AppProvider } from "@/providers/app-provider";
 import { AuthLoadingFallback } from "@/components/fallback";
 
@@ -39,6 +44,20 @@ const isLoginRoute = (pathname: string) =>
  */
 const handleCopilotError = (event: CopilotErrorEvent) => {
   if (isExpectedAgentError(event.error, event.code, event.context)) {
+    return;
+  }
+
+  // Model-provider rate limit (e.g. Cerebras tokens-per-minute). Surface a
+  // retriable notice in the chat footer instead of a raw console failure —
+  // `handleCopilotError` is the one error sink that always fires, so own it here.
+  if (isRateLimitAgentError(event.error, event.context)) {
+    useChatStore.getState().setActionError(RATE_LIMIT_MESSAGE, {
+      retriable: true,
+    });
+    console.warn(
+      "[CopilotKit] Model provider rate limit:",
+      event.error.message,
+    );
     return;
   }
 

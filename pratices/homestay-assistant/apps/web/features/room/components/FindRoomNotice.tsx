@@ -113,10 +113,7 @@ export const FindRoomNotice = ({
 
   const suppressList =
     suppressForResolve || shouldSuppressRoomList(purpose, rooms.length);
-  // book_resolve/resolve never show a Room List — avoid the skeleton flash while loading.
-  const suppressLoadingSkeleton =
-    parameters?.purpose === TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE ||
-    suppressForResolve;
+  const streamingPurpose = parameters?.purpose;
 
   useEffect(() => {
     if (status !== ToolCallStatus.Complete || !rooms.length || suppressList) {
@@ -136,7 +133,19 @@ export const FindRoomNotice = ({
     status === ToolCallStatus.Executing ||
     status === ToolCallStatus.InProgress
   ) {
-    if (suppressLoadingSkeleton) {
+    // Only FIND / RECOMMEND ever render a Room List, so only they get a loading
+    // skeleton. book_resolve / resolve are internal lookups that feed the next
+    // booking or cancel/modify step — they, a still-streaming `purpose` prefix,
+    // and a not-yet-streamed `purpose` all render nothing here: the skeleton
+    // must never flash between an internal room lookup and the Booking Form /
+    // Confirm card (see memory: find-room-book-resolve-headless). `purpose` is
+    // the first field in findRoomInputSchema, so a genuine search that passes
+    // it explicitly still shows the skeleton immediately.
+    const showsRoomList =
+      streamingPurpose === TOOL_PURPOSE.FIND_ROOM.SEARCH ||
+      streamingPurpose === TOOL_PURPOSE.FIND_ROOM.RECOMMEND;
+
+    if (!showsRoomList || suppressForResolve) {
       return null;
     }
 

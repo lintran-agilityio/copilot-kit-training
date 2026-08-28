@@ -38,6 +38,7 @@ import { useChatStore } from "@/features/chat/stores/chat-store";
 import { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
 import {
   isExpectedAgentError,
+  isRateLimitAgentError,
   isThreadLockedAgentError,
   rejectIfAgentRunning,
   runAgentSafely,
@@ -82,6 +83,9 @@ export const ChatSidebarContent = ({
     (state) => state.consumePendingOutboundMessage,
   );
   const actionError = useChatStore((state) => state.actionError);
+  const actionErrorRetriable = useChatStore(
+    (state) => state.actionErrorRetriable,
+  );
   const clearActionError = useChatStore((state) => state.clearActionError);
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId });
@@ -224,6 +228,7 @@ export const ChatSidebarContent = ({
 
     setIsRetryingRun(true);
     setRunStartError(null);
+    useChatStore.getState().clearActionError();
 
     await runAgentSafely(
       () => copilotkitRef.current.runAgent({ agent: agentRef.current }),
@@ -299,6 +304,14 @@ export const ChatSidebarContent = ({
                 return;
               }
 
+              // Model-provider rate limit (e.g. Cerebras tokens-per-minute) is
+              // owned by `handleCopilotError` → chat-store `actionError`, which
+              // renders the retriable footer notice. Don't also log it as a
+              // failure here.
+              if (isRateLimitAgentError(error, context)) {
+                return;
+              }
+
               console.error(error);
             }}
             // CopilotChat always injects autoSuggestions into scrollView when the
@@ -350,6 +363,8 @@ export const ChatSidebarContent = ({
                   ) : actionError ? (
                     <ChatRunErrorNotice
                       message={actionError}
+                      isRetrying={isRetryingRun}
+                      onRetry={actionErrorRetriable ? retryRun : undefined}
                       onDismiss={clearActionError}
                     />
                   ) : null}

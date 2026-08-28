@@ -21,15 +21,15 @@ const tokenLimitProcessor = new TokenLimiterProcessor({
   limit: AGENT_INPUT_TOKEN_LIMIT,
   trimMode: "contiguous",
 });
-/** Unicode → blocked-history filter → prompt injection → request size → context window → prompt dedupe */
+/** Unicode → blocked-history filter → request size → prompt injection → context window → prompt dedupe */
 export const securityInputProcessor = [
   new UnicodeNormalizer({
     stripControlChars: true,
     collapseWhitespace: true,
   }),
   new ExcludeBlockedMessagesProcessor(),
-  promptInjectionProcessor,
   new UserMessageTokenLimitProcessor(),
+  promptInjectionProcessor,
   tokenLimitProcessor,
   new DedupeToolCallsProcessor(),
 ];
