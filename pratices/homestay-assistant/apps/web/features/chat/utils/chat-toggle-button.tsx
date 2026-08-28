@@ -67,17 +67,17 @@ export const renderClosedChatIcon = (status: ChatIconStatus): ReactNode => {
     case CHAT_ICON_STATUS.TYPING:
       return (
         <MessageSquareMore
-          className="size-5 animate-pulse text-zinc-200"
+          className="size-5 animate-pulse text-primary-foreground"
           aria-hidden
         />
       );
     case CHAT_ICON_STATUS.COMPLETED:
       return (
         <span
-          className="flex size-5 items-center justify-center rounded-full bg-emerald-500/20"
+          className="flex size-5 items-center justify-center rounded-full bg-primary-foreground/20"
           aria-hidden
         >
-          <Check className="size-3 stroke-[3] text-emerald-400" />
+          <Check className="size-3 stroke-[3] text-primary-foreground" />
         </span>
       );
     case CHAT_ICON_STATUS.UNREAD:
@@ -98,7 +98,7 @@ export const renderUnreadBadge = (status: ChatIconStatus): ReactNode => {
     case CHAT_ICON_STATUS.UNREAD:
       return (
         <span
-          className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-semibold leading-none text-white ring-2 ring-[#010507]"
+          className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-semibold leading-none text-gold-foreground ring-2 ring-background"
           aria-hidden
         >
           {formatUnreadCount(status.count)}

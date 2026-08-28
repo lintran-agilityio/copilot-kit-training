@@ -53,7 +53,7 @@ export function ToolSuccessNotice<TResult extends ToolSuccessDisplayResult>({
     status === ToolCallStatus.InProgress
   ) {
     return (
-      <EmbeddedWidget className="px-4 py-6 text-zinc-400">
+      <EmbeddedWidget className="px-4 py-6 text-muted-foreground">
         <Loading />
       </EmbeddedWidget>
     );

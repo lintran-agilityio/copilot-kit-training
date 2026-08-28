@@ -48,7 +48,7 @@ export const GetRoomByIdNotice = ({
     status === ToolCallStatus.InProgress
   ) {
     return (
-      <EmbeddedWidget className="px-4 py-6 text-zinc-400">
+      <EmbeddedWidget className="px-4 py-6 text-muted-foreground">
         <Loading />
       </EmbeddedWidget>
     );
@@ -125,7 +125,7 @@ const GetRoomByIdBookingForm = ({
         {...room}
         artifactId={artifactId}
         variant={ROOM_DETAIL_VARIANT.CHAT_BOOKING}
-        className="w-full border-white/12 bg-[#111111] shadow-none"
+        className="w-full border-border bg-card shadow-none"
       />
     </EmbeddedWidget>
   );

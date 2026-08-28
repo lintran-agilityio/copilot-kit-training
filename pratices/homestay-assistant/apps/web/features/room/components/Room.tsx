@@ -49,10 +49,10 @@ export const Room = ({
   return (
     <article
       className={cn(
-        "group flex h-full flex-col overflow-hidden rounded-xl border border-white/8 bg-[#111111] transition-colors hover:border-white/15",
+        "group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-gold/40 hover:shadow-sm",
         "w-full min-w-0",
         canViewOnPage &&
-          "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60",
+          "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
       key={room.id}
@@ -89,12 +89,12 @@ export const Room = ({
       {canViewOnPage || canBookInChat ? (
         <div
           className={cn(
-            "flex items-center gap-2 border-t border-white/6 px-3 py-2.5",
+            "flex items-center gap-2 border-t border-border px-3 py-2.5",
             canBookInChat && canViewOnPage ? "justify-between" : "justify-end",
           )}
         >
           {canViewOnPage ? (
-            <p className="text-xs text-zinc-500 transition-colors group-hover:text-zinc-300">
+            <p className="text-xs text-muted-foreground transition-colors group-hover:text-foreground">
               View {!compact ? "on page" : ""}
             </p>
           ) : null}
@@ -103,7 +103,7 @@ export const Room = ({
               type="button"
               size="sm"
               disabled={bookDisabled}
-              className="h-8 gap-1.5 bg-emerald-500/15 px-3 text-xs font-medium text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-8 gap-1.5 bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={handleBook}
             >
               <CalendarCheck className="size-3.5" />

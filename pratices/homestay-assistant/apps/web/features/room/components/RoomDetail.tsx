@@ -271,7 +271,7 @@ export const RoomDetail = ({
       />
 
       {matchesExistingBooking ? (
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           You already have a booking for these dates. Select different dates to
           book another stay.
         </p>
@@ -280,41 +280,41 @@ export const RoomDetail = ({
   );
 
   const priceBreakdown = (
-    <div className="space-y-3 border-t border-white/8 pt-4">
+    <div className="space-y-3 border-t border-border pt-4">
       {pricePerNight != null && nights > 0 ? (
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-zinc-400">
+            <span className="text-muted-foreground">
               {formatPrice(pricePerNight)} x {nights} night
               {nights === 1 ? "" : "s"}
             </span>
-            <span className="text-zinc-200">
+            <span className="text-foreground">
               {formatPrice(pricePerNight * nights)}
             </span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-zinc-400">Taxes & fees</span>
-            <span className="text-zinc-200">Included</span>
+            <span className="text-muted-foreground">Taxes & fees</span>
+            <span className="text-foreground">Included</span>
           </div>
         </div>
       ) : null}
 
       {estimatedTotal ? (
         <div className="flex items-center justify-between gap-3">
-          <span className="font-medium text-white">Estimated total</span>
-          <span className="text-lg font-semibold text-emerald-400">
+          <span className="font-medium text-foreground">Estimated total</span>
+          <span className="text-lg font-semibold text-foreground">
             {estimatedTotal}
           </span>
         </div>
       ) : null}
 
-      <p className="text-xs text-zinc-500">You won&apos;t be charged yet</p>
+      <p className="text-xs text-muted-foreground">You won&apos;t be charged yet</p>
 
       {showBookButton ? (
         <Button
           type="button"
           size="lg"
-          className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
+          className="h-11 w-full gap-2 text-base font-medium disabled:cursor-not-allowed cursor-pointer"
           disabled={!canProceed || isBookingDisabled || isSubmittingArtifact}
           onClick={handleBook}
         >
@@ -341,7 +341,7 @@ export const RoomDetail = ({
 
             <div className="space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <h2 className="font-serif text-2xl font-normal tracking-tight text-white md:text-4xl">
+                <h2 className="font-serif text-2xl font-normal tracking-tight text-foreground md:text-4xl">
                   {name}
                 </h2>
                 {bookingStatus ? (
@@ -357,7 +357,7 @@ export const RoomDetail = ({
               />
 
               {description ? (
-                <p className="text-sm leading-relaxed text-zinc-400">
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   {description}
                 </p>
               ) : null}
@@ -367,14 +367,14 @@ export const RoomDetail = ({
           </div>
 
           <aside className="lg:sticky lg:top-4">
-            <div className="space-y-4 rounded-xl border border-white/10 bg-[#111111] p-5">
+            <div className="space-y-4 rounded-xl border border-border bg-card p-5">
               {pricePerNight != null ? (
                 <div className="space-y-2">
                   <RoomBookingPricePerNight
                     pricePerNight={pricePerNight}
                     className="text-2xl"
                   />
-                  <p className="inline-flex items-center gap-1.5 text-xs font-medium text-[#e6c547]">
+                  <p className="inline-flex items-center gap-1.5 text-xs font-medium text-gold">
                     <Award className="size-3.5" />
                     Best price guaranteed
                   </p>
@@ -384,7 +384,7 @@ export const RoomDetail = ({
               {bookingFields}
 
               {availableSlots > 0 && availableSlots <= 3 ? (
-                <div className="flex items-start gap-2 rounded-lg border border-[#e6c547]/35 bg-[#e6c547]/10 px-3 py-2.5 text-sm text-[#e6c547]">
+                <div className="flex items-start gap-2 rounded-lg border border-gold/35 bg-gold/10 px-3 py-2.5 text-sm text-gold">
                   <Clock3 className="mt-0.5 size-4 shrink-0" />
                   <span>
                     Only {availableSlots} room
@@ -404,7 +404,7 @@ export const RoomDetail = ({
   return (
     <article
       className={cn(
-        "overflow-hidden rounded-xl border border-white/8 bg-[#111111]",
+        "overflow-hidden rounded-xl border border-border bg-card",
         className,
       )}
     >
@@ -424,13 +424,13 @@ export const RoomDetail = ({
 
         {bookingFields}
 
-        <div className="space-y-3 border-t border-white/8 pt-4">
+        <div className="space-y-3 border-t border-border pt-4">
           <RoomBookingEstimatedTotal estimatedTotal={estimatedTotal} />
 
           <Button
             type="button"
             size="lg"
-            className="h-11 w-full gap-2 bg-emerald-500 text-base font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed cursor-pointer"
+            className="h-11 w-full gap-2 text-base font-medium disabled:cursor-not-allowed cursor-pointer bg-primary"
             disabled={!canProceed || isBookingDisabled || isSubmittingArtifact}
             onClick={handleBook}
           >

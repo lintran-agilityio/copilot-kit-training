@@ -29,7 +29,7 @@ const ChatSidebar = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-full rounded-xl border border-white/10 bg-white/[0.03]" />
+      <div className="h-full rounded-xl border border-border bg-muted/40" />
     ),
   },
 );
@@ -42,7 +42,7 @@ const ThreadSidebar = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-full w-56 border-r border-white/10 px-3 py-3 text-xs text-zinc-500">
+      <div className="h-full w-56 border-r border-border px-3 py-3 text-xs text-muted-foreground">
         Loading threads...
       </div>
     ),
@@ -172,10 +172,10 @@ export const MainLayout = ({ children, className }: MainLayoutProps) => {
   });
 
   return (
-    <div className="mx-2 flex h-screen w-full justify-center bg-[#010507]">
+    <div className="mx-2 flex h-screen w-full justify-center bg-background">
       <div
         className={cn(
-          "flex h-full w-full max-w-[1560px] flex-col overflow-hidden bg-[#010507] font-sans",
+          "flex h-full w-full max-w-[1560px] flex-col overflow-hidden bg-background font-sans",
           className,
         )}
       >
@@ -208,28 +208,28 @@ export const MainLayout = ({ children, className }: MainLayoutProps) => {
           ) : null}
           <div
             className={cn(
-              "relative z-10 min-h-0 shrink-0 overflow-visible bg-[#0a0a0a] transition-[width] duration-300 ease-in-out",
+              "relative z-10 min-h-0 shrink-0 overflow-visible bg-background transition-[width] duration-300 ease-in-out",
               isChatOpen
-                ? "fixed inset-0 z-40 h-full w-full lg:static lg:z-10 lg:h-full lg:w-[min(100%,520px)] lg:border-l lg:border-white/10"
+                ? "fixed inset-0 z-40 h-full w-full p-4 lg:static lg:z-10 lg:h-full lg:w-[min(100%,552px)] lg:p-4"
                 : "hidden w-0 border-l-0 lg:block",
             )}
           >
-            {isChatOpen ? (
-              <ChatToggleButton
-                isChatOpen
-                status={chatIconStatus}
-                onToggle={() => setIsChatOpen(false)}
-              />
-            ) : null}
             <div
               className={cn(
-                "h-full overflow-hidden transition-opacity duration-200",
+                "relative h-full overflow-hidden rounded-2xl transition-opacity duration-200 bg-card",
                 isChatOpen
-                  ? "w-full opacity-100 lg:w-[min(100%,520px)]"
+                  ? "w-full opacity-100"
                   : "pointer-events-none w-0 opacity-0",
               )}
             >
-              <ChatSidebar className="h-full w-full lg:w-[min(100%,520px)]" agentId={agentId} />
+              <ChatSidebar className="h-full w-full" agentId={agentId} />
+              {isChatOpen ? (
+                <ChatToggleButton
+                  isChatOpen
+                  status={chatIconStatus}
+                  onToggle={() => setIsChatOpen(false)}
+                />
+              ) : null}
             </div>
           </div>
         </div>

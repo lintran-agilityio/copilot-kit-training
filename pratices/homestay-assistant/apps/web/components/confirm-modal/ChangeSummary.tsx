@@ -19,9 +19,9 @@ export const ChangeSummary = ({ changes }: ChangeSummaryProps) => {
   const showChangesHeading = changes.length > 1;
 
   return (
-    <dl className="space-y-1.5 rounded-lg border border-white/8 bg-white/[0.02] p-3 text-xs">
+    <dl className="space-y-1.5 rounded-lg border border-border bg-muted/40 p-3 text-xs">
       {showChangesHeading ? (
-        <div className="pb-0.5 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+        <div className="pb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           Changes
         </div>
       ) : null}
@@ -31,20 +31,20 @@ export const ChangeSummary = ({ changes }: ChangeSummaryProps) => {
           key={row.label}
           className={
             row.label === "Total"
-              ? `flex justify-between gap-4 ${index > 0 ? "border-t border-white/8 pt-1.5" : ""}`
+              ? `flex justify-between gap-4 ${index > 0 ? "border-t border-border pt-1.5" : ""}`
               : "flex justify-between gap-4"
           }
         >
-          <dt className="text-zinc-500">{row.label}</dt>
+          <dt className="text-muted-foreground">{row.label}</dt>
           <dd
             className={
               row.label === "Total"
-                ? "text-right font-medium text-emerald-300"
-                : "text-right text-zinc-100"
+                ? "text-right font-medium text-primary"
+                : "text-right text-foreground"
             }
           >
-            <span className="text-zinc-500">{row.from}</span>
-            <span className="mx-1.5 text-zinc-600">→</span>
+            <span className="text-muted-foreground">{row.from}</span>
+            <span className="mx-1.5 text-muted-foreground">→</span>
             <span>{row.to}</span>
           </dd>
         </div>

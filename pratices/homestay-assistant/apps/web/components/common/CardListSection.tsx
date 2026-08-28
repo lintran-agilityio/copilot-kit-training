@@ -49,10 +49,10 @@ export const CardListSection = <T,>({
     <section className={cn("space-y-4", className)}>
       {title ? (
         <div className="flex items-center gap-2">
-          <span className="h-4 w-1 rounded-full bg-emerald-500" />
-          <h2 className="text-lg font-medium text-zinc-300">
+          <span className="h-4 w-1 rounded-full bg-gold" />
+          <h2 className="font-serif text-lg font-medium text-foreground">
             {title}{" "}
-            <span className="font-normal text-zinc-500">
+            <span className="font-sans text-sm font-normal text-muted-foreground">
               ({lengthItem} {itemLabel}
               {lengthItem > 1 ? "s" : ""})
             </span>

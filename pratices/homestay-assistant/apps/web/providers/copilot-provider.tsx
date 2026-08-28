@@ -11,6 +11,7 @@ import {
 
 import { AGENT_URLS } from "@repo/constants";
 import { ROUTES } from "@/constants";
+import { homestayA2UICatalog } from "@/features/copilot/a2ui/homestay-a2ui-catalog";
 import { isExpectedAgentError } from "@/features/chat/utils/agent-run";
 import { AppProvider } from "@/providers/app-provider";
 import { AuthLoadingFallback } from "@/components/fallback";
@@ -161,6 +162,9 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
       // Intelligence thread routes (/threads*) require REST transport.
       // Single-endpoint /info always reports threadEndpoints.list=false.
       useSingleEndpoint={false}
+      // The catalog is sent with each AG-UI run, which enables the runtime's
+      // generated A2UI tool without changing the Mastra agent or booking tools.
+      a2ui={{ catalog: homestayA2UICatalog }}
       onError={handleCopilotError}
     >
       <ClerkTokenSync initialToken={clerkToken} />

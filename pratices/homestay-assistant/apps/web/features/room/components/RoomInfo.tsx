@@ -22,8 +22,8 @@ export const RoomInfo = ({
       <div className="flex items-start justify-between gap-3">
         <h3
           className={cn(
-            "font-medium text-white",
-            compact ? "text-sm" : "text-base",
+            "font-serif font-medium text-foreground",
+            compact ? "text-base" : "text-lg",
           )}
         >
           {name}
@@ -32,7 +32,7 @@ export const RoomInfo = ({
 
       <p
         className={cn(
-          "leading-relaxed text-zinc-500",
+          "leading-relaxed text-muted-foreground",
           compact ? "line-clamp-2 text-xs" : "line-clamp-3 text-sm",
         )}
       >

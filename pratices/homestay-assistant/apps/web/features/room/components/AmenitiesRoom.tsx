@@ -29,7 +29,9 @@ type AmenitiesRoomProps = {
 
 export const AmenitiesRoom = ({ amenities = [], className }: AmenitiesRoomProps) => {
   return (
-    <div className={cn("flex items-center gap-3 text-zinc-500", className)}>
+    <div
+      className={cn("flex items-center gap-3 text-muted-foreground", className)}
+    >
       {amenities?.length > 0 && amenities.map((amenity) => {
         const Icon = AMENITY_ICONS[amenity];
         if (!Icon) {

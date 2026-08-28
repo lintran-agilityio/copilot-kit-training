@@ -65,11 +65,11 @@ export const BookingCard = ({
   return (
     <article
       className={cn(
-        "group flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/8 bg-[#111111] transition-colors hover:border-white/15",
+        "group flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-gold/40 hover:shadow-sm",
         className,
       )}
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-zinc-900">
+      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         <Image
           src={url}
           alt={room?.name ?? "Booked room"}
@@ -85,20 +85,18 @@ export const BookingCard = ({
 
         <div
           className={cn(
-            "absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/70 via-black/20 to-transparent",
+            "absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/60 via-black/15 to-transparent",
             compact ? "p-3" : "p-4",
           )}
         >
           {room ? (
-            <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-background/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground">
               <span
-                className="h-4 w-1 rounded-full"
+                className="h-3 w-1 rounded-full"
                 style={{ backgroundColor: room.levelColor }}
               />
-              <span className="text-[11px] font-medium tracking-[0.15em] text-white/90">
-                LEVEL {room.level}
-              </span>
-            </div>
+              Level {room.level}
+            </span>
           ) : (
             <span />
           )}
@@ -116,14 +114,14 @@ export const BookingCard = ({
         <div className="flex items-start justify-between gap-3">
           <h3
             className={cn(
-              "font-medium text-white",
-              compact ? "text-sm" : "text-base",
+              "font-serif font-medium text-foreground",
+              compact ? "text-base" : "text-lg",
             )}
           >
             {room?.name ?? "Room"}
           </h3>
 
-          <div className="flex shrink-0 items-center gap-1.5 text-zinc-400">
+          <div className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
             <Users className="size-3.5" />
             <span className="text-xs">{guests}</span>
           </div>
@@ -131,22 +129,22 @@ export const BookingCard = ({
 
         <div
           className={cn(
-            "flex items-start gap-2 text-zinc-400",
+            "flex items-start gap-2 text-muted-foreground",
             compact ? "text-xs" : "text-sm",
           )}
         >
-          <CalendarRange className="mt-0.5 size-4 shrink-0 text-zinc-500" />
+          <CalendarRange className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <p>
             {formatShortDateForDisplay(checkInDate)} →{" "}
             {formatShortDateForDisplay(checkOutDate)}
           </p>
         </div>
 
-        <div className="flex items-center justify-between border-t border-white/8 pt-3">
-          <span className="text-xs uppercase tracking-[0.15em] text-zinc-500">
+        <div className="flex items-center justify-between border-t border-border pt-3">
+          <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">
             Total
           </span>
-          <span className="font-medium text-emerald-300">
+          <span className="font-semibold text-foreground">
             {formatPrice(totalPrice)}
           </span>
         </div>
@@ -164,7 +162,7 @@ export const BookingCard = ({
             variant="outline"
             disabled={!canModify}
             className={cn(
-              "min-w-10 flex-1 gap-2 border-white/10 bg-transparent font-medium text-zinc-100 hover:bg-white/5 hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
+              "min-w-10 flex-1 gap-2 font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
               compact ? "h-8 text-xs" : "h-11 text-base",
             )}
             onClick={handleModifyBooking}
@@ -177,7 +175,7 @@ export const BookingCard = ({
             size={compact ? "sm" : "lg"}
             disabled={!canCancel}
             className={cn(
-              "min-w-10 flex-1 gap-2 bg-emerald-500 font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+              "min-w-10 flex-1 gap-2 font-medium disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
               compact ? "h-8 text-xs" : "h-11 text-base",
             )}
             onClick={handleCancelBooking}

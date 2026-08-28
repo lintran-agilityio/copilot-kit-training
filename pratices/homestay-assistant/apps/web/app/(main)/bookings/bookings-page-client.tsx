@@ -30,7 +30,11 @@ export const BookingsPageClient = ({ userId }: BookingsPageClientProps) => {
 
   return (
     <>
-      <PageHeader label="MY BOOKINGS" title="Your reservations" />
+      <PageHeader
+        label="MY BOOKINGS"
+        title="Your reservations"
+        description="Review, modify, or cancel your upcoming stays."
+      />
       <BookingList
         bookings={bookings}
         title={MY_BOOKINGS_TITLE}

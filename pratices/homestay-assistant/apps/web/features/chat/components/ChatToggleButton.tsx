@@ -43,8 +43,8 @@ export const ChatToggleButton = ({
       className={cn(
         "absolute z-30 flex items-center justify-center transition cursor-pointer",
         isChatOpen
-          ? "top-2 right-2 size-8 rounded-md text-zinc-400 hover:bg-white/10 hover:text-white border-2 border-white/10"
-          : "bottom-6 right-6 size-14 rounded-full border-2 border-emerald-500/90 bg-[#141414] text-zinc-300 shadow-lg hover:border-white/25 hover:bg-white/5 hover:text-white",
+          ? "top-3 right-3 size-8 rounded-md border-2 border-border text-muted-foreground hover:bg-accent hover:text-foreground"
+          : "bottom-6 right-6 size-14 rounded-full border-2 border-primary bg-primary text-primary-foreground shadow-lg hover:brightness-110",
         className,
       )}
     >

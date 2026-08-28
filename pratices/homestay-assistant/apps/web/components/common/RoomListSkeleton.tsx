@@ -6,14 +6,14 @@ type RoomListSkeletonProps = {
 };
 
 const SkeletonItem = () => (
-  <div className="w-full min-w-0 rounded-2xl border border-white/8 bg-white/[0.02] p-3">
-    <div className="aspect-[4/3] animate-pulse rounded-xl bg-zinc-900" />
+  <div className="w-full min-w-0 rounded-2xl border border-border bg-muted/40 p-3">
+    <div className="aspect-[4/3] animate-pulse rounded-xl bg-muted" />
     <div className="mt-4 space-y-3">
-      <div className="h-4 w-3/4 animate-pulse rounded-full bg-white/10" />
-      <div className="h-3 w-1/2 animate-pulse rounded-full bg-white/[0.08]" />
+      <div className="h-4 w-3/4 animate-pulse rounded-full bg-muted" />
+      <div className="h-3 w-1/2 animate-pulse rounded-full bg-muted/70" />
       <div className="flex gap-2">
-        <div className="h-6 w-16 animate-pulse rounded-full bg-white/[0.08]" />
-        <div className="h-6 w-20 animate-pulse rounded-full bg-white/[0.08]" />
+        <div className="h-6 w-16 animate-pulse rounded-full bg-muted/70" />
+        <div className="h-6 w-20 animate-pulse rounded-full bg-muted/70" />
       </div>
     </div>
   </div>
@@ -25,8 +25,8 @@ export const RoomListSkeleton = ({
 }: RoomListSkeletonProps) => (
   <section className={cn("space-y-4", className)} aria-busy="true">
     <div className="flex items-center gap-2">
-      <span className="h-4 w-1 rounded-full bg-emerald-500/50" />
-      <div className="h-5 w-44 animate-pulse rounded-full bg-white/10" />
+      <span className="h-4 w-1 rounded-full bg-gold/40" />
+      <div className="h-5 w-44 animate-pulse rounded-full bg-muted" />
     </div>
 
     <div className="grid grid-cols-1 gap-4 overflow-hidden pb-1 sm:grid-cols-2 lg:grid-cols-3">

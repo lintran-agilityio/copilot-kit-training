@@ -8,11 +8,11 @@ import {
 export const RoomDetailRating = () => {
   return (
     <div className="flex items-center gap-2 text-sm">
-      <Star className="size-4 fill-[#e6c547] text-[#e6c547]" />
-      <span className="font-semibold text-white">
+      <Star className="size-4 fill-gold text-gold" />
+      <span className="font-semibold text-foreground">
         {ROOM_DETAIL_STATIC_RATING.toFixed(1)}
       </span>
-      <span className="font-medium text-emerald-400">
+      <span className="font-medium text-muted-foreground">
         ({ROOM_DETAIL_STATIC_REVIEW_COUNT} reviews)
       </span>
     </div>

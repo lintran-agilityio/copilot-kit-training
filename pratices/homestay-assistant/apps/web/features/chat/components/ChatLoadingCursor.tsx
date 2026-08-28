@@ -65,7 +65,7 @@ export const ChatLoadingCursor = ({
           <span
             key={index}
             aria-hidden
-            className="size-1.5 rounded-full bg-zinc-400 animate-bounce"
+            className="size-1.5 rounded-full bg-muted-foreground animate-bounce"
             style={{ animationDelay: `${index * 150}ms` }}
           />
         ))}

@@ -153,7 +153,7 @@ export const FindRoomNotice = ({
 
   if (toolError) {
     return (
-      <EmbeddedWidget className="px-3.5 py-3 text-zinc-400">
+      <EmbeddedWidget className="px-3.5 py-3 text-muted-foreground">
         Could not search rooms. {toolError}
       </EmbeddedWidget>
     );
@@ -165,7 +165,7 @@ export const FindRoomNotice = ({
 
   if (!rooms.length) {
     return (
-      <EmbeddedWidget className="px-3.5 py-3 text-zinc-400">
+      <EmbeddedWidget className="px-3.5 py-3 text-muted-foreground">
         No rooms matched that search.
       </EmbeddedWidget>
     );

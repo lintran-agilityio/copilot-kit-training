@@ -62,7 +62,7 @@ export const MyBookingsNotice = ({
 
   if (!parsed) {
     return (
-      <EmbeddedWidget className="px-3.5 py-3 text-zinc-400">
+      <EmbeddedWidget className="px-3.5 py-3 text-muted-foreground">
         Could not load your bookings.{" "}
         {typeof result === "string" ? result.trim() : ""}
       </EmbeddedWidget>
@@ -80,7 +80,7 @@ export const MyBookingsNotice = ({
 
   if (!bookings.length) {
     return (
-      <EmbeddedWidget className="px-3.5 py-3 text-zinc-400">
+      <EmbeddedWidget className="px-3.5 py-3 text-muted-foreground">
         No active bookings found.
       </EmbeddedWidget>
     );
@@ -92,7 +92,7 @@ export const MyBookingsNotice = ({
         bookings={bookings}
         title={MY_BOOKINGS_TITLE}
         compact
-        className="max-w-full rounded-xl border border-white/12 bg-[#111111] p-3.5"
+        className="max-w-full rounded-xl border border-border bg-card p-3.5"
         toolCallId={toolCallId}
       />
     </EmbeddedWidget>

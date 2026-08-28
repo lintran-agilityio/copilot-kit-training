@@ -248,7 +248,7 @@ export const ChatSidebarContent = ({
   return (
     <aside
       className={cn(
-        "flex h-full w-full flex-col border-l border-white/10 bg-[#0a0a0a]",
+        "flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card",
         className,
       )}
     >
@@ -261,7 +261,7 @@ export const ChatSidebarContent = ({
         )}
       >
         {isThreadLoading || isThreadError ? (
-          <div className="absolute inset-0 z-10 bg-[#0a0a0a]">
+          <div className="absolute inset-0 z-10 bg-card">
             <ThreadLoadingStateView
               errorMessage={isThreadError ? loadError : null}
               onRetry={isThreadError ? requestReload : undefined}
@@ -327,7 +327,7 @@ export const ChatSidebarContent = ({
             {({ scrollView, input }) => (
               <div
                 data-testid="copilot-chat"
-                className="copilotKitChat flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+                className="copilotKitChat flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-red"
               >
                 <div
                   data-chat-messages
@@ -338,7 +338,7 @@ export const ChatSidebarContent = ({
                 </div>
                 <div
                   data-chat-footer
-                  className="shrink-0 border-t border-white/5 bg-[#0a0a0a]"
+                  className="shrink-0 border-t border-border bg-card"
                 >
                   {runStartError ? (
                     <ChatRunErrorNotice

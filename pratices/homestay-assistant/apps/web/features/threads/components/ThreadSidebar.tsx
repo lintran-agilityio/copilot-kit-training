@@ -30,9 +30,9 @@ export const ThreadSidebar = ({
   onDeleteThread,
 }: ThreadSidebarProps) => {
   return (
-    <aside className="flex h-full min-h-0 w-56 shrink-0 flex-col border-r border-white/10 px-3 py-3">
+    <aside className="flex h-full min-h-0 w-56 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-3">
       <div className="mb-3 space-y-2">
-        <span className="px-0.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
+        <span className="px-0.5 text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
           Threads
         </span>
         <NewThreadButton onClick={onCreateThread} />

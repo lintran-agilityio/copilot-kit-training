@@ -16,9 +16,9 @@ export const NewThreadButton = ({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-medium text-zinc-200 transition hover:border-white/25 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+      className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border border-primary text-primary bg-card px-3 py-2 text-xs font-medium text-foreground transition hover:border-primary/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
     >
-      <Plus className="size-3.5" aria-hidden />
+      <Plus className="size-4" aria-hidden text-primary />
       New Thread
     </button>
   );

@@ -49,31 +49,36 @@ export const BookingUnavailable = ({
     <div className="p-3.5">
       <div className="flex items-start gap-2.5">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
-          <AlertTriangle className="size-4 text-amber-400" aria-hidden />
+          <AlertTriangle
+            className="size-4 text-amber-600 dark:text-amber-400"
+            aria-hidden
+          />
         </div>
 
         <div className="min-w-0 flex-1 space-y-1">
-          <h3 className="text-sm font-medium text-amber-300">{title}</h3>
-          <p className="text-xs leading-relaxed text-zinc-400">{description}</p>
+          <h3 className="text-sm font-medium text-amber-700 dark:text-amber-300">
+            {title}
+          </h3>
+          <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
 
-          <dl className="mt-2 space-y-0.5 border-t border-white/8 pt-2 text-xs text-zinc-300">
+          <dl className="mt-2 space-y-0.5 border-t border-border pt-2 text-xs text-foreground">
             <div className="flex justify-between gap-3">
-              <dt className="text-zinc-500">Room</dt>
+              <dt className="text-muted-foreground">Room</dt>
               <dd className="truncate text-right">{roomName}</dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-zinc-500">Dates</dt>
+              <dt className="text-muted-foreground">Dates</dt>
               <dd className="text-right">
                 {checkInDate} → {checkOutDate}
               </dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-zinc-500">Guests</dt>
+              <dt className="text-muted-foreground">Guests</dt>
               <dd className="text-right">{guests}</dd>
             </div>
             {reason === "capacity_exceeded" && capacity != null ? (
               <div className="flex justify-between gap-3">
-                <dt className="text-zinc-500">Max guests</dt>
+                <dt className="text-muted-foreground">Max guests</dt>
                 <dd className="text-right">{capacity}</dd>
               </div>
             ) : null}

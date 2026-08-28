@@ -14,7 +14,7 @@ export const RoomBookingPricePerNight = ({
   return (
     <p
       className={cn(
-        "font-medium text-emerald-300",
+        "font-semibold text-foreground",
         size === "lg" ? "text-lg" : "text-sm",
         className,
       )}
@@ -22,7 +22,7 @@ export const RoomBookingPricePerNight = ({
       {formatPrice(pricePerNight)}
       <span
         className={cn(
-          "font-normal text-zinc-500",
+          "font-normal text-muted-foreground",
           size === "lg" ? "text-sm" : "text-inherit",
         )}
       >
