@@ -493,3 +493,117 @@ export const hasLaterToolCallInTurn = (
 
   return false;
 };
+
+/**
+ * A2UI generation tools: `generate_a2ui` is what the agent calls; `render_a2ui`
+ * is the synthetic inner call the surface stream arrives on. RoomComparison is
+ * the only catalog surface, so either one in a turn means a compare turn.
+ */
+const A2UI_TOOL_NAMES = new Set(["generate_a2ui", "render_a2ui"]);
+
+const toolCallName = (call: ToolCallLike): string | undefined =>
+  call.function?.name ?? call.name;
+
+/** True when this one message carries an A2UI generation tool call. */
+export const messageHasRoomComparisonCall = (
+  message: MessageLike | undefined,
+): boolean =>
+  (message?.toolCalls ?? []).some((call) => {
+    const name = toolCallName(call);
+    return !!name && A2UI_TOOL_NAMES.has(name);
+  });
+
+/**
+ * True when an A2UI generation call fired in the same turn as `messageId`
+ * (scanning back to the previous user message). RoomComparison is the only
+ * surface, so the assistant's chat line on that turn is replaced with a fixed
+ * short pointer (see `compareCompanionText`) — the model is told to keep it to
+ * one sentence but still sometimes re-lists the rooms.
+ */
+export const turnRendersRoomComparison = (
+  messages: MessageLike[] | undefined,
+  messageId: string | undefined,
+): boolean => {
+  if (!messages?.length || !messageId) {
+    return false;
+  }
+
+  const index = messages.findIndex((message) => message.id === messageId);
+  if (index < 0) {
+    return false;
+  }
+
+  for (let cursor = index; cursor >= 0; cursor -= 1) {
+    const message = messages[cursor];
+
+    if (cursor !== index && message?.role === MESSAGE_ROLE.USER) {
+      return false;
+    }
+
+    if (
+      message?.role === MESSAGE_ROLE.ASSISTANT &&
+      messageHasRoomComparisonCall(message)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/** Vietnamese-specific letters — enough to tell VI apart from EN input. */
+const VIETNAMESE_LETTER =
+  /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+
+const ROOM_COMPARISON_POINTER = {
+  en: "Here is the room comparison.",
+  vi: "Đây là bảng so sánh phòng.",
+};
+
+const lastUserMessageText = (
+  messages: MessageLike[] | undefined,
+  messageId: string | undefined,
+): string => {
+  if (!messages?.length || !messageId) {
+    return "";
+  }
+
+  const index = messages.findIndex((message) => message.id === messageId);
+  const from = index < 0 ? messages.length - 1 : index;
+
+  for (let cursor = from; cursor >= 0; cursor -= 1) {
+    const message = messages[cursor];
+    if (message?.role !== MESSAGE_ROLE.USER) {
+      continue;
+    }
+    const { content } = message;
+    if (typeof content === "string") {
+      return content;
+    }
+    if (Array.isArray(content)) {
+      return content
+        .map((part) =>
+          part && typeof part === "object" && "text" in part
+            ? String((part as { text?: unknown }).text ?? "")
+            : "",
+        )
+        .join(" ");
+    }
+    return "";
+  }
+
+  return "";
+};
+
+/**
+ * Fixed short chat line for a RoomComparison turn — the surface shows every
+ * room fact, so the transcript only points at it. Language follows the guest's
+ * latest message (Vietnamese vs. English), matching the agent's LANGUAGE rule.
+ */
+export const compareCompanionText = (
+  messages: MessageLike[] | undefined,
+  messageId: string | undefined,
+): string =>
+  VIETNAMESE_LETTER.test(lastUserMessageText(messages, messageId))
+    ? ROOM_COMPARISON_POINTER.vi
+    : ROOM_COMPARISON_POINTER.en;

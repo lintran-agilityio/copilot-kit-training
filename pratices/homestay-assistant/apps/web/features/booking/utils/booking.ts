@@ -24,7 +24,7 @@ export const getBookingStatusMeta = (status: string): BookingStatusMeta => {
     case BookingStatus.CONFIRMED.toUpperCase():
       return {
         label: "Confirmed",
-        className: "border-primary/30 bg-primary/10 text-primary",
+        className: "border-primary/30 bg-primary text-white",
       };
     case BookingStatus.PENDING.toUpperCase():
       return {

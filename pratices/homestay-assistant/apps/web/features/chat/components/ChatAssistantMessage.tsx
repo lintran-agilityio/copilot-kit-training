@@ -22,8 +22,11 @@ import { ChatAgentAvatar } from "@/features/chat/components/ChatAvatars";
 import { ConversationItem } from "@/features/chat/components/ConversationItem";
 
 import {
+  compareCompanionText,
   getAssistantDisplayContent,
   getMessageTopSpacing,
+  messageHasRoomComparisonCall,
+  turnRendersRoomComparison,
 } from "@/features/chat/utils";
 
 import { cn } from "@repo/utils";
@@ -100,7 +103,29 @@ export const ChatAssistantMessage = ({
     return toolName ? isPageOnlyGenerativeTool(toolName) : false;
   });
 
-  const textContent = displayTextContent;
+  // COMPARE turn: the RoomComparison A2UI surface owns every room fact, so the
+  // chat line is replaced with a fixed short pointer — the model still
+  // sometimes re-lists the rooms in text despite the prompt. The pointer
+  // renders on the message that carried the `render_a2ui` call; any later
+  // text-only message in the same turn (the model's re-listing) is dropped.
+  const messagesForTurn = messages as Parameters<
+    typeof turnRendersRoomComparison
+  >[0];
+  const messageRendersComparison = messageHasRoomComparisonCall(
+    message as Parameters<typeof messageHasRoomComparisonCall>[0],
+  );
+  const inComparisonTurn = turnRendersRoomComparison(
+    messagesForTurn,
+    message.id,
+  );
+
+  if (inComparisonTurn && !messageRendersComparison && !chatToolCalls.length) {
+    return null;
+  }
+
+  const textContent = messageRendersComparison
+    ? compareCompanionText(messagesForTurn, message.id)
+    : displayTextContent;
 
   const hasVisibleContent = Boolean(textContent) || chatToolCalls.length > 0;
 

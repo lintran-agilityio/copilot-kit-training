@@ -53,6 +53,14 @@ export const findRoomInputSchema = z.object({
     .describe(
       "Room floor level. Use level: 4 for luxury / premium / top-floor / penthouse requests — do not put those words in name.",
     ),
+  limit: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe(
+      "Max number of rooms to return, when the guest asks for a specific count (e.g. \"find me 3 rooms\" → limit: 3). Trims both the chat cards and the compare candidates to the top matches. Omit when no count was stated. Ignored for book_resolve / resolve lookups.",
+    ),
 });
 
 export type FindRoomInput = z.infer<typeof findRoomInputSchema>;
