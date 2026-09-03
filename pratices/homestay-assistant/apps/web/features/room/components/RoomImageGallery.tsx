@@ -73,7 +73,7 @@ export const RoomImageGallery = ({
 
   return (
     <div className="space-y-3">
-      <div className="relative aspect-[2/1] overflow-hidden rounded-xl bg-zinc-900">
+      <div className="relative aspect-[2/1] overflow-hidden rounded-xl bg-muted">
         <Image
           src={resolveImage(activeImage)}
           alt={`${name} — photo ${activeIndex + 1}`}
@@ -88,14 +88,14 @@ export const RoomImageGallery = ({
         />
 
         <span
-          className="absolute left-4 top-4 rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-black"
-          style={{ backgroundColor: levelColor || "#e6c547" }}
+          className="absolute left-4 top-4 rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white"
+          style={{ backgroundColor: levelColor || "oklch(0.38 0.055 162)" }}
         >
           Level {level}
         </span>
 
         <span className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-md bg-black/65 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
-          <Images className="size-3.5 text-[#e6c547]" />
+          <Images className="size-3.5 text-gold" />
           {activeIndex + 1} / {images.length}
         </span>
       </div>
@@ -115,7 +115,7 @@ export const RoomImageGallery = ({
                   className={cn(
                     "relative aspect-[4/3] w-[4.75rem] shrink-0 overflow-hidden rounded-lg border-2 transition-colors cursor-pointer sm:w-24",
                     index === activeIndex
-                      ? "border-[#e6c547]"
+                      ? "border-gold"
                       : "border-transparent opacity-70 hover:opacity-100",
                   )}
                 >
@@ -141,7 +141,7 @@ export const RoomImageGallery = ({
               type="button"
               aria-label="Show more thumbnails"
               onClick={handleNextThumbs}
-              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/12 text-zinc-300 transition-colors hover:border-white/25 hover:text-white cursor-pointer"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-gold/50 hover:text-foreground cursor-pointer"
             >
               <ChevronRight className="size-4" />
             </button>

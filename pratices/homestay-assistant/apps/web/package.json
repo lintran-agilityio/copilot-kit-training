@@ -13,6 +13,7 @@
   "dependencies": {
     "@ag-ui/client": "^0.0.57",
     "@clerk/nextjs": "^7.5.6",
+    "@copilotkit/a2ui-renderer": "1.62.2",
     "@copilotkit/react-core": "^1.62.2",
     "@copilotkit/runtime": "^1.62.2",
     "@repo/components": "workspace:*",

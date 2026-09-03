@@ -43,7 +43,7 @@ export const BookingList = ({
   if (error && !isLoading) {
     return (
       <div className="flex items-center justify-center">
-        <p className="text-red-500">{error.message}</p>
+        <p className="text-destructive">{error.message}</p>
       </div>
     );
   }

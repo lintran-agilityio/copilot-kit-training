@@ -7,15 +7,27 @@ import {
   isBookingFormPrompt,
   isBookingModifyPrompt,
   isBookingStayPrompt,
+  MESSAGE_ROLE,
   PAGE_ROOMS_PROMPT_PREFIX,
   TOOL_KEYS,
+  TOOL_PURPOSE,
 } from "@repo/constants";
-import { getUiActionPromptDisplayText } from "@repo/utils";
+import { getUiActionPromptDisplayText, parseToolResult } from "@repo/utils";
 
 import { getLatestFindRoomToolCallIdInCurrentTurn } from "@/features/room/utils";
+import { hasLaterToolCallInTurn } from "@/features/chat/utils/normalize-messages";
 import type { MessageLike, ToolCallLike } from "@/features/chat/types";
 
 const { ACTION, BOOKING, GET } = TOOL_KEYS;
+
+/**
+ * A2UI generation tools. `generate_a2ui` (Mastra bridge, `@ag-ui/a2ui-toolkit`)
+ * is what the model calls; `render_a2ui` (`@ag-ui/a2ui-middleware`) is the
+ * synthetic inner call the surface stream is delivered on. Both are painted by
+ * the auto-mounted `createA2UIMessageRenderer` on the `a2ui-surface` activity —
+ * the raw tool calls must never draw their own chat row.
+ */
+const A2UI_TOOL_NAMES = ["generate_a2ui", "render_a2ui"] as const;
 
 /** Mastra backend tools — LLM registration keys. */
 const MASTRA_BACKEND_TOOL_NAMES = [
@@ -59,10 +71,11 @@ const LEGACY_HIDDEN_TOOL_NAMES = [
 ] as const;
 
 /** Room/data tools and page UI actions - hidden from chat; effects render on the page. */
-export const CHAT_HIDDEN_TOOLS = new Set([
+export const CHAT_HIDDEN_TOOLS = new Set<string>([
   ACTION.UPDATE_ROOM_LIST,
   BOOKING.FIND_BY_ID,
   GET.ROOMS,
+  ...A2UI_TOOL_NAMES,
   ...LEGACY_HIDDEN_TOOL_NAMES,
   ...MASTRA_BACKEND_TOOL_NAMES.filter(
     (name) => !(RENDER_BACKEND_TOOLS as readonly string[]).includes(name),
@@ -91,10 +104,95 @@ export const CHAT_HEADLESS_MOUNT_TOOLS = new Set([
   BOOKING.CREATE_BOOKING,
 ]);
 
+/**
+ * Chat-visible tools whose renderer paints a skeleton / spinner as soon as the
+ * tool call streams in (status `InProgress`), so the global typing cursor is a
+ * duplicate indicator while they run.
+ *
+ * HITL tools are deliberately excluded: their modal renders nothing until
+ * status `Executing` (see hitl-status.ts), so the cursor must stay visible
+ * until then — otherwise there is a blank gap between "sent" and the dialog.
+ * The cursor suppression falls back to the executing / complete signal for
+ * those (see ChatLoadingCursor).
+ */
+export const CHAT_TOOLS_WITH_INLINE_LOADING = new Set<string>([
+  GET.FIND_ROOM,
+  BOOKING.GET,
+  BOOKING.GET_ROOM_BY_ID,
+]);
+
+/**
+ * `purpose` values that turn an inline-loading tool into a silent internal
+ * lookup: the Notice suppresses its skeleton while running (FindRoomNotice /
+ * MyBookingsNotice), so the call must NOT count as an on-screen widget.
+ */
+const SILENT_RESOLVE_PURPOSES = new Set<string>([
+  TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE,
+  TOOL_PURPOSE.FIND_ROOM.RESOLVE,
+  TOOL_PURPOSE.GET_BOOKINGS.RESOLVE,
+]);
+
 export { PAGE_ROOMS_PROMPT_PREFIX };
 
 export const isPageOnlyGenerativeTool = (toolName: string) =>
   CHAT_HIDDEN_TOOLS.has(toolName);
+
+const readToolCallArgs = (toolCall: ToolCallLike): Record<string, unknown> =>
+  parseToolResult<Record<string, unknown>>(
+    (toolCall.function?.arguments ?? toolCall.arguments ?? toolCall.args) as
+      | Record<string, unknown>
+      | string
+      | null
+      | undefined,
+  ) ?? {};
+
+/** Matches `purpose` once its quoted enum value has fully streamed in. */
+const STREAMED_PURPOSE_RE =
+  /"purpose"\s*:\s*"(search|recommend|book_resolve|resolve|list)"/;
+
+/**
+ * `purpose` of a find_room / get_bookings call, tolerant of args that are
+ * still streaming. `purpose` is the FIRST property of findRoomInputSchema /
+ * getBookingsInputSchema (schema order + strict mode), so it reaches the head
+ * of the streamed args JSON well before the object closes — but
+ * `parseToolResult` (JSON.parse) only reads complete JSON. Fall back to a
+ * literal scan of the raw args string so an internal book_resolve / resolve
+ * lookup is identified mid-stream, before its chat row can paint.
+ */
+const readToolCallPurpose = (toolCall: ToolCallLike): string | undefined => {
+  const parsed = readToolCallArgs(toolCall).purpose;
+  if (typeof parsed === "string") {
+    return parsed;
+  }
+
+  const raw = toolCall.function?.arguments ?? toolCall.arguments ?? toolCall.args;
+  return typeof raw === "string"
+    ? (STREAMED_PURPOSE_RE.exec(raw)?.[1] ?? undefined)
+    : undefined;
+};
+
+/**
+ * True when a tool call draws its own in-progress placeholder the instant it
+ * streams in — so the global typing cursor is a duplicate while it runs.
+ * `find_room` / `get_bookings` resolve lookups are excluded: they render
+ * nothing until (and unless) they resolve.
+ */
+export const isChatInlineLoadingToolCall = (toolCall: ToolCallLike): boolean => {
+  const toolName = toolCall.function?.name;
+
+  if (!toolName || !CHAT_TOOLS_WITH_INLINE_LOADING.has(toolName)) {
+    return false;
+  }
+
+  if (toolName === GET.FIND_ROOM || toolName === BOOKING.GET) {
+    const purpose = readToolCallPurpose(toolCall);
+    if (typeof purpose === "string" && SILENT_RESOLVE_PURPOSES.has(purpose)) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 export const isChatHeadlessMountTool = (toolName?: string) =>
   Boolean(toolName) && CHAT_HEADLESS_MOUNT_TOOLS.has(toolName as string);
@@ -104,8 +202,160 @@ export type ChatVisibleToolCall = ToolCallLike;
 
 type ChatMessageForToolVisibility = Pick<
   MessageLike,
-  "id" | "role" | "toolCalls"
+  "id" | "role" | "toolCalls" | "content" | "toolCallId"
 >;
+
+/**
+ * Row count from a resolved find_room / get_bookings `tool` message.
+ * `undefined` = no result yet (still resolving) or an unparseable payload.
+ */
+const readResolvedToolRowCount = (
+  toolCallId: string | undefined,
+  messages: ChatMessageForToolVisibility[] | undefined,
+  key: "rooms" | "bookings",
+): number | undefined => {
+  if (!toolCallId || !messages) {
+    return undefined;
+  }
+
+  const resultMessage = messages.find(
+    (message) =>
+      message.role === MESSAGE_ROLE.TOOL && message.toolCallId === toolCallId,
+  );
+
+  if (!resultMessage) {
+    return undefined;
+  }
+
+  const parsed = parseToolResult<Record<string, unknown>>(
+    resultMessage.content as Record<string, unknown> | string | null | undefined,
+  );
+  const rows = parsed?.[key];
+
+  return Array.isArray(rows) ? rows.length : undefined;
+};
+
+/** True once a `tool` result message exists for this tool call. */
+const hasResolvedToolResult = (
+  toolCallId: string | undefined,
+  messages: ChatMessageForToolVisibility[] | undefined,
+): boolean =>
+  Boolean(
+    toolCallId &&
+      messages?.some(
+        (message) =>
+          message.role === MESSAGE_ROLE.TOOL &&
+          message.toolCallId === toolCallId,
+      ),
+  );
+
+/**
+ * True when a chat-visible backend tool call is an internal resolve lookup its
+ * Notice renders nothing for — mirrors FindRoomNotice / MyBookingsNotice:
+ *
+ * - `purpose: "resolve"` (find_room room→id, get_bookings target lookup) — the
+ *   Notice is always silent; the HITL / next step is the turn's response.
+ * - find_room `purpose: "book_resolve"` — silent while resolving and on exactly
+ *   one match (the platform then forces the Booking Form / Confirm card). A
+ *   "no match" notice (0) or a disambiguation list (>1) still renders, so those
+ *   stay visible.
+ *
+ * Dropping these from getChatVisibleToolCalls collapses the otherwise-empty
+ * assistant row (avatar + empty widget slot) deterministically, and lets the
+ * typing cursor bridge the gap — instead of leaning on a CSS `:empty` rule that
+ * Chromium does not reliably re-evaluate after a skeleton→null transition.
+ */
+export const isSilentResolveToolCall = (
+  toolCall: ChatVisibleToolCall,
+  messages: ChatMessageForToolVisibility[] | undefined,
+): boolean => {
+  const toolName = toolCall.function?.name;
+
+  if (toolName !== GET.FIND_ROOM && toolName !== BOOKING.GET) {
+    return false;
+  }
+
+  const purpose = readToolCallPurpose(toolCall);
+
+  if (typeof purpose !== "string" || !SILENT_RESOLVE_PURPOSES.has(purpose)) {
+    return false;
+  }
+
+  if (purpose !== TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE) {
+    return true;
+  }
+
+  const roomCount = readResolvedToolRowCount(toolCall.id, messages, "rooms");
+
+  return roomCount === undefined || roomCount === 1;
+};
+
+/**
+ * Tools whose Notice shows a skeleton while `InProgress` and can then resolve
+ * to `null` — the skeleton→null transition the CSS `:empty` backstop does not
+ * reliably collapse. When the turn already stepped past such a call (a later
+ * tool call exists) its Notice renders nothing, so the row must be dropped.
+ *
+ * `get_room_by_id` / `check_room_availability` are deliberately NOT here: they
+ * render `null` from the first paint on the "keep going" path (no transition,
+ * so CSS collapses them), and `BookingUnavailableNotice` carries a
+ * useLayoutEffect that must still mount for the MODIFY flow.
+ */
+const SKELETON_ROUTING_TOOLS = new Set<string>([GET.FIND_ROOM, BOOKING.GET]);
+
+/**
+ * True when a chat-visible backend tool call produces no visible DOM, so its
+ * assistant row would render as just an avatar next to an empty widget slot
+ * ("bong bóng rỗng"). Covers both:
+ *   1. internal resolve lookups (see isSilentResolveToolCall), and
+ *   2. a skeleton-routing tool the turn already stepped past (a later tool
+ *      call exists) — the later step owns the card.
+ *
+ * Excluding these from getChatVisibleToolCalls collapses the row
+ * deterministically and keeps the typing cursor visible to bridge the gap —
+ * instead of relying on the CSS `:empty` backstop, which Chromium does not
+ * reliably re-evaluate after a skeleton→null transition.
+ *
+ * The third case is the streaming window: while a routing call's args are
+ * still arriving and it has no result yet, `purpose` may not have streamed far
+ * enough to tell an internal book_resolve / resolve lookup from a real FIND /
+ * RECOMMEND search. Stay silent until it either confirms a list purpose or
+ * resolves — a genuine search then renders its Room List on Complete, an
+ * internal lookup stays dropped. Without this the row paints a Room List
+ * skeleton (issue 1) then an empty avatar row / "bong bóng rỗng" (issue 2)
+ * for the ~1 render tick before `purpose` lands.
+ */
+export const isSilentIntermediateToolCall = (
+  toolCall: ChatVisibleToolCall,
+  messages: ChatMessageForToolVisibility[] | undefined,
+): boolean => {
+  if (isSilentResolveToolCall(toolCall, messages)) {
+    return true;
+  }
+
+  const toolName = toolCall.function?.name;
+
+  if (!toolName || !SKELETON_ROUTING_TOOLS.has(toolName)) {
+    return false;
+  }
+
+  if (
+    hasLaterToolCallInTurn(messages as MessageLike[] | undefined, toolCall.id)
+  ) {
+    return true;
+  }
+
+  const purpose = readToolCallPurpose(toolCall);
+  const isConfirmedListPurpose =
+    purpose === TOOL_PURPOSE.FIND_ROOM.SEARCH ||
+    purpose === TOOL_PURPOSE.FIND_ROOM.RECOMMEND ||
+    purpose === TOOL_PURPOSE.GET_BOOKINGS.LIST;
+
+  return (
+    !isConfirmedListPurpose && !hasResolvedToolResult(toolCall.id, messages)
+  );
+};
+
 /**
  * Filters toolCalls for chat rendering.
  * When `messages` is provided, keeps only the latest `find_room` in the
@@ -134,6 +384,10 @@ export const getChatVisibleToolCalls = <T extends ChatVisibleToolCall>(
     }
 
     if (!CHAT_VISIBLE_GENERATIVE_TOOLS.has(toolName)) {
+      return false;
+    }
+
+    if (isSilentIntermediateToolCall(toolCall, messages)) {
       return false;
     }
 

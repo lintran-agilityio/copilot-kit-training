@@ -43,7 +43,15 @@ export const MyBookingsNotice = ({
     status === ToolCallStatus.Executing ||
     status === ToolCallStatus.InProgress
   ) {
-    if (suppressForResolve) {
+    // Only a guest-facing LIST call renders the bookings card, so only it gets
+    // a loading skeleton. A resolve lookup, or a `purpose` that has not
+    // streamed far enough to confirm LIST, renders nothing — no skeleton flash
+    // before the cancel / modify HITL. `purpose` is the first field in
+    // getBookingsInputSchema, so an explicit LIST call still shows it at once.
+    if (
+      suppressForResolve ||
+      parameters?.purpose !== TOOL_PURPOSE.GET_BOOKINGS.LIST
+    ) {
       return null;
     }
 
@@ -62,7 +70,7 @@ export const MyBookingsNotice = ({
 
   if (!parsed) {
     return (
-      <EmbeddedWidget className="px-3.5 py-3 text-zinc-400">
+      <EmbeddedWidget className="px-3.5 py-3 text-muted-foreground">
         Could not load your bookings.{" "}
         {typeof result === "string" ? result.trim() : ""}
       </EmbeddedWidget>
@@ -80,7 +88,7 @@ export const MyBookingsNotice = ({
 
   if (!bookings.length) {
     return (
-      <EmbeddedWidget className="px-3.5 py-3 text-zinc-400">
+      <EmbeddedWidget className="px-3.5 py-3 text-muted-foreground">
         No active bookings found.
       </EmbeddedWidget>
     );
@@ -92,7 +100,7 @@ export const MyBookingsNotice = ({
         bookings={bookings}
         title={MY_BOOKINGS_TITLE}
         compact
-        className="max-w-full rounded-xl border border-white/12 bg-[#111111] p-3.5"
+        className="max-w-full rounded-xl border border-border bg-card p-3.5"
         toolCallId={toolCallId}
       />
     </EmbeddedWidget>

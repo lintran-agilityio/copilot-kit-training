@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@repo/utils";;
+import { cn } from "@repo/utils";
 
 type CalendarDateButtonProps = {
   date: Date;
@@ -26,8 +26,8 @@ export const CalendarDateButton = ({
       className={cn(
         "flex min-w-[42px] flex-col items-center rounded-xl px-1 py-1 transition-colors text-xs cursor-pointer",
         isSelected
-          ? "bg-[#E6C547] text-black"
-          : "text-zinc-400 hover:bg-white/5 hover:text-white",
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground",
         className,
       )}
     >

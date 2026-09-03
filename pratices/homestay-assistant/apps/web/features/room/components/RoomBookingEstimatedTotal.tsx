@@ -13,8 +13,8 @@ export const RoomBookingEstimatedTotal = ({
 
   return (
     <div className={className ?? "flex items-center justify-between text-sm"}>
-      <span className="text-zinc-500">Estimated total</span>
-      <span className="font-medium text-emerald-300">{estimatedTotal}</span>
+      <span className="text-muted-foreground">Estimated total</span>
+      <span className="font-semibold text-foreground">{estimatedTotal}</span>
     </div>
   );
 };

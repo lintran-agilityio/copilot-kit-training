@@ -20,28 +20,28 @@ export const StaySummary = ({
   guests,
   totalPrice,
 }: StaySummaryProps) => (
-  <dl className="space-y-1.5 rounded-lg border border-white/8 bg-white/[0.02] p-3 text-xs">
+  <dl className="space-y-1.5 rounded-lg border border-border bg-muted/40 p-3 text-xs">
     <div className="flex justify-between gap-4">
-      <dt className="text-zinc-500">Room</dt>
-      <dd className="text-right text-zinc-100">{roomName}</dd>
+      <dt className="text-muted-foreground">Room</dt>
+      <dd className="text-right text-foreground">{roomName}</dd>
     </div>
     <div className="flex justify-between gap-4">
-      <dt className="text-zinc-500">Dates</dt>
-      <dd className="text-right text-zinc-100">
+      <dt className="text-muted-foreground">Dates</dt>
+      <dd className="text-right text-foreground">
         {formatShortDateForDisplay(checkInDate)} →{" "}
         {formatShortDateForDisplay(checkOutDate)}
       </dd>
     </div>
     {guests != null ? (
       <div className="flex justify-between gap-4">
-        <dt className="text-zinc-500">Guests</dt>
-        <dd className="text-right text-zinc-100">{guests}</dd>
+        <dt className="text-muted-foreground">Guests</dt>
+        <dd className="text-right text-foreground">{guests}</dd>
       </div>
     ) : null}
     {totalPrice != null ? (
-      <div className="flex justify-between gap-4 border-t border-white/8 pt-1.5">
-        <dt className="text-zinc-500">Total</dt>
-        <dd className="text-right font-medium text-emerald-300">
+      <div className="flex justify-between gap-4 border-t border-border pt-1.5">
+        <dt className="text-muted-foreground">Total</dt>
+        <dd className="text-right font-medium text-primary">
           {formatPrice(totalPrice)}
         </dd>
       </div>

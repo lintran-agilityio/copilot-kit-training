@@ -51,7 +51,7 @@ export const RoomDetailQuickStats = ({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-zinc-300",
+        "flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-foreground",
         className,
       )}
     >
@@ -60,7 +60,7 @@ export const RoomDetailQuickStats = ({
 
         return (
           <div key={stat.label} className="inline-flex items-center gap-2">
-            <Icon className="size-4 text-[#e6c547]" />
+            <Icon className="size-4 text-gold" />
             <span>{stat.label}</span>
           </div>
         );
@@ -100,16 +100,16 @@ export const RoomDetailAmenityHighlights = ({
   return (
     <div
       className={cn(
-        "grid gap-3 rounded-xl border border-white/8 bg-white/[0.02] p-4 sm:grid-cols-2",
+        "grid gap-3 rounded-xl border border-border bg-muted/40 p-4 sm:grid-cols-2",
         className,
       )}
     >
       {highlights.map(({ amenity, title, description, Icon }) => (
         <div key={amenity} className="flex items-start gap-3">
-          <Icon className="mt-0.5 size-4 shrink-0 text-[#e6c547]" />
+          <Icon className="mt-0.5 size-4 shrink-0 text-gold" />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-[#e6c547]">{title}</p>
-            <p className="text-xs text-zinc-400">{description}</p>
+            <p className="text-sm font-medium text-foreground">{title}</p>
+            <p className="text-xs text-muted-foreground">{description}</p>
           </div>
         </div>
       ))}

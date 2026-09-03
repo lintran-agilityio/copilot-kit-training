@@ -68,10 +68,10 @@ export const ThreadListItem = ({
   return (
     <div
       className={cn(
-        "group relative flex w-full items-center gap-1 rounded-xl px-2.5 py-2 text-left text-xs transition",
+        "group relative flex w-full items-center gap-1 rounded-xl px-2.5 py-2 text-left text-xs text-foreground transition",
         isActive
-          ? "bg-white/10 text-white"
-          : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200",
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "hover:bg-sidebar-accent/60",
         isLoading && isActive && "opacity-70",
       )}
       onBlur={(event) => {
@@ -87,7 +87,7 @@ export const ThreadListItem = ({
         className="min-w-0 flex-1 text-left cursor-pointer"
       >
         <span className="block truncate font-medium">{title}</span>
-        <span className="mt-0.5 block text-[10px] text-zinc-600">
+        <span className="mt-0.5 block text-[10px] text-muted-foreground">
           {activityLabel}
         </span>
       </button>
@@ -97,7 +97,7 @@ export const ThreadListItem = ({
         aria-label={`Open options for ${title}`}
         aria-expanded={isMenuOpen}
         onClick={() => setIsMenuOpen((open) => !open)}
-        className="rounded-md p-1 text-zinc-500 opacity-0 transition hover:bg-white/10 hover:text-zinc-200 group-hover:opacity-100 data-[open=true]:opacity-100 cursor-pointer"
+        className="rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 data-[open=true]:opacity-100 cursor-pointer"
         data-open={isMenuOpen}
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden />

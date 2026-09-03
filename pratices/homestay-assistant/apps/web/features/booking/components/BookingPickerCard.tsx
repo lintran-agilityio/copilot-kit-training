@@ -19,12 +19,12 @@ const BookingPickerRow = ({
 }: BookingPickerRowProps) => {
   const content = (
     <>
-      <span className="font-medium text-zinc-100">{booking.roomName}</span>
-      <span className="text-zinc-400">
+      <span className="font-medium text-foreground">{booking.roomName}</span>
+      <span className="text-muted-foreground">
         {booking.checkInDate} → {booking.checkOutDate}
       </span>
       {onSelect ? (
-        <span className="text-zinc-400">
+        <span className="text-muted-foreground">
           Total price: {formatPrice(booking.totalPrice)}
         </span>
       ) : null}
@@ -33,7 +33,7 @@ const BookingPickerRow = ({
 
   if (!onSelect) {
     return (
-      <div className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs cursor-pointer">
+      <div className="flex w-full flex-col rounded-lg border border-border bg-muted/40 p-3 text-left text-xs cursor-pointer">
         {content}
       </div>
     );
@@ -43,7 +43,7 @@ const BookingPickerRow = ({
     <button
       type="button"
       disabled={disabled}
-      className="flex w-full flex-col rounded-lg border border-white/8 bg-white/[0.02] p-3 text-left text-xs transition hover:bg-white/[0.05] disabled:opacity-50 cursor-pointer"
+      className="flex w-full flex-col rounded-lg border border-border bg-muted/40 p-3 text-left text-xs transition hover:bg-accent disabled:opacity-50 cursor-pointer"
       onClick={onSelect}
     >
       {content}
@@ -72,10 +72,10 @@ export const BookingPickerCard = ({
   keepLabel,
   onKeep,
 }: BookingPickerCardProps) => (
-  <div className="space-y-3 p-3.5 text-zinc-100">
+  <div className="space-y-3 p-3.5 text-foreground">
     <div className="space-y-1">
-      <h3 className="text-sm font-medium text-white">{title}</h3>
-      <p className="text-xs text-zinc-400">{description}</p>
+      <h3 className="text-sm font-medium text-foreground">{title}</h3>
+      <p className="text-xs text-muted-foreground">{description}</p>
     </div>
 
     {bookings.length > 0 ? (
@@ -97,7 +97,6 @@ export const BookingPickerCard = ({
           type="button"
           variant="outline"
           size="sm"
-          className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
           disabled={disabled}
           onClick={onKeep}
         >

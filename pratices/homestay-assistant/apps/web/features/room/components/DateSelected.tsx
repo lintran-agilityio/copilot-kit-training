@@ -56,10 +56,10 @@ export const DateSelected = ({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium uppercase tracking-[0.15em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground">
           {label}
         </p>
-        <p className="text-xs text-zinc-500">{monthLabel}</p>
+        <p className="text-xs text-muted-foreground">{monthLabel}</p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export const DateSelected = ({
           aria-label={`Previous ${label.toLowerCase()} dates`}
           disabled={disabled}
           onClick={() => setWindowStart((current) => addDays(current, -7))}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none cursor-pointer"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-gold/50 hover:text-foreground disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none cursor-pointer"
         >
           <ChevronLeft className="size-4" />
         </button>
@@ -102,7 +102,7 @@ export const DateSelected = ({
           aria-label={`Next ${label.toLowerCase()} dates`}
           disabled={disabled}
           onClick={() => setWindowStart((current) => addDays(current, 7))}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full cursor-pointer border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:text-white disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full cursor-pointer border border-border text-muted-foreground transition-colors hover:border-gold/50 hover:text-foreground disabled:pointer-events-none disabled:opacity-30 [&_svg]:pointer-events-none"
         >
           <ChevronRight className="size-4" />
         </button>

@@ -22,7 +22,7 @@ const ThreadGroup = ({
 }: ThreadGroupProps) => {
   return (
     <div className="space-y-1">
-      <p className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+      <p className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground">
         {group.label}
       </p>
       {group.threads.map((thread) => (
@@ -67,7 +67,7 @@ export const ThreadList = ({
   // while a background refetch runs (e.g. draft → persisted).
   if (isLoading && threads.length === 0) {
     return (
-      <div className="rounded-xl border border-white/5 px-3 py-2 text-xs text-zinc-500">
+      <div className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground">
         Loading threads...
       </div>
     );
@@ -75,10 +75,10 @@ export const ThreadList = ({
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+      <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs text-destructive">
         Failed to load threads.
         {error.message ? (
-          <p className="mt-1 text-[11px] text-red-300/80">{error.message}</p>
+          <p className="mt-1 text-[11px] text-destructive/80">{error.message}</p>
         ) : null}
       </div>
     );
@@ -86,7 +86,7 @@ export const ThreadList = ({
 
   if (threads.length === 0) {
     return (
-      <div className="rounded-xl border border-white/5 px-3 py-2 text-xs text-zinc-500">
+      <div className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground">
         No saved threads yet.
       </div>
     );

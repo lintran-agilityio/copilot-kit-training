@@ -3,6 +3,8 @@ packages:
   - "packages/*"
 allowBuilds:
   '@scarf/scarf': false
+  autoevals: set this to true or false
+  better-sqlite3: set this to true or false
   esbuild: false
   sharp: false
   unrs-resolver: false

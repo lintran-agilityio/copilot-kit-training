@@ -110,20 +110,20 @@ export const PICKER_BOOKING = {
     },
   },
   MODIFY: {
-    title: "Which booking should be cancelled?",
+    title: "Which booking do you want to change?",
     description: (queryName: string) =>
-      `Multiple bookings match “${queryName}”. Select one to cancel.`,
+      `Multiple bookings match “${queryName}”. Select one to change.`,
     keepLabel: "Keep bookings",
     completed: {
-      rejectedTitle: "Cancelled by you",
-      approvedTitle: "Confirmed by you",
-      expiredTitle: CONFIRM_BOOKING.CANCEL.title.expired,
+      rejectedTitle: CONFIRM_BOOKING.MODIFY.title.rejected,
+      approvedTitle: CONFIRM_BOOKING.MODIFY.title.approved,
+      expiredTitle: CONFIRM_BOOKING.MODIFY.title.expired,
       keptAll: (queryName: string) =>
-        `You kept all bookings matching “${queryName}”.`,
+        `You left all bookings matching “${queryName}” unchanged.`,
       multiMatch: (queryName: string) =>
         `Multiple bookings match “${queryName}”.`,
       expiredBody: (queryName: string) =>
-        `This cancellation confirmation for “${queryName}” is no longer available.`,
+        `This change selection for “${queryName}” is no longer available.`,
     },
   }
 }

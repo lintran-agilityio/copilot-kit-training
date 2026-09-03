@@ -32,7 +32,7 @@ export const EmbeddedWidget = ({
       className={cn(
         "chat-tool-card w-full max-w-[min(100%,340px)] origin-top-left [zoom:0.92]",
         !unframed &&
-          "overflow-hidden rounded-xl border border-white/12 bg-[#111111] shadow-[0_1px_0_rgb(255_255_255/0.04)_inset] text-sm leading-snug text-zinc-100",
+          "overflow-hidden rounded-2xl border border-border bg-card text-sm leading-snug text-card-foreground shadow-sm",
         className,
       )}
     >

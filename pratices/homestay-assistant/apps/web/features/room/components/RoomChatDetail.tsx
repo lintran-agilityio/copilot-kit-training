@@ -53,7 +53,7 @@ export const RoomChatDetail = ({
   return (
     <article
       className={cn(
-        "overflow-hidden rounded-xl border border-white/12 bg-[#111111]",
+        "overflow-hidden rounded-xl border border-border bg-card",
         className,
       )}
     >
@@ -72,7 +72,7 @@ export const RoomChatDetail = ({
             type="button"
             variant="ghost"
             size="sm"
-            className="-ml-2 h-7 w-fit gap-1.5 px-2 text-xs text-zinc-400 hover:text-white"
+            className="-ml-2 h-7 w-fit gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
             onClick={onBack}
           >
             <ArrowLeft className="size-3.5" />
@@ -81,7 +81,7 @@ export const RoomChatDetail = ({
         ) : null}
 
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-base font-semibold leading-tight text-white">
+          <h3 className="font-serif text-lg font-semibold leading-tight text-foreground">
             {name}
           </h3>
           {bookingStatus ? (
@@ -98,7 +98,9 @@ export const RoomChatDetail = ({
         />
 
         {description ? (
-          <p className="text-xs leading-relaxed text-zinc-400">{description}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {description}
+          </p>
         ) : null}
 
         <RoomDetailAmenityHighlights
@@ -107,7 +109,7 @@ export const RoomChatDetail = ({
         />
 
         {availableSlots > 0 && availableSlots <= 3 ? (
-          <div className="flex items-start gap-2 rounded-lg border border-[#e6c547]/35 bg-[#e6c547]/10 px-2.5 py-2 text-xs text-[#e6c547]">
+          <div className="flex items-start gap-2 rounded-lg border border-gold/35 bg-gold/10 px-2.5 py-2 text-xs text-gold">
             <Clock3 className="mt-0.5 size-3.5 shrink-0" />
             <span>
               Only {availableSlots} room{availableSlots === 1 ? "" : "s"} left!
@@ -115,7 +117,7 @@ export const RoomChatDetail = ({
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between gap-3 border-t border-white/8 pt-3">
+        <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
           {pricePerNight != null ? (
             <RoomBookingPricePerNight
               pricePerNight={pricePerNight}
@@ -130,7 +132,7 @@ export const RoomChatDetail = ({
               type="button"
               size="sm"
               disabled={bookDisabled}
-              className="h-8 gap-1.5 bg-emerald-500 px-3 text-xs font-medium text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-8 gap-1.5 px-3 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => onBook({ roomId: id, roomName: name })}
             >
               <CalendarCheck className="size-3.5" />

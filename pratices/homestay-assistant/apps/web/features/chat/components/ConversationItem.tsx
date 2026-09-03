@@ -34,8 +34,8 @@ export const ConversationItem = ({
       className={cn(
         "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
         isUser
-          ? "bg-zinc-700/60 text-zinc-100"
-          : "chat-assistant-bubble bg-zinc-800/80 text-zinc-100",
+          ? "border border-primary/15 bg-primary/10 text-foreground"
+          : "chat-assistant-bubble border border-border bg-card text-foreground",
         className,
       )}
     >

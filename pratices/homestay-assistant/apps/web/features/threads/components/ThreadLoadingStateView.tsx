@@ -12,13 +12,13 @@ export const ThreadLoadingStateView = ({
   if (errorMessage) {
     return (
       <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-zinc-300">Couldn&apos;t load conversation</p>
-        <p className="text-xs text-zinc-500">{errorMessage}</p>
+        <p className="text-sm text-foreground">Couldn&apos;t load conversation</p>
+        <p className="text-xs text-muted-foreground">{errorMessage}</p>
         {onRetry ? (
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-md border border-white/10 px-3 py-1.5 text-xs text-zinc-200 transition hover:bg-white/5 cursor-pointer"
+            className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground transition hover:bg-accent cursor-pointer"
           >
             Try again
           </button>
@@ -29,8 +29,8 @@ export const ThreadLoadingStateView = ({
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-      <p className="text-sm text-zinc-300">Loading conversation</p>
-      <p className="text-xs text-zinc-500">…</p>
+      <p className="text-sm text-foreground">Loading conversation</p>
+      <p className="text-xs text-muted-foreground">…</p>
     </div>
   );
 };

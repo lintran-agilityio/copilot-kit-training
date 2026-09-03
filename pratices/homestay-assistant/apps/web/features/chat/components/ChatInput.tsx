@@ -70,7 +70,7 @@ export const ChatInput = ({
         textArea={GuardedTextArea}
         showDisclaimer={false}
         bottomAnchored={false}
-        className={cn("pointer-events-auto m-4 mt-0", className)}
+        className={cn("pointer-events-auto m-4 mt-0 rounded-2xl", className)}
       />
     </ChatInputRunningContext.Provider>
   );

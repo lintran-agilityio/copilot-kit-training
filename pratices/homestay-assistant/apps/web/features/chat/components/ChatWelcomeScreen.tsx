@@ -44,7 +44,7 @@ export const ChatWelcomeScreen = ({
 
       <div
         data-chat-footer
-        className="shrink-0 border-t border-white/5 bg-[#0a0a0a]"
+        className="shrink-0 border-t border-border bg-card"
       >
         {suggestionView}
 

@@ -20,7 +20,12 @@
       "Bash(pnpm --filter @repo/constants --filter @repo/utils run build)",
       "Bash(pnpm --filter agent run check-types)",
       "Bash(pnpm --filter @repo/utils run build)",
-      "Bash(xargs grep -l \"requestContext\")"
+      "Bash(xargs grep -l \"requestContext\")",
+      "Bash(git status *)",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"===diff exit code: $?===\")",
+      "Bash(rm -f tools/booking/find-bookings.ts tools/booking/find-booking-by-id.ts booking/step-machine.ts booking/modify-booking.ts booking/book-form-prefill.ts utils/resolve-pinned-stay.ts utils/confirmed-stay.ts)",
+      "Bash(rm -f booking/index.ts)"
     ]
   }
 }

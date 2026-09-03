@@ -40,7 +40,7 @@ export const Loading = ({ size = 20 }: LoadingProps) => {
       {Array.from({ length: ITEM_COUNT }, (_, index) => (
         <Loader
           key={`${index}-loading`}
-          className="animate-spin text-gray-500 loading-grow-item size-${5+index} shrink-0 text-zinc-500"
+          className="animate-spin loading-grow-item shrink-0 text-muted-foreground"
           size={size}
           role="status"
           aria-label="Loading..."

@@ -107,16 +107,16 @@ export const ConfirmHitlCard = ({
   switch (phase) {
     case HITL_CARD_PHASE.SUCCESS:
       return (
-        <div className="space-y-3 p-3.5 text-zinc-100">
+        <div className="space-y-3 p-3.5 text-foreground">
           <div className="flex items-start gap-2.5">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <CheckCircle className="size-4" aria-hidden />
             </div>
             <div className="min-w-0 flex-1 space-y-1">
-              <h3 className="text-sm font-medium text-emerald-300">
+              <h3 className="text-sm font-medium text-primary">
                 {successTitle}
               </h3>
-              <p className="text-xs text-zinc-400">{successDescription}</p>
+              <p className="text-xs text-muted-foreground">{successDescription}</p>
             </div>
           </div>
 
@@ -127,7 +127,7 @@ export const ConfirmHitlCard = ({
               <Button
                 type="button"
                 size="sm"
-                className="bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
+                className="cursor-pointer"
                 disabled={allActionsDisabled || viewBookingsDisabled}
                 onClick={onViewBookings}
               >
@@ -140,14 +140,14 @@ export const ConfirmHitlCard = ({
 
     case HITL_CARD_PHASE.FAILED:
       return (
-        <div className="space-y-3 p-3.5 text-zinc-100">
+        <div className="space-y-3 p-3.5 text-foreground">
           <div className="flex items-start gap-2.5">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-red-400">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
               <XCircle className="size-4" aria-hidden />
             </div>
             <div className="min-w-0 flex-1 space-y-1">
-              <h3 className="text-sm font-medium text-red-300">{failedTitle}</h3>
-              <p className="text-xs text-zinc-400">{failureMessage}</p>
+              <h3 className="text-sm font-medium text-destructive">{failedTitle}</h3>
+              <p className="text-xs text-muted-foreground">{failureMessage}</p>
             </div>
           </div>
 
@@ -158,7 +158,7 @@ export const ConfirmHitlCard = ({
               <Button
                 type="button"
                 size="sm"
-                className="bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
+                className="cursor-pointer"
                 disabled={allActionsDisabled || retryDisabled}
                 onClick={onRetry}
               >
@@ -171,7 +171,7 @@ export const ConfirmHitlCard = ({
 
     case HITL_CARD_PHASE.CANCELLED:
       return (
-        <div className="space-y-3 p-3.5 text-zinc-100">
+        <div className="space-y-3 p-3.5 text-foreground">
           <ConfirmHitlHeader
             tone={accent === "destructive" ? "destructive" : "neutral"}
             icon={<Icon className="size-4" aria-hidden />}
@@ -184,7 +184,7 @@ export const ConfirmHitlCard = ({
 
     case HITL_CARD_PHASE.EXPIRED:
       return (
-        <div className="space-y-3 p-3.5 text-zinc-100">
+        <div className="space-y-3 p-3.5 text-foreground">
           <ConfirmHitlHeader
             tone={accent === "destructive" ? "destructive" : "neutral"}
             icon={<Icon className="size-4" aria-hidden />}
@@ -202,7 +202,7 @@ export const ConfirmHitlCard = ({
       const isDestructiveConfirm = confirmVariant === "destructive";
 
       return (
-        <div className="space-y-3 p-3.5 text-zinc-100">
+        <div className="space-y-3 p-3.5 text-foreground">
           <ConfirmHitlHeader
             tone={reviewTone(accent)}
             icon={<Icon className="size-4" aria-hidden />}
@@ -215,7 +215,7 @@ export const ConfirmHitlCard = ({
             trailing={
               isSubmittingPhase ? (
                 <Loader2
-                  className="mt-0.5 size-4 shrink-0 animate-spin text-zinc-400"
+                  className="mt-0.5 size-4 shrink-0 animate-spin text-muted-foreground"
                   aria-hidden
                 />
               ) : null
@@ -225,15 +225,7 @@ export const ConfirmHitlCard = ({
           {summary}
 
           {errorMessage ? (
-            <p
-              className={
-                accent === "destructive"
-                  ? "text-xs text-destructive"
-                  : "text-xs text-red-400"
-              }
-            >
-              {errorMessage}
-            </p>
+            <p className="text-xs text-destructive">{errorMessage}</p>
           ) : null}
 
           {isSubmittingPhase ? null : (
@@ -242,7 +234,7 @@ export const ConfirmHitlCard = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white cursor-pointer"
+                className="cursor-pointer"
                 disabled={allActionsDisabled || actionsDisabled}
                 onClick={onCancel}
               >
@@ -265,7 +257,7 @@ export const ConfirmHitlCard = ({
                 <Button
                   type="button"
                   size="sm"
-                  className="gap-1.5 bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
+                  className="gap-1.5 cursor-pointer"
                   disabled={
                     allActionsDisabled || actionsDisabled || confirmDisabled
                   }

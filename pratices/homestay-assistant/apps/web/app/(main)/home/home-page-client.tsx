@@ -21,7 +21,10 @@ const HomePageContent = ({ initialRooms }: HomePageClientProps) => {
 
   return (
     <>
-      <PageHeader />
+      <PageHeader
+        title="Rooms"
+        description="Discover our handpicked homestays, each with its own story."
+      />
       <RoomGrid className="mt-8" initialRooms={initialRooms} />
     </>
   );

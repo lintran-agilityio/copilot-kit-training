@@ -28,7 +28,7 @@ export const Navbar = ({ activeTab = NavbarTab.HOME, className }: NavbarProps) =
   return (
     <header
       className={cn(
-        "flex items-center justify-between border-b border-white/10 p-4",
+        "flex items-center justify-between border-b border-border px-6 py-4",
         className,
       )}
     >
@@ -43,10 +43,10 @@ export const Navbar = ({ activeTab = NavbarTab.HOME, className }: NavbarProps) =
         <Link
           href="/"
           className={cn(
-            "text-sm transition-colors",
-              activeTab === NavbarTab.HOME
-              ? "text-white bg-emerald-500 rounded-md px-4 py-2"
-              : "text-zinc-500 hover:text-zinc-300",
+            "border-b-2 pb-1 text-sm transition-colors",
+            activeTab === NavbarTab.HOME
+              ? "border-gold text-gold"
+              : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
           Homestay
@@ -54,17 +54,17 @@ export const Navbar = ({ activeTab = NavbarTab.HOME, className }: NavbarProps) =
         <Link
           href={ROUTES.BOOKINGS}
           className={cn(
-            "text-sm transition-colors",
+            "border-b-2 pb-1 text-sm transition-colors",
             activeTab === NavbarTab.MY_BOOKINGS
-              ? "text-white bg-emerald-500 rounded-md px-4 py-2"
-              : "text-zinc-500 hover:text-zinc-300",
+              ? "border-gold text-gold"
+              : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
           My Bookings
         </Link>
 
         <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-white lg:hidden">
+          <div className="flex size-9 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground lg:hidden">
             {initials.toUpperCase()}
           </div>
           <UserButton

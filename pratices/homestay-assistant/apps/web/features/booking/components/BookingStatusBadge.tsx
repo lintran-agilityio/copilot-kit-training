@@ -16,7 +16,7 @@ export const BookingStatusBadge = ({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium tracking-wide uppercase",
+        "inline-flex items-center rounded-full border px-2.5 py-1 text-[9px] font-medium tracking-wide uppercase",
         statusClassName,
         className,
       )}

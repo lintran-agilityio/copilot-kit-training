@@ -42,20 +42,20 @@ export const DeleteThreadDialog = ({
     >
       <DialogContent
         showCloseButton={!isDeleting}
-        className="border-white/10 bg-[#111111] text-zinc-100 sm:max-w-md"
+        className="sm:max-w-md"
       >
         <DialogHeader>
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-300">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-300">
               <Archive className="size-5" aria-hidden />
             </div>
             <div className="space-y-1.5">
-              <DialogTitle className="text-lg font-medium text-white">
+              <DialogTitle className="text-lg font-medium text-foreground">
                 Archive this thread?
               </DialogTitle>
-              <DialogDescription className="text-zinc-400">
+              <DialogDescription className="text-muted-foreground">
                 This will archive{" "}
-                <span className="font-medium text-zinc-200">{threadLabel}</span>{" "}
+                <span className="font-medium text-foreground">{threadLabel}</span>{" "}
                 and hide it from the sidebar. Messages stay stored and can be
                 recovered later.
               </DialogDescription>
@@ -63,11 +63,10 @@ export const DeleteThreadDialog = ({
           </div>
         </DialogHeader>
 
-        <DialogFooter className="border-white/8 bg-transparent">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"
-            className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
             disabled={isDeleting}
             onClick={onCancel}
           >

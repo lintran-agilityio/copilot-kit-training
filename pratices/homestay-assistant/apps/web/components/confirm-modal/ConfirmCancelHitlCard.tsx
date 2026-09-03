@@ -78,7 +78,7 @@ export const ConfirmCancelHitlCard = ({
       description={
         <>
           This will cancel your reservation for{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span>. This
+          <span className="font-medium text-foreground">{roomName}</span>. This
           action cannot be undone.
         </>
       }
@@ -88,14 +88,14 @@ export const ConfirmCancelHitlCard = ({
       submittingDescription={
         <>
           Please wait while we cancel your stay at{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span>.
+          <span className="font-medium text-foreground">{roomName}</span>.
         </>
       }
       successTitle={CANCEL_TITLE.success}
       successDescription={
         <>
           Your stay at{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span> has been
+          <span className="font-medium text-foreground">{roomName}</span> has been
           cancelled.
         </>
       }
@@ -107,14 +107,14 @@ export const ConfirmCancelHitlCard = ({
       cancelledDescription={
         <>
           You kept your reservation for{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span>.
+          <span className="font-medium text-foreground">{roomName}</span>.
         </>
       }
       expiredTitle={CANCEL_TITLE.expired}
       expiredDescription={
         <>
           This cancellation confirmation for{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span> is no
+          <span className="font-medium text-foreground">{roomName}</span> is no
           longer available.
         </>
       }

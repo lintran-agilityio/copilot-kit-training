@@ -25,7 +25,17 @@ const WORKFLOW_SECTIONS_BY_HINT: Record<
 };
 
 const ALL_WORKFLOW_SECTIONS: readonly (keyof typeof MANAGE_AGENT_PLAYBOOK_SECTIONS)[] =
-  ["BROWSE", "FIND", "RECOMMEND", "DETAIL", "BOOK", "LIST", "CANCEL", "MODIFY"];
+  [
+    "BROWSE",
+    "FIND",
+    "RECOMMEND",
+    "DETAIL",
+    "COMPARE",
+    "BOOK",
+    "LIST",
+    "CANCEL",
+    "MODIFY",
+  ];
 
 /**
  * Assembles the homestay-assistant system prompt from the intent playbook.

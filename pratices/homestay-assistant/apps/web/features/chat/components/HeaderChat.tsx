@@ -1,5 +1,5 @@
 // Libs
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Sparkles } from "lucide-react";
 
 // Internal
 import { cn } from "@repo/utils";
@@ -18,8 +18,8 @@ type HeaderChatProps = {
  * @param props - Title, subtitle, online indicator, and reset handler
  */
 export const HeaderChat = ({
-  title = "AI Assistant",
-  subtitle = "Powered by Spaces AI",
+  title = "AI Concierge",
+  subtitle = "Boutique homestay bookings",
   online = true,
   className,
   onReset,
@@ -27,13 +27,16 @@ export const HeaderChat = ({
   return (
     <div
       className={cn(
-        "flex items-start justify-between border-b border-white/10 px-5 py-4 pr-12",
+        "flex items-start justify-between rounded-t-2xl border-b border-border px-5 py-4 pr-12",
         className,
       )}
     >
       <div>
-        <h2 className="text-sm font-semibold text-white">{title}</h2>
-        <p className="mt-0.5 text-xs text-zinc-500">{subtitle}</p>
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.14em] text-foreground">
+          <Sparkles className="size-4 text-gold" aria-hidden />
+          {title}
+        </h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
       </div>
 
       <div className="flex items-center gap-3 pt-1 pr-4">
@@ -43,7 +46,7 @@ export const HeaderChat = ({
             onClick={onReset}
             aria-label="Reset conversation"
             title="Start over"
-            className="inline-flex items-center gap-1.5 rounded-md border border-white/10 px-2 py-1 text-[11px] font-medium text-zinc-300 transition hover:border-white/25 hover:bg-white/5 hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition hover:border-gold/40 hover:bg-accent hover:text-foreground"
           >
             <RotateCcw className="size-3" aria-hidden />
             Reset
@@ -53,11 +56,11 @@ export const HeaderChat = ({
           <span
             className={cn(
               "size-2 rounded-full",
-              online ? "bg-emerald-400" : "bg-zinc-500",
+              online ? "bg-emerald-500" : "bg-muted-foreground",
             )}
           />
-          <span className="text-[11px] text-zinc-500">
-            {online ? "online" : "offline"}
+          <span className="text-[11px] font-medium text-muted-foreground">
+            {online ? "Online" : "Offline"}
           </span>
         </div>
       </div>

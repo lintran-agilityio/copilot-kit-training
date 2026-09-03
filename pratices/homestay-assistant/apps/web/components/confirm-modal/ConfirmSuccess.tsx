@@ -25,30 +25,30 @@ export const ConfirmSuccess = ({
   return (
     <div className="p-3.5">
       <div className="flex items-start gap-2.5">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15">
-          <CheckCircle className="size-4 text-emerald-400" aria-hidden />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+          <CheckCircle className="size-4 text-primary" aria-hidden />
         </div>
 
         <div className="min-w-0 flex-1 space-y-1">
           {title ? (
-            <h3 className="text-sm font-medium text-emerald-300">{title}</h3>
+            <h3 className="text-sm font-medium text-primary">{title}</h3>
           ) : null}
           {name ? (
-            <p className="text-xs text-zinc-300">{`Room: ${name}`}</p>
+            <p className="text-xs text-foreground">{`Room: ${name}`}</p>
           ) : null}
 
           {hasBookingDetails ? (
-            <dl className="mt-2 space-y-0.5 border-t border-white/8 pt-2 text-xs text-zinc-300">
+            <dl className="mt-2 space-y-0.5 border-t border-border pt-2 text-xs text-foreground">
               <div className="flex gap-2">
                 {checkInDate ? (
                   <div className="flex gap-2">
-                    <dt className="font-medium text-zinc-500">Check-in:</dt>
+                    <dt className="font-medium text-muted-foreground">Check-in:</dt>
                     <dd>{formatShortDateForDisplay(checkInDate)}</dd>
                   </div>
                 ) : null}
                 {guests != null ? (
                   <div className="flex gap-2">
-                    <dt className="font-medium text-zinc-500">Guests:</dt>
+                    <dt className="font-medium text-muted-foreground">Guests:</dt>
                     <dd>{guests}</dd>
                   </div>
                 ) : null}
@@ -56,14 +56,14 @@ export const ConfirmSuccess = ({
               <div className="flex gap-2">
                 {checkOutDate ? (
                   <div className="flex gap-2">
-                    <dt className="font-medium text-zinc-500">Check-out:</dt>
+                    <dt className="font-medium text-muted-foreground">Check-out:</dt>
                     <dd>{formatShortDateForDisplay(checkOutDate)}</dd>
                   </div>
                 ) : null}
 
                 {totalPrice != null ? (
                   <div className="flex gap-2">
-                    <dt className="font-medium text-zinc-500">Total:</dt>
+                    <dt className="font-medium text-muted-foreground">Total:</dt>
                     <dd>{formatPrice(totalPrice)}</dd>
                   </div>
                 ) : null}

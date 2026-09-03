@@ -24,22 +24,23 @@ export const getBookingStatusMeta = (status: string): BookingStatusMeta => {
     case BookingStatus.CONFIRMED.toUpperCase():
       return {
         label: "Confirmed",
-        className: "border-emerald-500/30 bg-emerald-500/15 text-emerald-300",
+        className: "border-primary/30 bg-primary text-white",
       };
     case BookingStatus.PENDING.toUpperCase():
       return {
         label: "Pending",
-        className: "border-amber-500/30 bg-amber-500/15 text-amber-300",
+        className:
+          "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
       };
     case BookingStatus.CANCELLED.toUpperCase():
       return {
         label: "Cancelled",
-        className: "border-zinc-500/30 bg-zinc-500/15 text-zinc-400",
+        className: "border-border bg-muted text-muted-foreground",
       };
     default:
       return {
         label: status,
-        className: "border-zinc-500/30 bg-zinc-500/15 text-zinc-400",
+        className: "border-border bg-muted text-muted-foreground",
       };
   }
 };

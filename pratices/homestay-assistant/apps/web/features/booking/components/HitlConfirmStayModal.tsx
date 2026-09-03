@@ -364,7 +364,7 @@ const HitlConfirmModifyStayModal = ({
   const description: ReactNode = (
     <>
       Review the changes for your stay at{" "}
-      <span className="font-medium text-zinc-200">{room.name}</span> before
+      <span className="font-medium text-foreground">{room.name}</span> before
       saving.
     </>
   );

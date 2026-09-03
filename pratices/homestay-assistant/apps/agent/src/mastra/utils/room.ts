@@ -91,11 +91,29 @@ export const normalizeFindRoomInput = (
 };
 
 /**
- * Slim payload for the model: keep ids for tool chaining, strip rich fields
- * so the LLM cannot dump descriptions/images that duplicate ListRoomPreview.
+ * FIND / RECOMMEND results the model may turn into a RoomComparison A2UI surface
+ * (see COMPARE workflow / `render_a2ui`). `book_resolve` / `resolve` lookups are
+ * never compared and must stay ID-only during a booking flow.
+ */
+const COMPARE_ELIGIBLE_PURPOSES: ReadonlySet<FindRoomOutput["purpose"]> = new Set(
+  [TOOL_PURPOSE.FIND_ROOM.SEARCH, TOOL_PURPOSE.FIND_ROOM.RECOMMEND, undefined],
+);
+
+/**
+ * Model payload for find_room.
+ *
+ * FIND / RECOMMEND: include the room facts the model needs to build a
+ * RoomComparison surface (name, level, capacity, price, top amenities). The
+ * model is still told never to list these in chat text — only inside a
+ * `render_a2ui` call (see GENERIC UI RENDERING carve-out). The UI keeps
+ * rendering full cards from the raw tool result.
+ *
+ * book_resolve / resolve: IDs only, so an internal lookup can never surface
+ * names/prices mid-booking.
  */
 export const toFindRoomModelOutput = (output: FindRoomOutput) => {
   const matchCount = output.rooms.length;
+  const includeRoomFacts = COMPARE_ELIGIBLE_PURPOSES.has(output.purpose);
 
   return {
     type: "json" as const,
@@ -106,9 +124,19 @@ export const toFindRoomModelOutput = (output: FindRoomOutput) => {
       guests: output.guests,
       level: output.level,
       purpose: output.purpose,
-      // IDs only — names are intentionally omitted so the model cannot list
-      // them in chat text; the UI renders full room cards from the raw result.
-      rooms: output.rooms.map((room) => ({ id: room.id })),
+      rooms: output.rooms.map((room) =>
+        includeRoomFacts
+          ? {
+              id: room.id,
+              name: room.name,
+              level: room.level,
+              capacity: room.capacity,
+              pricePerNight: room.pricePerNight,
+              availableSlots: room.availableSlots,
+              amenities: room.amenities.slice(0, 5),
+            }
+          : { id: room.id },
+      ),
       replyHint: buildFindRoomReplyHint(matchCount, output.purpose),
     },
   };

@@ -78,7 +78,7 @@ const getSettledCopy = (
       description: (
         <>
           You kept the current booking for{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span>.
+          <span className="font-medium text-foreground">{roomName}</span>.
         </>
       ),
     };
@@ -89,7 +89,7 @@ const getSettledCopy = (
     description: (
       <>
         This modify confirmation for{" "}
-        <span className="font-medium text-zinc-200">{roomName}</span> is no
+        <span className="font-medium text-foreground">{roomName}</span> is no
         longer available.
       </>
     ),
@@ -298,16 +298,16 @@ export const EditModifyBookingModal = ({
 
   return (
     <EmbeddedWidget>
-      <div className="space-y-3 p-3.5 text-zinc-100">
+      <div className="space-y-3 p-3.5 text-foreground">
         <div className="space-y-1">
-          <h3 className="text-sm font-medium text-white">
+          <h3 className="text-sm font-medium text-foreground">
             {settled?.title ?? "Modify your booking"}
           </h3>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-muted-foreground">
             {settled?.description ?? (
                 <>
                   Update check-in, check-out, or guests for{" "}
-                  <span className="font-medium text-zinc-200">{room.name}</span>
+                  <span className="font-medium text-foreground">{room.name}</span>
                   . The room stays the same.
                 </>
               )}
@@ -343,7 +343,7 @@ export const EditModifyBookingModal = ({
             <RoomBookingEstimatedTotal estimatedTotal={estimatedTotal} />
 
             {errorMessage ? (
-              <p className="text-xs text-red-400">{errorMessage}</p>
+              <p className="text-xs text-destructive">{errorMessage}</p>
             ) : null}
           </div>
 
@@ -353,7 +353,7 @@ export const EditModifyBookingModal = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white cursor-pointer"
+                className="cursor-pointer"
                 disabled={actionsDisabled}
                 onClick={handleCancel}
               >
@@ -362,7 +362,7 @@ export const EditModifyBookingModal = ({
               <Button
                 type="button"
                 size="sm"
-                className="gap-1.5 bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
+                className="gap-1.5 cursor-pointer"
                 disabled={!canSubmit || isSubmitting}
                 onClick={handleConfirm}
               >

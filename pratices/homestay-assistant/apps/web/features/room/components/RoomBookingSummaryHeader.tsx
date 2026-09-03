@@ -27,7 +27,7 @@ export const RoomBookingSummaryHeader = ({
   const capacityBadge = (
     <div
       className={cn(
-        "flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-zinc-300",
+        "flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-muted-foreground",
         capacityBadgeClassName,
       )}
     >
@@ -41,13 +41,15 @@ export const RoomBookingSummaryHeader = ({
       <div className="space-y-1">
         <p
           className={cn(
-            "text-xs font-medium uppercase tracking-[0.15em] text-emerald-400",
+            "text-xs font-medium uppercase tracking-[0.15em] text-gold",
             labelClassName,
           )}
         >
           {label}
         </p>
-        <h2 className={cn("font-medium text-white", nameClassName)}>{name}</h2>
+        <h2 className={cn("font-serif font-medium text-foreground", nameClassName)}>
+          {name}
+        </h2>
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-2">

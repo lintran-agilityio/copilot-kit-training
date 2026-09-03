@@ -76,7 +76,7 @@ const getSettledCopy = (
         description: (
           <>
             You confirmed your stay at{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span>.
+            <span className="font-medium text-foreground">{roomName}</span>.
           </>
         ),
       };
@@ -86,7 +86,7 @@ const getSettledCopy = (
         description: (
           <>
             You cancelled confirmation for{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span>.
+            <span className="font-medium text-foreground">{roomName}</span>.
           </>
         ),
       };
@@ -96,7 +96,7 @@ const getSettledCopy = (
         description: (
           <>
             This confirmation for{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span> is no
+            <span className="font-medium text-foreground">{roomName}</span> is no
             longer available.
           </>
         ),
@@ -162,7 +162,7 @@ export const ConfirmCreateHitlCard = ({
           description ?? (
             <>
               Review the details below before confirming your stay at{" "}
-              <span className="font-medium text-zinc-200">{roomName}</span>.
+              <span className="font-medium text-foreground">{roomName}</span>.
             </>
           )
         }
@@ -172,14 +172,14 @@ export const ConfirmCreateHitlCard = ({
         submittingDescription={
           <>
             Please wait while we confirm your stay at{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span>.
+            <span className="font-medium text-foreground">{roomName}</span>.
           </>
         }
         successTitle={CREATE_TITLE.success}
         successDescription={
           <>
             Your stay at{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span> has
+            <span className="font-medium text-foreground">{roomName}</span> has
             been booked.
           </>
         }
@@ -191,14 +191,14 @@ export const ConfirmCreateHitlCard = ({
         cancelledDescription={
           <>
             You cancelled confirmation for{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span>.
+            <span className="font-medium text-foreground">{roomName}</span>.
           </>
         }
         expiredTitle={CREATE_TITLE.expired}
         expiredDescription={
           <>
             This confirmation for{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span> is no
+            <span className="font-medium text-foreground">{roomName}</span> is no
             longer available.
           </>
         }
@@ -231,7 +231,7 @@ export const ConfirmCreateHitlCard = ({
           description ?? (
             <>
               Review the changes for your stay at{" "}
-              <span className="font-medium text-zinc-200">{roomName}</span>{" "}
+              <span className="font-medium text-foreground">{roomName}</span>{" "}
               before saving.
             </>
           )
@@ -242,14 +242,14 @@ export const ConfirmCreateHitlCard = ({
         submittingDescription={
           <>
             Please wait while we update your stay at{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span>.
+            <span className="font-medium text-foreground">{roomName}</span>.
           </>
         }
         successTitle={MODIFY_TITLE.success}
         successDescription={
           <>
             Your stay at{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span> has
+            <span className="font-medium text-foreground">{roomName}</span> has
             been updated.
           </>
         }
@@ -261,14 +261,14 @@ export const ConfirmCreateHitlCard = ({
         cancelledDescription={
           <>
             You cancelled confirmation for{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span>.
+            <span className="font-medium text-foreground">{roomName}</span>.
           </>
         }
         expiredTitle={MODIFY_TITLE.expired}
         expiredDescription={
           <>
             This confirmation for{" "}
-            <span className="font-medium text-zinc-200">{roomName}</span> is no
+            <span className="font-medium text-foreground">{roomName}</span> is no
             longer available.
           </>
         }
@@ -298,13 +298,13 @@ export const ConfirmCreateHitlCard = ({
     description ?? (
       <>
         Review the details below before confirming your stay at{" "}
-        <span className="font-medium text-zinc-200">{roomName}</span>.
+        <span className="font-medium text-foreground">{roomName}</span>.
       </>
     )
   );
 
   return (
-    <div className="space-y-3 p-3.5 text-zinc-100">
+    <div className="space-y-3 p-3.5 text-foreground">
       <ConfirmHitlHeader
         tone="emerald"
         icon={<CalendarCheck className="size-4" aria-hidden />}
@@ -315,7 +315,7 @@ export const ConfirmCreateHitlCard = ({
       {summary}
 
       {errorMessage ? (
-        <p className="text-xs text-red-400">{errorMessage}</p>
+        <p className="text-xs text-destructive">{errorMessage}</p>
       ) : null}
 
       {isComplete ? null : (
@@ -324,7 +324,7 @@ export const ConfirmCreateHitlCard = ({
             type="button"
             variant="outline"
             size="sm"
-            className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white cursor-pointer"
+            className="cursor-pointer"
             disabled={allActionsDisabled || actionsDisabled}
             onClick={onCancel}
           >
@@ -333,7 +333,7 @@ export const ConfirmCreateHitlCard = ({
           <Button
             type="button"
             size="sm"
-            className="gap-1.5 bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer"
+            className="gap-1.5 cursor-pointer"
             disabled={allActionsDisabled || actionsDisabled}
             onClick={onConfirm}
           >

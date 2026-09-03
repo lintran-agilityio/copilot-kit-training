@@ -75,13 +75,13 @@ export const ChatUserMessage = ({
             className={cn(
               "app-scrollbar max-h-[400px] overflow-y-auto",
               isBlocked &&
-                "border border-amber-500/40 bg-amber-950/40 text-amber-50",
+                "border border-amber-500/40 bg-amber-500/10 text-foreground",
               isBookingFormDisabled &&
                 "pointer-events-none opacity-45 saturate-50",
             )}
             banner={
               isBlocked ? (
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-300/90">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
                   Blocked by security filter
                 </p>
               ) : null

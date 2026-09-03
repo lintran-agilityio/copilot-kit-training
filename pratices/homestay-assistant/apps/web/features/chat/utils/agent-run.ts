@@ -156,6 +156,45 @@ export const isThreadLockedAgentError = (
 };
 
 /**
+ * Model-provider rate-limit / quota rejection (HTTP 429).
+ *
+ * Cerebras enforces a tokens-per-minute cap: a burst of turns — each carrying
+ * the homestay agent's large system prompt + recalled history — exhausts the
+ * minute budget and the model call is rejected with
+ * `AI_APICallError: Tokens per minute limit exceeded`.
+ *
+ * This is NOT a Mastra tripwire (those come from an input processor calling
+ * `abort()` and are classified by `classifyTripwire` in the AG-UI bridge). It
+ * is a raw provider rejection that streams back as a `RUN_ERROR`, so the two
+ * token-size guards (`UserMessageTokenLimitProcessor`,`TokenLimiterProcessor`)
+ * never see it — a single request stays within their per-message / per-request
+ * limits; it is the cumulative per-minute rate that trips. The chat surface
+ * classifies it here and offers Retry once the window resets.
+ */
+const RATE_LIMIT_ERROR_RE =
+  /\b(rate[ -]?limit(?:ed|ing)?|too many requests|quota (?:exceeded|reached))\b|tokens? per (?:minute|day)|requests? per (?:minute|day)/i;
+
+/** Bare "429" is ambiguous (ports, ids) — only trust it alongside limit wording. */
+const HTTP_429_ERROR_RE =
+  /\b429\b[\s\S]{0,40}(?:too many|rate|limit|quota|retry)|(?:too many|rate|limit|quota|retry)[\s\S]{0,40}\b429\b/i;
+
+export const isRateLimitAgentError = (
+  error: Error,
+  context?: { runtimeErrorCode?: string } | null,
+): boolean => {
+  const statusCode = (error as { statusCode?: unknown }).statusCode;
+
+  if (statusCode === 429 || context?.runtimeErrorCode === "429") {
+    return true;
+  }
+
+  return (
+    RATE_LIMIT_ERROR_RE.test(error.message) ||
+    HTTP_429_ERROR_RE.test(error.message)
+  );
+};
+
+/**
  * Single UI/provider gate: Stop teardown noise + post-Stop thread-lock races.
  * Genuine concurrent-run locks (no recent Stop) return false so Retry can show.
  */

@@ -7,7 +7,7 @@ import { ROUTES } from "@/constants";
 
 const LoginPage = () => {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-24">
       <div className="flex flex-col items-center justify-center">
         <SignIn
           routing="path"

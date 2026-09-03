@@ -33,8 +33,8 @@ export const RoomBookingPreviewCard = ({
   }, [imageUrl]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/8">
-      <div className="relative aspect-[16/10] bg-zinc-900">
+    <div className="overflow-hidden rounded-xl border border-border">
+      <div className="relative aspect-[16/10] bg-muted">
         <Image
           src={resolvedImage}
           alt={name}

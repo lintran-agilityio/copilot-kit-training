@@ -47,7 +47,7 @@ export const RoomGrid = ({ initialRooms, className }: RoomGridProps) => {
             type="button"
             variant="ghost"
             size="sm"
-            className="gap-2 text-zinc-400 hover:text-white"
+            className="gap-2 text-muted-foreground hover:text-foreground"
             onClick={clearSelectedRoom}
           >
             <ArrowLeft className="size-4" />
@@ -59,7 +59,7 @@ export const RoomGrid = ({ initialRooms, className }: RoomGridProps) => {
               type="button"
               variant="ghost"
               size="sm"
-              className="gap-1.5 text-zinc-400 hover:text-white"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
             >
               <Heart className="size-4" />
               Save
@@ -68,7 +68,7 @@ export const RoomGrid = ({ initialRooms, className }: RoomGridProps) => {
               type="button"
               variant="ghost"
               size="sm"
-              className="gap-1.5 text-zinc-400 hover:text-white"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
             >
               <Share2 className="size-4" />
               Share

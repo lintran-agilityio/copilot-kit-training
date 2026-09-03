@@ -31,7 +31,7 @@ export function RoomImage({
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-zinc-900",
+        "relative overflow-hidden bg-muted",
         compact ? "aspect-[16/10]" : "aspect-[4/3]",
       )}
     >
@@ -52,21 +52,19 @@ export function RoomImage({
         className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
 
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex gap-1">
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/60 via-black/15 to-transparent p-3">
+        <div className="flex w-full items-center justify-between">
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-background/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground">
             <span
-              className="h-4 w-1 rounded-full"
+              className="h-3 w-1 rounded-full"
               style={{ backgroundColor: levelColor }}
             />
-            <span className="text-[11px] font-medium tracking-[0.15em] text-white/90">
-              LEVEL {level}
-            </span>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5 text-zinc-400">
-            <Users className="size-3.5 text-emerald-300" />
-            <span className="text-xs text-emerald-300">{capacity}</span>
-          </div>
+            Level {level}
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-foreground/70 px-2 py-1 text-xs font-medium text-background">
+            <Users className="size-3.5" />
+            {capacity} guests
+          </span>
         </div>
       </div>
     </div>

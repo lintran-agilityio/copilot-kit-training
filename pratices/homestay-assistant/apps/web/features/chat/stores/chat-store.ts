@@ -7,16 +7,19 @@ import { create } from "zustand";
 interface ChatStore {
   pendingOutboundMessages: Record<string, string | undefined>;
   actionError: string | null;
+  /** True when the current `actionError` clears by re-running the agent (Retry). */
+  actionErrorRetriable: boolean;
   setPendingOutboundMessage: (scopeKey: string, message: string) => void;
   clearPendingOutboundMessage: (scopeKey: string) => void;
   consumePendingOutboundMessage: (scopeKey: string) => string | undefined;
-  setActionError: (message: string) => void;
+  setActionError: (message: string, options?: { retriable?: boolean }) => void;
   clearActionError: () => void;
 }
 
 export const useChatStore = create<ChatStore>()((set, get) => ({
   pendingOutboundMessages: {},
   actionError: null,
+  actionErrorRetriable: false,
   setPendingOutboundMessage: (scopeKey, message) =>
     set((state) => ({
       pendingOutboundMessages: {
@@ -50,6 +53,11 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
 
     return message;
   },
-  setActionError: (message) => set({ actionError: message }),
-  clearActionError: () => set({ actionError: null }),
+  setActionError: (message, options) =>
+    set({
+      actionError: message,
+      actionErrorRetriable: options?.retriable ?? false,
+    }),
+  clearActionError: () =>
+    set({ actionError: null, actionErrorRetriable: false }),
 }));

@@ -38,6 +38,7 @@ import { useChatStore } from "@/features/chat/stores/chat-store";
 import { ChatSidebarProps } from "@/features/chat/components/ChatSidebar";
 import {
   isExpectedAgentError,
+  isRateLimitAgentError,
   isThreadLockedAgentError,
   rejectIfAgentRunning,
   runAgentSafely,
@@ -82,6 +83,9 @@ export const ChatSidebarContent = ({
     (state) => state.consumePendingOutboundMessage,
   );
   const actionError = useChatStore((state) => state.actionError);
+  const actionErrorRetriable = useChatStore(
+    (state) => state.actionErrorRetriable,
+  );
   const clearActionError = useChatStore((state) => state.clearActionError);
   const { copilotkit } = useCopilotKit();
   const { agent } = useAgent({ agentId });
@@ -224,6 +228,7 @@ export const ChatSidebarContent = ({
 
     setIsRetryingRun(true);
     setRunStartError(null);
+    useChatStore.getState().clearActionError();
 
     await runAgentSafely(
       () => copilotkitRef.current.runAgent({ agent: agentRef.current }),
@@ -248,7 +253,7 @@ export const ChatSidebarContent = ({
   return (
     <aside
       className={cn(
-        "flex h-full w-full flex-col border-l border-white/10 bg-[#0a0a0a]",
+        "flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card",
         className,
       )}
     >
@@ -261,7 +266,7 @@ export const ChatSidebarContent = ({
         )}
       >
         {isThreadLoading || isThreadError ? (
-          <div className="absolute inset-0 z-10 bg-[#0a0a0a]">
+          <div className="absolute inset-0 z-10 bg-card">
             <ThreadLoadingStateView
               errorMessage={isThreadError ? loadError : null}
               onRetry={isThreadError ? requestReload : undefined}
@@ -299,6 +304,14 @@ export const ChatSidebarContent = ({
                 return;
               }
 
+              // Model-provider rate limit (e.g. Cerebras tokens-per-minute) is
+              // owned by `handleCopilotError` → chat-store `actionError`, which
+              // renders the retriable footer notice. Don't also log it as a
+              // failure here.
+              if (isRateLimitAgentError(error, context)) {
+                return;
+              }
+
               console.error(error);
             }}
             // CopilotChat always injects autoSuggestions into scrollView when the
@@ -327,7 +340,7 @@ export const ChatSidebarContent = ({
             {({ scrollView, input }) => (
               <div
                 data-testid="copilot-chat"
-                className="copilotKitChat flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+                className="copilotKitChat flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-red"
               >
                 <div
                   data-chat-messages
@@ -338,7 +351,7 @@ export const ChatSidebarContent = ({
                 </div>
                 <div
                   data-chat-footer
-                  className="shrink-0 border-t border-white/5 bg-[#0a0a0a]"
+                  className="shrink-0 border-t border-border bg-card"
                 >
                   {runStartError ? (
                     <ChatRunErrorNotice
@@ -350,6 +363,8 @@ export const ChatSidebarContent = ({
                   ) : actionError ? (
                     <ChatRunErrorNotice
                       message={actionError}
+                      isRetrying={isRetryingRun}
+                      onRetry={actionErrorRetriable ? retryRun : undefined}
                       onDismiss={clearActionError}
                     />
                   ) : null}

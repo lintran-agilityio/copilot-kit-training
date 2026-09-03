@@ -49,7 +49,14 @@ export const findRoomTool = createTool({
       );
       return { ...result, date: input.date, guests: input.guests };
     }
-    return findRooms(input, serviceContextFromTool(context));
+    const result = await findRooms(input, serviceContextFromTool(context));
+    // `limit` trims the search to the top N matches when the guest asked for a
+    // specific count ("find me 3 rooms"). Applied here so both the chat cards
+    // (FindRoomNotice reads the raw result) and the model's compare candidates
+    // see the same trimmed set.
+    return input.limit && input.limit < result.rooms.length
+      ? { ...result, rooms: result.rooms.slice(0, input.limit) }
+      : result;
   },
   toModelOutput: toFindRoomModelOutput,
 });

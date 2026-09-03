@@ -60,19 +60,19 @@ export const RenameThreadDialog = ({
     >
       <DialogContent
         showCloseButton={!isSubmitting}
-        className="border-white/10 bg-[#111111] text-zinc-100 sm:max-w-md"
+        className="sm:max-w-md"
       >
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-zinc-200">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-foreground">
                 <Pencil className="size-5" />
               </div>
               <div className="space-y-1.5">
-                <DialogTitle className="text-lg font-medium text-white">
+                <DialogTitle className="text-lg font-medium text-foreground">
                   Rename thread
                 </DialogTitle>
-                <DialogDescription className="text-zinc-400">
+                <DialogDescription className="text-muted-foreground">
                   Enter a new name for this conversation.
                 </DialogDescription>
               </div>
@@ -91,15 +91,14 @@ export const RenameThreadDialog = ({
               placeholder="Thread name"
               autoFocus
               disabled={isSubmitting}
-              className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus:border-white/20 focus:ring-2 focus:ring-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
-          <DialogFooter className="border-white/8 bg-transparent">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
-              className="border-white/10 bg-transparent text-zinc-200 hover:bg-white/5 hover:text-white"
               disabled={isSubmitting}
               onClick={onCancel}
             >

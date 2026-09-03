@@ -79,7 +79,7 @@ export const ConfirmModifyHitlCard = ({
   const reviewDescription = description ?? (
     <>
       Review the changes for your stay at{" "}
-      <span className="font-medium text-zinc-200">{roomName}</span> before
+      <span className="font-medium text-foreground">{roomName}</span> before
       saving.
     </>
   );
@@ -99,14 +99,14 @@ export const ConfirmModifyHitlCard = ({
       submittingDescription={
         <>
           Please wait while we update your stay at{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span>.
+          <span className="font-medium text-foreground">{roomName}</span>.
         </>
       }
       successTitle={MODIFY_TITLE.success}
       successDescription={
         <>
           Your stay at{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span> has been
+          <span className="font-medium text-foreground">{roomName}</span> has been
           updated.
         </>
       }
@@ -118,14 +118,14 @@ export const ConfirmModifyHitlCard = ({
       cancelledDescription={
         <>
           You cancelled confirmation for{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span>.
+          <span className="font-medium text-foreground">{roomName}</span>.
         </>
       }
       expiredTitle={MODIFY_TITLE.expired}
       expiredDescription={
         <>
           This confirmation for{" "}
-          <span className="font-medium text-zinc-200">{roomName}</span> is no
+          <span className="font-medium text-foreground">{roomName}</span> is no
           longer available.
         </>
       }

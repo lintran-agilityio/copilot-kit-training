@@ -15,8 +15,16 @@ export const findRoomPurposeSchema = z
 /**
  * Base find_room args shared by Mastra validation and FE useRenderTool.
  * Agent may wrap `name` with a sanitize transform — do not add that here.
+ *
+ * `purpose` is deliberately the FIRST property: gpt-4o-mini (strict mode)
+ * streams tool-call args in schema order, and the chat renderer
+ * (`FindRoomNotice`) reads `purpose` off the partial stream to decide whether
+ * to paint the Room List skeleton. Keeping it first means an internal
+ * `book_resolve` / `resolve` lookup is identified before that skeleton can
+ * flash between the search and the Booking Form / Confirm card.
  */
 export const findRoomInputSchema = z.object({
+  purpose: findRoomPurposeSchema,
   name: z
     .string()
     .optional()
@@ -45,7 +53,14 @@ export const findRoomInputSchema = z.object({
     .describe(
       "Room floor level. Use level: 4 for luxury / premium / top-floor / penthouse requests — do not put those words in name.",
     ),
-  purpose: findRoomPurposeSchema,
+  limit: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe(
+      "Max number of rooms to return, when the guest asks for a specific count (e.g. \"find me 3 rooms\" → limit: 3). Trims both the chat cards and the compare candidates to the top matches. Omit when no count was stated. Ignored for book_resolve / resolve lookups.",
+    ),
 });
 
 export type FindRoomInput = z.infer<typeof findRoomInputSchema>;
