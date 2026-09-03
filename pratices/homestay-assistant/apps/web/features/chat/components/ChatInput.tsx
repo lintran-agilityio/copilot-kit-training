@@ -8,7 +8,7 @@ import {
 
 import { cn } from "@repo/utils";
 import { useChatStore } from "@/features/chat/stores/chat-store";
-import { shouldBlockChatSendKeyDown, rejectIfAgentRunning } from "@/features/chat/utils";
+import { shouldBlockChatSendKeyDown } from "@/features/chat/utils";
 
 const ChatInputRunningContext = createContext(false);
 
@@ -23,6 +23,9 @@ const GuardedTextArea = forwardRef<
       {...props}
       ref={ref}
       onKeyDown={(event) => {
+        // While the agent runs, Enter must not start a second request. Swallow
+        // it silently — no busy notice — the way ChatGPT does. Shift+Enter and
+        // IME composition still fall through to the textarea.
         if (
           shouldBlockChatSendKeyDown({
             key: event.key,
@@ -32,7 +35,6 @@ const GuardedTextArea = forwardRef<
           })
         ) {
           event.preventDefault();
-          rejectIfAgentRunning(true);
           return;
         }
 
@@ -43,8 +45,9 @@ const GuardedTextArea = forwardRef<
 });
 
 /**
- * Chat composer: Stop stays available while the agent runs; Send / Enter
- * cannot start a second request. A blocked submit surfaces the busy error.
+ * Chat composer: while the agent runs the send button becomes Stop and
+ * Enter / Send cannot start a second request. Blocked submits are silent
+ * (no busy notice), matching ChatGPT.
  */
 export const ChatInput = ({
   isRunning = false,
@@ -53,7 +56,9 @@ export const ChatInput = ({
   ...props
 }: CopilotChatInputProps) => {
   const handleSubmit = (value: string) => {
-    if (rejectIfAgentRunning(isRunning)) {
+    // The Stop button replaces Send while running, but guard the submit path
+    // too so a race (click as the run starts) cannot queue a second run.
+    if (isRunning) {
       return;
     }
 

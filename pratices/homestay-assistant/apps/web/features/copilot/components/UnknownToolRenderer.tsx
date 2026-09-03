@@ -19,7 +19,21 @@ export const UnknownToolRenderer = ({
 
   if (status === "inProgress") {
     return (
-      <div className="text-muted-foreground text-sm">Processing...</div>
+      <div
+        role="status"
+        aria-label="Processing"
+        className="flex items-center gap-1.5 py-1"
+      >
+        <span className="sr-only">Processing</span>
+        {[0, 1, 2].map((index) => (
+          <span
+            key={index}
+            aria-hidden
+            className="size-1.5 rounded-full bg-muted-foreground animate-bounce"
+            style={{ animationDelay: `${index * 150}ms` }}
+          />
+        ))}
+      </div>
     );
   }
 

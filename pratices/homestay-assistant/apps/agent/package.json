@@ -9,7 +9,13 @@
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start",
-    "eval:dev": "evalite watch"
+    "check-types": "tsc --noEmit",
+    "preeval": "pnpm exec turbo run build --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
+    "eval": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run",
+    "eval:deterministic": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run deterministic",
+    "preeval:watch": "pnpm exec turbo run build --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
+    "eval:watch": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js watch",
+    "eval:dev": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js watch"
   },
   "keywords": [],
   "author": "",
