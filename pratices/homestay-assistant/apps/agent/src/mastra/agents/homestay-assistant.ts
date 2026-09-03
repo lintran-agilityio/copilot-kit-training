@@ -34,7 +34,7 @@ import { agentOutputProcessors } from "@/mastra/processors/agent-output-processo
 import { securityInputProcessor } from "@/mastra/processors/security-input.processors";
 import { BookingFormPrefillProcessor } from "@/mastra/processors/booking-form-prefill.processor";
 import { enforceBookingStep } from "@/mastra/booking/step-machine";
-
+console.log("=== AI_MODEL ===", AI_MODEL);
 export const homestayAssistant = new Agent({
   id: AGENT_KEYS.HOMESTAY_ASSISTANT,
   name: "Homestay Assistant",

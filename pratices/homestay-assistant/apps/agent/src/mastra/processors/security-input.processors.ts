@@ -1,16 +1,20 @@
 import {
-  PromptInjectionDetector,
   TokenLimiterProcessor,
   UnicodeNormalizer,
 } from "@mastra/core/processors";
 
 import { AGENT_INPUT_TOKEN_LIMIT } from "@repo/constants";
+import { AI_SECURITY_MODEL } from "@/mastra/constants";
 import { DedupeToolCallsProcessor } from "./dedupe-tool-calls.processor";
 import { ExcludeBlockedMessagesProcessor } from "./exclude-blocked-messages.processor";
+import { GuestPromptInjectionProcessor } from "./guest-prompt-injection.processor";
 import { UserMessageTokenLimitProcessor } from "./user-message-token-limit.processor";
 
-const promptInjectionProcessor = new PromptInjectionDetector({
-  model: process.env.AI_SECURITY_MODEL || "openai/gpt-4o-mini",
+// Screens genuine guest free-text; skips first-party UI-action prompts
+// ([book-form] / [book-stay] / [booking-cancel] …) the web app builds itself —
+// see GuestPromptInjectionProcessor.
+const promptInjectionProcessor = new GuestPromptInjectionProcessor({
+  model: AI_SECURITY_MODEL,
   threshold: 0.8,
   strategy: "block",
   lastMessageOnly: true,

@@ -18,6 +18,10 @@
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
+    },
+    "eval": {
+      "dependsOn": ["^build"],
+      "cache": false
     }
   }
 }
