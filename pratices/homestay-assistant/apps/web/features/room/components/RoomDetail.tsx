@@ -4,16 +4,16 @@ import { Award, CalendarCheck, Clock3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useRequestRoomBooking, useBooking } from "@/features/booking/hooks";
-import { useReportHomestayFocusedRoom } from "@/features/chat/hooks";
+import { useReportHomestayFocusedRoom } from "@/features/chatbot/hooks";
 import { useRoomBookingEstimate } from "@/features/room/hooks";
-import { useArtifactStore } from "@/features/chat/stores/artifact-store";
+import { useArtifactStore } from "@/features/chatbot/stores/artifact-store";
 import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
 import { buildBookingStayMessage } from "@/features/booking/utils";
 import type { Room } from "@/features/room/types/room";
 import {
   ARTIFACT_STATUS,
   isArtifactLocked,
-} from "@/features/chat/types/artifact";
+} from "@/features/chatbot/types/artifact";
 
 import { Button } from "@/components/ui/button";
 import { BookingStatusBadge } from "@/features/booking/components";

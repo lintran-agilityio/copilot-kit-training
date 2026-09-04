@@ -39,7 +39,7 @@ const FIRST_PARTY_PROMPT_PREFIXES = [
 const FIRST_PARTY_ACTION_PROMPT =
   /^(?:Show booking form for|Show detail room for) .+\.\s*roomId:\s*\S+/i;
 
-/** Hidden page-sync prompts (`apps/web/features/copilot/config/page-generative-ui.ts`). */
+/** Hidden page-sync prompts (`apps/web/features/chatbot/declarative-ui/config/page-generative-ui.ts`). */
 const FIRST_PARTY_PAGE_SYNC = /^Load (?:all rooms\.|rooms for \d{4}-\d{2}-\d{2}\.)/i;
 
 export const isFirstPartyActionPrompt = (content: string): boolean => {

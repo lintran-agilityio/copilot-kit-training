@@ -16,7 +16,7 @@ import type {
   CreateBookingResult,
   UpdateBookingResult,
 } from "@/features/booking/types";
-import type { MessageLike, ToolArgumentsLike } from "@/features/chat/types";
+import type { MessageLike, ToolArgumentsLike } from "@/features/chatbot/types";
 import {
   isCancelBookingSuccess,
   isCreateBookingSuccess,

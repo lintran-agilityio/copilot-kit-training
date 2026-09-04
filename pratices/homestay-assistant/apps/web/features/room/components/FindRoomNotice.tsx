@@ -5,9 +5,9 @@ import { ToolCallStatus, useAgent } from "@copilotkit/react-core/v2";
 
 import { parseToolResult } from "@repo/utils";
 import { AGENT_KEYS, TOOL_PURPOSE } from "@repo/constants";
-import type { MessageLike } from "@/features/chat/types";
+import type { MessageLike } from "@/features/chatbot/types";
 import { RoomListSkeleton } from "@/components/common";
-import { EmbeddedWidget } from "@/features/chat/components";
+import { EmbeddedWidget } from "@/features/chatbot/components";
 import { ListRoomPreview } from "@/features/room/components";
 import type {
   FindRoomResult,

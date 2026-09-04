@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 import { ToolCallStatus, useAgent } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { EmbeddedWidget } from "@/features/chat/components";
-import { useGenericUiInteraction } from "@/features/chat/hooks";
-import { useArtifactStore } from "@/features/chat/stores/artifact-store";
+import { EmbeddedWidget } from "@/features/chatbot/components";
+import { useGenericUiInteraction } from "@/features/chatbot/hooks";
+import { useArtifactStore } from "@/features/chatbot/stores/artifact-store";
 import {
   ARTIFACT_STATUS,
   isArtifactInteractive,
-} from "@/features/chat/types/artifact";
-import type { MessageLike } from "@/features/chat/types";
-import { hasLaterToolCallInTurn } from "@/features/chat/utils";
+} from "@/features/chatbot/types/artifact";
+import type { MessageLike } from "@/features/chatbot/types";
+import { hasLaterToolCallInTurn } from "@/features/chatbot/utils";
 import { RoomDetail } from "@/features/room/components";
 import { ROOM_DETAIL_VARIANT } from "@/constants";
 import type {

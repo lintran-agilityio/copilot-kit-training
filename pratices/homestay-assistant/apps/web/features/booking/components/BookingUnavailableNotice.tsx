@@ -7,7 +7,7 @@ import { parseToolResult } from "@repo/utils";
 import { MODEL_NAME } from "@repo/types";
 
 import { BookingUnavailable } from "@/components/confirm-modal";
-import { EmbeddedWidget } from "@/features/chat/components";
+import { EmbeddedWidget } from "@/features/chatbot/components";
 import {
   CheckRoomAvailabilityToolProps,
   CheckRoomAvailabilityResult,

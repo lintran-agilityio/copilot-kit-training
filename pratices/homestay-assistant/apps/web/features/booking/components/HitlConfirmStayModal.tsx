@@ -21,7 +21,7 @@ import {
   ConfirmCreateHitlCard,
   ConfirmModifyHitlCard,
 } from "@/components/confirm-modal";
-import { EmbeddedWidget } from "@/features/chat/components";
+import { EmbeddedWidget } from "@/features/chatbot/components";
 import {
   BOOKINGS_PAGE_PATH,
   CONFIRM_BOOKING,
@@ -35,8 +35,8 @@ import {
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useCreateBookingCardStore } from "@/features/booking/stores/create-booking-card-store";
 import { useModifyBookingCardStore } from "@/features/booking/stores/modify-booking-card-store";
-import { useArtifactStore } from "@/features/chat/stores/artifact-store";
-import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
+import { useArtifactStore } from "@/features/chatbot/stores/artifact-store";
+import { useReportHomestayAgentUiFocus } from "@/features/chatbot/hooks";
 import {
   buildCreateStayCorrelationKey,
   buildModifyChangeRows,

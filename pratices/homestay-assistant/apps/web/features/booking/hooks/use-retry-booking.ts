@@ -8,9 +8,9 @@ import {
 } from "@repo/constants";
 import { MODEL_NAME } from "@repo/types";
 
-import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
+import { useHomestayAgentUiStore } from "@/features/chatbot/stores/homestay-agent-ui-store";
 import { FLOW_KEY } from "@/constants";
-import { useSendAgentMessage } from "@/hooks";
+import { useSendAgentMessage } from "@/features/chatbot/hooks";
 import { useBookingStore } from "../stores";
 import { getRetryMessage } from "../constants";
 

@@ -6,7 +6,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 
 import { cn } from "@repo/utils";
 import { AppErrorBoundary } from "@/providers/app-error-boundary";
-import CopilotKitProviders from "@/providers/copilot-provider";
+import ChatbotProvider from "@/features/chatbot/provider";
 
 const geistSans = localFont({
   src: "../public/fonts/GeistVF.woff",
@@ -62,7 +62,7 @@ export default function RootLayout({
               },
             }}
           >
-            <CopilotKitProviders>{children}</CopilotKitProviders>
+            <ChatbotProvider>{children}</ChatbotProvider>
           </ClerkProvider>
         </AppErrorBoundary>
       </body>

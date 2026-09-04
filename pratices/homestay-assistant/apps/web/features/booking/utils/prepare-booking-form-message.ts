@@ -1,5 +1,5 @@
 import { buildBookingFormMessage } from "@/features/booking/utils";
-import { useArtifactStore } from "@/features/chat/stores/artifact-store";
+import { useArtifactStore } from "@/features/chatbot/stores/artifact-store";
 
 /**
  * Start a booking-form artifact (expires prior interactive forms) and build

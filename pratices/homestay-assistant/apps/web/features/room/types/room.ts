@@ -1,6 +1,6 @@
 import type { BookingStatus } from "@repo/types";
 import type { FindRoomPurpose } from "@repo/constants";
-import type { ToolRendererProps } from "@/features/copilot/types";
+import type { ToolRendererProps } from "@/features/chatbot/declarative-ui/types";
 
 export type Amenity =
   | "monitor"

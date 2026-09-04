@@ -4,7 +4,7 @@ import type {
   BookingDraft,
   PendingModifyStay,
 } from "@/features/booking/types/booking";
-import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
+import { useHomestayAgentUiStore } from "@/features/chatbot/stores/homestay-agent-ui-store";
 
 export interface BookingStore extends BookingDraft {
   pendingModifyStay: PendingModifyStay | null;

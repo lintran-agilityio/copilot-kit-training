@@ -236,7 +236,7 @@ export const resolveBookingTransition = (
  * A forced transition silently no-ops when the target tool isn't in
  * `args.tools` — normally because the frontend hasn't mounted the matching
  * `useHumanInTheLoop`/`useRenderTool` registration for this run (see
- * apps/web/features/copilot/providers/booking-tools.tsx). That's a real gap:
+ * apps/web/features/chatbot/declarative-ui/tools/booking-tools.tsx). That's a real gap:
  * the booking flow just stalls with no forced tool call and no error. Warn
  * so it's visible in logs instead of only showing up as "the agent stopped
  * responding" from the guest's side.

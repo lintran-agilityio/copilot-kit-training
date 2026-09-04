@@ -8,7 +8,7 @@ import {
   buildBookingCancelMessage,
   buildBookingModifyMessage,
 } from "@/features/booking/utils";
-import { useSendAgentMessage } from "@/hooks";
+import { useSendAgentMessage } from "@/features/chatbot/hooks";
 
 /** Selector hook over the module booking store. */
 export const useBooking = useBookingStore;

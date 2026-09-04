@@ -5,7 +5,7 @@ import { useAgent, ToolCallStatus } from "@copilotkit/react-core/v2";
 import { AGENT_KEYS } from "@repo/constants";
 
 import { ConfirmCancelHitlCard } from "@/components/confirm-modal";
-import { EmbeddedWidget } from "@/features/chat/components";
+import { EmbeddedWidget } from "@/features/chatbot/components";
 import {
   BOOKINGS_PAGE_PATH,
   CONFIRM_BOOKING,

@@ -16,11 +16,12 @@ Next.js frontend for Homestay Assistant. Guests sign in with Clerk, chat with th
 
 | Area | Location | Role |
 | --- | --- | --- |
-| Assistant UI | `features/assistant-ui` | Chat shell, suggestions, agent context |
-| Threads | `features/threads` | Thread list, create/switch/rename/delete |
-| Rooms | `features/room` | Room list/detail UI + stores |
-| Bookings | `features/booking` | Booking flows + stores |
-| Generative UI | `features/ai-elements` | Tool renderers (rooms, availability, etc.) |
+| Chatbot | `features/chatbot` | The whole assistant: chat shell + suggestions, agent context/state, `<ChatbotProvider>` |
+| ↳ Declarative UI | `features/chatbot/declarative-ui` | All generative UI: `tools/` renderers (`useRenderTool` / `useHumanInTheLoop` / `useFrontendTool`), `a2ui/` catalog, `config/` chat-visibility rules |
+| ↳ CopilotKit wiring | `features/chatbot/copilot` | Non-UI runtime glue: agent-context readables, transcript sanitizer, `CopilotProvider` mount |
+| ↳ Threads | `features/chatbot/threads` | Thread list, create/switch/rename/delete |
+| Rooms | `features/room` | Room list/detail UI + stores (renders generative cards in chat) |
+| Bookings | `features/booking` | Booking flows + HITL modals + stores |
 | BFF routes | `app/api/*` | Proxy to Nest API + CopilotKit runtime + threads |
 
 App routes include `/` (home/chat), `/login`, `/home`, and `/bookings`.
@@ -98,8 +99,16 @@ pnpm check-types
 
 ```
 app/                 # Next.js App Router pages + API routes
-components/          # App-level UI (layouts, suggestions, etc.)
-features/            # Domain features (assistant, threads, room, booking, ai-elements)
-providers/           # CopilotKit + app providers
+components/          # App-level UI (layouts, calendar, confirm-modal, ui/)
+features/
+  chatbot/           # Assistant
+    components/       #   chat shell, message renderers, suggestions
+    declarative-ui/   #   generative UI: tools/ renderers, a2ui/ catalog, config/
+    copilot/          #   CopilotKit runtime glue: readables, sanitizer, CopilotProvider
+    threads/          #   conversation thread list / CRUD
+    hooks/ stores/ constants/ types/ utils/
+  room/              # Room domain UI + stores
+  booking/           # Booking flows + HITL modals + stores
+providers/           # app-provider (QueryClient) + error boundary
 utils/               # Helpers (e.g. API URL)
 ```

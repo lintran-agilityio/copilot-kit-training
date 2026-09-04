@@ -1,6 +1,6 @@
 import type { GetBookingsPurpose } from "@repo/constants";
 import type { Room } from "@/features/room/types/room";
-import { ToolRendererProps } from "@/features/copilot/types";
+import { ToolRendererProps } from "@/features/chatbot/declarative-ui/types";
 
 export enum BookingStatus {
   PENDING = "pending",

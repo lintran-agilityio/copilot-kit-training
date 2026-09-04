@@ -15,11 +15,11 @@ import {
 import { parseToolResult } from "@repo/utils";
 
 import { Button } from "@/components/ui/button";
-import { EmbeddedWidget } from "@/features/chat/components";
+import { EmbeddedWidget } from "@/features/chatbot/components";
 import {
   useReportHomestayAgentUiFocus,
   useSupersedeHitlOnNewInteraction,
-} from "@/features/chat/hooks";
+} from "@/features/chatbot/hooks";
 import {
   isHitlDecisionTerminal,
   isHitlToolRespondable,

@@ -91,7 +91,8 @@ const createRuntime = () => {
     // Advertise A2UI on /info so the client mounts the surface renderer and the
     // run path applies A2UIMiddleware (injects the `render_a2ui` tool + the
     // homestay catalog schema/guidelines as agent context). The catalog itself
-    // is supplied client-side via `a2ui={{ catalog }}` in copilot-provider.tsx.
+    // is supplied client-side via `a2ui={{ catalog }}` in
+    // features/chatbot/provider.tsx.
     a2ui: {},
     agents: async () => {
       const agentRequest = getCurrentAgentRequest();

@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-import { useGenericUiInteraction } from "@/features/chat/hooks";
+import { useGenericUiInteraction } from "@/features/chatbot/hooks";
 import { ListRoom } from "@/features/room/components/ListRoom";
 import type { RoomSelectPayload } from "@/features/room/components/Room";
 import { RoomChatDetail } from "@/features/room/components/RoomChatDetail";

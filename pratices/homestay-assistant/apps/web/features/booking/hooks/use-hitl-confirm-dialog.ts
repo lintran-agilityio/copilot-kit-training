@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { ToolCallStatus } from "@copilotkit/react-core/v2";
 
-import { useSupersedeHitlOnNewInteraction } from "@/features/chat/hooks";
+import { useSupersedeHitlOnNewInteraction } from "@/features/chatbot/hooks";
 import type {
   HitlConfirmDialogResult,
   HitlToolResult,

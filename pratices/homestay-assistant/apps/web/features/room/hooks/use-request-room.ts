@@ -8,9 +8,9 @@ import {
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
 import { buildActionPrompt } from "@repo/utils";
-import { useSendAgentMessage } from "@/hooks";
+import { useSendAgentMessage } from "@/features/chatbot/hooks";
 import { FLOW_KEY, ROUTES, ROOM_DETAIL_ENTRY_MODE } from "@/constants";
-import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
+import { useHomestayAgentUiStore } from "@/features/chatbot/stores/homestay-agent-ui-store";
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useRoomStore } from "@/features/room/stores/room-store";
 import { prepareBookingFormMessage } from "@/features/booking/utils";

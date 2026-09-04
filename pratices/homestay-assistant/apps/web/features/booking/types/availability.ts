@@ -1,4 +1,4 @@
-import { ToolRendererProps } from "@/features/copilot/types";
+import { ToolRendererProps } from "@/features/chatbot/declarative-ui/types";
 import { MODEL_NAME } from "@repo/types";
 
 export type CheckRoomAvailabilityInput = {

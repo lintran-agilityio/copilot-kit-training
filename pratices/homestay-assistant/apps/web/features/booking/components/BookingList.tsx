@@ -4,7 +4,7 @@ import { CardListSection } from "@/components/common/CardListSection";
 import { RoomListSkeleton } from "@/components/common/RoomListSkeleton";
 import { BookingCard } from "@/features/booking/components/BookingCard";
 import type { BookingResponse } from "@/features/booking/types/booking";
-import { useGenericUiInteraction } from "@/features/chat/hooks";
+import { useGenericUiInteraction } from "@/features/chatbot/hooks";
 import {
   useCancelBooking,
   useModifyBooking,
