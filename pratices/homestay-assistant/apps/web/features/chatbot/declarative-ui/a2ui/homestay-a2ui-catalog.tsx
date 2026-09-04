@@ -61,6 +61,14 @@ const HIGHLIGHT_LIMIT = 4;
 const PLACEHOLDER = " ";
 
 /**
+ * Copy for the empty state — shown when the agent opens the surface without any
+ * verified rooms, or while the room list is still streaming in. Keeps the card
+ * chrome intact instead of collapsing to a zero-height grid.
+ */
+const EMPTY_STATE_MESSAGE =
+  "Share the dates or the stays you're weighing and I'll line them up side by side here.";
+
+/**
  * Renders a room comparison surface from verified agent-provided values.
  *
  * Chrome matches the in-chat Room List: an assistant avatar next to a framed
@@ -71,9 +79,14 @@ const PLACEHOLDER = " ";
  * card is `flex h-full flex-col` inside an `auto-rows-fr` grid and every
  * optional line (location, highlights, availability) reserves a fixed slot, so
  * the layout never shifts with how much detail a given room carries.
+ *
+ * Props are destructured with defaults so a partial payload (mid-stream, or a
+ * rooms array the agent left empty) renders the header + empty state rather
+ * than throwing on `rooms.map`.
  */
 const RoomComparison = ({ props }: RendererProps<RoomComparisonProps>) => {
-  const { eyebrow, note, rooms, title } = props;
+  const { eyebrow = "", note = "", rooms = [], title = "" } = props;
+  const hasRooms = rooms.length > 0;
 
   return (
     <div
@@ -103,57 +116,77 @@ const RoomComparison = ({ props }: RendererProps<RoomComparisonProps>) => {
               ) : null}
             </header>
 
-            <div
-              className={cn(
-                "grid auto-rows-fr gap-2.5",
-                rooms?.length === 1 ? "grid-cols-1" : "grid-cols-2",
-              )}
-            >
-              {rooms?.map((room) => {
-                const highlights = (room.highlights ?? []).slice(
-                  0,
-                  HIGHLIGHT_LIMIT,
-                );
+            {hasRooms ? (
+              <div
+                className={cn(
+                  "grid auto-rows-fr gap-2.5",
+                  rooms.length === 1 ? "grid-cols-1" : "grid-cols-2",
+                )}
+              >
+                {rooms.map((room, index) => {
+                  const {
+                    id = "",
+                    name = "",
+                    location = "",
+                    nightlyRate = "",
+                    availability = "",
+                    highlights = [],
+                  } = room;
+                  const visibleHighlights = highlights.slice(0, HIGHLIGHT_LIMIT);
 
-                return (
-                  <article
-                    key={room.id}
-                    className="flex h-full flex-col rounded-xl border border-border bg-background/60 p-2.5"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="line-clamp-2 font-serif text-sm leading-tight font-medium text-foreground">
-                        {room.name}
-                      </h4>
-                      {room.nightlyRate ? (
-                        <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
-                          {room.nightlyRate}
-                        </span>
-                      ) : null}
-                    </div>
+                  return (
+                    <article
+                      key={id || `room-${index}`}
+                      className="flex h-full flex-col rounded-xl border border-border bg-background/60 p-2.5"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="line-clamp-2 font-serif text-sm leading-tight font-medium text-foreground">
+                          {name}
+                        </h4>
+                        {nightlyRate ? (
+                          <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
+                            {nightlyRate}
+                          </span>
+                        ) : null}
+                      </div>
 
-                    <p className="mt-0.5 line-clamp-1 min-h-4 text-xs text-muted-foreground">
-                      {room.location || PLACEHOLDER}
-                    </p>
+                      <p className="mt-0.5 line-clamp-1 min-h-4 text-xs text-muted-foreground">
+                        {location || PLACEHOLDER}
+                      </p>
 
-                    <ul className="mt-2 min-h-[4.75rem] space-y-1 text-xs text-muted-foreground">
-                      {highlights.map((highlight) => (
-                        <li key={highlight} className="flex gap-1.5">
-                          <span
-                            aria-hidden
-                            className="mt-1.5 size-1 shrink-0 rounded-full bg-gold"
-                          />
-                          <span className="line-clamp-1">{highlight}</span>
-                        </li>
-                      ))}
-                    </ul>
+                      <ul className="mt-2 min-h-[4.75rem] space-y-1 text-xs text-muted-foreground">
+                        {visibleHighlights.map((highlight) => (
+                          <li key={highlight} className="flex gap-1.5">
+                            <span
+                              aria-hidden
+                              className="mt-1.5 size-1 shrink-0 rounded-full bg-gold"
+                            />
+                            <span className="line-clamp-1">{highlight}</span>
+                          </li>
+                        ))}
+                      </ul>
 
-                    <p className="mt-auto min-h-4 border-t border-border pt-2 text-[11px] font-medium text-primary">
-                      {room.availability || PLACEHOLDER}
-                    </p>
-                  </article>
-                );
-              })}
-            </div>
+                      <p className="mt-auto min-h-4 border-t border-border pt-2 text-[11px] font-medium text-primary">
+                        {availability || PLACEHOLDER}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-background/60 px-4 py-8 text-center">
+                <span
+                  aria-hidden
+                  className="h-1 w-8 shrink-0 rounded-full bg-gold/40"
+                />
+                <p className="font-serif text-sm leading-tight font-medium text-foreground">
+                  No rooms to compare yet
+                </p>
+                <p className="max-w-[16rem] text-xs leading-relaxed text-muted-foreground">
+                  {EMPTY_STATE_MESSAGE}
+                </p>
+              </div>
+            )}
           </section>
         </EmbeddedWidget>
       </div>

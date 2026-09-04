@@ -25,7 +25,7 @@ export const BookingList = ({
   bookings,
   title,
   className,
-  isLoading,
+  isLoading = false,
   error,
   compact = false,
   toolCallId,
