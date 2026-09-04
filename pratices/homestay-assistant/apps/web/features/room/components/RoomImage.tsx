@@ -53,7 +53,7 @@ export function RoomImage({
       />
 
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/60 via-black/15 to-transparent p-3">
-        <div className="flex w-full items-center justify-between">
+        <div className="flex flex-col gap-1">
           <span className="inline-flex items-center gap-1.5 rounded-md bg-background/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground">
             <span
               className="h-3 w-1 rounded-full"

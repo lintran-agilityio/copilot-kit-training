@@ -216,7 +216,7 @@ export const MainLayout = ({ children, className }: MainLayoutProps) => {
           >
             <div
               className={cn(
-                "relative h-full overflow-hidden rounded-2xl transition-opacity duration-200 bg-card",
+                "relative h-full overflow-hidden transition-opacity duration-200",
                 isChatOpen
                   ? "w-full opacity-100"
                   : "pointer-events-none w-0 opacity-0",

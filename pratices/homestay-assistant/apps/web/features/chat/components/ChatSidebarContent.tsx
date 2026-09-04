@@ -5,6 +5,7 @@ import {
   CopilotChat,
   CopilotChatAssistantMessage,
   CopilotChatInput,
+  CopilotChatReasoningMessage,
   CopilotChatUserMessage,
   CopilotKitCoreErrorCode,
   useAgent,
@@ -30,6 +31,7 @@ import {
   ChatUserMessage,
   ChatWelcomeScreen,
   ChatAssistantMessage,
+  ChatReasoningMessage,
   ChatLoadingCursor,
   ChatRunErrorNotice,
 } from "@/features/chat/components";
@@ -333,6 +335,10 @@ export const ChatSidebarContent = ({
               assistantMessage:
                 ChatAssistantMessage as typeof CopilotChatAssistantMessage,
               userMessage: ChatUserMessage as typeof CopilotChatUserMessage,
+              // Hide the "Thinking…" / "Thought for a few seconds" disclosure
+              // that every provider (OpenAI / OpenRouter / Cerebras) emits.
+              reasoningMessage:
+                ChatReasoningMessage as unknown as typeof CopilotChatReasoningMessage,
               cursor: ChatLoadingCursor,
             }}
             input={ChatInput as typeof CopilotChatInput}
@@ -340,7 +346,7 @@ export const ChatSidebarContent = ({
             {({ scrollView, input }) => (
               <div
                 data-testid="copilot-chat"
-                className="copilotKitChat flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-red"
+                className="copilotKitChat flex h-full min-h-0 flex-1 flex-col overflow-hidden"
               >
                 <div
                   data-chat-messages
@@ -351,7 +357,7 @@ export const ChatSidebarContent = ({
                 </div>
                 <div
                   data-chat-footer
-                  className="shrink-0 border-t border-border bg-card"
+                  className="shrink-0 border-t border-border bg-card pt-3"
                 >
                   {runStartError ? (
                     <ChatRunErrorNotice

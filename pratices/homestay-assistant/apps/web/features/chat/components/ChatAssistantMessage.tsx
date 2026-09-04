@@ -25,6 +25,7 @@ import {
   compareCompanionText,
   getAssistantDisplayContent,
   getMessageTopSpacing,
+  isComparisonPointerMessage,
   messageHasRoomComparisonCall,
   turnRendersRoomComparison,
 } from "@/features/chat/utils";
@@ -103,11 +104,12 @@ export const ChatAssistantMessage = ({
     return toolName ? isPageOnlyGenerativeTool(toolName) : false;
   });
 
-  // COMPARE turn: the RoomComparison A2UI surface owns every room fact, so the
-  // chat line is replaced with a fixed short pointer — the model still
-  // sometimes re-lists the rooms in text despite the prompt. The pointer
-  // renders on the message that carried the `render_a2ui` call; any later
-  // text-only message in the same turn (the model's re-listing) is dropped.
+  // COMPARE turn: the RoomComparison A2UI surface owns every room fact. The
+  // message that fired `generate_a2ui` renders no chat line at all — the
+  // painted surface sits in its own timeline slot, and the fixed
+  // "Here is the room comparison." pointer renders on the first assistant
+  // reply AFTER it (so the pointer lands below the card, like the Room List's
+  // text sits below its card). Any further re-listing lines are dropped.
   const messagesForTurn = messages as Parameters<
     typeof turnRendersRoomComparison
   >[0];
@@ -118,12 +120,25 @@ export const ChatAssistantMessage = ({
     messagesForTurn,
     message.id,
   );
+  const isComparisonPointer = isComparisonPointerMessage(
+    messagesForTurn,
+    message.id,
+  );
 
-  if (inComparisonTurn && !messageRendersComparison && !chatToolCalls.length) {
+  if (messageRendersComparison && !chatToolCalls.length) {
     return null;
   }
 
-  const textContent = messageRendersComparison
+  if (
+    inComparisonTurn &&
+    !messageRendersComparison &&
+    !isComparisonPointer &&
+    !chatToolCalls.length
+  ) {
+    return null;
+  }
+
+  const textContent = isComparisonPointer
     ? compareCompanionText(messagesForTurn, message.id)
     : displayTextContent;
 
