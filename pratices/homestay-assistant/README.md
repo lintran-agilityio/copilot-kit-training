@@ -6,10 +6,12 @@ AI-assisted homestay booking monorepo. Guests chat with a CopilotKit-powered ass
 
 | Layer | Tech |
 | --- | --- |
-| Web | Next.js 16, CopilotKit, Clerk, TanStack Query, Zustand, Tailwind |
-| Agent | Mastra (OpenAI), AG-UI |
-| API | NestJS, TypeORM, PostgreSQL, Swagger |
-| Monorepo | pnpm workspaces + Turborepo |
+| Web | Next.js 16.2, React 19.2, CopilotKit 1.62, Clerk 7.5, TanStack Query 5.101, Zustand 5.0, Tailwind 4.3 |
+| Agent | Mastra 1.43 (OpenAI via router), AG-UI 0.0.57 |
+| API | NestJS 11, TypeORM 0.3, PostgreSQL (`pg` 8), Swagger (`@nestjs/swagger` 11.4) |
+| Monorepo | pnpm 11.9 workspaces + Turborepo 2.9 |
+
+> Versions track the current `package.json` ranges — see each `package.json` for exact pins.
 
 ## Apps
 

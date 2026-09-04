@@ -12,6 +12,7 @@ import {
 import { AGENT_URLS } from "@repo/constants";
 import { ROUTES } from "@/constants";
 import { homestayA2UICatalog } from "@/features/copilot/a2ui/homestay-a2ui-catalog";
+import { RoomComparisonLoadingSurface } from "@/features/copilot/a2ui/RoomComparisonLoadingSurface";
 import { RATE_LIMIT_MESSAGE } from "@/features/chat/constants";
 import {
   isExpectedAgentError,
@@ -183,7 +184,13 @@ const CopilotKitProviders = ({ children }: CopilotKitProvidersProps) => {
       useSingleEndpoint={false}
       // The catalog is sent with each AG-UI run, which enables the runtime's
       // generated A2UI tool without changing the Mastra agent or booking tools.
-      a2ui={{ catalog: homestayA2UICatalog }}
+      // `loadingComponent` replaces CopilotKit's generic "Building interface"
+      // skeleton so a comparison-in-progress matches the other in-chat results
+      // (assistant avatar + framed card at the shared chat width).
+      a2ui={{
+        catalog: homestayA2UICatalog,
+        loadingComponent: RoomComparisonLoadingSurface,
+      }}
       onError={handleCopilotError}
     >
       <ClerkTokenSync initialToken={clerkToken} />

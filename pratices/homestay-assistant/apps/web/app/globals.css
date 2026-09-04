@@ -225,6 +225,24 @@ body {
   --copilot-kit-muted-color: var(--muted-foreground);
 }
 
+/*
+ * CopilotKit v2's stylesheet paints `background-color: var(--background)` on
+ * EVERY [data-copilotkit] element. It renders several nested ones inside the
+ * chat (message list, scroll view, input shell); since we re-theme --background
+ * to the warm ivory page tone, those inner wrappers tint the panel ivory over
+ * its own near-white `bg-card`. The panel's <aside> is the only surface we
+ * want — clear the per-wrapper fill so it shows through.
+ */
+[data-sidebar-chat] [data-copilotkit] {
+  background-color: transparent;
+}
+
+[data-sidebar-chat] [data-copilotkit] [data-chat-embedded-slot],
+[data-sidebar-chat] [data-copilotkit] [data-chat-message-row="assistant"],
+[data-sidebar-chat] [data-copilotkit] [data-chat-embedded-widget] {
+  padding-inline: 0;
+}
+
 [data-sidebar-chat] [data-copilotkit]:has([data-testid="copilot-chat-input"]) > div {
   max-width: none;
   padding-left: 0;
@@ -363,4 +381,16 @@ body {
 
 [data-sidebar-chat] [data-testid="copilot-add-menu-button"] {
   display: none;
+}
+
+/*
+ * A2UI surface (RoomComparison): CopilotKit wraps the painted surface in a
+ * `py-6 / gap-6 / overflow-auto` flex column. Trim it so the card lines up with
+ * the other in-chat results (Room List, Room Detail) instead of floating in
+ * extra vertical space with its own nested scrollbar.
+ */
+[data-sidebar-chat] [data-copilotkit] .cpk\:gap-6.cpk\:py-6 {
+  padding-block: 0.75rem;
+  gap: 0;
+  overflow: visible;
 }

@@ -7,6 +7,7 @@ export * from "./ChatAvatars";
 export * from "./ChatWelcomeScreen";
 export * from "./ChatAssistantMessage";
 export * from "./ChatUserMessage";
+export * from "./ChatReasoningMessage";
 export * from "./ChatLoadingCursor";
 export * from "./ChatRunErrorNotice";
 export * from "./StaticSuggestionConfig";

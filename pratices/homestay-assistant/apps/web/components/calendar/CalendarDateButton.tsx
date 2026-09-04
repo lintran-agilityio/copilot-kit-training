@@ -24,7 +24,7 @@ export const CalendarDateButton = ({
       type="button"
       onClick={() => onSelect(date)}
       className={cn(
-        "flex min-w-[42px] flex-col items-center rounded-xl px-1 py-1 transition-colors text-xs cursor-pointer",
+        "flex w-full min-w-0 flex-col items-center rounded-xl px-1 py-1 transition-colors text-xs cursor-pointer",
         isSelected
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:bg-accent hover:text-foreground",

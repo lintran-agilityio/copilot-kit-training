@@ -436,7 +436,15 @@ export const getMessageTopSpacing = (
     return WIDGET_TOP_SPACING;
   }
 
-  const previousRole = messages[index - 1]?.role;
+  // `reasoning` rows render nothing in this chat (see ChatReasoningMessage), so
+  // walk back past them to the real previous bubble — otherwise a reply lands
+  // tight under an invisible row instead of a normal gap below the user turn.
+  let previousIndex = index - 1;
+  while (previousIndex >= 0 && messages[previousIndex]?.role === "reasoning") {
+    previousIndex -= 1;
+  }
+
+  const previousRole = messages[previousIndex]?.role;
   return isSameSenderGroup(role, previousRole)
     ? GROUPED_TOP_SPACING
     : DEFAULT_TOP_SPACING;
@@ -607,3 +615,52 @@ export const compareCompanionText = (
   VIETNAMESE_LETTER.test(lastUserMessageText(messages, messageId))
     ? ROOM_COMPARISON_POINTER.vi
     : ROOM_COMPARISON_POINTER.en;
+
+/**
+ * The message that should carry the "Here is the room comparison." pointer —
+ * the FIRST assistant message that lands after the `generate_a2ui` call in the
+ * same turn (the model's own closing line, replaced with the fixed pointer).
+ *
+ * Placing it here (rather than on the call-carrying message) keeps the pointer
+ * BELOW the painted surface, matching how the Room List renders its card first
+ * and its text underneath. `tool` / `activity` rows between the call and the
+ * reply are skipped. Until that reply streams in, no message qualifies and the
+ * surface stands on its own heading.
+ */
+export const isComparisonPointerMessage = (
+  messages: MessageLike[] | undefined,
+  messageId: string | undefined,
+): boolean => {
+  if (!messages?.length || !messageId) {
+    return false;
+  }
+
+  const index = messages.findIndex((message) => message.id === messageId);
+  if (index <= 0) {
+    return false;
+  }
+
+  const message = messages[index];
+  if (
+    message?.role !== MESSAGE_ROLE.ASSISTANT ||
+    messageHasRoomComparisonCall(message)
+  ) {
+    return false;
+  }
+
+  for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
+    const previous = messages[cursor];
+
+    if (previous?.role === MESSAGE_ROLE.USER) {
+      return false;
+    }
+
+    if (previous?.role === MESSAGE_ROLE.ASSISTANT) {
+      // First assistant reply after the call → this is the pointer row.
+      // An earlier non-call assistant message already took that slot → not this one.
+      return messageHasRoomComparisonCall(previous);
+    }
+  }
+
+  return false;
+};

@@ -69,6 +69,13 @@ export const ChatLoadingCursor = ({
     .reverse()
     .find((message) => message.role !== MESSAGE_ROLE.TOOL);
 
+  // An A2UI surface (RoomComparison) is mid-generation or freshly painted: its
+  // own skeleton / card is the running indicator, so the dots would be a
+  // duplicate sitting right under it.
+  if (turnOwner?.role === "activity") {
+    return <div hidden aria-hidden {...props} />;
+  }
+
   // The turn owner already has visible text (a `tool` result was appended after
   // it, so `lastMessage` above missed it) — the reply is on screen, no dots.
   if (turnOwner && hasVisibleAssistantText(turnOwner)) {

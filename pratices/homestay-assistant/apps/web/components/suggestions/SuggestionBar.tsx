@@ -86,7 +86,7 @@ export const SuggestionBar = ({
   }
 
   return (
-    <div className="pointer-events-auto flex flex-wrap gap-2 px-4 pb-2 pt-3">
+    <div className="pointer-events-auto flex flex-wrap gap-2 px-4 pb-2">
       {suggestions.map((suggestion) => (
         <CopilotSuggestion
           key={suggestion.id}
