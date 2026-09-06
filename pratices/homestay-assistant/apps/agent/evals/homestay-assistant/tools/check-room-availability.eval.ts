@@ -8,17 +8,18 @@ import { runCase, type CaseResult } from "../../support/run-case";
 /**
  * `check_room_availability` — real LLM agent turns, structured scoring.
  *
- * This tool is the availability gate for both CREATE (`flow=create`, no
- * `excludeBookingId`) and MODIFY (`flow=modify` + `excludeBookingId`). It is
- * often a step-machine-forced call, so what the model emits as arguments is
- * what this file checks — the routing OFF its result is proven without an LLM
- * in `deterministic/check-room-availability.eval.ts`.
+ * This tool is the availability gate for MODIFY only (`flow=modify` +
+ * `excludeBookingId`). CREATE never calls it — `find_room(book_resolve)` probes
+ * availability itself and the platform forces `confirm_booking`. It is a
+ * step-machine-forced call, so what the model emits as arguments is what this
+ * file checks — the routing OFF its result is proven without an LLM in
+ * `deterministic/check-room-availability.eval.ts`.
  *
  * Concerns:
  *   1. CREATE full-info — a named room with a complete stay stated in chat
- *      skips the Booking Form; the forced availability call must carry exactly
- *      the guest's stated roomId/dates/guests and `flow: "create"` — no
- *      invented or stale values.
+ *      skips the Booking Form and goes straight to `confirm_booking`, which
+ *      must carry exactly the guest's stated roomId/dates/guests — no invented
+ *      or stale values — and `check_room_availability` must never run.
  *   2. MODIFY — a stated-change modify must never run availability with
  *      `flow: "create"` (that would create a second booking).
  */
@@ -36,25 +37,30 @@ const createCases: CreateArgCase[] = [
       checkInDate: tomorrow,
       checkOutDate: addDaysYmd(tomorrow, 1),
       guests: 2,
-      flow: "create",
     },
   },
 ];
 
 evalite<CreateArgCase, CaseResult, Record<string, unknown>>(
-  "check_room_availability — CREATE args match the stated stay exactly",
+  "confirm_booking — CREATE args match the stated stay exactly (no check_room_availability)",
   {
     data: () => createCases.map((c) => ({ input: c, expected: c.expected })),
     task: (input) => runCase(input.message),
     scorers: [
       {
-        name: "availability args match request exactly",
+        name: "confirm_booking args match request exactly",
         description:
-          "roomId/checkInDate/checkOutDate/guests/flow must match what the guest asked for — no invented or stale values.",
+          "roomId/checkInDate/checkOutDate/guests must match what the guest asked for — no invented or stale values.",
         scorer: ({ output, expected }) => {
-          const args = toolCallArgs(output.toolCalls, "check_room_availability");
+          if (output.toolNames.includes("check_room_availability")) {
+            return scoreResult(
+              false,
+              `check_room_availability ran on a CREATE turn — tool calls: [${output.toolNames.join(", ")}]`,
+            );
+          }
+          const args = toolCallArgs(output.toolCalls, "confirm_booking");
           if (!args) {
-            return scoreResult(false, "check_room_availability was never called");
+            return scoreResult(false, "confirm_booking was never called");
           }
           const mismatches = diffArgs(args, expected!);
           return scoreResult(
@@ -69,9 +75,9 @@ evalite<CreateArgCase, CaseResult, Record<string, unknown>>(
     columns: ({ input, output }) => [
       { label: "Message", value: input.message },
       {
-        label: "check_room_availability args",
+        label: "confirm_booking args",
         value: JSON.stringify(
-          toolCallArgs(output.toolCalls, "check_room_availability") ?? {},
+          toolCallArgs(output.toolCalls, "confirm_booking") ?? {},
         ),
       },
     ],

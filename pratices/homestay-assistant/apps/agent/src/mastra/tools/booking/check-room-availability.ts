@@ -40,8 +40,10 @@ export const toCheckRoomAvailabilityModelOutput = (
 export const checkRoomAvailabilityTool = createTool({
   id: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
   description: `
-    Check whether a room is available for the requested dates and guest count.
-    For booking modifications, exclude the specified existing booking from the availability check.
+    MODIFY flow only. Check whether a room is available for changed dates / guest count on an
+    EXISTING booking — always pass flow=modify and excludeBookingId so that booking is excluded
+    from the overlap check. A NEW booking never uses this tool: its availability is checked inside
+    find_room(book_resolve) and again by create_booking server-side.
     Returns availability, guest-capacity information, the booking flow, and the next action.
   `,
   inputSchema: checkRoomAvailabilityInputSchema,

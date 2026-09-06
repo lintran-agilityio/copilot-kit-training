@@ -14,4 +14,9 @@ export const findRoomInputSchema = findRoomInputBaseSchema.transform((input) =>
 
 export type FindRoomInput = z.infer<typeof findRoomInputSchema>;
 
-export { findRoomOutputSchema, type FindRoomOutput } from "./find-room-output.schema";
+export {
+  findRoomOutputSchema,
+  findRoomAvailabilitySchema,
+  type FindRoomOutput,
+  type FindRoomAvailability,
+} from "./find-room-output.schema";

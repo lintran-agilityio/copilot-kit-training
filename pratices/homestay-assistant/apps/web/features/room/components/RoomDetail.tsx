@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useRequestRoomBooking, useBooking } from "@/features/booking/hooks";
 import { useReportHomestayFocusedRoom } from "@/features/chatbot/hooks";
-import { useRoomBookingEstimate } from "@/features/room/hooks";
+import { useRoomAvailability, useRoomBookingEstimate } from "@/features/room/hooks";
 import { useArtifactStore } from "@/features/chatbot/stores/artifact-store";
 import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
 import { buildBookingStayMessage } from "@/features/booking/utils";
@@ -79,6 +79,7 @@ export const RoomDetail = ({
   ...room
 }: RoomDetailProps) => {
   const updateBookingDraft = useBooking((state) => state.updateBookingDraft);
+  const setBookingRoom = useBooking((state) => state.setBookingRoom);
   const { requestRoomBooking, isRequesting } = useRequestRoomBooking();
   const artifactStatus = useArtifactStore((state) =>
     artifactId ? state.artifacts[artifactId]?.status : undefined,
@@ -183,6 +184,20 @@ export const RoomDetail = ({
     capacity,
   });
 
+  // Client-side availability check — the CREATE flow no longer runs a
+  // check_room_availability tool call, so the form flags a taken date before it
+  // emits [book-stay]. Only the current stay is judged: picking a new date
+  // clears the flag immediately (see useRoomAvailability). Date fields are never
+  // disabled by this; create_booking still re-checks server-side.
+  const availability = useRoomAvailability({
+    roomId: id,
+    checkInDate,
+    checkOutDate,
+    guests,
+    enabled: !fieldsReadOnly && !matchesExistingBooking,
+  });
+  const isUnavailable = availability.isAvailable === false;
+
   const nights =
     checkInDate &&
     checkOutDate &&
@@ -190,7 +205,8 @@ export const RoomDetail = ({
       ? countNightOfDates(checkInDate, checkOutDate)
       : 0;
 
-  const isBookingDisabled = matchesExistingBooking || artifactLocked;
+  const isBookingDisabled =
+    matchesExistingBooking || artifactLocked || isUnavailable;
   const showBookButton = !isBookEntry;
   const isSubmittingArtifact =
     artifactStatus === ARTIFACT_STATUS.SUBMITTING || isRequesting;
@@ -211,6 +227,7 @@ export const RoomDetail = ({
   const handleBook = () => {
     if (
       isBookingDisabled ||
+      availability.isChecking ||
       isRequesting ||
       !canProceed ||
       !checkInDate ||
@@ -221,6 +238,9 @@ export const RoomDetail = ({
     }
 
     syncDraft();
+    // confirm_booking carries only roomId — stash the full room so the confirm
+    // card can hydrate its name / price / capacity without the model.
+    setBookingRoom({ ...room, pricePerNight, imageUrls });
     if (artifactId) {
       setArtifactStatus(artifactId, ARTIFACT_STATUS.SUBMITTING);
     }
@@ -275,6 +295,16 @@ export const RoomDetail = ({
           You already have a booking for these dates. Select different dates to
           book another stay.
         </p>
+      ) : null}
+
+      {!matchesExistingBooking && isUnavailable ? (
+        <p className="text-sm text-destructive">
+          {availability.reason === "capacity_exceeded"
+            ? `This room sleeps at most ${capacity} guest${capacity === 1 ? "" : "s"}. Reduce the guest count to continue.`
+            : "These dates are already booked. Pick different dates to continue."}
+        </p>
+      ) : !matchesExistingBooking && availability.isChecking ? (
+        <p className="text-sm text-muted-foreground">Checking availability…</p>
       ) : null}
     </>
   );

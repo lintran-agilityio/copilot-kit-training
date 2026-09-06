@@ -14,7 +14,11 @@ import {
 } from "@repo/constants";
 import { getUiActionPromptDisplayText, parseToolResult } from "@repo/utils";
 
-import { getLatestFindRoomToolCallIdInCurrentTurn } from "@/features/room/utils";
+import {
+  getLatestFindRoomToolCallIdInCurrentTurn,
+  readResolvedFindRoomResult,
+  resolveBookResolveUnavailable,
+} from "@/features/room/utils";
 import { hasLaterToolCallInTurn } from "@/features/chatbot/utils/normalize-messages";
 import type { MessageLike, ToolCallLike } from "@/features/chatbot/types";
 
@@ -257,8 +261,9 @@ const hasResolvedToolResult = (
  *   Notice is always silent; the HITL / next step is the turn's response.
  * - find_room `purpose: "book_resolve"` — silent while resolving and on exactly
  *   one match (the platform then forces the Booking Form / Confirm card). A
- *   "no match" notice (0) or a disambiguation list (>1) still renders, so those
- *   stay visible.
+ *   "no match" notice (0), a disambiguation list (>1), or a probe that came
+ *   back unavailable (BookingUnavailable card) still renders, so those stay
+ *   visible.
  *
  * Dropping these from getChatVisibleToolCalls collapses the otherwise-empty
  * assistant row (avatar + empty widget slot) deterministically, and lets the
@@ -283,6 +288,16 @@ export const isSilentResolveToolCall = (
 
   if (purpose !== TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE) {
     return true;
+  }
+
+  // The probe came back taken / over capacity → FindRoomNotice renders
+  // BookingUnavailable, so keep the row.
+  if (
+    resolveBookResolveUnavailable(
+      readResolvedFindRoomResult(toolCall.id, messages),
+    )
+  ) {
+    return false;
   }
 
   const roomCount = readResolvedToolRowCount(toolCall.id, messages, "rooms");

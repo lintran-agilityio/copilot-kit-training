@@ -10,13 +10,15 @@ import { stepContractEval } from "../../support/step-contract";
  * owns the whole `find_room` junction:
  *   - search / recommend / internal resolve, or book_resolve with 0 or 2+
  *     matches → no forced step (the model responds freely)
- *   - book_resolve · 1 match → the platform forces exactly ONE of
- *     `check_room_availability` (stay fully known) or `get_room_by_id` (Booking
- *     Form) — never both, never neither
+ *   - book_resolve · 1 match → the platform forces `confirm_booking` (stay fully
+ *     known + probe free), stops (probe taken / over capacity), or forces
+ *     `get_room_by_id` (Booking Form, stay not fully known) — never `check_room_availability`
  *
- * Downstream of that forced `check_room_availability` is covered in
- * `check-room-availability.eval.ts`; `homestay-assistant/behavioral/find-room.eval.ts`
- * proves a real model reaches these same outcomes end-to-end.
+ * CREATE no longer routes through `check_room_availability` — `findRoomTool`
+ * probes `/bookings/availability` itself and attaches the verdict as
+ * `output.availability`; this file's CREATE-fork cases assert the routing off
+ * that. `homestay-assistant/behavioral/find-room.eval.ts` proves a real model
+ * reaches these same outcomes end-to-end.
  */
 stepContractEval("find_room — discovery never forces a booking step", [
   {
@@ -83,11 +85,69 @@ stepContractEval("find_room — discovery never forces a booking step", [
  * on whether check-in date AND guest count are both already known, corroborated
  * against the guest's own latest message (`resolveCorroboratedBookFacts` /
  * `book-form-prefill.ts`): an echoed value with no matching cue in the latest
- * text is treated as unstated and the Booking Form opens anyway.
+ * text is treated as unstated and the Booking Form opens anyway. When both ARE
+ * known, `findRoomTool`'s own availability probe (`output.availability`) decides
+ * `confirm_booking` vs a stop — CREATE never calls `check_room_availability`.
  */
-stepContractEval("find_room(book_resolve) — CREATE fork: form vs availability", [
+const AVAILABLE = {
+  available: true,
+  guestsWithinCapacity: true,
+  checkInDate: "2026-10-22",
+  checkOutDate: "2026-10-23",
+  guests: 2,
+};
+
+stepContractEval("find_room(book_resolve) — CREATE fork: form vs confirm", [
   {
-    name: "1 room · check-in + guests stated this turn → skip the form, force availability",
+    name: "1 room · check-in + guests stated + room free → skip the form, force confirm_booking",
+    last: {
+      toolName: TOOL_KEYS.GET.FIND_ROOM,
+      input: { purpose: TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE },
+      output: {
+        rooms: [{ id: "room-riverside-twin" }],
+        date: "2026-10-22",
+        guests: 2,
+        purpose: TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE,
+        availability: AVAILABLE,
+      },
+    },
+    latestUserText: "Book the Riverside Twin Room for 2 guests on October 22",
+    expected: `force:${TOOL_KEYS.ACTION.CONFIRM_BOOKING}`,
+  },
+  {
+    name: "1 room · check-in + guests stated + room taken → stop (BookingUnavailable)",
+    last: {
+      toolName: TOOL_KEYS.GET.FIND_ROOM,
+      input: { purpose: TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE },
+      output: {
+        rooms: [{ id: "room-riverside-twin" }],
+        date: "2026-10-22",
+        guests: 2,
+        purpose: TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE,
+        availability: { ...AVAILABLE, available: false },
+      },
+    },
+    latestUserText: "Book the Riverside Twin Room for 2 guests on October 22",
+    expected: "stop",
+  },
+  {
+    name: "1 room · check-in + guests stated + over capacity → stop (BookingUnavailable)",
+    last: {
+      toolName: TOOL_KEYS.GET.FIND_ROOM,
+      input: { purpose: TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE },
+      output: {
+        rooms: [{ id: "room-riverside-twin" }],
+        date: "2026-10-22",
+        guests: 9,
+        purpose: TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE,
+        availability: { ...AVAILABLE, guests: 9, guestsWithinCapacity: false },
+      },
+    },
+    latestUserText: "Book the Riverside Twin Room for 9 guests on October 22",
+    expected: "stop",
+  },
+  {
+    name: "1 room · check-in + guests stated + probe absent (call failed) → still force confirm_booking",
     last: {
       toolName: TOOL_KEYS.GET.FIND_ROOM,
       input: { purpose: TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE },
@@ -99,7 +159,7 @@ stepContractEval("find_room(book_resolve) — CREATE fork: form vs availability"
       },
     },
     latestUserText: "Book the Riverside Twin Room for 2 guests on October 22",
-    expected: `force:${TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY}`,
+    expected: `force:${TOOL_KEYS.ACTION.CONFIRM_BOOKING}`,
   },
   {
     name: "1 room · no stay stated → force the Booking Form (get_room_by_id)",

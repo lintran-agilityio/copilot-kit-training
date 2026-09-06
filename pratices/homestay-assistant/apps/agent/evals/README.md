@@ -44,10 +44,10 @@ evals/
 | Tool | `deterministic/` | `behavioral/` |
 |---|---|---|
 | `get_rooms` | — | plain browse only; never `find_room` / `get_bookings` for it |
-| `find_room` | every result shape → transition; `book_resolve`·1-match → form vs availability | discovery intent routes here first; "available" wording never → `get_bookings`; date normalized, guests never invented, `level`/`limit` |
+| `find_room` | every result shape → transition; `book_resolve`·1-match → form vs `confirm_booking` (own availability probe) vs stop | discovery intent routes here first; "available" wording never → `get_bookings`; date normalized, guests never invented, `level`/`limit` |
 | `get_room_by_id` | *(forced target only — see `find-room.eval.ts`)* | detail chain (⚠️ known-failing); `[book-form]` → `get_room_by_id` only, no availability |
-| `check_room_availability` | `resolveModifyAvailabilityNextAction` + `isSameModifyStay` pure fns; result → forced confirm/stop (both flows) | CREATE args match the stated stay exactly; MODIFY never `flow=create` |
-| `create_booking` | `confirm_booking` confirmed→create / dismissed→stop; terminal→stop | never fires before `find_room`→availability→`confirm_booking`; full stay skips the form |
+| `check_room_availability` | `resolveModifyAvailabilityNextAction` + `isSameModifyStay` pure fns; result → forced confirm/stop (MODIFY + create fallback) | MODIFY only, never `flow=create`; CREATE args-match moved to the `confirm_booking` check (`check-room-availability.eval.ts`) |
+| `create_booking` | `confirm_booking` confirmed→create / dismissed→stop; terminal→stop | never fires before `find_room`→`confirm_booking` (no `check_room_availability`); full stay skips the form |
 | `update_booking` | picker / edit-form / `confirm_modify_booking` gates; terminal→stop | never fires before the confirm gate; no-op modify never opens the dialog |
 | `cancel_booking` | `find_bookings`→pass; `show_cancel_dialog_confirm` confirmed→cancel / dismissed→stop; terminal→stop | resolve by name → `find_bookings` → `show_cancel_dialog_confirm`, no `cancel_booking` this turn |
 | `get_bookings` | — | "show/list my bookings" routes here, never `find_room`; `onDate` only from a cue in the current message |

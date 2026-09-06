@@ -196,6 +196,13 @@ const resolveCheckAvailabilityTransition = (
  *
  * Not decision-only: when the stay is not fully known it stashes what it has
  * as a Booking Form stay hint before forcing get_room_by_id.
+ *
+ * The CREATE flow no longer routes through check_room_availability — when the
+ * stay IS fully known, findRoomTool.execute has already probed
+ * `/bookings/availability` for the resolved room (`output.availability`), so
+ * this forces the HITL confirm directly, or stops the turn when the probe
+ * reported the room taken / over capacity (FindRoomNotice renders the
+ * BookingUnavailable card off the same result).
  */
 const resolveFindRoomBookTransition = (
   input: Record<string, unknown> | null,
@@ -234,11 +241,16 @@ const resolveFindRoomBookTransition = (
   const guests = statedGuests ?? continuityHint?.guests;
 
   if (checkInDate && guests) {
-    return {
-      type: "call",
-      toolName: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
-      pin: { roomId, checkInDate, guests },
-    };
+    const availability = asUnknownRecord(output.availability);
+    const probedUnavailable =
+      availability?.available === false ||
+      availability?.guestsWithinCapacity === false;
+
+    // Probe absent (call failed) → still force the confirm; POST /bookings is
+    // the authoritative gate and surfaces a conflict on the same HITL card.
+    return probedUnavailable
+      ? { type: "stop" }
+      : { type: "call", toolName: TOOL_KEYS.ACTION.CONFIRM_BOOKING };
   }
 
   stashBookingFormStayHint(args.requestContext, {

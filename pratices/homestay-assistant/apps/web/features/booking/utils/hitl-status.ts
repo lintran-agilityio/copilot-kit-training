@@ -32,15 +32,18 @@ type ResolveHitlCardPhaseInput = {
   outcome: MutationOutcome;
 };
 
-type RoomStayFields = {
+type StayFields = {
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+};
+
+type RoomStayFields = StayFields & {
   room?: {
     id?: string;
     name?: string;
     pricePerNight?: number;
   };
-  checkInDate?: string;
-  checkOutDate?: string;
-  guests?: number;
 };
 
 /**
@@ -181,21 +184,33 @@ export const resolveHitlCardPhase = ({
   }
 };
 
-/** True when room id/name/price and stay dates/guests are present and valid. */
-export const hasRoomStayFields = (args: Partial<RoomStayFields>) =>
+/** True when stay dates/guests are present and valid. */
+export const hasStayFields = (args: Partial<StayFields>) =>
   Boolean(
-    args.room?.id?.trim() &&
-    args.room?.name?.trim() &&
-    typeof args.room?.pricePerNight === "number" &&
     args.checkInDate?.trim() &&
     args.checkOutDate?.trim() &&
     typeof args.guests === "number" &&
     args.guests > 0,
   );
 
+/** True when room id/name/price and stay dates/guests are present and valid. */
+export const hasRoomStayFields = (args: Partial<RoomStayFields>) =>
+  Boolean(
+    args.room?.id?.trim() &&
+    args.room?.name?.trim() &&
+    typeof args.room?.pricePerNight === "number" &&
+    hasStayFields(args),
+  );
+
+/**
+ * confirm_booking args carry only `roomId` — the room object is hydrated on the
+ * frontend (see useConfirmBookingRoom), so the confirm card additionally gates
+ * its render on that hydrated room, not here.
+ */
 export const hasRequiredCreateArgs = (
   args: Partial<ConfirmBookingArgs>,
-): args is ConfirmBookingArgs => hasRoomStayFields(args);
+): args is ConfirmBookingArgs =>
+  Boolean(args.roomId?.trim()) && hasStayFields(args);
 
 export const hasRequiredModifyArgs = (
   args: Partial<ConfirmModifyBookingArgs>,

@@ -31,6 +31,20 @@ export type Room = {
   available?: boolean;
 };
 
+/**
+ * Availability probe attached to a `book_resolve` result with exactly one
+ * match, present only when the guest already committed to a check-in date AND
+ * guest count — the CREATE flow's replacement for a `check_room_availability`
+ * call. Absent → the Booking Form opens and runs its own check.
+ */
+export type FindRoomAvailability = {
+  available: boolean;
+  guestsWithinCapacity: boolean;
+  checkInDate: string;
+  checkOutDate: string;
+  guests: number;
+};
+
 export type FindRoomResult = {
   rooms?: Room[];
   name?: string;
@@ -39,6 +53,8 @@ export type FindRoomResult = {
   level?: number;
   /** Echoed from find_room args — skip Room List when book_resolve + exactly 1 room, or always for resolve. */
   purpose?: FindRoomPurpose;
+  /** book_resolve + exactly 1 match only. */
+  availability?: FindRoomAvailability;
 };
 
 export type FindRoomToolProps = ToolRendererProps<FindRoomResult> & {
