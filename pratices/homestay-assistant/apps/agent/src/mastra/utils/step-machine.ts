@@ -1,23 +1,83 @@
+/**
+ * Booking step machine.
+ *
+ * After every tool step the agent takes, `enforceBookingStep` (wired as the
+ * agent's `prepareStep`) inspects the last tool result and decides, purely
+ * from that result's documented shape, whether to force a specific next tool
+ * call or to stop the turn. This keeps the deterministic booking routing
+ * (find → availability → confirm → mutate) off the model's judgement.
+ *
+ * The file is organized in three layers:
+ *   1. Transition resolution — `resolveEnforcedTransition` and its per-tool
+ *      helpers. Given the last tool result (and, for `find_room`, the chat
+ *      messages) they return a {@link Transition}. These are decision-only,
+ *      with the single documented exception of `resolveFindRoomBookTransition`
+ *      stashing a Booking Form stay hint.
+ *   2. Transition side effects — request-context candidate pinning applied
+ *      once a forced-tool transition is committed.
+ *   3. Enforcement — `enforceBookingStep` ties the two together and emits the
+ *      Mastra `forceTool` / `stopToolExecution` envelope.
+ */
 import type {
   ProcessInputStepArgs,
   ProcessInputStepResult,
 } from "@mastra/core/processors";
 import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 import { addDaysYmd } from "@repo/utils";
+
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
+import {
+  resolveContinuityStayHint,
+  resolveCorroboratedBookFacts,
+  stashBookingFormStayHint,
+} from "@/mastra/utils/book-form-prefill";
 import { parseConfirmedStay } from "@/mastra/utils/confirmed-stay";
 import { asRecord, asUnknownRecord } from "@/mastra/utils/json-value";
 import {
-  resolveContinuityStayHint,
-  stashBookingFormStayHint,
-  resolveCorroboratedBookFacts,
-} from "@/mastra/booking/book-form-prefill";
-import { forceTool, hasTool, stopToolExecution } from "../utils/parse-tool-output";
+  forceTool,
+  hasTool,
+  stopToolExecution,
+} from "@/mastra/utils/parse-tool-output";
 
-const lastStepResult = (args: ProcessInputStepArgs): ToolResult | null =>
-  (args.steps.at(-1)?.toolResults.at(-1) as ToolResult | undefined) ?? null;
+// --- Types ----------------------------------------------------------------
 
-type ToolResult = { toolName?: string; input?: unknown; output?: unknown };
+/**
+ * Raw shape of one completed tool step, as it arrives on
+ * `args.steps[].toolResults[]`.
+ */
+export type ToolStepResult = {
+  toolName?: string;
+  input?: unknown;
+  output?: unknown;
+};
+
+/**
+ * A resolved step-machine decision:
+ *   - `call` — force exactly this tool as the next model step. `pin` carries an
+ *     optional request-context candidate to stash first (see
+ *     {@link applyTransitionSideEffects}).
+ *   - `stop` — end the turn now, letting no tool run.
+ */
+export type Transition =
+  | { type: "call"; toolName: string; pin?: unknown }
+  | { type: "stop" };
+
+/** The `call` branch of {@link Transition}. */
+type ForcedToolTransition = Extract<Transition, { type: "call" }>;
+
+/** Applies request-context state that a committed forced-tool transition implies. */
+type TransitionSideEffect = (
+  args: ProcessInputStepArgs,
+  result: ToolStepResult,
+) => void;
+
+/** The last tool result of the most recent step, or `null` when there is none. */
+const lastToolStepResult = (
+  args: ProcessInputStepArgs,
+): ToolStepResult | null =>
+  (args.steps.at(-1)?.toolResults.at(-1) as ToolStepResult | undefined) ?? null;
+
+// --- Routing tables ------------------------------------------------------
 
 const FIND_BY_ID_REQUESTED_FIELDS = [
   "requestedCheckInDate",
@@ -25,38 +85,27 @@ const FIND_BY_ID_REQUESTED_FIELDS = [
   "requestedGuests",
 ] as const;
 
-type TransitionRule = {
-  from: string;
-  to: string;
-  effect: TransitionSideEffect;
+/**
+ * Tools that pause for a guest decision, mapped to the tool to force once the
+ * guest confirms. A `confirmed:false` result on any of them stops the turn.
+ */
+const CONFIRMATION_FOLLOW_UPS: Record<string, string> = {
+  [TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING]:
+    TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
+  [TOOL_KEYS.ACTION.CONFIRM_BOOKING]: TOOL_KEYS.BOOKING.CREATE_BOOKING,
+  [TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING]: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
+  [TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]: TOOL_KEYS.BOOKING.CANCEL,
+  [TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT]: TOOL_KEYS.BOOKING.FIND_BY_ID,
 };
 
-type LastStepResult = NonNullable<ReturnType<typeof lastStepResult>>;
+/** Mutation tools — once one returns, the turn is done. */
+const TERMINAL_TOOLS: readonly string[] = [
+  TOOL_KEYS.BOOKING.CREATE_BOOKING,
+  TOOL_KEYS.BOOKING.UPDATE_BOOKING,
+  TOOL_KEYS.BOOKING.CANCEL,
+];
 
-type ToolTransition = {
-  type: "tool";
-  toolName: string;
-  pin?: unknown;
-};
-
-type StopTransition = {
-  type: "stop";
-};
-
-type EnforcedTransition = ToolTransition | StopTransition;
-
-type TransitionSideEffect = (
-  args: ProcessInputStepArgs,
-  result: LastStepResult,
-) => void;
-type BookingStepTransition =
-  | {
-      type: "stop";
-    }
-  | {
-      type: "tool";
-      toolName: string;
-    };
+// --- Transition resolution: per-tool junctions --------------------------
 
 /**
  * MODIFY only: after find_booking_by_id resolves exactly one booking, decide
@@ -71,7 +120,7 @@ type BookingStepTransition =
 const resolveFindByIdTransition = (
   input: Record<string, unknown> | null,
   output: Record<string, unknown>,
-) => {
+): Transition | null => {
   if (input?.purpose !== TOOL_PURPOSE.FIND_BOOKING_BY_ID.MODIFY) return null;
 
   const bookings = Array.isArray(output.bookings) ? output.bookings : [];
@@ -83,10 +132,51 @@ const resolveFindByIdTransition = (
   });
 
   return {
-    type: "call" as const,
+    type: "call",
     toolName: hasStatedChange
       ? TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY
       : TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
+  };
+};
+
+/**
+ * CREATE + MODIFY: routes the result of check_room_availability. The tool's own
+ * output already encodes the decision (`nextAction`, `available`,
+ * `guestsWithinCapacity`, `stayUnchanged` folded into `nextAction`); this only
+ * translates it into a forced confirm tool or a stop, picking the create- vs
+ * modify-flow confirm tool from `flow` / `excludeBookingId`.
+ */
+const resolveCheckAvailabilityTransition = (
+  input: Record<string, unknown> | null,
+  result: Record<string, unknown>,
+): Transition | null => {
+  const { nextAction, available, guestsWithinCapacity, flow } = result;
+
+  if (
+    nextAction === TOOL_KEYS.ACTION.CONFIRM_BOOKING ||
+    nextAction === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
+  ) {
+    return { type: "call", toolName: String(nextAction) };
+  }
+
+  if (
+    nextAction === "stop_booking" ||
+    available !== true ||
+    guestsWithinCapacity !== true
+  ) {
+    return { type: "stop" };
+  }
+
+  const isModify =
+    flow === "modify" ||
+    input?.flow === "modify" ||
+    typeof input?.excludeBookingId === "string";
+
+  return {
+    type: "call",
+    toolName: isModify
+      ? TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
+      : TOOL_KEYS.ACTION.CONFIRM_BOOKING,
   };
 };
 
@@ -103,25 +193,22 @@ const resolveFindByIdTransition = (
  * on prose ("decide from the latest message"), which let the model call both
  * tools in the same step (double UI) or reopen the form despite guests
  * already being known from an earlier turn.
+ *
+ * Not decision-only: when the stay is not fully known it stashes what it has
+ * as a Booking Form stay hint before forcing get_room_by_id.
  */
 const resolveFindRoomBookTransition = (
   input: Record<string, unknown> | null,
   output: Record<string, unknown>,
   args: ProcessInputStepArgs,
-) => {
+): Transition | null => {
   if (input?.purpose !== TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE) return null;
 
   const rooms = Array.isArray(output.rooms) ? output.rooms : [];
   if (rooms.length !== 1) return null;
 
-  const room = rooms[0];
-  const roomId =
-    room &&
-    typeof room === "object" &&
-    !Array.isArray(room) &&
-    typeof (room as Record<string, unknown>).id === "string"
-      ? ((room as Record<string, unknown>).id as string)
-      : undefined;
+  const roomRecord = asUnknownRecord(rooms[0]);
+  const roomId = typeof roomRecord?.id === "string" ? roomRecord.id : undefined;
   if (!roomId) return null;
 
   const echoedCheckIn =
@@ -130,6 +217,7 @@ const resolveFindRoomBookTransition = (
     typeof output.guests === "number" && output.guests > 0
       ? output.guests
       : undefined;
+
   const corroborated = resolveCorroboratedBookFacts({
     messages: args.messages,
     statedCheckIn: echoedCheckIn,
@@ -147,7 +235,7 @@ const resolveFindRoomBookTransition = (
 
   if (checkInDate && guests) {
     return {
-      type: "call" as const,
+      type: "call",
       toolName: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
       pin: { roomId, checkInDate, guests },
     };
@@ -160,94 +248,81 @@ const resolveFindRoomBookTransition = (
     ...(guests ? { guests } : {}),
   });
 
-  return { type: "call" as const, toolName: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID };
+  return { type: "call", toolName: TOOL_KEYS.BOOKING.GET_ROOM_BY_ID };
 };
 
-const CONFIRMATION_FOLLOW_UPS: Record<string, string> = {
-  [TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING]:
-    TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
-  [TOOL_KEYS.ACTION.CONFIRM_BOOKING]: TOOL_KEYS.BOOKING.CREATE_BOOKING,
-  [TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING]: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
-  [TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]: TOOL_KEYS.BOOKING.CANCEL,
-  [TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT]: TOOL_KEYS.BOOKING.FIND_BY_ID,
-};
+// --- Transition resolution: entry point ---------------------------------
 
-const TERMINAL_TOOLS: readonly string[] = [
-  TOOL_KEYS.BOOKING.CREATE_BOOKING,
-  TOOL_KEYS.BOOKING.UPDATE_BOOKING,
-  TOOL_KEYS.BOOKING.CANCEL,
-];
+/**
+ * Generic booking-workflow routing — every junction except `find_room`, which
+ * additionally depends on the chat messages and is handled in
+ * `resolveEnforcedTransition` directly.
+ */
+const resolveBookingWorkflowTransition = (
+  result: ToolStepResult,
+): Transition | undefined => {
+  const { toolName, input, output } = result;
+  const outputRecord = asUnknownRecord(output);
+  if (!toolName || !outputRecord) return undefined;
 
-const resolveCheckAvailabilityTransition = (
-  input: Record<string, unknown> | null,
-  result: Record<string, unknown>,
-) => {
-  const { nextAction, available, guestsWithinCapacity, flow } = result;
-  if (
-    nextAction === TOOL_KEYS.ACTION.CONFIRM_BOOKING ||
-    nextAction === TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
-  ) {
-    return { type: "call" as const, toolName: String(nextAction) };
+  if (toolName === TOOL_KEYS.BOOKING.FIND_BY_ID) {
+    return (
+      resolveFindByIdTransition(asUnknownRecord(input), outputRecord) ??
+      undefined
+    );
   }
 
-  if (
-    nextAction === "stop_booking" ||
-    available !== true ||
-    guestsWithinCapacity !== true
-  ) {
-    return { type: "stop" as const };
+  if (toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
+    return (
+      resolveCheckAvailabilityTransition(
+        asUnknownRecord(input),
+        outputRecord,
+      ) ?? undefined
+    );
   }
 
-  const isModify =
-    flow === "modify" ||
-    input?.flow === "modify" ||
-    typeof input?.excludeBookingId === "string";
-
-  return {
-    type: "call" as const,
-    toolName: isModify
-      ? TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING
-      : TOOL_KEYS.ACTION.CONFIRM_BOOKING,
-  };
-};
-
-export const resolveBookingTransition = (
-  result: LastStepResult,
-): EnforcedTransition | undefined => {
-  const transition = resolveBookingStepTransition(result);
-
-  if (!transition) {
-    return undefined;
+  const followUpTool = CONFIRMATION_FOLLOW_UPS[toolName];
+  if (followUpTool) {
+    return outputRecord.confirmed === true
+      ? { type: "call", toolName: followUpTool }
+      : { type: "stop" };
   }
 
-  if (transition.type === "stop") {
-    return {
-      type: "stop",
-    };
-  }
+  if (TERMINAL_TOOLS.includes(toolName)) return { type: "stop" };
 
-  return {
-    type: "tool",
-    toolName: transition.toolName,
-  };
+  return undefined;
 };
 
 /**
- * A forced transition silently no-ops when the target tool isn't in
- * `args.tools` — normally because the frontend hasn't mounted the matching
- * `useHumanInTheLoop`/`useRenderTool` registration for this run (see
- * apps/web/features/chatbot/declarative-ui/tools/booking-tools.tsx). That's a real gap:
- * the booking flow just stalls with no forced tool call and no error. Warn
- * so it's visible in logs instead of only showing up as "the agent stopped
- * responding" from the guest's side.
+ * Resolves the transition to enforce after the last tool step.
+ *
+ * Decision-only, save for `resolveFindRoomBookTransition`'s documented stay-hint
+ * stash — all request-context candidate pinning happens later in
+ * {@link applyTransitionSideEffects}.
  */
-const warnMissingTool = (toolName: string, afterToolName?: string) => {
-  console.warn(
-    `[BookingStepMachine] Wanted to force "${toolName}"${afterToolName ? ` after "${afterToolName}"` : ""}, but it isn't registered in this run's tools — is BookingToolsProvider mounted on the frontend? Skipping the forced transition.`,
-  );
+export const resolveEnforcedTransition = (
+  args: ProcessInputStepArgs,
+  result: ToolStepResult,
+): Transition | undefined => {
+  if (result.toolName === TOOL_KEYS.GET.FIND_ROOM) {
+    return (
+      resolveFindRoomBookTransition(
+        asUnknownRecord(result.input),
+        asUnknownRecord(result.output) ?? {},
+        args,
+      ) ?? undefined
+    );
+  }
+
+  return resolveBookingWorkflowTransition(result);
 };
 
-const pinConfirmedStay = (args: ProcessInputStepArgs, result: ToolResult) => {
+// --- Transition side effects: request-context pinning -------------------
+
+const pinConfirmedStay = (
+  args: ProcessInputStepArgs,
+  result: ToolStepResult,
+) => {
   const stay = parseConfirmedStay(result.output as never);
   if (!stay || !args.requestContext) return;
   const key =
@@ -268,7 +343,7 @@ const pinConfirmedStay = (args: ProcessInputStepArgs, result: ToolResult) => {
  */
 const pinModifyCandidateFromResolution = (
   args: ProcessInputStepArgs,
-  result: ToolResult,
+  result: ToolStepResult,
 ) => {
   if (!args.requestContext) return;
   const output = asUnknownRecord(result.output);
@@ -341,7 +416,10 @@ const pinModifyCandidateFromResolution = (
  * find_booking_by_id call right after confirmed:true doesn't have to
  * re-derive them from a guest message several tool-calls back.
  */
-const pinModifyBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
+const pinModifyBookingId = (
+  args: ProcessInputStepArgs,
+  result: ToolStepResult,
+) => {
   if (!args.requestContext) return;
   const output = asUnknownRecord(result.output);
   const bookingId =
@@ -386,7 +464,10 @@ const pinModifyBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
  * over a possibly-stale model-supplied id — the CANCEL analogue of
  * pinModifyBookingId.
  */
-const pinCancelBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
+const pinCancelBookingId = (
+  args: ProcessInputStepArgs,
+  result: ToolStepResult,
+) => {
   if (!args.requestContext) return;
   const output = asUnknownRecord(result.output);
   const bookingId =
@@ -398,7 +479,15 @@ const pinCancelBookingId = (args: ProcessInputStepArgs, result: ToolResult) => {
   );
 };
 
-const TRANSITION_SIDE_EFFECT_RULES: readonly TransitionRule[] = [
+/**
+ * `from` tool → `to` forced tool → the extra request-context pinning that
+ * transition needs. A junction with no rule falls back to {@link pinConfirmedStay}.
+ */
+const TRANSITION_SIDE_EFFECT_RULES: readonly {
+  from: string;
+  to: string;
+  effect: TransitionSideEffect;
+}[] = [
   {
     from: TOOL_KEYS.BOOKING.FIND_BY_ID,
     to: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
@@ -416,164 +505,65 @@ const TRANSITION_SIDE_EFFECT_RULES: readonly TransitionRule[] = [
   },
 ];
 
-type CallOrStopTransition =
-  | { type: "call"; toolName: string }
-  | { type: "stop" }
-  | null;
-
-const toBookingStepTransition = (
-  transition: CallOrStopTransition,
-): BookingStepTransition | undefined => {
-  if (!transition) return undefined;
-
-  return transition.type === "stop"
-    ? { type: "stop" }
-    : { type: "tool", toolName: transition.toolName };
-};
-
 /**
- * Resolves the generic booking workflow transition.
+ * Applies the request-context state a committed forced-tool transition implies.
+ *
+ * Transition resolution stays (almost) pure; this function owns the
+ * request-context mutations / booking-candidate pinning.
  */
-const resolveBookingStepTransition = (
-  result: LastStepResult,
-): BookingStepTransition | undefined => {
-  const { toolName, input, output } = result;
-  const outputRecord = asUnknownRecord(output);
-  if (!toolName || !outputRecord) return undefined;
-
-  if (toolName === TOOL_KEYS.BOOKING.FIND_BY_ID) {
-    return toBookingStepTransition(
-      resolveFindByIdTransition(asUnknownRecord(input), outputRecord),
+const applyTransitionSideEffects = (
+  args: ProcessInputStepArgs,
+  result: ToolStepResult,
+  transition: ForcedToolTransition,
+): void => {
+  if (transition.pin) {
+    args.requestContext?.set(
+      REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE,
+      transition.pin,
     );
   }
 
-  if (toolName === TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY) {
-    return toBookingStepTransition(
-      resolveCheckAvailabilityTransition(asUnknownRecord(input), outputRecord),
-    );
-  }
-
-  const followUpTool = CONFIRMATION_FOLLOW_UPS[toolName];
-  if (followUpTool) {
-    return outputRecord.confirmed === true
-      ? { type: "tool", toolName: followUpTool }
-      : { type: "stop" };
-  }
-
-  if (TERMINAL_TOOLS.includes(toolName)) return { type: "stop" };
-
-  return undefined;
-};
-
-/**
- * Resolves the booking transition after FIND_ROOM.
- *
- * FIND_ROOM is special because its transition depends on both
- * the tool input/output and the current agent state.
- */
-const resolveFindRoomTransition = (
-  args: ProcessInputStepArgs,
-  result: LastStepResult,
-): ToolTransition | undefined => {
-  const transition = resolveFindRoomBookTransition(
-    asUnknownRecord(result.input),
-    asUnknownRecord(result.output) ?? {},
-    args,
-  );
-
-  if (!transition) {
-    return undefined;
-  }
-
-  return {
-    type: "tool",
-    toolName: transition.toolName,
-    pin: transition.pin,
-  };
-};
-
-/**
- * Resolves the transition that should be enforced after the last tool step.
- *
- * This function is intentionally side-effect free.
- */
-export const resolveEnforcedTransition = (
-  args: ProcessInputStepArgs,
-  result: LastStepResult,
-): EnforcedTransition | undefined => {
-  if (result.toolName === TOOL_KEYS.GET.FIND_ROOM) {
-    return resolveFindRoomTransition(args, result);
-  }
-
-  return resolveBookingTransition(result);
-};
-
-/**
- * Emits the existing warning when a transition points to
- * a tool that is not available in the current step.
- */
-export const validateTransitionTool = (
-  args: ProcessInputStepArgs,
-  result: LastStepResult,
-  transition: ToolTransition,
-): boolean => {
-  if (hasTool(args, transition.toolName)) {
-    return true;
-  }
-
-  warnMissingTool(transition.toolName, result.toolName);
-
-  return false;
-};
-
-const resolveTransitionSideEffect = (
-  result: LastStepResult,
-  transition: ToolTransition,
-): TransitionSideEffect | undefined => {
   const rule = TRANSITION_SIDE_EFFECT_RULES.find(
     ({ from, to }) => from === result.toolName && to === transition.toolName,
   );
 
-  return rule?.effect;
-};
-
-/**
- * Applies state changes associated with a resolved transition.
- *
- * Transition resolution remains pure; this function owns all
- * request-context mutations / booking candidate pinning.
- */
-const applyTransitionSideEffects = (
-  args: ProcessInputStepArgs,
-  result: LastStepResult,
-  transition: ToolTransition,
-): void => {
-  applyPendingCreateCandidate(args, transition);
-
-  const sideEffect = resolveTransitionSideEffect(result, transition);
-
-  if (sideEffect) {
-    sideEffect(args, result);
+  if (rule) {
+    rule.effect(args, result);
     return;
   }
 
   pinConfirmedStay(args, result);
 };
 
-const applyPendingCreateCandidate = (
-  args: ProcessInputStepArgs,
-  transition: ToolTransition,
-): void => {
-  if (!transition.pin) {
-    return;
-  }
+// --- Enforcement -------------------------------------------------------
 
-  args.requestContext?.set(
-    REQUEST_CONTEXT_KEYS.PENDING_CREATE_CANDIDATE,
-    transition.pin,
+/**
+ * A forced transition silently no-ops when the target tool isn't in
+ * `args.tools` — normally because the frontend hasn't mounted the matching
+ * `useHumanInTheLoop`/`useRenderTool` registration for this run (see
+ * apps/web/features/chatbot/declarative-ui/tools/booking-tools.tsx). That's a real gap:
+ * the booking flow just stalls with no forced tool call and no error. Warn
+ * so it's visible in logs instead of only showing up as "the agent stopped
+ * responding" from the guest's side.
+ */
+const isForcedToolAvailable = (
+  args: ProcessInputStepArgs,
+  result: ToolStepResult,
+  transition: ForcedToolTransition,
+): boolean => {
+  if (hasTool(args, transition.toolName)) return true;
+
+  console.warn(
+    `[BookingStepMachine] Wanted to force "${transition.toolName}"${result.toolName ? ` after "${result.toolName}"` : ""}, but it isn't registered in this run's tools — is BookingToolsProvider mounted on the frontend? Skipping the forced transition.`,
   );
+
+  return false;
 };
 
+/**
+ * The agent's `prepareStep` hook: after each tool step, force the next booking
+ * step (or stop the turn) per {@link resolveEnforcedTransition}.
+ */
 export const enforceBookingStep = (
   args: ProcessInputStepArgs,
 ): ProcessInputStepResult | undefined => {
@@ -581,14 +571,12 @@ export const enforceBookingStep = (
     return stopToolExecution();
   }
 
-  const result = lastStepResult(args);
-
+  const result = lastToolStepResult(args);
   if (!result) {
     return undefined;
   }
 
   const transition = resolveEnforcedTransition(args, result);
-
   if (!transition) {
     return undefined;
   }
@@ -597,7 +585,7 @@ export const enforceBookingStep = (
     return stopToolExecution();
   }
 
-  if (!validateTransitionTool(args, result, transition)) {
+  if (!isForcedToolAvailable(args, result, transition)) {
     return undefined;
   }
 

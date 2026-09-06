@@ -3,7 +3,6 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { RequestContext } from "@mastra/core/request-context";
 import {
   THREAD_METADATA_BLOCKED_MESSAGE_IDS,
-  TRIPWIRE_KIND,
   type TripwireKind,
 } from "@repo/constants";
 import {
@@ -132,12 +131,6 @@ export async function* interceptTripwireStream(
 
     const typedChunk = chunk;
     const kind = classifyTripwire(typedChunk.payload);
-
-    // Step-limit tripwires stay on the stream (existing behavior).
-    if (kind === TRIPWIRE_KIND.STEP_LIMIT) {
-      yield chunk;
-      continue;
-    }
 
     await onTripwire(typedChunk, kind);
     return;

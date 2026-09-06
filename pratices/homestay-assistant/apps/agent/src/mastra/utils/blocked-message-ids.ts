@@ -14,7 +14,7 @@ type MastraAgentLike = {
   }) => Promise<MemoryLike | null>;
 };
 
-export const readBlockedMessageIdsFromMetadata = (
+const readBlockedMessageIdsFromMetadata = (
   metadata: Record<string, unknown> | undefined,
 ) => {
   const value = metadata?.[THREAD_METADATA_BLOCKED_MESSAGE_IDS];
@@ -22,6 +22,11 @@ export const readBlockedMessageIdsFromMetadata = (
   return normalizeBlockedMessageIds(Array.isArray(value) ? value : undefined);
 };
 
+/**
+ * Blocked message ids a thread already persisted in its memory metadata.
+ * Injected into the AG-UI bridge via `ThreadMemoryPort` so the bridge stays
+ * free of `@/mastra` imports — the sibling of `loadResolvedToolCallIdsForThread`.
+ */
 export async function loadBlockedMessageIdsForThread({
   mastraAgent,
   threadId,

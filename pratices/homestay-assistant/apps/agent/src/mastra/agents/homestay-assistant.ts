@@ -30,10 +30,9 @@ import {
   getRoomByIdTool,
   getRoomsTool,
 } from "@/mastra/tools/rooms";
-import { agentOutputProcessors } from "@/mastra/processors/agent-output-processors";
 import { securityInputProcessor } from "@/mastra/processors/security-input.processors";
 import { BookingFormPrefillProcessor } from "@/mastra/processors/booking-form-prefill.processor";
-import { enforceBookingStep } from "@/mastra/booking/step-machine";
+import { enforceBookingStep } from "@/mastra/utils/step-machine";
 console.log("=== AI_MODEL ===", AI_MODEL);
 export const homestayAssistant = new Agent({
   id: AGENT_KEYS.HOMESTAY_ASSISTANT,
@@ -81,7 +80,6 @@ export const homestayAssistant = new Agent({
     // has no such history, so the processor is skipped there.
     ...(IS_CEREBRAS_MODEL ? [new ProviderHistoryCompat()] : []),
   ],
-  outputProcessors: [...agentOutputProcessors],
   memory: new Memory({
     options: {
       lastMessages: AGENT_MEMORY_LAST_MESSAGES,

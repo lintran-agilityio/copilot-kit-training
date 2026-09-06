@@ -39,7 +39,12 @@
       "Read(//c/Users/lintr/.claude/projects/d--training-copilotkit/memory\" 2>/dev/**)",
       "Read(//c/Users/lintr/.claude/projects/d--training-copilotkit/memory/**)",
       "Bash(kill %1)",
-      "Bash(pkill -f 'grep -rn')"
+      "Bash(pkill -f 'grep -rn')",
+      "Bash(pnpm check-types *)",
+      "Bash(pnpm eval:deterministic)",
+      "Bash(timeout 300 pnpm exec evalite run get-rooms)",
+      "Bash(grep -o 'OPENAI_API_KEY=.\\\\{0,6\\\\}' apps/agent/.env apps/web/.env)",
+      "Bash(timeout 400 node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run get-rooms)"
     ]
   }
 }

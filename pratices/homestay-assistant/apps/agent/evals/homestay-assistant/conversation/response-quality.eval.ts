@@ -1,7 +1,7 @@
 import { evalite } from "evalite";
 
-import { gradeAgainstRubric } from "./support/judge";
-import { runCase, type CaseResult } from "./support/run-case";
+import { gradeAgainstRubric } from "../../support/judge";
+import { runCase, type CaseResult } from "../../support/run-case";
 
 /**
  * LLM-as-judge, used ONLY for the natural-language quality of the reply —
@@ -72,8 +72,8 @@ const cases: QualityCase[] = [
     ],
   },
   {
-    // KNOWN FAILING — see tool-selection.eval.ts's file-header note on the
-    // same underlying gap. `WORKFLOW_FIND`/`WORKFLOW_DETAIL` both forbid
+    // KNOWN FAILING — see behavioral/get-room-by-id.eval.ts's file-header note
+    // on the same underlying gap. `WORKFLOW_FIND`/`WORKFLOW_DETAIL` both forbid
     // restating amenities/description/price in chat text (the UI card owns
     // that data) — a live run was observed doing exactly this. Left failing
     // on purpose to document the gap; do not loosen the rubric to pass it.

@@ -8,7 +8,6 @@
 export const TRIPWIRE_KIND = {
   SECURITY: "security",
   TOKEN_LIMIT: "token-limit",
-  STEP_LIMIT: "step-limit",
   OTHER: "other",
 } as const;
 
@@ -24,7 +23,3 @@ export const TOKEN_LIMITER_TRIPWIRE_REASON_PREFIX = "TokenLimiterProcessor:";
 /** UserMessageTokenLimitProcessor abort reason prefix (ours). */
 export const USER_MESSAGE_TOKEN_LIMIT_REASON_PREFIX =
   "User message exceeds token limit";
-
-/** AgentStepLimitProcessor default abort reason prefix (ours). */
-export const AGENT_STEP_LIMIT_TRIPWIRE_REASON_PREFIX =
-  "Agent step limit reached";

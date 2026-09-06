@@ -8,7 +8,10 @@ import {
   sanitizeFindRoomName,
   sanitizeFindRoomDate
 } from "./sanitize-find-room";
-import { clearBookingFormStayHint, readBookingFormStayHint } from "../booking";
+import {
+  clearBookingFormStayHint,
+  readBookingFormStayHint,
+} from "./book-form-prefill";
 import { addDaysYmd } from "@repo/utils";
 
 /** Top-floor / luxury category → floor level in seed catalog. */

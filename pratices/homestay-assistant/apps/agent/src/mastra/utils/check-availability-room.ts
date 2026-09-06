@@ -10,7 +10,7 @@ import {
   isSameModifyStay,
   ModifyStayFields,
   resolveModifyAvailabilityNextAction,
-} from "../booking";
+} from "./modify-booking";
 import {
   clearPinnedStay,
   readPinnedCreateCandidate,
