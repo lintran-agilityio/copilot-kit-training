@@ -4,6 +4,10 @@ import type {
   AgentRequestState,
 } from "./request-pipeline.types";
 import { buildAgentRequestContext } from "../build-request-context";
+import {
+  extractClientIdentity,
+  reconcileClientIdentity,
+} from "../client-identity";
 import { AUTH_ERRORS } from "../constants";
 import { detectPromptFlowHint } from "../prompt-flow-hint";
 import { extractClerkToken, verifyClerkAuth } from "../verify-clerk-auth";
@@ -57,9 +61,15 @@ export const runAgentRequestPipeline = async ({
 
   const promptFlowHint = await detectPromptFlowHint(request);
 
+  const clientIdentity = reconcileClientIdentity(
+    await extractClientIdentity(request),
+    result.auth.userId,
+  );
+
   const requestContext = buildAgentRequestContext({
     auth: result.auth,
     promptFlowHint,
+    clientIdentity,
   });
 
   return {

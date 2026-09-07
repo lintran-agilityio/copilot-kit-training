@@ -8,7 +8,12 @@ import {
   AGENT_MAX_OUTPUT_TOKEN_LIMIT,
   TOOL_KEYS,
 } from "@repo/constants";
-import { buildHomestayAssistantPrompt, withDateContext } from "@/mastra/utils";
+import {
+  buildHomestayAssistantPrompt,
+  getClientIdentity,
+  withDateContext,
+  withGuestContext,
+} from "@/mastra/utils";
 import {
   AI_MODEL,
   BOOKING_WORKING_MEMORY_TEMPLATE,
@@ -39,12 +44,15 @@ export const homestayAssistant = new Agent({
   description:
     "Public chat agent that coordinates room discovery and booking flows (prompt-guided tool routing + HITL).",
   instructions: ({ requestContext }) =>
-    withDateContext(
-      buildHomestayAssistantPrompt(
-        requestContext.get(REQUEST_CONTEXT_KEYS.PROMPT_FLOW_HINT) as
-          | PromptFlowHint
-          | undefined,
+    withGuestContext(
+      withDateContext(
+        buildHomestayAssistantPrompt(
+          requestContext.get(REQUEST_CONTEXT_KEYS.PROMPT_FLOW_HINT) as
+            | PromptFlowHint
+            | undefined,
+        ),
       ),
+      getClientIdentity(requestContext),
     ),
   model: AI_MODEL,
   // Rate-limit responses are transient; Mastra applies bounded backoff retries.

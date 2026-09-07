@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientIdentitySync } from "@/features/chatbot/copilot/ClientIdentitySync";
 import {
   CurrentDateReadable,
   UserReadable,
@@ -8,6 +9,7 @@ import {
 export const CopilotContexts = () => {
   return (
     <>
+      <ClientIdentitySync />
       <CurrentDateReadable />
       <UserReadable />
     </>

@@ -3,6 +3,7 @@ import {
   RequestContext,
 } from "@mastra/core/request-context";
 import { AGENT_KEYS } from "@repo/constants";
+import type { ClientIdentity } from "@repo/schemas";
 import { getAgentResourceId } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "./constants";
@@ -24,11 +25,14 @@ export const attachAuthToRequestContext = (
 type BuildRequestContextInput = {
   auth: MastraAuthContext;
   promptFlowHint?: PromptFlowHint;
+  /** Reconciled browser identity — see middleware/client-identity.ts. */
+  clientIdentity?: ClientIdentity;
 };
 
 export const buildAgentRequestContext = ({
   auth,
   promptFlowHint,
+  clientIdentity,
 }: BuildRequestContextInput): RequestContext => {
   const requestContext = new RequestContext();
 
@@ -36,6 +40,10 @@ export const buildAgentRequestContext = ({
 
   if (promptFlowHint) {
     requestContext.set(REQUEST_CONTEXT_KEYS.PROMPT_FLOW_HINT, promptFlowHint);
+  }
+
+  if (clientIdentity) {
+    requestContext.set(REQUEST_CONTEXT_KEYS.CLIENT_IDENTITY, clientIdentity);
   }
 
   return requestContext;
