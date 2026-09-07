@@ -32,10 +32,34 @@ services:
       - key: NODE_ENV
         value: production
 
-      - key: NEXT_PUBLIC_API_URL
+      # Server-side base URL for the NestJS API (utils/urls.ts reads process.env.API_URL).
+      # Set to the homestay-api service URL, e.g. https://homestay-api-majb.onrender.com
+      - key: API_URL
         sync: false
 
-      - key: NEXT_PUBLIC_AGENT_URL
+      # CopilotKit Intelligence (chat runtime + realtime WS proxy in server.mjs).
+      - key: INTELLIGENCE_API_URL
+        sync: false
+      - key: INTELLIGENCE_GATEWAY_WS_URL
+        sync: false
+      - key: INTELLIGENCE_API_KEY
+        sync: false
+
+      # Public hostname(s) for the realtime WS URL rewrite (lib/rewrite-intelligence-ws-url.ts).
+      - key: ALLOWED_PUBLIC_HOSTS
+        sync: false
+
+      # Clerk auth (also read by the in-process Mastra agent's auth middleware).
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+
+      # The Mastra homestay agent runs in-process in this Next app (see
+      # app/api/copilotkit/[[...slug]]/route.ts). It needs the chat-model key.
+      - key: AI_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
         sync: false
 
 
@@ -102,7 +126,13 @@ services:
 
     startCommand: pnpm --filter=api start:prod
 
-    healthCheckPath: /health
+    # Mirrors fly.api.toml's release_command: create/upgrade the schema and seed
+    # the room catalog before the new version goes live. Without this the DB has
+    # no tables and every request 500s.
+    preDeployCommand: pnpm --filter=api db:migrate && pnpm --filter=api db:seed
+
+    # `/` is the health route (AppController.getRoot); there is no `/health` path.
+    healthCheckPath: /
 
     buildFilter:
       paths:
