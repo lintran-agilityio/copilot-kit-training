@@ -139,11 +139,13 @@ export const buildBookingCancelMessage = (booking: BookingResponse) => {
 };
 
 export const buildBookingModifyMessage = (booking: BookingResponse) => {
-  const { id, checkInDate, checkOutDate, guests } = booking;
+  const { id } = booking;
   const room = booking.room!;
-  const checkIn = formatShortDateForDisplay(checkInDate);
-  const checkOut = formatShortDateForDisplay(checkOutDate);
-  const display = `I want to modify my booking for ${room.name} (${checkIn} → ${checkOut}, ${guests} guests).`;
+  // Intentionally NO dates / guests here: the Modify button opens the edit form
+  // so the guest can choose what to change. Restating the current stay let the
+  // model read it as a stated change and skip the form straight to
+  // confirm_modify_booking with an unintended one-day shift.
+  const display = `I want to modify my booking for ${room.name}.`;
 
   return `${BOOKING_MODIFY_PROMPT_PREFIX} bookingId: ${id}. ${display}`;
 };

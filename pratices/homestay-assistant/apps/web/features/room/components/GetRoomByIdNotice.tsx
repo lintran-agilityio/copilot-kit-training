@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 import { ToolCallStatus, useAgent } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS } from "@repo/constants";
-import { EmbeddedWidget } from "@/features/chat/components";
-import { useGenericUiInteraction } from "@/features/chat/hooks";
-import { useArtifactStore } from "@/features/chat/stores/artifact-store";
+import { EmbeddedWidget } from "@/features/chatbot/components";
+import { useGenericUiInteraction } from "@/features/chatbot/hooks";
+import { useArtifactStore } from "@/features/chatbot/stores/artifact-store";
 import {
   ARTIFACT_STATUS,
   isArtifactInteractive,
-} from "@/features/chat/types/artifact";
-import type { MessageLike } from "@/features/chat/types";
-import { hasLaterToolCallInTurn } from "@/features/chat/utils";
+} from "@/features/chatbot/types/artifact";
+import type { MessageLike } from "@/features/chatbot/types";
+import { hasLaterToolCallInTurn } from "@/features/chatbot/utils";
 import { RoomDetail } from "@/features/room/components";
 import { ROOM_DETAIL_VARIANT } from "@/constants";
 import type {
@@ -30,7 +30,7 @@ export const GetRoomByIdNotice = ({
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
 
   // The BOOK workflow moved on to a later tool call in this same turn (e.g.
-  // check_room_availability / confirm_booking) — deterministic routing on the
+  // confirm_booking) — deterministic routing on the
   // agent side already forces exactly one of Booking Form / Confirm dialog,
   // but stay defensive against replay/duplicate tool emissions (see
   // find-room-turn.ts) rather than ever rendering both at once.

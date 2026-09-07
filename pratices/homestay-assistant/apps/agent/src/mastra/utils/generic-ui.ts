@@ -45,27 +45,26 @@ const buildBookResolveReplyHint = (matchCount: number): string => {
       return (
         "No room matched that booking name. " +
         "Reply with ONE short sentence that nothing matched; suggest a different room name. " +
-        "Do NOT invent rooms. Do NOT call check_room_availability."
+        "Do NOT invent rooms."
       );
     case 1:
       return (
         "Room resolved for booking — Room List is suppressed (do NOT say cards were shown). " +
-        "The platform has already deterministically decided the next step (from this message's stated " +
-        "check-in date/guest count, or an earlier dated/guest-count search this conversation) and forces " +
-        "exactly ONE tool call next — you cannot choose a different one and must not attempt both: " +
-        "check_room_availability (flow=create) when check-in date AND guest count are both already known — " +
-        "pass them back plus a checkOutDate reflecting any stay length stated in the LATEST message " +
-        "(default checkInDate + 1 day only when none was stated), then confirm_booking when available; " +
-        "OR get_room_by_id to open the Booking Form when either is still unknown — pass whichever of " +
-        "checkInDate/guests IS stated in the latest message as its args so the form opens prefilled, " +
-        "leave the rest for the guest to fill in. " +
+        "The platform already probed availability for this room and deterministically forces the next step " +
+        "— you cannot choose a different one: " +
+        "confirm_booking when check-in date AND guest count are both known and the room is free (result.availability present with available:true) — " +
+        "pass { roomId, checkInDate, guests } from result.availability plus a checkOutDate reflecting any stay length " +
+        "stated in the LATEST message (default result.availability.checkOutDate when none was stated); " +
+        "OR get_room_by_id to open the Booking Form when either check-in date or guest count is still unknown " +
+        "(no result.availability) — pass whichever of checkInDate/guests IS stated as its args so the form opens prefilled. " +
+        "Never call check_room_availability — that tool no longer exists. " +
         "When the forced follow-up renders guest-visible Generic UI, include exactly one very short " +
         "companion sentence in the guest's language. Never list room details in text."
       );
     default:
       return (
         `Multiple rooms matched (${matchCount}) — Room cards are rendered so the guest can pick one. ` +
-        "Do NOT call check_room_availability until a specific room is selected. " +
+        "Do NOT call any booking tool until a specific room is selected. " +
         "Reply with ONE short sentence asking them to choose. Never list room names in text."
       );
   }

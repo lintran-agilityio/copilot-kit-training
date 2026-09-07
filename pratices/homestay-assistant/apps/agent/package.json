@@ -13,6 +13,8 @@
     "preeval": "pnpm exec turbo run build --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
     "eval": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run",
     "eval:deterministic": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run deterministic",
+    "eval:tools": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run tools",
+    "eval:conversation": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run conversation",
     "preeval:watch": "pnpm exec turbo run build --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
     "eval:watch": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js watch",
     "eval:dev": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js watch"

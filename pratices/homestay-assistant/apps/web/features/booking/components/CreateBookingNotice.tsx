@@ -16,8 +16,8 @@ import {
   getCreateBookingFailureMessage,
   isCreateBookingSuccess,
 } from "@/features/booking/utils";
-import { useArtifactStore } from "@/features/chat/stores/artifact-store";
-import { useHomestayAgentUiStore } from "@/features/chat/stores/homestay-agent-ui-store";
+import { useArtifactStore } from "@/features/chatbot/stores/artifact-store";
+import { useHomestayAgentUiStore } from "@/features/chatbot/stores/homestay-agent-ui-store";
 import { useRoomStore } from "@/features/room/stores/room-store";
 
 /**

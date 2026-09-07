@@ -24,11 +24,9 @@ export {
   PROMPT_INJECTION_TRIPWIRE_REASON_PREFIX,
   TOKEN_LIMITER_TRIPWIRE_REASON_PREFIX,
   USER_MESSAGE_TOKEN_LIMIT_REASON_PREFIX,
-  AGENT_STEP_LIMIT_TRIPWIRE_REASON_PREFIX,
   type TripwireKind,
 } from "./tripwire.js";
 export * from "./agent-token-limits.js";
-export * from "./agent-step-limit.js";
 export * from "./homestay-agent-context.js";
 export * from "./stop-timing.js";
 export * from "./regex.js";

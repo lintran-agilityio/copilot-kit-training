@@ -21,13 +21,14 @@ import {
   ConfirmCreateHitlCard,
   ConfirmModifyHitlCard,
 } from "@/components/confirm-modal";
-import { EmbeddedWidget } from "@/features/chat/components";
+import { EmbeddedWidget } from "@/features/chatbot/components";
 import {
   BOOKINGS_PAGE_PATH,
   CONFIRM_BOOKING,
   HITL_CARD_PHASE,
 } from "@/features/booking/constants";
 import {
+  useConfirmBookingRoom,
   useHitlConfirmDialog,
   useRetryCreateBooking,
   useRetryModifyBooking,
@@ -35,8 +36,8 @@ import {
 import { useBookingStore } from "@/features/booking/stores/booking-store";
 import { useCreateBookingCardStore } from "@/features/booking/stores/create-booking-card-store";
 import { useModifyBookingCardStore } from "@/features/booking/stores/modify-booking-card-store";
-import { useArtifactStore } from "@/features/chat/stores/artifact-store";
-import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
+import { useArtifactStore } from "@/features/chatbot/stores/artifact-store";
+import { useReportHomestayAgentUiFocus } from "@/features/chatbot/hooks";
 import {
   buildCreateStayCorrelationKey,
   buildModifyChangeRows,
@@ -115,9 +116,14 @@ const HitlConfirmCreateStayModal = ({
   // current prompt usable, then lock it as soon as respond() is consumed.
   const isAgentBusy = agent.isRunning && !canRespond;
   const hasArgs = hasRequiredCreateArgs(args);
+  // confirm_booking args carry only roomId — hydrate the room (Booking Form
+  // stash, or the find_room/get_room_by_id result in the transcript).
+  const room = useConfirmBookingRoom(hasArgs ? args.roomId : undefined);
+  const canRenderCard =
+    hasArgs && room != null && typeof room.pricePerNight === "number";
   const correlationKey = hasArgs
     ? buildCreateStayCorrelationKey({
-        roomId: args.room.id,
+        roomId: args.roomId,
         checkInDate: args.checkInDate,
         checkOutDate: args.checkOutDate,
         guests: args.guests,
@@ -158,7 +164,7 @@ const HitlConfirmCreateStayModal = ({
     markSubmitting(correlationKey);
     void confirm({
       confirmed: true,
-      roomId: args.room.id,
+      roomId: args.roomId,
       checkInDate: args.checkInDate,
       checkOutDate: args.checkOutDate,
       guests: args.guests,
@@ -183,20 +189,26 @@ const HitlConfirmCreateStayModal = ({
   };
 
   useReportHomestayAgentUiFocus(
-    shouldRender && hasArgs && canRespond,
+    shouldRender && canRenderCard && canRespond,
     "confirm-booking",
     {
       type: HOMESTAY_AGENT_TASK_TYPE.BOOK,
       status: HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION,
     },
-    hasArgs ? { type: "room", id: args.room.id } : undefined,
+    hasArgs ? { type: "room", id: args.roomId } : undefined,
   );
 
-  if (!shouldRenderHitlCard(status, hasArgs) || !shouldRender || !hasArgs) {
+  if (
+    !shouldRenderHitlCard(status, canRenderCard) ||
+    !shouldRender ||
+    !hasArgs ||
+    room == null ||
+    typeof room.pricePerNight !== "number"
+  ) {
     return null;
   }
 
-  const { room, checkInDate, checkOutDate, guests } = args;
+  const { checkInDate, checkOutDate, guests } = args;
 
   return (
     <EmbeddedWidget>
@@ -216,7 +228,11 @@ const HitlConfirmCreateStayModal = ({
         decisionStatus={decisionStatus}
         createPhase={createPhase}
         failureReason={createOutcome?.errorMessage}
-        totalPriceOverride={createOutcome?.totalPrice}
+        totalPriceOverride={
+          createPhase === HITL_CARD_PHASE.SUCCESS
+            ? createOutcome?.totalPrice
+            : undefined
+        }
         errorMessage={errorMessage}
         allActionsDisabled={isAgentBusy}
         onCancel={handleCancel}

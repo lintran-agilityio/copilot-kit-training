@@ -8,9 +8,9 @@ import {
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
 
-import { EmbeddedWidget } from "@/features/chat/components";
-import { useReportHomestayAgentUiFocus } from "@/features/chat/hooks";
-import type { MessageLike } from "@/features/chat/types";
+import { EmbeddedWidget } from "@/features/chatbot/components";
+import { useReportHomestayAgentUiFocus } from "@/features/chatbot/hooks";
+import type { MessageLike } from "@/features/chatbot/types";
 import {
   hasBookingPickerFields,
   resolveModifyPickerBookingsFromMessages,

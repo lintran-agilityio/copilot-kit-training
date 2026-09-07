@@ -1,6 +1,6 @@
 import type { GetBookingsPurpose } from "@repo/constants";
 import type { Room } from "@/features/room/types/room";
-import { ToolRendererProps } from "@/features/copilot/types";
+import { ToolRendererProps } from "@/features/chatbot/declarative-ui/types";
 
 export enum BookingStatus {
   PENDING = "pending",
@@ -52,6 +52,53 @@ export type BookingDetails = {
   guests?: number;
   totalPrice?: number;
 };
+
+/**
+ * Availability probe attached to a `find_booking_by_id(purpose:"modify")`
+ * result on the stated-change path — the app has no `check_room_availability`
+ * tool. Dates/guests are the merged stay (current stay + stated overrides).
+ */
+export type ModifyAvailability = {
+  available: boolean;
+  guestsWithinCapacity: boolean;
+  checkInDate: string;
+  checkOutDate: string;
+  guests: number;
+};
+
+export type FindBookingByIdResultBooking = {
+  bookingId: string;
+  roomId: string;
+  roomName: string;
+  checkInDate: string;
+  checkOutDate: string;
+  guests: number;
+  totalPrice?: number;
+};
+
+export type FindBookingByIdResult = {
+  bookings?: FindBookingByIdResultBooking[];
+  bookingId?: string;
+  queryName?: string;
+  room?: Room;
+  reason?: "not_modifiable" | "lookup_failed";
+  requestedCheckInDate?: string;
+  requestedCheckOutDate?: string;
+  requestedGuests?: number;
+  /** MODIFY stated-change path only. */
+  availability?: ModifyAvailability;
+  /** MODIFY stated-change path only — merged stay equals the current stay. */
+  stayUnchanged?: boolean;
+};
+
+export type FindBookingByIdParameters = {
+  purpose?: "cancel" | "modify";
+};
+
+export type FindBookingByIdToolProps =
+  ToolRendererProps<FindBookingByIdResult> & {
+    parameters?: FindBookingByIdParameters;
+  };
 
 export type CancelBookingResult = {
   id?: string;

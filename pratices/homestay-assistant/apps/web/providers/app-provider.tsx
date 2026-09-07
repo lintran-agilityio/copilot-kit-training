@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { CopilotProvider } from "@/features/copilot/providers";
-import { StaticSuggestionConfig } from "@/features/chat/components";
-import { HomestayReadable } from "@/features/copilot/readable";
+import { CopilotProvider } from "@/features/chatbot/copilot";
+import { StaticSuggestionConfig } from "@/features/chatbot/components";
+import { HomestayReadable } from "@/features/chatbot/copilot/readable";
 
 type AppProviderProps = {
   children: React.ReactNode;

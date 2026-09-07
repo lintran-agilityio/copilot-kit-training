@@ -18,7 +18,6 @@ import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import type { PromptFlowHint } from "@/mastra/middleware/prompt-flow-hint";
 import {
   cancelBookingTool,
-  checkRoomAvailabilityTool,
   createBookingTool,
   findBookingByIdTool,
   findBookingsTool,
@@ -30,10 +29,9 @@ import {
   getRoomByIdTool,
   getRoomsTool,
 } from "@/mastra/tools/rooms";
-import { agentOutputProcessors } from "@/mastra/processors/agent-output-processors";
 import { securityInputProcessor } from "@/mastra/processors/security-input.processors";
 import { BookingFormPrefillProcessor } from "@/mastra/processors/booking-form-prefill.processor";
-import { enforceBookingStep } from "@/mastra/booking/step-machine";
+import { enforceBookingStep } from "@/mastra/utils/step-machine";
 console.log("=== AI_MODEL ===", AI_MODEL);
 export const homestayAssistant = new Agent({
   id: AGENT_KEYS.HOMESTAY_ASSISTANT,
@@ -61,7 +59,6 @@ export const homestayAssistant = new Agent({
     [TOOL_KEYS.GET.ROOMS]: getRoomsTool,
     [TOOL_KEYS.GET.FIND_ROOM]: findRoomTool,
     [TOOL_KEYS.BOOKING.GET_ROOM_BY_ID]: getRoomByIdTool,
-    [TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY]: checkRoomAvailabilityTool,
     [TOOL_KEYS.BOOKING.CREATE_BOOKING]: createBookingTool,
     [TOOL_KEYS.BOOKING.UPDATE_BOOKING]: updateBookingTool,
     [TOOL_KEYS.BOOKING.GET]: getBookingsTool,
@@ -81,7 +78,6 @@ export const homestayAssistant = new Agent({
     // has no such history, so the processor is skipped there.
     ...(IS_CEREBRAS_MODEL ? [new ProviderHistoryCompat()] : []),
   ],
-  outputProcessors: [...agentOutputProcessors],
   memory: new Memory({
     options: {
       lastMessages: AGENT_MEMORY_LAST_MESSAGES,

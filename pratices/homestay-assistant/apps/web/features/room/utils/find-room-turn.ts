@@ -1,10 +1,59 @@
-import { TOOL_KEYS } from "@repo/constants";
-import { getCurrentTurn } from "@repo/utils";
+import { MESSAGE_ROLE, TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
+import { getCurrentTurn, parseToolResult } from "@repo/utils";
 
-import type { MessageLike } from "@/features/chat/types";
-import { hasLaterToolCallInTurn } from "@/features/chat/utils";
+import type { MessageLike } from "@/features/chatbot/types";
+import { hasLaterToolCallInTurn } from "@/features/chatbot/utils";
+import type {
+  FindRoomAvailability,
+  FindRoomResult,
+} from "@/features/room/types/room";
 
 const FIND_ROOM = TOOL_KEYS.GET.FIND_ROOM;
+
+/**
+ * book_resolve + exactly one match whose availability probe (the CREATE flow's
+ * replacement for a check_room_availability call) came back taken / over
+ * capacity. `FindRoomNotice` renders `BookingUnavailable` for this case, so the
+ * tool row must NOT be dropped as a silent internal lookup. Returns the probe
+ * result (for the card) or `null`.
+ */
+export const resolveBookResolveUnavailable = (
+  parsed: FindRoomResult | null | undefined,
+): FindRoomAvailability | null => {
+  if (
+    parsed?.purpose !== TOOL_PURPOSE.FIND_ROOM.BOOK_RESOLVE ||
+    (parsed.rooms?.length ?? 0) !== 1
+  ) {
+    return null;
+  }
+  const availability = parsed.availability;
+  if (!availability) {
+    return null;
+  }
+  return availability.available === false ||
+    availability.guestsWithinCapacity === false
+    ? availability
+    : null;
+};
+
+/** Parse a resolved `find_room` `tool` result message by tool-call id. */
+export const readResolvedFindRoomResult = (
+  toolCallId: string | undefined,
+  messages: readonly MessageLike[] | undefined,
+): FindRoomResult | null => {
+  if (!toolCallId || !messages) {
+    return null;
+  }
+  const resultMessage = messages.find(
+    (message) =>
+      message.role === MESSAGE_ROLE.TOOL && message.toolCallId === toolCallId,
+  );
+  return resultMessage
+    ? parseToolResult<FindRoomResult>(
+        resultMessage.content as FindRoomResult | string | null | undefined,
+      )
+    : null;
+};
 
 /**
  * True when this turn already invoked `find_room` (cards render via

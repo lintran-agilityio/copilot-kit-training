@@ -16,7 +16,7 @@ import type {
   CreateBookingResult,
   UpdateBookingResult,
 } from "@/features/booking/types";
-import type { MessageLike, ToolArgumentsLike } from "@/features/chat/types";
+import type { MessageLike, ToolArgumentsLike } from "@/features/chatbot/types";
 import {
   isCancelBookingSuccess,
   isCreateBookingSuccess,
@@ -145,14 +145,36 @@ const findLastHit = (
   return null;
 };
 
+/**
+ * Resolve the transcript hit that settled *this* card.
+ *
+ * Exact correlation-key match always wins. The "latest settled hit" fallback is
+ * only safe when there is no correlation key to match against (args too sparse
+ * to rebuild one — e.g. post-refresh recovery of a lone booking).
+ *
+ * When this card already has a key, an unmatched hit belongs to a different
+ * stay. Borrowing it is what made a second create HITL card inherit the first
+ * booking's price and jump straight to "Booking confirmed" — including the
+ * common case of exactly one prior settled `create_booking` in the transcript.
+ */
 const pickHit = (
   hits: MutationToolHit[],
+  hasCorrelationKey: boolean,
   matchesCorrelationKey: (hit: MutationToolHit) => boolean,
-): MutationToolHit | null =>
-  findLastHit(
-    hits,
-    (hit) => hit.resultContent != null && matchesCorrelationKey(hit),
-  ) ?? findLastHit(hits, (hit) => hit.resultContent != null);
+): MutationToolHit | null => {
+  const settledHits = hits.filter((hit) => hit.resultContent != null);
+
+  const matched = findLastHit(settledHits, matchesCorrelationKey);
+  if (matched) {
+    return matched;
+  }
+
+  if (!hasCorrelationKey) {
+    return settledHits[settledHits.length - 1] ?? null;
+  }
+
+  return null;
+};
 
 /**
  * Prefer a settled (success/failed) outcome over a still-"submitting" one;
@@ -185,7 +207,7 @@ export const deriveCreateBookingOutcomeFromMessages = (
     messages,
     TOOL_KEYS.BOOKING.CREATE_BOOKING,
   );
-  const hit = pickHit(hits, (candidate) => {
+  const hit = pickHit(hits, Boolean(correlationKey), (candidate) => {
     const candidateKey = buildCreateStayCorrelationKey({
       roomId: candidate.args.roomId,
       checkInDate: candidate.args.checkInDate,
@@ -237,7 +259,7 @@ export const deriveCancelBookingOutcomeFromMessages = (
   correlationKey: string | null,
 ): CancelBookingCardOutcome | null => {
   const hits = collectMutationToolHits(messages, TOOL_KEYS.BOOKING.CANCEL);
-  const hit = pickHit(hits, (candidate) => {
+  const hit = pickHit(hits, Boolean(correlationKey), (candidate) => {
     const candidateKey = buildCancelBookingCorrelationKey(
       candidate.args.bookingId,
     );
@@ -282,7 +304,7 @@ export const deriveModifyBookingOutcomeFromMessages = (
     messages,
     TOOL_KEYS.BOOKING.UPDATE_BOOKING,
   );
-  const hit = pickHit(hits, (candidate) => {
+  const hit = pickHit(hits, Boolean(correlationKey), (candidate) => {
     const candidateKey = buildModifyStayCorrelationKey({
       bookingId: candidate.args.bookingId,
       checkInDate: candidate.args.checkInDate,

@@ -8,7 +8,10 @@ import {
   sanitizeFindRoomName,
   sanitizeFindRoomDate
 } from "./sanitize-find-room";
-import { clearBookingFormStayHint, readBookingFormStayHint } from "../booking";
+import {
+  clearBookingFormStayHint,
+  readBookingFormStayHint,
+} from "./book-form-prefill";
 import { addDaysYmd } from "@repo/utils";
 
 /** Top-floor / luxury category → floor level in seed catalog. */
@@ -52,7 +55,10 @@ export const normalizeFindRoomInput = (
       // API as filters for a named-room lookup (see NAME_ONLY_FIND_ROOM_PURPOSES
       // above). Echoed on the output so the BOOK step machine can deterministically
       // decide whether check-in + guests are already known, instead of trusting
-      // the model to re-read the latest message correctly a step later.
+      // the model to re-read the latest message correctly a step later — and
+      // (book_resolve + 1 match) they seed findRoomTool's own availability probe,
+      // a separate /bookings/availability call, so the CREATE flow no longer
+      // needs a check_room_availability tool call.
       ...(statedDate ? { date: statedDate } : {}),
       ...(input.guests ? { guests: input.guests } : {}),
     };
@@ -111,9 +117,40 @@ const COMPARE_ELIGIBLE_PURPOSES: ReadonlySet<FindRoomOutput["purpose"]> = new Se
  * book_resolve / resolve: IDs only, so an internal lookup can never surface
  * names/prices mid-booking.
  */
+/**
+ * Hard reply hint when the book_resolve availability probe came back
+ * unavailable — mirrors `toCheckRoomAvailabilityModelOutput`'s
+ * BookingUnavailable branch. The card (rendered from the raw result) owns every
+ * detail, so the model gets no dates/guests/room facts to leak into chat.
+ */
+const BOOK_RESOLVE_UNAVAILABLE_REPLY_HINT =
+  'BookingUnavailable Generic UI is already rendered and the turn is stopping. Reply with exactly ONE very short sentence in the guest\'s language offering to help with other dates or another room. Do NOT repeat the room name, reason, capacity, dates, guests, or any availability value — the card shows them. English example: "I can help you find other dates or another room."';
+
 export const toFindRoomModelOutput = (output: FindRoomOutput) => {
   const matchCount = output.rooms.length;
   const includeRoomFacts = COMPARE_ELIGIBLE_PURPOSES.has(output.purpose);
+
+  const probe = output.availability;
+  const probeUnavailable =
+    probe && (probe.available === false || probe.guestsWithinCapacity === false);
+
+  // book_resolve probe says taken / over capacity: the step machine stops the
+  // turn and FindRoomNotice renders BookingUnavailable. Give the model a slim
+  // payload + strict hint so it emits one minimal sentence, not a re-statement.
+  if (probeUnavailable) {
+    return {
+      type: "json" as const,
+      value: {
+        matchCount,
+        purpose: output.purpose,
+        availability: {
+          available: probe.available,
+          guestsWithinCapacity: probe.guestsWithinCapacity,
+        },
+        replyHint: BOOK_RESOLVE_UNAVAILABLE_REPLY_HINT,
+      },
+    };
+  }
 
   return {
     type: "json" as const,
@@ -137,6 +174,20 @@ export const toFindRoomModelOutput = (output: FindRoomOutput) => {
             }
           : { id: room.id },
       ),
+      // book_resolve + 1 match, room free: the CREATE flow reads these
+      // dates/guests into confirm_booking instead of calling
+      // check_room_availability.
+      ...(probe
+        ? {
+            availability: {
+              available: probe.available,
+              guestsWithinCapacity: probe.guestsWithinCapacity,
+              checkInDate: probe.checkInDate,
+              checkOutDate: probe.checkOutDate,
+              guests: probe.guests,
+            },
+          }
+        : {}),
       replyHint: buildFindRoomReplyHint(matchCount, output.purpose),
     },
   };

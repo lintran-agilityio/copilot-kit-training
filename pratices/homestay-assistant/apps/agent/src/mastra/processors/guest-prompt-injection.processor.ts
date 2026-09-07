@@ -9,7 +9,7 @@ import {
   extractMessageText,
   findLatestUserMessage,
 } from "@/mastra/utils/latest-user-message";
-import { isFirstPartyActionPrompt } from "./first-party-prompt";
+import { isFirstPartyActionPrompt } from "@/mastra/utils/first-party-prompt";
 
 type PromptInjectionOptions = ConstructorParameters<
   typeof PromptInjectionDetector

@@ -7,7 +7,7 @@ export * from "./ModifyBookingByRoomModal";
 export * from "./CancelBookingNotice";
 export * from "./ConfirmCancelBookingModal";
 export * from "./UpdateBookingNotice";
-export * from "./BookingUnavailableNotice";
+export * from "./FindBookingByIdNotice";
 export * from "./CreateBookingNotice";
 export * from "./ConfirmBookingModal";
 export * from "./EditModifyBookingModal";

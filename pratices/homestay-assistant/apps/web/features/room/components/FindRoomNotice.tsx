@@ -5,9 +5,11 @@ import { ToolCallStatus, useAgent } from "@copilotkit/react-core/v2";
 
 import { parseToolResult } from "@repo/utils";
 import { AGENT_KEYS, TOOL_PURPOSE } from "@repo/constants";
-import type { MessageLike } from "@/features/chat/types";
+import type { MessageLike } from "@/features/chatbot/types";
+import { hasLaterToolCallInTurn } from "@/features/chatbot/utils";
 import { RoomListSkeleton } from "@/components/common";
-import { EmbeddedWidget } from "@/features/chat/components";
+import { BookingUnavailable } from "@/components/confirm-modal";
+import { EmbeddedWidget } from "@/features/chatbot/components";
 import { ListRoomPreview } from "@/features/room/components";
 import type {
   FindRoomResult,
@@ -16,6 +18,7 @@ import type {
 import {
   buildFindRoomTitle,
   markAgentRoomSearch,
+  resolveBookResolveUnavailable,
   shouldSuppressForResolve,
 } from "@/features/room/utils";
 
@@ -164,6 +167,33 @@ export const FindRoomNotice = ({
     return (
       <EmbeddedWidget className="px-3.5 py-3 text-muted-foreground">
         Could not search rooms. {toolError}
+      </EmbeddedWidget>
+    );
+  }
+
+  const bookResolveUnavailable = resolveBookResolveUnavailable(parsed);
+  // Defensive: if the step machine still opened the Booking Form this turn (a
+  // probe that ran on a model-attached date the corroboration check rejected),
+  // let the form render alone rather than stacking an unavailable card on it.
+  if (
+    bookResolveUnavailable &&
+    rooms[0] &&
+    !hasLaterToolCallInTurn(agent.messages as MessageLike[] | undefined, toolCallId)
+  ) {
+    return (
+      <EmbeddedWidget>
+        <BookingUnavailable
+          roomName={rooms[0].name}
+          checkInDate={bookResolveUnavailable.checkInDate}
+          checkOutDate={bookResolveUnavailable.checkOutDate}
+          guests={bookResolveUnavailable.guests}
+          reason={
+            bookResolveUnavailable.guestsWithinCapacity === false
+              ? "capacity_exceeded"
+              : "dates_unavailable"
+          }
+          capacity={rooms[0].capacity}
+        />
       </EmbeddedWidget>
     );
   }

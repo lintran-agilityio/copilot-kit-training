@@ -15,7 +15,7 @@ type BookingPickerRowProps = {
 const BookingPickerRow = ({
   booking,
   onSelect,
-  disabled,
+  disabled = false,
 }: BookingPickerRowProps) => {
   const content = (
     <>
@@ -67,7 +67,7 @@ export const BookingPickerCard = ({
   title,
   description,
   bookings,
-  disabled,
+  disabled = false,
   onSelect,
   keepLabel,
   onKeep,

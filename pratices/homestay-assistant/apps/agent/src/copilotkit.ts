@@ -7,9 +7,11 @@ import {
   enableProcessorTripwireHandling,
   type ThreadMemoryPort,
 } from "./ag-ui";
-import { loadBlockedMessageIdsForThread } from "@/mastra/processors/blocked-message-ids";
 import { runtimeMastra } from "@/mastra/runtime";
-import { loadResolvedToolCallIdsForThread } from "@/mastra/utils";
+import {
+  loadBlockedMessageIdsForThread,
+  loadResolvedToolCallIdsForThread,
+} from "@/mastra/utils";
 
 export { runtimeMastra as mastra } from "@/mastra/runtime";
 export { abortThreadRuns, latchThreadStop } from "./ag-ui";

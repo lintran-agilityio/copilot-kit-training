@@ -7,7 +7,7 @@ import type {
   ModifyStaySnapshot,
   PendingModifyStay,
 } from "@/features/booking/types";
-import { MessageLike } from "@/features/chat/types";
+import { MessageLike } from "@/features/chatbot/types";
 import { HITL_DECISION_STATUS } from "@/constants";
 
 type GetBookingsListItem = {

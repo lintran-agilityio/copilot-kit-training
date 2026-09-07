@@ -4,6 +4,27 @@ import { FIND_BOOKING_BY_ID_PURPOSE_VALUES } from "@repo/constants";
 
 import { cancellationBookingSchema } from "./cancel.schema";
 
+/**
+ * Availability probe attached to a `purpose: "modify"` result with exactly one
+ * booking — and only when the guest already stated a new date / guest count
+ * (the stated-change fast path). `findBookingByIdTool.execute` calls
+ * `/bookings/availability` for the booking's room (excluding the booking
+ * itself) so the MODIFY flow no longer needs a separate
+ * `check_room_availability` tool call. Absent → the probe was skipped (no
+ * stated change → edit form opens) or the call failed.
+ */
+export const findBookingAvailabilitySchema = z.object({
+  available: z.boolean(),
+  guestsWithinCapacity: z.boolean(),
+  checkInDate: z.string(),
+  checkOutDate: z.string(),
+  guests: z.number(),
+});
+
+export type FindBookingAvailability = z.infer<
+  typeof findBookingAvailabilitySchema
+>;
+
 export const findBookingByIdInputSchema = z.object({
   bookingId: z
     .string()
@@ -20,7 +41,7 @@ export const findBookingByIdInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "MODIFY only. The NEW check-in (YYYY-MM-DD) the guest explicitly stated in the LATEST message. Omit entirely if no new check-in was stated — never invent, infer, reuse an old value, or guess from context. When present (with requestedCheckOutDate and/or requestedGuests), the app skips the edit form and goes straight to availability with your stated value(s) merged over the booking's current stay.",
+      "MODIFY only. The NEW check-in (YYYY-MM-DD) the guest explicitly stated in the LATEST message. Omit entirely if no new check-in was stated — never invent, infer, reuse an old value, or guess from context. When present (with requestedCheckOutDate and/or requestedGuests), the app skips the edit form, probes availability itself (merging your stated value(s) over the booking's current stay, excluding this booking), and goes straight to confirm_modify_booking — never check_room_availability.",
     ),
   requestedCheckOutDate: z
     .string()
@@ -76,6 +97,17 @@ export const findBookingByIdOutputSchema = z.object({
     .optional()
     .describe(
       "Echoed back from this call's own requestedGuests, or carried over from an earlier show_modify_dialog_select pick when this call omitted it.",
+    ),
+  availability: findBookingAvailabilitySchema
+    .optional()
+    .describe(
+      "MODIFY stated-change path only: the availability probe result for the merged stay (booking's current stay + requested* overrides), excluding this booking from overlap detection. Present → the app forces confirm_modify_booking when available:true, or renders BookingUnavailable and stops. Absent → no stated change (edit form opens) or the probe call failed.",
+    ),
+  stayUnchanged: z
+    .boolean()
+    .optional()
+    .describe(
+      "MODIFY stated-change path only: true when the merged stay equals the booking's current stay. The app stops the turn — reply that the booking already has those details; never open confirm_modify_booking.",
     ),
 });
 

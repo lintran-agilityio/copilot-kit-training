@@ -10,8 +10,8 @@ import { AGENT_KEYS } from "@repo/constants";
 import { Navbar } from "@/components/layouts";
 import { NavbarTab } from "@repo/types";
 import { ROUTES } from "@/constants";
-import { ChatToggleButton } from "@/features/chat/components";
-import { useChatIconStatus } from "@/features/chat/hooks";
+import { ChatToggleButton } from "@/features/chatbot/components";
+import { useChatIconStatus } from "@/features/chatbot/hooks";
 import {
   useActiveThread,
   useArchiveThread,
@@ -19,11 +19,11 @@ import {
   useSwitchThread,
   useThreads,
   useThreadStore,
-} from "@/features/threads";
+} from "@/features/chatbot/threads";
 
 const ChatSidebar = dynamic(
   () =>
-    import("@/features/chat/components/ChatSidebar").then(
+    import("@/features/chatbot/components/ChatSidebar").then(
       (mod) => mod.ChatSidebar,
     ),
   {
@@ -36,7 +36,7 @@ const ChatSidebar = dynamic(
 
 const ThreadSidebar = dynamic(
   () =>
-    import("@/features/threads/components/ThreadSidebar").then(
+    import("@/features/chatbot/threads/components/ThreadSidebar").then(
       (mod) => mod.ThreadSidebar,
     ),
   {

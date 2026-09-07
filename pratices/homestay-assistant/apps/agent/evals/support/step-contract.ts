@@ -4,15 +4,15 @@ import type { MastraDBMessage } from "@mastra/core/agent";
 import type { ProcessInputStepArgs } from "@mastra/core/processors";
 import { RequestContext } from "@mastra/core/request-context";
 
-import { resolveEnforcedTransition } from "../../src/mastra/booking/step-machine";
+import { resolveEnforcedTransition } from "../../src/mastra/utils/step-machine";
 
 import { scoreResult } from "./checks";
 
 /**
  * Shared harness for the no-LLM step-machine routing evals under
- * `evals/deterministic/`.
+ * `evals/homestay-assistant/deterministic/`.
  *
- * `resolveEnforcedTransition` (`src/mastra/booking/step-machine.ts`) is the
+ * `resolveEnforcedTransition` (`src/mastra/utils/step-machine.ts`) is the
  * single decision `enforceBookingStep` calls after every tool step to pick the
  * NEXT forced tool call (or to stop the turn). `enforceBookingStep` only adds
  * Mastra plumbing on top: tool-existence validation, request-context candidate

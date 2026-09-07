@@ -3,7 +3,7 @@ import type { ProcessInputStepArgs, Processor } from "@mastra/core/processors";
 import {
   resolveContinuityStayHint,
   stashBookingFormStayHint,
-} from "@/mastra/booking/book-form-prefill";
+} from "@/mastra/utils/book-form-prefill";
 
 /**
  * Runs before every step so a later get_room_by_id call (which opens the

@@ -20,8 +20,6 @@ export const TOOL_KEYS = {
     UPDATE_BOOKING: "update_booking",
     /** Mastra registration key — fetch room for detail; FE renders via useRenderTool. */
     GET_ROOM_BY_ID: "get_room_by_id",
-    /** Mastra registration key — availability check; FE renders unavailable via useRenderTool on fail. */
-    CHECK_ROOM_AVAILABILITY: "check_room_availability",
     /** Frontend HITL — open cancel confirm dialog (only after find_booking_by_id returns bookings). */
     SHOW_CANCEL_DIALOG_CONFIRM: "show_cancel_dialog_confirm",
     /**
@@ -50,18 +48,25 @@ export const TOOL_KEYS = {
     RESOLVE_TARGET: "resolve_booking_target",
   },
   ACTION: {
-    /** Frontend HITL — confirm booking draft after check_room_availability succeeds. */
+    /**
+     * Frontend HITL — confirm a NEW booking. Forced right after
+     * find_room(book_resolve) probes availability (full-info path), or called
+     * directly after a [book-stay] submit.
+     */
     CONFIRM_BOOKING: "confirm_booking",
     /**
      * Frontend HITL — edit form with room detail + current dates/guests.
-     * Call after find_booking_by_id for modify, before check_room_availability.
+     * Forced after find_booking_by_id(purpose:"modify") when no new value was
+     * stated. The form runs its own client-side availability check, then the
+     * app forces confirm_modify_booking on confirm.
      */
     EDIT_MODIFY_BOOKING: "edit_modify_booking",
     /**
-     * Frontend HITL — confirm booking modification after availability check
-     * with excludeBookingId. Matches the literal `nextAction` value
-     * check_room_availability/modify-booking.ts return and the render-tool
-     * `name` registered in booking-tools.tsx.
+     * Frontend HITL — confirm a booking modification (old → new + new total).
+     * Forced after edit_modify_booking confirms, or straight after
+     * find_booking_by_id(purpose:"modify") on the stated-change path (that tool
+     * probes availability itself, excluding the booking). Matches the
+     * render-tool `name` registered in booking-tools.tsx.
      */
     CONFIRM_MODIFY_BOOKING: "confirm_modify_booking",
     /** Frontend generative UI — render the room list from get_rooms/find_room ids. */
