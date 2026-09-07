@@ -7,9 +7,18 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "web": "turbo run build --filter=web",
-    "api": "turbo run build --filter=api",
-    "agent": "turbo run build --filter=agent"
+    "build:web": "turbo run build --filter=web",
+    "build:api": "turbo run build --filter=api",
+    "build:agent": "turbo run build --filter=agent",
+    "dev:web": "turbo run dev --filter=web",
+    "dev:api": "turbo run dev --filter=api",
+    "dev:agent": "turbo run dev --filter=agent",
+    "start:web": "turbo run start --filter=web",
+    "start:api": "turbo run start --filter=api",
+    "start:agent": "turbo run start --filter=agent",
+    "deploy:web": "fly deploy --config fly.web.toml",
+    "deploy:api": "fly deploy --config fly.api.toml",
+    "deploy:agent": "fly deploy --config fly.agent.toml"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
