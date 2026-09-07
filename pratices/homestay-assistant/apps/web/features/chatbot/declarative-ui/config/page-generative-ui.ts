@@ -19,6 +19,10 @@ import {
   readResolvedFindRoomResult,
   resolveBookResolveUnavailable,
 } from "@/features/room/utils";
+import {
+  readResolvedFindBookingByIdResult,
+  resolveModifyResolveUnavailable,
+} from "@/features/booking/utils";
 import { hasLaterToolCallInTurn } from "@/features/chatbot/utils/normalize-messages";
 import type { MessageLike, ToolCallLike } from "@/features/chatbot/types";
 
@@ -41,7 +45,6 @@ const MASTRA_BACKEND_TOOL_NAMES = [
   BOOKING.CANCEL,
   BOOKING.CREATE_BOOKING,
   BOOKING.UPDATE_BOOKING,
-  BOOKING.CHECK_ROOM_AVAILABILITY,
   GET.ROOMS,
   GET.FIND_ROOM,
   BOOKING.GET_ROOM_BY_ID,
@@ -55,7 +58,9 @@ const RENDER_BACKEND_TOOLS = [
   BOOKING.UPDATE_BOOKING,
   BOOKING.GET_ROOM_BY_ID,
   GET.FIND_ROOM,
-  BOOKING.CHECK_ROOM_AVAILABILITY,
+  // Renders nothing except a BookingUnavailable card when a MODIFY stated-change
+  // availability probe fails (see FindBookingByIdNotice); silent otherwise.
+  BOOKING.FIND_BY_ID,
 ] as const;
 
 /** Legacy kebab/camel ids — kept so old streams stay hidden from chat. */
@@ -77,7 +82,6 @@ const LEGACY_HIDDEN_TOOL_NAMES = [
 /** Room/data tools and page UI actions - hidden from chat; effects render on the page. */
 export const CHAT_HIDDEN_TOOLS = new Set<string>([
   ACTION.UPDATE_ROOM_LIST,
-  BOOKING.FIND_BY_ID,
   GET.ROOMS,
   ...A2UI_TOOL_NAMES,
   ...LEGACY_HIDDEN_TOOL_NAMES,
@@ -255,7 +259,8 @@ const hasResolvedToolResult = (
 
 /**
  * True when a chat-visible backend tool call is an internal resolve lookup its
- * Notice renders nothing for — mirrors FindRoomNotice / MyBookingsNotice:
+ * Notice renders nothing for — mirrors FindRoomNotice / MyBookingsNotice /
+ * FindBookingByIdNotice:
  *
  * - `purpose: "resolve"` (find_room room→id, get_bookings target lookup) — the
  *   Notice is always silent; the HITL / next step is the turn's response.
@@ -264,6 +269,9 @@ const hasResolvedToolResult = (
  *   "no match" notice (0), a disambiguation list (>1), or a probe that came
  *   back unavailable (BookingUnavailable card) still renders, so those stay
  *   visible.
+ * - `find_booking_by_id` — silent for CANCEL and every MODIFY outcome except a
+ *   stated-change availability probe that came back taken / over capacity, when
+ *   FindBookingByIdNotice renders BookingUnavailable and the turn stops.
  *
  * Dropping these from getChatVisibleToolCalls collapses the otherwise-empty
  * assistant row (avatar + empty widget slot) deterministically, and lets the
@@ -275,6 +283,24 @@ export const isSilentResolveToolCall = (
   messages: ChatMessageForToolVisibility[] | undefined,
 ): boolean => {
   const toolName = toolCall.function?.name;
+
+  // find_booking_by_id renders nothing for CANCEL / the no-stated-change MODIFY
+  // path / a free stated-change probe (a forced HITL owns the turn). The one
+  // visible case: a stated-change probe that came back taken / over capacity →
+  // FindBookingByIdNotice renders BookingUnavailable and the turn stops.
+  if (toolName === BOOKING.FIND_BY_ID) {
+    if (
+      !resolveModifyResolveUnavailable(
+        readResolvedFindBookingByIdResult(toolCall.id, messages),
+      )
+    ) {
+      return true;
+    }
+    return hasLaterToolCallInTurn(
+      messages as MessageLike[] | undefined,
+      toolCall.id,
+    );
+  }
 
   if (toolName !== GET.FIND_ROOM && toolName !== BOOKING.GET) {
     return false;
@@ -311,9 +337,9 @@ export const isSilentResolveToolCall = (
  * reliably collapse. When the turn already stepped past such a call (a later
  * tool call exists) its Notice renders nothing, so the row must be dropped.
  *
- * `get_room_by_id` / `check_room_availability` are deliberately NOT here: they
+ * `get_room_by_id` / `find_booking_by_id` are deliberately NOT here: they
  * render `null` from the first paint on the "keep going" path (no transition,
- * so CSS collapses them), and `BookingUnavailableNotice` carries a
+ * so CSS collapses them), and `FindBookingByIdNotice` carries a
  * useLayoutEffect that must still mount for the MODIFY flow.
  */
 const SKELETON_ROUTING_TOOLS = new Set<string>([GET.FIND_ROOM, BOOKING.GET]);

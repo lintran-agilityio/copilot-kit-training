@@ -44,16 +44,15 @@ const lastUserMessageText = (messages: Message[]): string | undefined => {
  * (see @repo/constants/prompt-tags, "golden — do not change without a
  * coordinated FE/agent update"), e.g. a Booking Form / cancel-card submit.
  * That tag stays the "latest user message" for every step of the HITL chain
- * it kicks off (find_room → check_room_availability → confirm_booking →
- * create_booking, ...), since none of those steps append a new role:"user"
- * message — so this one check covers the whole tagged flow, not just its
- * first turn.
+ * it kicks off (find_room → confirm_booking → create_booking, ...), since none
+ * of those steps append a new role:"user" message — so this one check covers
+ * the whole tagged flow, not just its first turn.
  *
  * Deliberately narrower than earlier attempted: `useHumanInTheLoop`'s
  * `respond()` (CopilotKit v2) does NOT resolve a dialog confirm/cancel click
  * by appending a role:"tool" message with a matching toolCallId to
  * `messages` — verified empirically (a modify-confirm continuation's last
- * "tool" message was still an older check_room_availability result, not
+ * "tool" message was still an older find_booking_by_id result, not
  * confirm_modify_booking). So a free-text-initiated flow with no tag (the
  * common case for MODIFY/CANCEL today) gets no hint at any point, including
  * after the guest confirms a dialog — full prompt throughout, same as before

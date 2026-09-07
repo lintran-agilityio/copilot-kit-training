@@ -10,8 +10,9 @@ import { stepContractEval } from "../../support/step-contract";
  * returns `confirmed: true`. A `confirmed: false` stops the turn, and once
  * `create_booking` itself returns the turn is done.
  *
- * The step BEFORE this — `check_room_availability` → `confirm_booking` — lives
- * in `check-room-availability.eval.ts`. `homestay-assistant/behavioral/create-booking.eval.ts`
+ * The step BEFORE this — `find_room(book_resolve)` (which probes availability
+ * itself) → `confirm_booking` — lives in `find-room.eval.ts`. There is no
+ * `check_room_availability` tool. `homestay-assistant/behavioral/create-booking.eval.ts`
  * proves a real model never reaches `create_booking` in the same turn as the
  * confirm gate.
  */

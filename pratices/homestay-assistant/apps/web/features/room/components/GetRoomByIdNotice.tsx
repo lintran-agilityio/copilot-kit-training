@@ -30,7 +30,7 @@ export const GetRoomByIdNotice = ({
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
 
   // The BOOK workflow moved on to a later tool call in this same turn (e.g.
-  // check_room_availability / confirm_booking) — deterministic routing on the
+  // confirm_booking) — deterministic routing on the
   // agent side already forces exactly one of Booking Form / Confirm dialog,
   // but stay defensive against replay/duplicate tool emissions (see
   // find-room-turn.ts) rather than ever rendering both at once.

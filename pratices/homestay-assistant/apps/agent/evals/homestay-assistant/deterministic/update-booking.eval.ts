@@ -10,15 +10,15 @@ import { stepContractEval } from "../../support/step-contract";
  * `support/client-tools.ts`) the step machine reacts to:
  *   - `show_modify_dialog_select` confirmed → re-force `find_booking_by_id`
  *     for the chosen stay
- *   - `edit_modify_booking` submitted → force `check_room_availability` with
- *     the edited stay
+ *   - `edit_modify_booking` submitted → force `confirm_modify_booking` (the
+ *     form ran its own client-side availability check; there is no
+ *     `check_room_availability` tool)
  *   - `confirm_modify_booking` confirmed → force the terminal `update_booking`
  * Any `confirmed: false` stops the turn; once `update_booking` returns the
  * turn is done.
  *
- * The `find_booking_by_id(modify)` junction that opens the edit form is in
- * `find-booking-by-id.eval.ts`; the `check_room_availability` →
- * `confirm_modify_booking` hop is in `check-room-availability.eval.ts`.
+ * The `find_booking_by_id(modify)` junction (edit form vs confirm, and the
+ * stated-change availability outcomes) is in `find-booking-by-id.eval.ts`.
  */
 stepContractEval("update_booking — MODIFY HITL gates and terminal stop", [
   {
@@ -30,12 +30,20 @@ stepContractEval("update_booking — MODIFY HITL gates and terminal stop", [
     expected: `force:${TOOL_KEYS.BOOKING.FIND_BY_ID}`,
   },
   {
-    name: "edit form submitted → force availability with the edited stay",
+    name: "edit form submitted → force confirm_modify_booking (form checked availability itself)",
     last: {
       toolName: TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
       output: { confirmed: true },
     },
-    expected: `force:${TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY}`,
+    expected: `force:${TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING}`,
+  },
+  {
+    name: "edit form dismissed → stop",
+    last: {
+      toolName: TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
+      output: { confirmed: false },
+    },
+    expected: "stop",
   },
   {
     name: "guest confirmed the change → force the terminal update_booking",

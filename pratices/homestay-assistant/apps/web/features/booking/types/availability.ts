@@ -1,21 +1,20 @@
-import { ToolRendererProps } from "@/features/chatbot/declarative-ui/types";
-import { MODEL_NAME } from "@repo/types";
-
+/**
+ * Client-side availability check against `/api/bookings/availability` — used by
+ * the CREATE Booking Form and the MODIFY edit form (`useRoomAvailability`).
+ * The app has no `check_room_availability` agent tool.
+ */
 export type CheckRoomAvailabilityInput = {
   roomId: string;
   checkInDate: string;
   checkOutDate: string;
   guests?: number;
-  /** Agent-tool only; not sent to the HTTP availability API. */
-  flow?: MODEL_NAME.CREATE | MODEL_NAME.MODIFY;
+  /** MODIFY only — exclude the booking being edited from overlap detection. */
   excludeBookingId?: string;
 };
 
 export type CheckRoomAvailabilityResult = {
   available?: boolean;
   guestsWithinCapacity?: boolean;
-  nextAction?: "confirm_booking" | "confirm_modify_booking" | "stop_booking";
-  flow?: MODEL_NAME.CREATE | MODEL_NAME.MODIFY;
   room?: {
     name?: string;
     capacity?: number;
@@ -23,12 +22,4 @@ export type CheckRoomAvailabilityResult = {
   checkInDate?: string;
   checkOutDate?: string;
   guests?: number;
-  /** Present on modify availability — booking being updated. */
-  bookingId?: string;
-  originalCheckInDate?: string;
-  originalCheckOutDate?: string;
-  originalGuests?: number;
 };
-
-export type CheckRoomAvailabilityToolProps =
-  ToolRendererProps<CheckRoomAvailabilityResult>;

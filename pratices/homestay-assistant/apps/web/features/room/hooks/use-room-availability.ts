@@ -12,6 +12,11 @@ type UseRoomAvailabilityArgs = {
   checkInDate: string | null;
   checkOutDate: string | null;
   guests: number;
+  /**
+   * MODIFY only — the booking being edited, excluded from overlap detection so
+   * its own dates never read as "taken". Omit for a new stay.
+   */
+  excludeBookingId?: string | null;
   /** Skip the network check (e.g. read-only / locked forms). */
   enabled?: boolean;
 };
@@ -45,22 +50,26 @@ const resultReason = (
 };
 
 /**
- * Client-side availability check for the Booking Form — the CREATE flow's
- * replacement for a `check_room_availability` tool call. Hits the same
- * `/api/bookings/availability` route the agent uses.
+ * Client-side availability check for the booking forms — the app has no
+ * `check_room_availability` tool. Used by the CREATE Booking Form (`RoomDetail`)
+ * and the MODIFY edit form (`EditModifyBookingModal`, passing `excludeBookingId`
+ * so the booking's own dates don't read as taken). Hits the same
+ * `/api/bookings/availability` route the agent probes.
  *
  * Deliberately non-blocking for date selection:
  *   - each unique stay is checked at most once (cached for the form's lifetime)
- *   - a stay change resets to `isAvailable: null` immediately, so the "Book"
+ *   - a stay change resets to `isAvailable: null` immediately, so the action
  *     button and any error text clear the instant the guest picks a new date —
  *     they only reappear if the fresh check confirms that date is taken too
- *   - `create_booking` still re-checks server-side as the final gate
+ *   - `create_booking` / `update_booking` still re-check server-side as the
+ *     final gate
  */
 export const useRoomAvailability = ({
   roomId,
   checkInDate,
   checkOutDate,
   guests,
+  excludeBookingId,
   enabled = true,
 }: UseRoomAvailabilityArgs): RoomAvailabilityState => {
   const [state, setState] = useState<RoomAvailabilityState>(IDLE);
@@ -72,7 +81,7 @@ export const useRoomAvailability = ({
     isCheckOutAfterCheckIn(checkInDate as string, checkOutDate as string);
   const key =
     enabled && roomId && validRange && guests >= 1
-      ? `${roomId}|${checkInDate}|${checkOutDate}|${guests}`
+      ? `${roomId}|${checkInDate}|${checkOutDate}|${guests}|${excludeBookingId ?? ""}`
       : null;
 
   useEffect(() => {
@@ -102,6 +111,7 @@ export const useRoomAvailability = ({
         checkInDate: checkInDate as string,
         checkOutDate: checkOutDate as string,
         guests,
+        ...(excludeBookingId ? { excludeBookingId } : {}),
       })
         .then((result) => {
           if (cancelled) return;
@@ -127,7 +137,7 @@ export const useRoomAvailability = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [key, roomId, checkInDate, checkOutDate, guests]);
+  }, [key, roomId, checkInDate, checkOutDate, guests, excludeBookingId]);
 
   return state;
 };

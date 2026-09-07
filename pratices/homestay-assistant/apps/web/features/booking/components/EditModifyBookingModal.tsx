@@ -40,7 +40,7 @@ import {
   RoomBookingGuests,
   RoomBookingPreviewCard,
 } from "@/features/room/components";
-import { useRoomBookingEstimate } from "@/features/room/hooks";
+import { useRoomAvailability, useRoomBookingEstimate } from "@/features/room/hooks";
 import { resolveCheckOutAfterCheckInChange } from "@/features/room/utils";
 import { HITL_DECISION_STATUS } from "@/constants";
 
@@ -199,12 +199,31 @@ export const EditModifyBookingModal = ({
     capacity: room?.capacity ?? 0,
   });
 
+  // Client-side availability check — the MODIFY flow has no
+  // check_room_availability tool call, so the form flags a taken date before it
+  // confirms. excludeBookingId keeps the booking's own current dates from
+  // reading as taken. update_booking still re-checks server-side.
+  const availability = useRoomAvailability({
+    roomId: room?.id,
+    checkInDate,
+    checkOutDate,
+    guests,
+    excludeBookingId: bookingId || null,
+    enabled: !isComplete,
+  });
+  const isDatesUnavailable = availability.isAvailable === false;
+
   const hasStayChanges =
     checkInDate !== (args.checkInDate?.trim() || null) ||
     checkOutDate !== (args.checkOutDate?.trim() || null) ||
     guests !== args.guests;
 
-  const canSubmit = canRespond && canProceed && hasStayChanges;
+  const canSubmit =
+    canRespond &&
+    canProceed &&
+    hasStayChanges &&
+    !isDatesUnavailable &&
+    !availability.isChecking;
 
   if (!shouldRenderHitlCard(status, hasArgs) || !room) {
     return null;
@@ -341,6 +360,18 @@ export const EditModifyBookingModal = ({
             />
 
             <RoomBookingEstimatedTotal estimatedTotal={estimatedTotal} />
+
+            {!isComplete && isDatesUnavailable ? (
+              <p className="text-xs text-destructive">
+                {availability.reason === "capacity_exceeded"
+                  ? `This room sleeps at most ${room.capacity} guest${room.capacity === 1 ? "" : "s"}. Reduce the guest count to continue.`
+                  : "These dates are already booked. Pick different dates to continue."}
+              </p>
+            ) : !isComplete && availability.isChecking ? (
+              <p className="text-xs text-muted-foreground">
+                Checking availability…
+              </p>
+            ) : null}
 
             {errorMessage ? (
               <p className="text-xs text-destructive">{errorMessage}</p>

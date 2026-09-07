@@ -228,7 +228,11 @@ const HitlConfirmCreateStayModal = ({
         decisionStatus={decisionStatus}
         createPhase={createPhase}
         failureReason={createOutcome?.errorMessage}
-        totalPriceOverride={createOutcome?.totalPrice}
+        totalPriceOverride={
+          createPhase === HITL_CARD_PHASE.SUCCESS
+            ? createOutcome?.totalPrice
+            : undefined
+        }
         errorMessage={errorMessage}
         allActionsDisabled={isAgentBusy}
         onCancel={handleCancel}

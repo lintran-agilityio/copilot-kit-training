@@ -8,15 +8,17 @@ import { runCase, type CaseResult } from "../../support/run-case";
  *
  * `update_booking` is the MODIFY terminal mutation. Two properties:
  *   1. It never fires without `find_bookings` → `find_booking_by_id` →
- *      `check_room_availability` → `confirm_modify_booking` in front of it; the
- *      turn ends at the HITL confirm awaiting a real click.
+ *      `confirm_modify_booking` in front of it (there is no
+ *      `check_room_availability` tool — `find_booking_by_id` probes availability
+ *      itself on the stated-change path); the turn ends at the HITL confirm
+ *      awaiting a real click.
  *   2. A MODIFY whose stated change is a no-op (matches the booking's current
  *      stay exactly) must never reach `confirm_modify_booking` OR
  *      `update_booking` — see `WORKFLOW_MODIFY`'s own worked example ("Change
  *      guests to 1 (booking already has 1 guest)"). The no-LLM guard is in
- *      `deterministic/check-room-availability.eval.ts`; this proves the prompt
- *      also honors it when a real model drives the turn. The fixture booking
- *      already has guests: 2 — see `support/fixtures.ts`.
+ *      `deterministic/find-booking-by-id.eval.ts` (`stayUnchanged` → stop);
+ *      this proves the prompt also honors it when a real model drives the turn.
+ *      The fixture booking already has guests: 2 — see `support/fixtures.ts`.
  *
  * The no-LLM HITL gates in front of `update_booking` are in
  * `deterministic/update-booking.eval.ts`.
@@ -36,10 +38,9 @@ const cases: ModifyCase[] = [
     mustAppearInOrder: [
       "find_bookings",
       "find_booking_by_id",
-      "check_room_availability",
       "confirm_modify_booking",
     ],
-    mustNotCall: ["update_booking"],
+    mustNotCall: ["check_room_availability", "update_booking"],
   },
 ];
 

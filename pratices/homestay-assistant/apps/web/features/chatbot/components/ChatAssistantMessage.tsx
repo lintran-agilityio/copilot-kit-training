@@ -158,11 +158,13 @@ export const ChatAssistantMessage = ({
   );
   const hasWidgets = visibleWidgetToolCalls.length > 0;
   // Use the raw tool-call count, not chatToolCalls.length: a turn made up
-  // entirely of page-only tools (e.g. find_booking_by_id, resolve-only
-  // lookups) is filtered out of chatToolCalls by isPageOnlyGenerativeTool
-  // before it ever reaches here, so chatToolCalls.length would read 0 and
-  // this turn would wrongly fall through to the normal avatar row — an
-  // empty tool-content div CSS can't always be relied on to collapse.
+  // entirely of page-only tools (get_rooms) or silent internal lookups
+  // (find_room/get_bookings resolve, a free/no-op find_booking_by_id) is
+  // filtered out of chatToolCalls (isPageOnlyGenerativeTool /
+  // isSilentIntermediateToolCall) before it reaches here, so
+  // chatToolCalls.length would read 0 and this turn would wrongly fall
+  // through to the normal avatar row — an empty tool-content div CSS can't
+  // always be relied on to collapse.
   const isHeadlessOnlyTurn =
     Boolean(message.toolCalls?.length) && !hasWidgets && !hasConversation;
 

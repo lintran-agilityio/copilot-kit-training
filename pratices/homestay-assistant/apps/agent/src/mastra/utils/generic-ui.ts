@@ -45,7 +45,7 @@ const buildBookResolveReplyHint = (matchCount: number): string => {
       return (
         "No room matched that booking name. " +
         "Reply with ONE short sentence that nothing matched; suggest a different room name. " +
-        "Do NOT invent rooms. Do NOT call check_room_availability."
+        "Do NOT invent rooms."
       );
     case 1:
       return (
@@ -57,7 +57,7 @@ const buildBookResolveReplyHint = (matchCount: number): string => {
         "stated in the LATEST message (default result.availability.checkOutDate when none was stated); " +
         "OR get_room_by_id to open the Booking Form when either check-in date or guest count is still unknown " +
         "(no result.availability) — pass whichever of checkInDate/guests IS stated as its args so the form opens prefilled. " +
-        "Never call check_room_availability (MODIFY-only). " +
+        "Never call check_room_availability — that tool no longer exists. " +
         "When the forced follow-up renders guest-visible Generic UI, include exactly one very short " +
         "companion sentence in the guest's language. Never list room details in text."
       );

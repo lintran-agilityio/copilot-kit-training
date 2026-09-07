@@ -12,7 +12,6 @@ export * from "./abort";
 export * from "./blocked-message-ids";
 export * from "./first-party-prompt";
 export * from "./common";
-export * from "./check-availability-room";
 export * from "./booking";
 export * from "./book-form-prefill";
 export * from "./modify-booking";

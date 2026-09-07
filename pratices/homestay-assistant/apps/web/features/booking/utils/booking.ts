@@ -6,11 +6,9 @@ import {
 } from "@repo/utils";
 import {
   CancelBookingResult,
-  CheckRoomAvailabilityResult,
   CreateBookingResult,
   UpdateBookingResult,
 } from "../types";
-import { BookingUnavailableReason } from "@repo/schemas";
 
 export type BookingStatusMeta = {
   label: string;
@@ -45,51 +43,6 @@ export const getBookingStatusMeta = (status: string): BookingStatusMeta => {
   }
 };
 
-export const getAvailabilityFailureReason = (
-  result?: CheckRoomAvailabilityResult | string | null,
-): BookingUnavailableReason | null => {
-  const parsed = parseToolResult<CheckRoomAvailabilityResult>(result);
-  if (!parsed) {
-    return null;
-  }
-
-  if (parsed.guestsWithinCapacity === false) {
-    return "capacity_exceeded";
-  }
-
-  if (parsed.available === false) {
-    return "dates_unavailable";
-  }
-
-  return null;
-};
-
-export const isCheckRoomAvailabilityFailure = (
-  result?: CheckRoomAvailabilityResult | string | null,
-) => getAvailabilityFailureReason(result) != null;
-
-/**
- * True when BookingUnavailableNotice has every field it needs to draw a card.
- * Keeping this check here prevents rendering a partial unavailable notice.
- */
-export const canRenderBookingUnavailableCard = (
-  result?: CheckRoomAvailabilityResult | string | null,
-) => {
-  if (!isCheckRoomAvailabilityFailure(result)) {
-    return false;
-  }
-
-  const parsed = parseToolResult<CheckRoomAvailabilityResult>(result);
-  const guests = Number(parsed?.guests);
-
-  return Boolean(
-    parsed?.room?.name?.trim() &&
-    parsed?.checkInDate?.trim() &&
-    parsed?.checkOutDate?.trim() &&
-    Number.isFinite(guests) &&
-    guests > 0,
-  );
-};
 
 export const isCancelBookingSuccess = (
   result?: CancelBookingResult | string | null,

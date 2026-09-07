@@ -14,16 +14,14 @@ evals/
 └── homestay-assistant/            the one agent (a 2nd agent would get a sibling directory)
     ├── deterministic/             no LLM, no network, milliseconds — the free every-PR gate
     │   ├── find-room.eval.ts               find_room result → transition (discovery never forces; book_resolve fork)
-    │   ├── check-room-availability.eval.ts availability + no-op pure fns; result → forced confirm / stop (create & modify)
     │   ├── create-booking.eval.ts          confirm_booking gate; create_booking terminal → stop
-    │   ├── update-booking.eval.ts          edit / picker / confirm_modify gates; update_booking → stop
+    │   ├── update-booking.eval.ts          picker / edit-form / confirm_modify gates; update_booking → stop
     │   ├── cancel-booking.eval.ts          show_cancel_dialog_confirm gate; cancel_booking → stop
-    │   └── find-booking-by-id.eval.ts      find_booking_by_id(modify) junction → form vs availability
+    │   └── find-booking-by-id.eval.ts      find_booking_by_id(modify) junction → edit form vs confirm_modify_booking vs stop (incl. its own availability probe)
     ├── behavioral/                real LLM calls through the real agent — structured (non-judge) scoring
     │   ├── get-rooms.eval.ts               plain catalog browse only
     │   ├── find-room.eval.ts               selection (discovery intent) + arguments (dates/guests/level/limit)
     │   ├── get-room-by-id.eval.ts          detail & [book-form] routing  ⚠️ 2 KNOWN-FAILING cases
-    │   ├── check-room-availability.eval.ts CREATE args exact; MODIFY never flow=create
     │   ├── create-booking.eval.ts          never mutates before the confirm gate
     │   ├── update-booking.eval.ts          never mutates before confirm; no-op modify never opens the dialog
     │   ├── cancel-booking.eval.ts          resolve by name, stop at the cancel dialog
@@ -46,13 +44,12 @@ evals/
 | `get_rooms` | — | plain browse only; never `find_room` / `get_bookings` for it |
 | `find_room` | every result shape → transition; `book_resolve`·1-match → form vs `confirm_booking` (own availability probe) vs stop | discovery intent routes here first; "available" wording never → `get_bookings`; date normalized, guests never invented, `level`/`limit` |
 | `get_room_by_id` | *(forced target only — see `find-room.eval.ts`)* | detail chain (⚠️ known-failing); `[book-form]` → `get_room_by_id` only, no availability |
-| `check_room_availability` | `resolveModifyAvailabilityNextAction` + `isSameModifyStay` pure fns; result → forced confirm/stop (MODIFY + create fallback) | MODIFY only, never `flow=create`; CREATE args-match moved to the `confirm_booking` check (`check-room-availability.eval.ts`) |
-| `create_booking` | `confirm_booking` confirmed→create / dismissed→stop; terminal→stop | never fires before `find_room`→`confirm_booking` (no `check_room_availability`); full stay skips the form |
+| `create_booking` | `confirm_booking` confirmed→create / dismissed→stop; terminal→stop | never fires before `find_room`→`confirm_booking` (there is no `check_room_availability` tool); full stay skips the form |
 | `update_booking` | picker / edit-form / `confirm_modify_booking` gates; terminal→stop | never fires before the confirm gate; no-op modify never opens the dialog |
 | `cancel_booking` | `find_bookings`→pass; `show_cancel_dialog_confirm` confirmed→cancel / dismissed→stop; terminal→stop | resolve by name → `find_bookings` → `show_cancel_dialog_confirm`, no `cancel_booking` this turn |
 | `get_bookings` | — | "show/list my bookings" routes here, never `find_room`; `onDate` only from a cue in the current message |
 | `find_bookings` | *(covered as `cancel-booking.eval.ts`'s `find_bookings`→pass case)* | internal resolver, never `find_room` first; `not_found` → no HITL/mutation |
-| `find_booking_by_id` | `find_booking_by_id(modify)`·1-match → edit form vs availability; `cancel` → pass | "extend N nights" computes the date, leaves other fields unset; `[booking-cancel]` → `find_booking_by_id` → `show_cancel_dialog_confirm`, no `find_bookings` |
+| `find_booking_by_id` | `find_booking_by_id(modify)`·1-match → edit form vs `confirm_modify_booking` vs stop (it probes availability itself for a stated change); `cancel` → pass | "extend N nights" computes the date, leaves other fields unset; `[booking-cancel]` → `find_booking_by_id` → `show_cancel_dialog_confirm`, no `find_bookings` |
 
 The 5 HITL client tools (`confirm_booking`, `confirm_modify_booking`, `edit_modify_booking`, `show_cancel_dialog_confirm`, `show_modify_dialog_select`) aren't registered on the agent — they're stubbed in `support/client-tools.ts`. Their confirmed/dismissed → next-tool transitions are asserted inside the terminal-tool files they gate (`create-booking` / `update-booking` / `cancel-booking`).
 
@@ -126,7 +123,7 @@ Net effect: `pnpm eval:behavioral` runs every case strictly one after another. I
 3. Read tool calls off `CaseResult.toolNames` (string[], in order) or `CaseResult.toolCalls` (with args, via `support/tool-calls.ts::toolCallArgs`).
 4. Prefer a structured assertion (`support/checks.ts::scoreResult(pass, reason)`) over an LLM judge. Only reach for `support/judge.ts::gradeAgainstRubric` when the thing you're checking is genuinely about natural-language phrasing.
 5. If your scenario needs a booking/room that doesn't exist yet, add it to `support/fixtures.ts` rather than inlining ad-hoc data — keeps `fake-api.ts` the single source of truth for what "the database" contains.
-6. No-LLM step-machine routing cases go through `support/step-contract.ts::stepContractEval`; direct pure-function cases call `evalite` themselves (see `deterministic/check-room-availability.eval.ts` for both in one file). Keep them under `deterministic/` so `pnpm eval:deterministic` picks them up via the folder-path substring filter.
+6. No-LLM step-machine routing cases go through `support/step-contract.ts::stepContractEval`; direct pure-function cases call `evalite` themselves. Keep them under `deterministic/` so `pnpm eval:deterministic` picks them up via the folder-path substring filter.
 
 ## Known limitations / open findings
 
@@ -138,7 +135,7 @@ Net effect: `pnpm eval:behavioral` runs every case strictly one after another. I
 
   Both are left **failing on purpose**; do not edit the assertions to make them pass — fixing either is a prompt/behavior change outside this suite's scope.
 - **One tool-argument case showed model non-determinism across otherwise-identical runs**: "Extend my Riverside Twin Room booking by 2 nights" (`behavioral/find-booking-by-id.eval.ts`) correctly omitted `requestedGuests` in one run and attached an unprompted `requestedGuests: 2` (matching the fixture's *current* value) in another. This didn't change the final outcome in either run (2 already equals the booking's guest count) but is worth watching — it's model sampling variance, not a reproducible bug.
-- **Forced-tool argument assertions on MODIFY are lenient by design**: when the step machine forces `check_room_availability` for a modify, the prompt tells the model "the app sets `flow`/`excludeBookingId` for you", so the model-emitted args may be incomplete. `behavioral/check-room-availability.eval.ts`'s modify case only asserts `flow !== "create"` (the double-book guard), not an exact match — the exact routing is proven without an LLM in `deterministic/check-room-availability.eval.ts`.
+- **MODIFY availability has no tool step.** `find_booking_by_id(purpose:"modify")` probes `/bookings/availability` itself for a stated change (merging the stated value, excluding the booking) and attaches `availability` / `stayUnchanged`; the no-stated-change path checks client-side in the `edit_modify_booking` form. The step machine then forces `confirm_modify_booking` or stops — proven without an LLM in `deterministic/find-booking-by-id.eval.ts`. There is no `check_room_availability` tool.
 - **Fixture "today"** is computed at eval-run time (`@repo/utils/date`'s `formatTodayYmd`/`addDaysYmd`/`getBusinessDates` — the same helpers `src/mastra/utils/current-date.ts` uses), not hardcoded — so date-argument assertions stay correct regardless of which day the suite runs. Fixture *booking* dates (`support/fixtures.ts`) are hardcoded to October/November 2026 so they stay comfortably in the future; revisit if this suite is still in use after those dates pass.
 - **`conversation/response-quality.eval.ts` costs an extra LLM call per case** (the judge itself calls the model) — keep case counts modest there specifically.
 - The historical **MessageMerger/TokenLimiter context-duplication bug** has no live processor named `MessageMerger` to test directly (it's a Mastra-internal class); `conversation/multi-turn-context.eval.ts` instead asserts the observable symptom (every turn in a realistic multi-turn conversation, including a repeated `get_bookings` request, completes without a tripwire and without a runaway step count).

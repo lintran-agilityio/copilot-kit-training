@@ -1,11 +1,11 @@
 "use client";
 
+import { z } from "zod";
 import { useHumanInTheLoop, useRenderTool } from "@copilotkit/react-core/v2";
 
 import { AGENT_KEYS, TOOL_KEYS } from "@repo/constants";
 import {
   cancelBookingInputSchema,
-  checkRoomAvailabilityInputSchema,
   createBookingInputSchema,
   updateBookingInputSchema,
   getBookingsInputSchema,
@@ -24,7 +24,7 @@ import {
   CancelBookingByRoomModal,
   ModifyBookingByRoomModal,
   CancelBookingNotice,
-  BookingUnavailableNotice,
+  FindBookingByIdNotice,
   UpdateBookingNotice,
   CreateBookingNotice,
   ConfirmBookingModal,
@@ -33,13 +33,25 @@ import {
 } from "@/features/booking/components";
 import {
   CancelBookingToolProps,
-  CheckRoomAvailabilityResult,
   CreateBookingToolProps,
   UpdateBookingToolProps,
   GetBookingsResult,
+  FindBookingByIdResult,
 } from "@/features/booking/types";
-import type { ToolRendererProps } from "@/features/chatbot/declarative-ui/types/tool-render-props";
 import { HitlConfirmStayModal } from "@/features/booking/components/HitlConfirmStayModal";
+
+/**
+ * Render-only params for the `find_booking_by_id` notice — the agent owns the
+ * authoritative LLM-facing input schema. `useRenderTool` requires a schema; the
+ * notice only reads the tool `result`.
+ */
+const findBookingByIdRenderParams = z.object({
+  bookingId: z.string().optional(),
+  purpose: z.enum(["cancel", "modify"]).optional(),
+  requestedCheckInDate: z.string().optional(),
+  requestedCheckOutDate: z.string().optional(),
+  requestedGuests: z.number().optional(),
+});
 
 export const BookingToolsProvider = () => {
   useHumanInTheLoop(
@@ -47,7 +59,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.CONFIRM_BOOKING,
       description:
-        "Required immediately for a NEW booking: the platform forces this right after find_room(book_resolve) resolves one room whose availability probe was free (full-info path), and you call it directly after a [book-stay] submit (the Booking Form already checked availability). CREATE never uses check_room_availability. Args: { roomId, checkInDate, checkOutDate, guests } — from the find_room result's availability block or the [book-stay] message; the modal hydrates the room details on the frontend. Pair this UI with exactly one short sentence in the guest's language asking them to review; never repeat modal fields. Wait for the response: confirmed=true requires create_booking with the returned fields — the same HITL card then shows submitting/success/failed (a server-side conflict on dates just taken shows failed). On success, its one companion sentence may name the booked room exactly once but must not repeat any other card field; confirmed=false stops the booking flow, calls no more tools, and gets a brief 'booking stopped' reply. Never use this for modifying a booking.",
+        "Required immediately for a NEW booking: the platform forces this right after find_room(book_resolve) resolves one room whose availability probe was free (full-info path), and you call it directly after a [book-stay] submit (the Booking Form already checked availability). There is no check_room_availability tool. Args: { roomId, checkInDate, checkOutDate, guests } — from the find_room result's availability block or the [book-stay] message; the modal hydrates the room details on the frontend. Pair this UI with exactly one short sentence in the guest's language asking them to review; never repeat modal fields. Wait for the response: confirmed=true requires create_booking with the returned fields — the same HITL card then shows submitting/success/failed (a server-side conflict on dates just taken shows failed). On success, its one companion sentence may name the booked room exactly once but must not repeat any other card field; confirmed=false stops the booking flow, calls no more tools, and gets a brief 'booking stopped' reply. Never use this for modifying a booking.",
       parameters: confirmBookingSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
         <ConfirmBookingModal
@@ -67,7 +79,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
       description:
-        "Edit form for MODIFY — the app only routes you here when the guest has not stated a new value (a stated value skips this form entirely). Pass the authoritative bookingId, room, and current dates/guests straight from the find_booking_by_id result you just received. Pair this UI with exactly one short sentence in the guest's language; never repeat form fields. On confirmed:true, the app forces the next call to check_room_availability with the guest-edited stay and excludeBookingId=bookingId — you do not need to construct that call's args. If confirmed:false, keep the booking unchanged.",
+        "Edit form for MODIFY — the app only routes you here when the guest has not stated a new value (a stated value skips this form entirely). Pass the authoritative bookingId, room, and current dates/guests straight from the find_booking_by_id result you just received. The form checks availability client-side and won't let the guest continue on a taken date. Pair this UI with exactly one short sentence in the guest's language; never repeat form fields. On confirmed:true, the app forces confirm_modify_booking directly with the guest-edited stay — there is no check_room_availability tool. If confirmed:false, keep the booking unchanged.",
       parameters: editModifyBookingSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
         <EditModifyBookingModal
@@ -87,7 +99,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
       description:
-        "After check_room_availability returns nextAction=confirm_modify_booking, show the read-only before→after card. Pass { bookingId, room, checkInDate, checkOutDate, guests } from check_room_availability.result, plus originalCheckInDate/originalCheckOutDate/originalGuests from that same result when present — never reconstruct, merge, or replace any field from UI state or memory. Pair this UI with exactly one short review sentence in the guest's language; never repeat card fields. Wait for explicit confirmation. On confirmed:true, the app forces the next call to update_booking with the confirmed fields; its success companion may name the room exactly once but must not repeat any other card field. On confirmed:false, call no mutation and keep the booking unchanged.",
+        "Show the read-only before→after card. The app forces this after edit_modify_booking confirms (form path) or straight after find_booking_by_id on the stated-change path (that tool already probed availability). Pass { bookingId, room, checkInDate, checkOutDate, guests }: from edit_modify_booking confirmed:true, OR from find_booking_by_id.result.availability (the merged stay it probed); plus originalCheckInDate/originalCheckOutDate/originalGuests from edit_modify_booking args or find_booking_by_id.result.bookings[0] — never reconstruct, merge, or replace any field from UI state or memory. Pair this UI with exactly one short review sentence in the guest's language; never repeat card fields. Wait for explicit confirmation. On confirmed:true, the app forces update_booking with the confirmed fields; its success companion may name the room exactly once but must not repeat any other card field. On confirmed:false, call no mutation and keep the booking unchanged.",
       parameters: confirmModifyBookingSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
         <HitlConfirmStayModal
@@ -165,15 +177,15 @@ export const BookingToolsProvider = () => {
   useRenderTool(
     {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
-      name: TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY,
-      parameters: checkRoomAvailabilityInputSchema,
-      render: ({ status, result }) => {
-        const props: ToolRendererProps<CheckRoomAvailabilityResult> = {
-          status,
-          result: result as CheckRoomAvailabilityResult | string | null,
-        };
-        return <BookingUnavailableNotice {...props} />;
-      },
+      name: TOOL_KEYS.BOOKING.FIND_BY_ID,
+      parameters: findBookingByIdRenderParams,
+      render: ({ status, result, toolCallId }) => (
+        <FindBookingByIdNotice
+          status={status}
+          result={result as FindBookingByIdResult | string | null}
+          toolCallId={toolCallId}
+        />
+      ),
     },
     [],
   );

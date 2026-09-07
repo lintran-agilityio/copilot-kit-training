@@ -21,8 +21,9 @@ import { FIXTURE_EXISTING_BOOKING } from "../../support/fixtures";
  *      then `show_cancel_dialog_confirm` in the SAME turn, with NO
  *      `find_bookings` first (the id is already known).
  *
- * The no-LLM junction (`find_booking_by_id(modify)` → form vs availability) is
- * in `deterministic/find-booking-by-id.eval.ts`.
+ * The no-LLM junction (`find_booking_by_id(modify)` → edit form vs
+ * confirm_modify_booking vs stop, and the stated-change availability outcomes
+ * the tool probes itself) is in `deterministic/find-booking-by-id.eval.ts`.
  */
 
 // --- MODIFY stated-change extraction ----------------------------------
@@ -66,6 +67,61 @@ evalite<{ name: string; message: string }, CaseResult, Record<string, unknown>>(
     ],
     columns: ({ input, output }) => [
       { label: "Message", value: input.message },
+      {
+        label: "find_booking_by_id args",
+        value: JSON.stringify(
+          toolCallArgs(output.toolCalls, "find_booking_by_id") ?? {},
+        ),
+      },
+    ],
+  },
+);
+
+// --- [booking-modify] card trigger: no stated change → open the form ---
+evalite<{ message: string }, CaseResult, Record<string, unknown>>(
+  "find_booking_by_id — [booking-modify] card carries no stay, so no requested* fields are set",
+  {
+    data: () => [
+      {
+        input: {
+          message: `[booking-modify] bookingId: ${FIXTURE_EXISTING_BOOKING.id}. I want to modify my booking for ${FIXTURE_EXISTING_BOOKING.room?.name}.`,
+        },
+        expected: {
+          requestedCheckInDate: undefined,
+          requestedCheckOutDate: undefined,
+          requestedGuests: undefined,
+        },
+      },
+    ],
+    task: (input) => runCase(input.message),
+    scorers: [
+      {
+        name: "find_booking_by_id(modify) called with none of the requested* fields",
+        scorer: ({ output, expected }) => {
+          const args = toolCallArgs(output.toolCalls, "find_booking_by_id");
+          if (!args) {
+            return scoreResult(false, "find_booking_by_id was never called");
+          }
+          const mismatches = diffArgs(args, expected!);
+          return scoreResult(
+            mismatches.length === 0,
+            mismatches.length === 0
+              ? `matched: ${JSON.stringify(args)}`
+              : `leaked stated change ${JSON.stringify(mismatches)} — full args: ${JSON.stringify(args)}`,
+          );
+        },
+      },
+      {
+        name: "Did not skip the edit form (no confirm_modify_booking this turn)",
+        scorer: ({ output }) =>
+          scoreResult(
+            !output.toolNames.includes("confirm_modify_booking"),
+            `tool calls: [${output.toolNames.join(", ") || "none"}]`,
+          ),
+      },
+    ],
+    columns: ({ output }) => [
+      { label: "Tool calls", value: output.toolNames.join(" → ") || "(none)" },
       {
         label: "find_booking_by_id args",
         value: JSON.stringify(

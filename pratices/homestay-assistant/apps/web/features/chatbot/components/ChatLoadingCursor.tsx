@@ -42,9 +42,10 @@ const hasVisibleAssistantText = (
  *         `Complete` (result card / unavailable notice).
  *
  * Still shown while the agent is "thinking, nothing rendered yet": a fresh user
- * turn, a page-only tool (get_rooms / find_booking_by_id), an in-flight
- * check_room_availability, or a HITL tool still in `InProgress` (modal not yet
- * mounted) — exactly the cases the screenshots flagged as a confusing blank.
+ * turn, a page-only tool (get_rooms), a silent internal lookup
+ * (find_room/get_bookings resolve, find_booking_by_id), or a HITL tool still in
+ * `InProgress` (modal not yet mounted) — exactly the cases the screenshots
+ * flagged as a confusing blank.
  *
  * Always returns an Element (never null) — CopilotChat's cursor slot requires that.
  */

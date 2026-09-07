@@ -41,19 +41,19 @@ export const HITL_CLIENT_TOOLS = {
   [TOOL_KEYS.ACTION.CONFIRM_BOOKING]: createTool({
     id: TOOL_KEYS.ACTION.CONFIRM_BOOKING,
     description:
-      "Frontend HITL — confirm booking draft after check_room_availability succeeds.",
+      "Frontend HITL — confirm a new booking (availability was checked in find_room(book_resolve) / the Booking Form).",
     inputSchema: confirmBookingSchema,
   }),
   [TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING]: createTool({
     id: TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
     description:
-      "Frontend HITL — confirm booking modification after availability check with excludeBookingId.",
+      "Frontend HITL — confirm a booking modification (availability was checked in find_booking_by_id / the edit form).",
     inputSchema: confirmModifyBookingSchema,
   }),
   [TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING]: createTool({
     id: TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
     description:
-      "Frontend HITL — edit form with room detail + current dates/guests, before check_room_availability.",
+      "Frontend HITL — edit form with room detail + current dates/guests; runs its own client-side availability check.",
     inputSchema: editModifyBookingSchema,
   }),
   [TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]: createTool({

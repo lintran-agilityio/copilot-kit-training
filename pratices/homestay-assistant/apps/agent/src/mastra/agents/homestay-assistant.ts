@@ -18,7 +18,6 @@ import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import type { PromptFlowHint } from "@/mastra/middleware/prompt-flow-hint";
 import {
   cancelBookingTool,
-  checkRoomAvailabilityTool,
   createBookingTool,
   findBookingByIdTool,
   findBookingsTool,
@@ -60,7 +59,6 @@ export const homestayAssistant = new Agent({
     [TOOL_KEYS.GET.ROOMS]: getRoomsTool,
     [TOOL_KEYS.GET.FIND_ROOM]: findRoomTool,
     [TOOL_KEYS.BOOKING.GET_ROOM_BY_ID]: getRoomByIdTool,
-    [TOOL_KEYS.BOOKING.CHECK_ROOM_AVAILABILITY]: checkRoomAvailabilityTool,
     [TOOL_KEYS.BOOKING.CREATE_BOOKING]: createBookingTool,
     [TOOL_KEYS.BOOKING.UPDATE_BOOKING]: updateBookingTool,
     [TOOL_KEYS.BOOKING.GET]: getBookingsTool,

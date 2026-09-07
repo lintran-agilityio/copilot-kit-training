@@ -1,9 +1,13 @@
 import { z } from "zod";
-import {
-  bookingAvailabilityFlowSchema,
-  roomSchema,
-} from "@repo/schemas";
+import { roomSchema } from "@repo/schemas";
 
+/**
+ * Response shape of the `/bookings/availability` HTTP endpoint. Used by the
+ * `checkRoomAvailability` service to validate the API response for the CREATE
+ * probe (`find_room(book_resolve)`) and the MODIFY probe
+ * (`find_booking_by_id(purpose:"modify")`). There is no longer a
+ * `check_room_availability` agent tool.
+ */
 export const checkRoomAvailabilityResponseSchema = z.object({
   available: z
     .boolean()
@@ -21,56 +25,6 @@ export const checkRoomAvailabilityResponseSchema = z.object({
   guests: z.number().optional(),
 });
 
-export const bookingAvailabilityNextActionSchema = z.enum([
-  "confirm_booking",
-  "confirm_modify_booking",
-  "stop_booking",
-]);
-
-export const checkRoomAvailabilityOutputSchema =
-  checkRoomAvailabilityResponseSchema.extend({
-    nextAction: bookingAvailabilityNextActionSchema.describe(
-      "Mandatory step-machine transition: call the named confirm tool immediately, or stop when stop_booking is returned.",
-    ),
-    flow: bookingAvailabilityFlowSchema.describe(
-      "Echo of the resolved flow — create never routes to confirm_modify_booking; modify never routes to confirm_booking.",
-    ),
-    bookingId: z
-      .string()
-      .optional()
-      .describe(
-        "Set for flow=modify — the booking being updated (excludeBookingId). Pass to confirm_modify_booking.",
-      ),
-    originalCheckInDate: z
-      .string()
-      .optional()
-      .describe(
-        "Pre-change check-in for flow=modify — pass to confirm_modify_booking so the UI can show old → new.",
-      ),
-    originalCheckOutDate: z
-      .string()
-      .optional()
-      .describe(
-        "Pre-change check-out for flow=modify — pass to confirm_modify_booking so the UI can show old → new.",
-      ),
-    originalGuests: z
-      .number()
-      .optional()
-      .describe(
-        "Pre-change guests for flow=modify — pass to confirm_modify_booking so the UI can show old → new.",
-      ),
-    stayUnchanged: z
-      .boolean()
-      .optional()
-      .describe(
-        "True for flow=modify when the candidate stay equals the pre-change originals. nextAction is stop_booking — reply that nothing needs changing; never open confirm_modify_booking or suggest other edits.",
-      ),
-  });
-
 export type CheckRoomAvailabilityResponse = z.infer<
   typeof checkRoomAvailabilityResponseSchema
->;
-
-export type CheckRoomAvailabilityOutput = z.infer<
-  typeof checkRoomAvailabilityOutputSchema
 >;
