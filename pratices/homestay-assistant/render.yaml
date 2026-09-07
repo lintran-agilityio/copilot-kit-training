@@ -1,0 +1,134 @@
+services:
+  # ============================================================
+  # NEXT.JS WEB
+  # ============================================================
+  - type: web
+    name: homestay-web
+    runtime: node
+    plan: starter
+
+    buildCommand: |
+      corepack enable
+      pnpm install --frozen-lockfile
+      pnpm turbo build --filter=web
+
+    startCommand: pnpm --filter=web start
+
+    healthCheckPath: /
+
+    buildFilter:
+      paths:
+        - apps/web/**
+        - packages/**
+        - package.json
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - turbo.json
+
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+
+      - key: NODE_ENV
+        value: production
+
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+
+      - key: NEXT_PUBLIC_AGENT_URL
+        sync: false
+
+
+  # ============================================================
+  # MASTRA AGENT
+  # ============================================================
+  - type: web
+    name: homestay-agent
+    runtime: node
+    plan: starter
+
+    buildCommand: |
+      corepack enable
+      pnpm install --frozen-lockfile
+      pnpm turbo build --filter=agent
+
+    startCommand: pnpm --filter=agent start
+
+    healthCheckPath: /health
+
+    buildFilter:
+      paths:
+        - apps/agent/**
+        - packages/**
+        - package.json
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - turbo.json
+
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+
+      - key: NODE_ENV
+        value: production
+
+      - key: AI_MODEL
+        sync: false
+
+      - key: OPENAI_API_KEY
+        sync: false
+
+      - key: CEREBRAS_API_KEY
+        sync: false
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: homestay-db
+          property: connectionString
+
+
+  # ============================================================
+  # NESTJS API
+  # ============================================================
+  - type: web
+    name: homestay-api
+    runtime: node
+    plan: starter
+
+    buildCommand: |
+      corepack enable
+      pnpm install --frozen-lockfile
+      pnpm turbo build --filter=api
+
+    startCommand: pnpm --filter=api start:prod
+
+    healthCheckPath: /health
+
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/**
+        - package.json
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - turbo.json
+
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: "10000"
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: homestay-db
+          property: connectionString
+
+
+databases:
+  - name: homestay-db
+    plan: basic-256mb

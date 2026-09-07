@@ -7,9 +7,9 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "web": "turbo run dev --filter=web",
-    "api": "turbo run dev --filter=api",
-    "agent": "turbo run dev --filter=agent"
+    "web": "turbo run build --filter=web",
+    "api": "turbo run build --filter=api",
+    "agent": "turbo run build --filter=agent"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
