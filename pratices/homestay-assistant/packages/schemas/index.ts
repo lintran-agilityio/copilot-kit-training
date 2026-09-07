@@ -1,4 +1,5 @@
 export * from "./room.js";
+export * from "./client-identity.js";
 export * from "./find-room.js";
 export * from "./get-room-by-id.js";
 export * from "./create-booking.js";
