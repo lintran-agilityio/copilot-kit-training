@@ -10,6 +10,11 @@ import { createInMemoryStorage } from "evalite/in-memory-storage";
  * "vs previous run" diff) is the only feature this gives up.
  */
 export default defineConfig({
+  // `evalite serve` powers the deployed dashboard. Render injects `PORT` at
+  // runtime (10000 by default); retain 3006 for the local `eval:serve` flow.
+  server: {
+    port: Number.parseInt(process.env.PORT ?? "3006", 10) || 3006,
+  },
   storage: () => createInMemoryStorage(),
   // Fixtures stub `globalThis.fetch` for the duration of one case
   // (evals/support/fake-api.ts) — evalite's default concurrency (5) would

@@ -1,5 +1,72 @@
 services:
   # ============================================================
+  # EVALITE DASHBOARD
+  # ============================================================
+  # `evalite serve` executes the suite once at process startup and keeps its
+  # interactive results UI alive. It intentionally has in-memory storage:
+  # every deploy starts a fresh, fixture-backed evaluation run rather than
+  # retaining agent conversations or test artifacts on Render's filesystem.
+  #
+  # The UI includes test prompts, outputs, and tool traces. Restrict access in
+  # Render (for example, with an IP allow list) before sharing this service.
+  - type: web
+    name: homestay-evalite
+    runtime: node
+    plan: starter
+
+    # Evalite and the Mastra CLI are package devDependencies. Keep them in this
+    # service's production image because `evalite serve` runs at startup.
+    buildCommand: |
+      corepack enable
+      pnpm install --frozen-lockfile --prod=false
+      pnpm turbo build --filter=agent
+
+    startCommand: pnpm --filter=agent eval:serve
+
+    # Unlike the human-facing UI, this endpoint is a small stable health probe
+    # as soon as Evalite's Fastify server starts (before a long LLM eval ends).
+    healthCheckPath: /api/server-state
+
+    buildFilter:
+      paths:
+        - apps/agent/**
+        - packages/**
+        - package.json
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - turbo.json
+
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+
+      # Evalite reads this through evalite.config.ts so it binds to Render's
+      # public HTTP port instead of its local default (3006).
+      - key: PORT
+        value: "10000"
+
+      - key: NODE_ENV
+        value: production
+
+      - key: AI_PROVIDER
+        value: openai
+
+      # Required for behavioral and conversation suites. Add this as a Render
+      # secret; never commit it.
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # Evals replace requests to this origin with fixture responses, so the
+      # dashboard never reads or mutates the deployed NestJS database.
+      - key: API_URL
+        value: https://evalite-fixture.invalid
+
+      # Eval threads use ephemeral storage and must not be written into the
+      # source tree or mistaken for production agent history.
+      - key: MASTRA_DATA_DIR
+        value: /tmp/mastra-evalite
+
+  # ============================================================
   # NEXT.JS WEB
   # ============================================================
   - type: web
@@ -64,7 +131,6 @@ services:
       - key: OPENAI_API_KEY
         sync: false
 
-
   # ============================================================
   # MASTRA AGENT
   # ============================================================
@@ -111,7 +177,6 @@ services:
         fromDatabase:
           name: homestay-db
           property: connectionString
-
 
   # ============================================================
   # NESTJS API
@@ -165,7 +230,6 @@ services:
         fromDatabase:
           name: homestay-db
           property: connectionString
-
 
 databases:
   - name: homestay-db

@@ -33,22 +33,22 @@ evals/
         └── multi-turn-context.eval.ts      token-limiter / step-count regression across one thread
 ```
 
-**Why the split.** `deterministic/` proves the booking step-machine's ordering contract (`src/mastra/utils/step-machine.ts`) with zero API cost, zero network, in milliseconds — run it on every PR. `behavioral/` runs the *same* gates through a real model turn, so a model that stops honoring them fails even though the deterministic gate still passes. `conversation/` is the only place an LLM judge is used, and the only multi-turn scenario.
+**Why the split.** `deterministic/` proves the booking step-machine's ordering contract (`src/mastra/utils/step-machine.ts`) with zero API cost, zero network, in milliseconds — run it on every PR. `behavioral/` runs the _same_ gates through a real model turn, so a model that stops honoring them fails even though the deterministic gate still passes. `conversation/` is the only place an LLM judge is used, and the only multi-turn scenario.
 
 **Why per tool.** Each registered tool has (at most) one `deterministic/` file and one `behavioral/` file, both named for the tool. To see everything that checks `find_room`, open two files, not five. `get_rooms` / `get_room_by_id` / `get_bookings` / `find_bookings` don't force step-machine transitions, so they have a `behavioral/` file only.
 
 ## What gets evaluated — per tool
 
-| Tool | `deterministic/` | `behavioral/` |
-|---|---|---|
-| `get_rooms` | — | plain browse only; never `find_room` / `get_bookings` for it |
-| `find_room` | every result shape → transition; `book_resolve`·1-match → form vs `confirm_booking` (own availability probe) vs stop | discovery intent routes here first; "available" wording never → `get_bookings`; date normalized, guests never invented, `level`/`limit` |
-| `get_room_by_id` | *(forced target only — see `find-room.eval.ts`)* | detail chain (⚠️ known-failing); `[book-form]` → `get_room_by_id` only, no availability |
-| `create_booking` | `confirm_booking` confirmed→create / dismissed→stop; terminal→stop | never fires before `find_room`→`confirm_booking` (there is no `check_room_availability` tool); full stay skips the form |
-| `update_booking` | picker / edit-form / `confirm_modify_booking` gates; terminal→stop | never fires before the confirm gate; no-op modify never opens the dialog |
-| `cancel_booking` | `find_bookings`→pass; `show_cancel_dialog_confirm` confirmed→cancel / dismissed→stop; terminal→stop | resolve by name → `find_bookings` → `show_cancel_dialog_confirm`, no `cancel_booking` this turn |
-| `get_bookings` | — | "show/list my bookings" routes here, never `find_room`; `onDate` only from a cue in the current message |
-| `find_bookings` | *(covered as `cancel-booking.eval.ts`'s `find_bookings`→pass case)* | internal resolver, never `find_room` first; `not_found` → no HITL/mutation |
+| Tool                 | `deterministic/`                                                                                                                                          | `behavioral/`                                                                                                                                                |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `get_rooms`          | —                                                                                                                                                         | plain browse only; never `find_room` / `get_bookings` for it                                                                                                 |
+| `find_room`          | every result shape → transition; `book_resolve`·1-match → form vs `confirm_booking` (own availability probe) vs stop                                      | discovery intent routes here first; "available" wording never → `get_bookings`; date normalized, guests never invented, `level`/`limit`                      |
+| `get_room_by_id`     | _(forced target only — see `find-room.eval.ts`)_                                                                                                          | detail chain (⚠️ known-failing); `[book-form]` → `get_room_by_id` only, no availability                                                                      |
+| `create_booking`     | `confirm_booking` confirmed→create / dismissed→stop; terminal→stop                                                                                        | never fires before `find_room`→`confirm_booking` (there is no `check_room_availability` tool); full stay skips the form                                      |
+| `update_booking`     | picker / edit-form / `confirm_modify_booking` gates; terminal→stop                                                                                        | never fires before the confirm gate; no-op modify never opens the dialog                                                                                     |
+| `cancel_booking`     | `find_bookings`→pass; `show_cancel_dialog_confirm` confirmed→cancel / dismissed→stop; terminal→stop                                                       | resolve by name → `find_bookings` → `show_cancel_dialog_confirm`, no `cancel_booking` this turn                                                              |
+| `get_bookings`       | —                                                                                                                                                         | "show/list my bookings" routes here, never `find_room`; `onDate` only from a cue in the current message                                                      |
+| `find_bookings`      | _(covered as `cancel-booking.eval.ts`'s `find_bookings`→pass case)_                                                                                       | internal resolver, never `find_room` first; `not_found` → no HITL/mutation                                                                                   |
 | `find_booking_by_id` | `find_booking_by_id(modify)`·1-match → edit form vs `confirm_modify_booking` vs stop (it probes availability itself for a stated change); `cancel` → pass | "extend N nights" computes the date, leaves other fields unset; `[booking-cancel]` → `find_booking_by_id` → `show_cancel_dialog_confirm`, no `find_bookings` |
 
 The 5 HITL client tools (`confirm_booking`, `confirm_modify_booking`, `edit_modify_booking`, `show_cancel_dialog_confirm`, `show_modify_dialog_select`) aren't registered on the agent — they're stubbed in `support/client-tools.ts`. Their confirmed/dismissed → next-tool transitions are asserted inside the terminal-tool files they gate (`create-booking` / `update-booking` / `cancel-booking`).
@@ -105,15 +105,15 @@ Auth is faked the same way production's request-pipeline middleware would popula
 
 Two separate knobs, both set to fully serial:
 
-- `evalite.config.ts` sets `maxConcurrency: 1` — serializes cases *within* one `.eval.ts` file. The fixture `fetch` stub is installed on `globalThis.fetch` per case (`support/run-case.ts`) and restored afterward — evalite's default concurrency (5) would let two cases' install/restore race on that one global and leak the real network into a case still mid-flight. Don't raise `maxConcurrency` without also making the fetch stub properly scoped (e.g. per-case `AsyncLocalStorage`).
-- `vitest.config.ts` sets `test.fileParallelism: false` — serializes the *files* themselves. Vitest otherwise runs `.eval.ts` files in parallel workers, and several real agent turns at once jointly exceed the OpenAI 200k TPM budget (each behavioral case ≈ a prompt-injection-detector call + a multi-step tool loop, ~30k tokens on gpt-4o-mini). Running one file at a time lets Mastra's built-in per-minute backoff ("Rate limit approaching, waiting 10 seconds") actually pace the whole suite. Evalite force-sets `testTimeout` / `maxConcurrency` / `setupFiles` but leaves `fileParallelism` to this file.
+- `evalite.config.ts` sets `maxConcurrency: 1` — serializes cases _within_ one `.eval.ts` file. The fixture `fetch` stub is installed on `globalThis.fetch` per case (`support/run-case.ts`) and restored afterward — evalite's default concurrency (5) would let two cases' install/restore race on that one global and leak the real network into a case still mid-flight. Don't raise `maxConcurrency` without also making the fetch stub properly scoped (e.g. per-case `AsyncLocalStorage`).
+- `vitest.config.ts` sets `test.fileParallelism: false` — serializes the _files_ themselves. Vitest otherwise runs `.eval.ts` files in parallel workers, and several real agent turns at once jointly exceed the OpenAI 200k TPM budget (each behavioral case ≈ a prompt-injection-detector call + a multi-step tool loop, ~30k tokens on gpt-4o-mini). Running one file at a time lets Mastra's built-in per-minute backoff ("Rate limit approaching, waiting 10 seconds") actually pace the whole suite. Evalite force-sets `testTimeout` / `maxConcurrency` / `setupFiles` but leaves `fileParallelism` to this file.
 
 Net effect: `pnpm eval:behavioral` runs every case strictly one after another. It's slower (expect ~10–20 min for `behavioral/`) but doesn't hit `429 rate_limit_exceeded`.
 
 ## Which tests are deterministic vs LLM-judged
 
 - **Fully deterministic, no LLM call at all**: everything under `homestay-assistant/deterministic/` — the no-op/availability pure functions from `src/mastra/utils/modify-booking.ts`, plus the `resolveEnforcedTransition` step-machine entry point from `src/mastra/utils/step-machine.ts` driven with each tool's own documented result shape (`support/step-contract.ts` is the shared runner). No `agent.generate()`, no fixture API, no network.
-- **Deterministic assertions over a real LLM-driven agent run**: everything under `homestay-assistant/behavioral/` and the `multi-turn-context` regression — the *agent's* output is non-deterministic (a real model call), but the *scoring* is a structured assertion (tool name, argument value, call order), not a semantic judgment. A flaky model response can still fail these; that's the model's routing/argument reliability being tested, not test flakiness.
+- **Deterministic assertions over a real LLM-driven agent run**: everything under `homestay-assistant/behavioral/` and the `multi-turn-context` regression — the _agent's_ output is non-deterministic (a real model call), but the _scoring_ is a structured assertion (tool name, argument value, call order), not a semantic judgment. A flaky model response can still fail these; that's the model's routing/argument reliability being tested, not test flakiness.
 - **LLM-judged**: `homestay-assistant/conversation/response-quality.eval.ts` only. Every rubric line is a single literal, independently-checkable claim (see `support/judge.ts`) — never an open "does this look good?" — to keep it as low-flake as an LLM judge can reasonably be.
 
 ## Adding a new evaluation
@@ -134,12 +134,54 @@ Net effect: `pnpm eval:behavioral` runs every case strictly one after another. I
   - **Every observed reply appends a second boilerplate closer** ("Let me know if you need help!" / "Feel free to ask!"), failing the "single short sentence" rubric line in `conversation/response-quality.eval.ts` across all 5 cases. `GENERIC_UI_RENDERING`'s "emit exactly ONE very short plain sentence" rule appears to be a general habit gap, not confined to one workflow.
 
   Both are left **failing on purpose**; do not edit the assertions to make them pass — fixing either is a prompt/behavior change outside this suite's scope.
-- **One tool-argument case showed model non-determinism across otherwise-identical runs**: "Extend my Riverside Twin Room booking by 2 nights" (`behavioral/find-booking-by-id.eval.ts`) correctly omitted `requestedGuests` in one run and attached an unprompted `requestedGuests: 2` (matching the fixture's *current* value) in another. This didn't change the final outcome in either run (2 already equals the booking's guest count) but is worth watching — it's model sampling variance, not a reproducible bug.
+
+- **One tool-argument case showed model non-determinism across otherwise-identical runs**: "Extend my Riverside Twin Room booking by 2 nights" (`behavioral/find-booking-by-id.eval.ts`) correctly omitted `requestedGuests` in one run and attached an unprompted `requestedGuests: 2` (matching the fixture's _current_ value) in another. This didn't change the final outcome in either run (2 already equals the booking's guest count) but is worth watching — it's model sampling variance, not a reproducible bug.
 - **MODIFY availability has no tool step.** `find_booking_by_id(purpose:"modify")` probes `/bookings/availability` itself for a stated change (merging the stated value, excluding the booking) and attaches `availability` / `stayUnchanged`; the no-stated-change path checks client-side in the `edit_modify_booking` form. The step machine then forces `confirm_modify_booking` or stops — proven without an LLM in `deterministic/find-booking-by-id.eval.ts`. There is no `check_room_availability` tool.
-- **Fixture "today"** is computed at eval-run time (`@repo/utils/date`'s `formatTodayYmd`/`addDaysYmd`/`getBusinessDates` — the same helpers `src/mastra/utils/current-date.ts` uses), not hardcoded — so date-argument assertions stay correct regardless of which day the suite runs. Fixture *booking* dates (`support/fixtures.ts`) are hardcoded to October/November 2026 so they stay comfortably in the future; revisit if this suite is still in use after those dates pass.
+- **Fixture "today"** is computed at eval-run time (`@repo/utils/date`'s `formatTodayYmd`/`addDaysYmd`/`getBusinessDates` — the same helpers `src/mastra/utils/current-date.ts` uses), not hardcoded — so date-argument assertions stay correct regardless of which day the suite runs. Fixture _booking_ dates (`support/fixtures.ts`) are hardcoded to October/November 2026 so they stay comfortably in the future; revisit if this suite is still in use after those dates pass.
 - **`conversation/response-quality.eval.ts` costs an extra LLM call per case** (the judge itself calls the model) — keep case counts modest there specifically.
 - The historical **MessageMerger/TokenLimiter context-duplication bug** has no live processor named `MessageMerger` to test directly (it's a Mastra-internal class); `conversation/multi-turn-context.eval.ts` instead asserts the observable symptom (every turn in a realistic multi-turn conversation, including a repeated `get_bookings` request, completes without a tripwire and without a runaway step count).
 - **Don't launch two `evalite run` processes at once.** Within one process, `test.fileParallelism: false` (`vitest.config.ts`) + `maxConcurrency: 1` (`evalite.config.ts`) already make every case strictly sequential, so `pnpm eval` / `pnpm eval:behavioral` stay under the OpenAI per-minute token budget on their own. But two separate `evalite run` invocations against the same key still race each other into a 200k TPM limit — run them back to back, not in parallel. To run a single file, pass one path substring as the filter: `pnpm eval behavioral/find-room` (the CLI takes exactly one positional, so `pnpm eval:behavioral find-room` — two positionals — is rejected).
+
+## Render dashboard
+
+This repository is ready to deploy the interactive Evalite UI as a dedicated
+Render **Web Service**. It uses `evalite serve`: the service starts the UI,
+runs the suite once, and keeps the resulting run available in the browser.
+The deployed run remains fixture-backed; it does not call or mutate the
+production NestJS API.
+
+In the Render Dashboard, select **New > Web Service**, connect this repository,
+and use the repository root as the root directory. Configure these fields:
+
+| Field             | Value                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------- |
+| Name              | `homestay-evalite`                                                                                  |
+| Runtime           | Node                                                                                                |
+| Build command     | `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm turbo build --filter=agent` |
+| Start command     | `pnpm --filter=agent eval:serve`                                                                    |
+| Health check path | `/api/server-state`                                                                                 |
+
+Add the following environment variables:
+
+| Key               | Value                                       |
+| ----------------- | ------------------------------------------- |
+| `NODE_VERSION`    | `22`                                        |
+| `PORT`            | `10000`                                     |
+| `AI_PROVIDER`     | `openai`                                    |
+| `OPENAI_API_KEY`  | Render secret containing the evaluation key |
+| `API_URL`         | `https://evalite-fixture.invalid`           |
+| `MASTRA_DATA_DIR` | `/tmp/mastra-evalite`                       |
+
+`OPENAI_API_KEY` is required because the behavioral and conversation suites
+make real model calls. The deterministic suite is also run, but is free and
+does not need the key. The default model is `openai/gpt-4o-mini`; add
+`AI_MODEL` if the dashboard should evaluate another supported router model.
+
+The dashboard exposes prompts, outputs, scores, and tool traces. Keep it
+private to the evaluation team: set an IP allow list in the Render service
+settings or place it behind your organization's access proxy before sharing its
+URL. Results are intentionally in memory, so a restart or redeploy performs a
+new run and discards prior dashboard history.
 
 ## CI considerations
 

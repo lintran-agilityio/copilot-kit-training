@@ -46,7 +46,8 @@
       "Bash(grep -o 'OPENAI_API_KEY=.\\\\{0,6\\\\}' apps/agent/.env apps/web/.env)",
       "Bash(timeout 400 node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run get-rooms)",
       "Bash(pnpm --filter @repo/schemas... run check-types)",
-      "Bash(pnpm run *)"
+      "Bash(pnpm run *)",
+      "Bash(pnpm --filter @repo/schemas check-types)"
     ]
   }
 }
