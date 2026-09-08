@@ -16,7 +16,7 @@ export const getRooms = async ({
     ? `${ROUTES.ROOMS}?date=${encodeURIComponent(date)}`
     : ROUTES.ROOMS;
   const baseUrl = getBaseUrl(via);
-
+console.log('GET_ROOMS', `[getRooms] via=${via}, baseUrl=${baseUrl}, path=${path}`);
   const response = await fetchResilient(`${baseUrl}${path}`, {
     cache: "no-store",
   });

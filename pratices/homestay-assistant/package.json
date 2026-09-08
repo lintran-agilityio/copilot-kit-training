@@ -27,7 +27,7 @@
   },
   "packageManager": "pnpm@11.9.0",
   "engines": {
-    "node": ">=18"
+    "node": "22.x"
   },
   "dependencies": {
     "react": "19.2.3",

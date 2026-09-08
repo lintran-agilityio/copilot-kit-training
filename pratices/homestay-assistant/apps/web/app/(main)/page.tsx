@@ -13,7 +13,15 @@ export default async function Home() {
     redirect(ROUTES.LOGIN);
   }
 
-  const rooms = await getRooms();
+  try {
+    const rooms = await getRooms();
 
-  return <HomePageClient initialRooms={rooms} />;
+    return <HomePageClient initialRooms={rooms} />;
+  } catch (error) {
+    console.error('[HomePage] FAILED:', error);
+
+    throw error;
+  }
+
+
 }

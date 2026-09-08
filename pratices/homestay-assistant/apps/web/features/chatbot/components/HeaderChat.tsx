@@ -1,8 +1,9 @@
 // Libs
-import { RotateCcw, Sparkles } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 // Internal
 import { cn } from "@repo/utils";
+import { LogoMark } from "@/components/common";
 
 type HeaderChatProps = {
   title?: string;
@@ -33,7 +34,7 @@ export const HeaderChat = ({
     >
       <div>
         <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.14em] text-foreground">
-          <Sparkles className="size-4 text-gold" aria-hidden />
+          <LogoMark className="size-4" />
           {title}
         </h2>
         <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
