@@ -87,7 +87,7 @@ export const ThreadListItem = ({
         className="min-w-0 flex-1 text-left cursor-pointer"
       >
         <span className="block truncate font-medium">{title}</span>
-        <span className="mt-0.5 block text-[10px] text-muted-foreground">
+        <span className="mt-0.5 block text-[9px] text-muted-foreground">
           {activityLabel}
         </span>
       </button>

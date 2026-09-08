@@ -22,7 +22,9 @@ export const RoomInfo = ({
       <div className="flex items-start justify-between gap-3">
         <h3
           className={cn(
-            "font-serif font-medium text-foreground",
+            // Reserve two lines so name length never shifts the rows below it
+            // out of alignment with sibling cards in the grid.
+            "line-clamp-2 min-h-[18h] font-serif font-medium text-foreground",
             compact ? "text-base" : "text-lg",
           )}
         >

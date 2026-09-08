@@ -201,7 +201,7 @@ export const ChatAssistantMessage = ({
               }),
             )}
           >
-            {toolCallsView ? (
+            {toolCallsView && chatToolCalls.length > 0 ? (
               hasConversation ? (
                 <div data-chat-embedded-slot className="w-full">
                   {toolCallsView}

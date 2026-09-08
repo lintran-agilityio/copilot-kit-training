@@ -24,7 +24,7 @@ import type {
   ProcessInputStepResult,
 } from "@mastra/core/processors";
 import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
-import { addDaysYmd } from "@repo/utils";
+import { addDaysYmd, getCurrentTurn } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
 import {
@@ -33,7 +33,7 @@ import {
   stashBookingFormStayHint,
 } from "@/mastra/utils/book-form-prefill";
 import { parseConfirmedStay } from "@/mastra/utils/confirmed-stay";
-import { asUnknownRecord } from "@/mastra/utils/json-value";
+import { asRecord, asUnknownRecord, type JsonValue } from "@/mastra/utils/json-value";
 import {
   forceTool,
   hasTool,
@@ -105,6 +105,129 @@ const TERMINAL_TOOLS: readonly string[] = [
   TOOL_KEYS.BOOKING.UPDATE_BOOKING,
   TOOL_KEYS.BOOKING.CANCEL,
 ];
+
+// --- Trailing-step reconciliation (HITL resume) ------------------------
+
+/**
+ * Client HITL tools whose `respond()` Mastra applies via suspend/resume rather
+ * than as a fresh agent step. On the resume continuation the loop can therefore
+ * hand `prepareStep` a `steps.at(-1)` that still points at the backend tool
+ * which ran right BEFORE the HITL — e.g. the `find_booking_by_id` the modify
+ * picker forced. Their results still land in the turn transcript, so
+ * {@link reconcileTrailingToolStep} recovers the real last step from there.
+ */
+const SELF_RESOLVING_HITL_TOOLS: ReadonlySet<string> = new Set([
+  TOOL_KEYS.ACTION.CONFIRM_BOOKING,
+  TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
+  TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
+  TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
+  TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT,
+]);
+
+/** `{ toolName, input, output }` for every settled `tool-invocation` part in
+ *  the current turn's recalled transcript, oldest → newest. Carries the client
+ *  HITL results a resume did not re-expose on `args.steps`. */
+const currentTurnTranscriptToolResults = (
+  args: ProcessInputStepArgs,
+): ToolStepResult[] => {
+  const messages = args.messages;
+  if (!messages?.length) return [];
+
+  const turn = getCurrentTurn(
+    messages as unknown as { role?: string }[],
+  ) as unknown as ProcessInputStepArgs["messages"];
+
+  const results: ToolStepResult[] = [];
+  for (const message of turn) {
+    const content = asUnknownRecord(message?.content);
+    const parts = Array.isArray(content?.parts) ? content.parts : null;
+    if (!parts) continue;
+
+    for (const part of parts) {
+      const record = asRecord(part as JsonValue);
+      if (record?.type !== "tool-invocation") continue;
+
+      const invocation = asRecord(record.toolInvocation);
+      const toolName =
+        typeof invocation?.toolName === "string"
+          ? invocation.toolName
+          : undefined;
+      if (!toolName || invocation?.state !== "result") continue;
+
+      results.push({
+        toolName,
+        input: invocation.args as unknown,
+        output: invocation.result as unknown,
+      });
+    }
+  }
+  return results;
+};
+
+/** Newest settled self-resolving HITL result in the current turn, from the
+ *  transcript first (fullest on a resume) then this run's own steps. */
+const latestSelfResolvingHitlResult = (
+  args: ProcessInputStepArgs,
+): ToolStepResult | null => {
+  const scan = (results: ToolStepResult[]): ToolStepResult | null => {
+    for (let index = results.length - 1; index >= 0; index -= 1) {
+      const result = results[index];
+      if (
+        result?.toolName &&
+        SELF_RESOLVING_HITL_TOOLS.has(result.toolName) &&
+        asUnknownRecord(result.output)
+      ) {
+        return result;
+      }
+    }
+    return null;
+  };
+
+  const fromSteps = (args.steps ?? []).flatMap(
+    (step) => (step?.toolResults ?? []) as ToolStepResult[],
+  );
+
+  return scan(currentTurnTranscriptToolResults(args)) ?? scan(fromSteps);
+};
+
+/**
+ * Repairs a stale trailing step on a HITL-resume continuation.
+ *
+ * When a client HITL tool ({@link SELF_RESOLVING_HITL_TOOLS}) is answered,
+ * Mastra resolves it via suspend/resume, not a fresh agent step. On a run that
+ * already resumed once (an ambiguous MODIFY match whose `show_modify_dialog_select`
+ * pick forces `find_booking_by_id` before the edit form) the loop then exposes
+ * `steps.at(-1)` as that intermediate `find_booking_by_id` again — so
+ * `resolveEnforcedTransition` re-decides an already-consumed junction and
+ * re-forces `edit_modify_booking`, reopening the modify form after every guest
+ * action ("modify form loop").
+ *
+ * If the current turn already carries a settled self-resolving HITL result and
+ * the trailing step is NOT that HITL, the tool it legitimately forces next, or a
+ * terminal mutation, the trailing step is stale — route from the HITL instead so
+ * the normal `CONFIRMATION_FOLLOW_UPS` path runs (edit → confirm, confirm →
+ * mutate, or stop on decline). No settled HITL in the turn (the common first
+ * pass) → return the trailing step untouched.
+ */
+const reconcileTrailingToolStep = (
+  args: ProcessInputStepArgs,
+  fromSteps: ToolStepResult | null,
+): ToolStepResult | null => {
+  const hitl = latestSelfResolvingHitlResult(args);
+  if (!hitl?.toolName) return fromSteps;
+
+  const trailingName = fromSteps?.toolName;
+  if (
+    trailingName &&
+    (trailingName === hitl.toolName ||
+      CONFIRMATION_FOLLOW_UPS[hitl.toolName] === trailingName ||
+      TERMINAL_TOOLS.includes(trailingName))
+  ) {
+    return fromSteps;
+  }
+
+  return hitl;
+};
 
 // --- Transition resolution: per-tool junctions --------------------------
 
@@ -476,7 +599,10 @@ export const enforceBookingStep = (
     return stopToolExecution();
   }
 
-  const result = lastToolStepResult(args);
+  // `steps.at(-1)` can be stale on a HITL-resume continuation — repair it from
+  // the turn transcript before routing, or the modify form loops forever (see
+  // reconcileTrailingToolStep).
+  const result = reconcileTrailingToolStep(args, lastToolStepResult(args));
   if (!result) {
     return undefined;
   }

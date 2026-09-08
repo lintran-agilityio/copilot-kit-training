@@ -258,6 +258,124 @@ const hasResolvedToolResult = (
   );
 
 /**
+ * `confirmed` flag off a resolved HITL `tool` result message, or `undefined`
+ * while the call is still awaiting the guest / has no result yet.
+ */
+const readResolvedHitlConfirmed = (
+  toolCallId: string | undefined,
+  messages: ChatMessageForToolVisibility[] | undefined,
+): boolean | undefined => {
+  if (!toolCallId || !messages) {
+    return undefined;
+  }
+
+  const resultMessage = messages.find(
+    (message) =>
+      message.role === MESSAGE_ROLE.TOOL && message.toolCallId === toolCallId,
+  );
+
+  if (!resultMessage) {
+    return undefined;
+  }
+
+  const parsed = parseToolResult<{ confirmed?: boolean }>(
+    resultMessage.content as
+      | { confirmed?: boolean }
+      | string
+      | null
+      | undefined,
+  );
+
+  return typeof parsed?.confirmed === "boolean" ? parsed.confirmed : undefined;
+};
+
+/**
+ * MODIFY-flow HITL tools whose card hides itself the moment the guest approves
+ * (`confirmed: true`) because a forced follow-up step is the turn's real
+ * response:
+ *   - `show_modify_dialog_select` → hidden on a pick; `find_booking_by_id` →
+ *     `edit_modify_booking` / `confirm_modify_booking` follows.
+ *   - `edit_modify_booking` → hidden on confirm; `confirm_modify_booking`
+ *     follows.
+ * The declined / kept-all / expired outcomes still render settled copy, so this
+ * is scoped to the confirmed path only.
+ */
+const SELF_HIDING_MODIFY_HANDOFF_TOOLS = new Set<string>([
+  BOOKING.SHOW_MODIFY_DIALOG_SELECT,
+  ACTION.EDIT_MODIFY_BOOKING,
+]);
+
+/**
+ * A self-hiding MODIFY hand-off call the guest has already approved: the card
+ * renders no DOM, so treat it as a silent internal step — its avatar row
+ * collapses and the typing cursor keeps bridging the gap to the next card
+ * instead of the chat sitting visibly silent through the resume round-trip.
+ */
+const isSettledModifyHandoffToolCall = (
+  toolCall: ChatVisibleToolCall,
+  messages: ChatMessageForToolVisibility[] | undefined,
+): boolean => {
+  const toolName = toolCall.function?.name;
+  if (!toolName || !SELF_HIDING_MODIFY_HANDOFF_TOOLS.has(toolName)) {
+    return false;
+  }
+
+  const confirmed = readResolvedHitlConfirmed(toolCall.id, messages);
+
+  if (confirmed === true) {
+    return true;
+  }
+
+  // The result briefly reconciles away after respond(); once the flow has
+  // already stepped to the next forced tool the card is gone for good,
+  // whatever the hand-off call's own result currently reads.
+  return (
+    confirmed !== false &&
+    hasLaterToolCallInTurn(messages as MessageLike[] | undefined, toolCall.id)
+  );
+};
+
+/**
+ * True when the newest turn is stalled on a self-hiding MODIFY hand-off: the
+ * guest approved the pick / edit, the card has hidden itself, and the forced
+ * follow-up (`find_booking_by_id` → `edit_modify_booking` /
+ * `confirm_modify_booking`) has not streamed in yet. Without a bridge the chat
+ * shows nothing — no card, no typing row — for the whole resume round-trip,
+ * which reads as the assistant having silently dropped the request.
+ * `ChatLoadingCursor` keeps the typing row up while this holds.
+ */
+export const isAwaitingForcedModifyHandoff = (
+  messages: ChatMessageForToolVisibility[] | undefined,
+): boolean => {
+  if (!messages?.length) {
+    return false;
+  }
+
+  const turnOwner = [...messages]
+    .reverse()
+    .find((message) => message.role !== MESSAGE_ROLE.TOOL);
+
+  if (turnOwner?.role !== MESSAGE_ROLE.ASSISTANT) {
+    return false;
+  }
+
+  return (turnOwner.toolCalls ?? []).some((toolCall) => {
+    const toolName = toolCall.function?.name;
+    if (!toolName || !SELF_HIDING_MODIFY_HANDOFF_TOOLS.has(toolName)) {
+      return false;
+    }
+
+    return (
+      readResolvedHitlConfirmed(toolCall.id, messages) === true &&
+      !hasLaterToolCallInTurn(
+        messages as MessageLike[] | undefined,
+        toolCall.id,
+      )
+    );
+  });
+};
+
+/**
  * True when a chat-visible backend tool call is an internal resolve lookup its
  * Notice renders nothing for — mirrors FindRoomNotice / MyBookingsNotice /
  * FindBookingByIdNotice:
@@ -347,17 +465,20 @@ const SKELETON_ROUTING_TOOLS = new Set<string>([GET.FIND_ROOM, BOOKING.GET]);
 /**
  * True when a chat-visible backend tool call produces no visible DOM, so its
  * assistant row would render as just an avatar next to an empty widget slot
- * ("bong bóng rỗng"). Covers both:
- *   1. internal resolve lookups (see isSilentResolveToolCall), and
+ * ("bong bóng rỗng"). Covers:
+ *   1. internal resolve lookups (see isSilentResolveToolCall),
  *   2. a skeleton-routing tool the turn already stepped past (a later tool
- *      call exists) — the later step owns the card.
+ *      call exists) — the later step owns the card, and
+ *   3. a self-hiding MODIFY HITL hand-off the guest already approved
+ *      (see isSettledModifyHandoffToolCall) — its card returns null on
+ *      `confirmed: true` while the forced follow-up step runs.
  *
  * Excluding these from getChatVisibleToolCalls collapses the row
  * deterministically and keeps the typing cursor visible to bridge the gap —
  * instead of relying on the CSS `:empty` backstop, which Chromium does not
  * reliably re-evaluate after a skeleton→null transition.
  *
- * The third case is the streaming window: while a routing call's args are
+ * Case 2 also has a streaming window: while a routing call's args are
  * still arriving and it has no result yet, `purpose` may not have streamed far
  * enough to tell an internal book_resolve / resolve lookup from a real FIND /
  * RECOMMEND search. Stay silent until it either confirms a list purpose or
@@ -371,6 +492,10 @@ export const isSilentIntermediateToolCall = (
   messages: ChatMessageForToolVisibility[] | undefined,
 ): boolean => {
   if (isSilentResolveToolCall(toolCall, messages)) {
+    return true;
+  }
+
+  if (isSettledModifyHandoffToolCall(toolCall, messages)) {
     return true;
   }
 

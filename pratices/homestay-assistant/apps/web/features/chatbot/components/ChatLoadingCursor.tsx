@@ -13,6 +13,7 @@ import type { MessageLike } from "@/features/chatbot/types";
 import {
   getChatVisibleToolCalls,
   getMessageTextContent,
+  isAwaitingForcedModifyHandoff,
   isChatInlineLoadingToolCall,
 } from "@/features/chatbot/declarative-ui/config";
 import { cn } from "@repo/utils";
@@ -27,6 +28,38 @@ const hasVisibleAssistantText = (
 
   return Boolean(getMessageTextContent(message.content).trim());
 };
+
+/** The assistant-style typing row (avatar + three bouncing dots). */
+const renderLoadingRow = (
+  className: string | undefined,
+  props: HTMLAttributes<HTMLDivElement>,
+) => (
+  <div
+    {...props}
+    data-testid="copilot-loading-cursor"
+    data-chat-timeline-entry="assistant-loading"
+    role="status"
+    aria-live="polite"
+    aria-label="Assistant is responding"
+    className={cn("flex items-start justify-start gap-3 px-3 pb-1", className)}
+  >
+    <ChatAgentAvatar />
+    <ConversationItem
+      role={MESSAGE_ROLE.ASSISTANT}
+      className="flex min-h-9 items-center gap-1.5 py-3"
+    >
+      <span className="sr-only">Assistant is responding</span>
+      {[0, 1, 2].map((index) => (
+        <span
+          key={index}
+          aria-hidden
+          className="size-1.5 rounded-full bg-muted-foreground animate-bounce"
+          style={{ animationDelay: `${index * 150}ms` }}
+        />
+      ))}
+    </ConversationItem>
+  </div>
+);
 
 /**
  * Agent-running indicator for the CopilotChat message list `cursor` slot.
@@ -58,6 +91,16 @@ export const ChatLoadingCursor = ({
   const { executingToolCallIds } = useCopilotKit();
   const messages = agent.messages as MessageLike[];
   const lastMessage = messages.at(-1);
+
+  // The guest just picked a stay / confirmed an edit and that HITL card hid
+  // itself, but the forced follow-up step (find_booking_by_id → edit / confirm)
+  // has not streamed in yet. Keep the typing row up through the resume
+  // round-trip — otherwise the chat goes blank and looks like the request was
+  // dropped. Must win over the "turn owner has visible text" check below: the
+  // text on that turn is the picker's companion sentence, not the reply.
+  if (isAwaitingForcedModifyHandoff(messages)) {
+    return renderLoadingRow(className, props);
+  }
 
   if (lastMessage && hasVisibleAssistantText(lastMessage)) {
     return <div hidden aria-hidden {...props} />;
@@ -116,34 +159,5 @@ export const ChatLoadingCursor = ({
     }
   }
 
-  return (
-    <div
-      {...props}
-      data-testid="copilot-loading-cursor"
-      data-chat-timeline-entry="assistant-loading"
-      role="status"
-      aria-live="polite"
-      aria-label="Assistant is responding"
-      className={cn(
-        "flex items-start justify-start gap-3 px-3 pb-1",
-        className,
-      )}
-    >
-      <ChatAgentAvatar />
-      <ConversationItem
-        role={MESSAGE_ROLE.ASSISTANT}
-        className="flex min-h-9 items-center gap-1.5 py-3"
-      >
-        <span className="sr-only">Assistant is responding</span>
-        {[0, 1, 2].map((index) => (
-          <span
-            key={index}
-            aria-hidden
-            className="size-1.5 rounded-full bg-muted-foreground animate-bounce"
-            style={{ animationDelay: `${index * 150}ms` }}
-          />
-        ))}
-      </ConversationItem>
-    </div>
-  );
+  return renderLoadingRow(className, props);
 };

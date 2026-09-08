@@ -22,7 +22,7 @@ const ThreadGroup = ({
 }: ThreadGroupProps) => {
   return (
     <div className="space-y-1">
-      <p className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground">
+      <p className="px-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
         {group.label}
       </p>
       {group.threads.map((thread) => (

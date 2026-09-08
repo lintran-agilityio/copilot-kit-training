@@ -17,6 +17,7 @@
     "eval:conversation": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run conversation",
     "preeval:serve": "pnpm exec turbo run build --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
     "eval:serve": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js serve",
+    "vercel:build": "pnpm exec turbo run build --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils && node scripts/vercel-build.mjs",
     "preeval:watch": "pnpm exec turbo run build --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
     "eval:watch": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js watch",
     "eval:dev": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js watch"

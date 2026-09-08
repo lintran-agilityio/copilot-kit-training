@@ -85,7 +85,7 @@ export const BookingCard = ({
 
         <div
           className={cn(
-            "absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/60 via-black/15 to-transparent",
+            "absolute inset-x-0 bottom-0 flex items-start justify-between",
             compact ? "p-3" : "p-4",
           )}
         >
@@ -101,7 +101,10 @@ export const BookingCard = ({
             <span />
           )}
 
-          <BookingStatusBadge status={status} />
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-foreground/70 px-2 py-1 text-xs font-medium text-background">
+            <Users className="size-3.5" />
+            {guests}
+          </span>
         </div>
       </div>
 
@@ -114,17 +117,15 @@ export const BookingCard = ({
         <div className="flex items-start justify-between gap-3">
           <h3
             className={cn(
-              "font-serif font-medium text-foreground",
+              // Always reserve two lines so a longer/shorter room name never
+              // shifts the date / total / action rows out of alignment with a
+              // sibling card in the grid.
+              "line-clamp-2 min-h-[l8h] font-serif font-medium text-foreground",
               compact ? "text-base" : "text-lg",
             )}
           >
             {room?.name ?? "Room"}
           </h3>
-
-          <div className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
-            <Users className="size-3.5" />
-            <span className="text-xs">{guests}</span>
-          </div>
         </div>
 
         <div
@@ -134,7 +135,7 @@ export const BookingCard = ({
           )}
         >
           <CalendarRange className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <p>
+          <p className={cn(compact && "min-h-[2lh]")}>
             {formatShortDateForDisplay(checkInDate)} →{" "}
             {formatShortDateForDisplay(checkOutDate)}
           </p>

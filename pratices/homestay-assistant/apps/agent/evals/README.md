@@ -183,6 +183,33 @@ settings or place it behind your organization's access proxy before sharing its
 URL. Results are intentionally in memory, so a restart or redeploy performs a
 new run and discards prior dashboard history.
 
+## Vercel deployment
+
+Vercel deploys the dashboard as a static artifact. The build runs the
+deterministic suite with one in-memory storage instance, then exports that run
+to `apps/agent/evalite-export/`. This avoids a long-running Evalite server and
+the native `better-sqlite3` dependency.
+
+From the repository root, create a Vercel project with the repository root as
+the project root, then deploy:
+
+```bash
+vercel
+```
+
+The root `vercel.json` already configures the pnpm install command, the
+`agent` build script, and the static output directory. Add these environment
+variables in Vercel if you later change the build to include behavioral or
+conversation evals:
+
+- `OPENAI_API_KEY`
+- `API_URL` = `https://evalite-fixture.invalid`
+- `AI_PROVIDER` = `openai`
+
+The default Vercel build runs only `deterministic/`, so it does not require an
+API key. The deployed URL is a snapshot from the latest build; use Render's
+`evalite serve` service for a live dashboard with server-side reruns.
+
 ## CI considerations
 
 There is no CI pipeline in this repository yet (no `.github/workflows`, no other CI config) — this suite doesn't introduce one. If/when CI is added:
