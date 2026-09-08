@@ -34,6 +34,8 @@ services:
 
       # Server-side base URL for the NestJS API (utils/urls.ts reads process.env.API_URL).
       # Set to the homestay-api service URL, e.g. https://homestay-api-majb.onrender.com
+      # NOTE: getApiUrl() strips trailing slashes, but keep this value slash-free
+      # anyway — the web services concatenate `${API_URL}/rooms`.
       - key: API_URL
         sync: false
 
@@ -152,6 +154,12 @@ services:
 
       - key: PORT
         value: "10000"
+
+      # Required by ClerkAuthGuard (apps/api/src/auth/clerk-auth.guard.ts) to
+      # verify the web's Clerk JWT. Without it every /bookings route 401s with
+      # "Authentication is not configured". Must match the web service's key.
+      - key: CLERK_SECRET_KEY
+        sync: false
 
       - key: DATABASE_URL
         fromDatabase:
