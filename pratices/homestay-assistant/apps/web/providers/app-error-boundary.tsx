@@ -18,6 +18,17 @@ export const AppErrorBoundary = ({ children }: AppErrorBoundaryProps) => {
               Something went wrong
             </h1>
             <ErrorMessages error={error} />
+            <pre>
+            {JSON.stringify(
+              {
+                name: error.name,
+                message: error.message,
+                // digest: error.digest,
+              },
+              null,
+              2,
+            )}
+      </pre>
           </div>
         </div>
       )}
