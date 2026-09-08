@@ -16,9 +16,19 @@ export default async function Home() {
   try {
     const rooms = await getRooms();
 
-    return <HomePageClient initialRooms={rooms} />;
+    return <HomePageClient initialRooms={rooms || []} />;
   } catch (error) {
+    console.error('========== PAGE ERROR ==========');
     console.error('[HomePage] FAILED:', error);
+    console.error(
+      'message:',
+      error instanceof Error ? error.message : String(error),
+    );
+    console.error(
+      'stack:',
+      error instanceof Error ? error.stack : undefined,
+    );
+    console.error('================================');
 
     throw error;
   }
