@@ -93,7 +93,7 @@ export const resolveRoomsByIds = async (roomIds: string[]): Promise<Room[]> => {
 
   if (roomIds.some((id) => !roomsById.has(id))) {
     const fetched = await getRooms({ via: PREFIX_URL.WEB });
-    fetched.forEach((room) => roomsById.set(room.id, room));
+    fetched?.forEach((room) => roomsById.set(room.id, room));
   }
 
   return roomIds

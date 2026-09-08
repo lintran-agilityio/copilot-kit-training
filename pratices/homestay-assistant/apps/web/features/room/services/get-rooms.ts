@@ -11,19 +11,38 @@ type GetRoomsProps = {
 export const getRooms = async ({
   via = PREFIX_URL.BACKEND,
   date,
-}: GetRoomsProps = {}): Promise<Room[]> => {
+}: GetRoomsProps = {}): Promise<Room[] | undefined> => {
   const path = date
     ? `${ROUTES.ROOMS}?date=${encodeURIComponent(date)}`
     : ROUTES.ROOMS;
   const baseUrl = getBaseUrl(via);
-console.log('GET_ROOMS', `[getRooms] via=${via}, baseUrl=${baseUrl}, path=${path}`);
-  const response = await fetchResilient(`${baseUrl}${path}`, {
-    cache: "no-store",
+  console.log("[API REQUEST]", {
+    baseUrl,
+    apiConfigured: Boolean(process.env.API_URL),
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch rooms");
-  }
+  console.error(
+    "GET_ROOMS",
+    `[getRooms] via=${via}, baseUrl=${baseUrl}, path=${path}`,
+  );
+  try {
+    const response = await fetchResilient(`${baseUrl}${path}`, {
+      cache: "no-store",
+    });
 
-  return (await response.json()) as Room[];
+    if (!response.ok) {
+      const body = await response.text();
+
+      console.error("[API ERROR]", {
+        status: response.status,
+        body,
+      });
+      throw new Error("Failed to fetch rooms");
+    }
+
+    return (await response.json()) as Room[];
+  } catch (error) {
+    console.error("========== API ERROR ==========");
+    console.error("[getRooms] FAILED:", error);
+  }
 };
