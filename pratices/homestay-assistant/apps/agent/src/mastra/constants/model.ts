@@ -1,7 +1,7 @@
 /**
  * Provider switch for the homestay assistant's chat model.
  *
- * Three providers are wired:
+ * Four providers are wired:
  * - `openai`     → the app default: stable, no per-minute token cap
  *                  (auth via `OPENAI_API_KEY`).
  * - `cerebras`   → for exercising the tokens-per-minute rate-limit path in dev
@@ -10,15 +10,19 @@
  * - `openrouter` → routes through openrouter.ai: one key fronts many upstream
  *                  models (auth via `OPENROUTER_API_KEY`). The slug keeps the
  *                  upstream vendor prefix, e.g. `openrouter/openai/gpt-4o-mini`.
+ * - `mistral`    → routes to api.mistral.ai (auth via `MISTRAL_API_KEY`). Used
+ *                  by the `apps/evals` Evalite dashboard, which runs the whole
+ *                  suite on Mistral's free tier. @mastra/core bundles the
+ *                  Mistral provider, so no extra `@ai-sdk/*` package is needed.
  *
  * Resolution order (first match wins):
  *   1. `AI_MODEL`    – explicit `provider/model` router id; bypasses the switch.
- *   2. `AI_PROVIDER` – `openai` | `cerebras` | `openrouter`; selects that
- *                      provider's slug below.
+ *   2. `AI_PROVIDER` – `openai` | `cerebras` | `openrouter` | `mistral`; selects
+ *                      that provider's slug below.
  *   3. built-in default – `openai`.
  *
  * Tweak a provider's slug without code changes via `OPENAI_MODEL` /
- * `CEREBRAS_MODEL` / `OPENROUTER_MODEL`.
+ * `CEREBRAS_MODEL` / `OPENROUTER_MODEL` / `MISTRAL_MODEL`.
  *
  * Keep every value a router string, not a provider instance: the AI SDK v5
  * providers build a `LanguageModelV4`, which @mastra/core@1 (spec v3) rejects,
@@ -29,6 +33,7 @@ export const AI_PROVIDERS = {
   OPENAI: "openai",
   CEREBRAS: "cerebras",
   OPENROUTER: "openrouter",
+  MISTRAL: "mistral",
 } as const;
 
 export type AiProvider = (typeof AI_PROVIDERS)[keyof typeof AI_PROVIDERS];
@@ -38,6 +43,8 @@ const PROVIDER_DEFAULT_MODEL: Record<AiProvider, string> = {
   [AI_PROVIDERS.CEREBRAS]: process.env.CEREBRAS_MODEL || "cerebras/gpt-oss-120b",
   [AI_PROVIDERS.OPENROUTER]:
     process.env.OPENROUTER_MODEL || "openrouter/openai/gpt-4o-mini",
+  [AI_PROVIDERS.MISTRAL]:
+    process.env.MISTRAL_MODEL || "mistral/mistral-small-latest",
 };
 
 const KNOWN_PROVIDERS = new Set<string>(Object.values(AI_PROVIDERS));
@@ -70,7 +77,11 @@ export const IS_CEREBRAS_MODEL = AI_MODEL.startsWith(`${AI_PROVIDERS.CEREBRAS}/`
  *   2. OpenRouter route – when it's the active provider, or the only hosted
  *      key present (e.g. `AI_PROVIDER` points at a local model with no
  *      `OPENAI_API_KEY`; the check must not fall back to that local model).
- *   3. OpenAI route – `openai/gpt-4o-mini` (needs `OPENAI_API_KEY`; without any
+ *   3. Mistral route – when Mistral is the active provider (or its key is the
+ *      only hosted one) and there's no OpenAI key. Keeps the detector on a
+ *      reachable hosted model instead of an OpenAI route that would 401 and
+ *      make the detector throw on every screened message.
+ *   4. OpenAI route – `openai/gpt-4o-mini` (needs `OPENAI_API_KEY`; without any
  *      hosted key the detector fails open and allows the message through).
  */
 const resolveSecurityModel = (): string => {
@@ -81,12 +92,20 @@ const resolveSecurityModel = (): string => {
 
   const hasOpenAiKey = Boolean(process.env.OPENAI_API_KEY?.trim());
   const hasOpenRouterKey = Boolean(process.env.OPENROUTER_API_KEY?.trim());
+  const hasMistralKey = Boolean(process.env.MISTRAL_API_KEY?.trim());
 
   if (
     AI_PROVIDER === AI_PROVIDERS.OPENROUTER ||
     (!hasOpenAiKey && hasOpenRouterKey)
   ) {
     return "openrouter/openai/gpt-4o-mini";
+  }
+
+  if (
+    !hasOpenAiKey &&
+    (AI_PROVIDER === AI_PROVIDERS.MISTRAL || hasMistralKey)
+  ) {
+    return "mistral/mistral-small-latest";
   }
 
   return "openai/gpt-4o-mini";

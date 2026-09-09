@@ -4,7 +4,7 @@ import type { MastraDBMessage } from "@mastra/core/agent";
 import type { ProcessInputStepArgs } from "@mastra/core/processors";
 import { RequestContext } from "@mastra/core/request-context";
 
-import { resolveEnforcedTransition } from "../../src/mastra/utils/step-machine";
+import { resolveEnforcedTransition } from "@agent/mastra/utils/step-machine";
 
 import { scoreResult } from "./checks";
 

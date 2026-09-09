@@ -1,7 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { z } from "zod";
 
-import { AI_MODEL } from "../../src/mastra/constants";
+import { AI_MODEL } from "@agent/mastra/constants";
 
 /**
  * Rubric-based LLM judge for response-quality evals. Deliberately narrow:

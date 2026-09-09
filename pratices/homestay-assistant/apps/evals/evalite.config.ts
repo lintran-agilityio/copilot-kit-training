@@ -17,7 +17,7 @@ export default defineConfig({
   },
   storage: () => createInMemoryStorage(),
   // Fixtures stub `globalThis.fetch` for the duration of one case
-  // (evals/support/fake-api.ts) — evalite's default concurrency (5) would
+  // (src/support/fake-api.ts) — evalite's default concurrency (5) would
   // let two cases' install/restore race on that single global and leak the
   // real network into a case still mid-flight. Serializing eval cases is the
   // simple, correct fix; the alternative (AsyncLocalStorage-scoped fetch)
@@ -34,5 +34,5 @@ export default defineConfig({
   // `globalThis.fetch` in every worker/mode with a trailing-60s token budget
   // (`EVAL_TPM_BUDGET`, default 150k) plus Retry-After–honoring 429 retries.
   // See the file header for the full rationale.
-  setupFiles: ["./evals/support/model-rate-limit.setup.ts"],
+  setupFiles: ["./src/support/model-rate-limit.setup.ts"],
 });

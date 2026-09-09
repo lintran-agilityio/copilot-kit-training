@@ -1,7 +1,7 @@
 import type { Room } from "@repo/schemas";
 import { BookingStatus } from "@repo/types";
 
-import type { Booking } from "../../src/mastra/schemas/booking";
+import type { Booking } from "@agent/mastra/schemas/booking";
 
 /**
  * Deterministic room/booking dataset for evals — never the real apps/api

@@ -1,4 +1,4 @@
-import type { Booking } from "../../src/mastra/schemas/booking";
+import type { Booking } from "@agent/mastra/schemas/booking";
 
 import type { AgentTurnOptions } from "./agent-harness";
 import { runAgentTurn } from "./agent-harness";

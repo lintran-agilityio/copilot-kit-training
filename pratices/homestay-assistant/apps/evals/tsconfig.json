@@ -11,8 +11,9 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@agent/*": ["../agent/src/*"],
+      "@/mastra/*": ["../agent/src/mastra/*"]
     }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "evalite.config.ts", "vitest.config.ts"]
 }

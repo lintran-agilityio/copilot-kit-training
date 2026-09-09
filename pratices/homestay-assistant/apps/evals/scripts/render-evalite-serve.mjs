@@ -1,6 +1,6 @@
 /**
  * `node --import` preload for the Render `homestay-evalite` service's start
- * command (`pnpm --filter=agent eval:serve:render`).
+ * command (`pnpm --filter=evals eval:serve:render`).
  *
  * Evalite 0.19.0's dashboard server calls `fastify().listen({ port })` with no
  * host (`evalite/dist/server.js`), so Fastify defaults the host to `localhost`
