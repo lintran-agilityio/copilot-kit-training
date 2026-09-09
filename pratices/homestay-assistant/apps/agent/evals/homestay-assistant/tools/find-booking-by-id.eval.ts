@@ -24,6 +24,12 @@ import { FIXTURE_EXISTING_BOOKING } from "../../support/fixtures";
  * The no-LLM junction (`find_booking_by_id(modify)` → edit form vs
  * confirm_modify_booking vs stop, and the stated-change availability outcomes
  * the tool probes itself) is in `deterministic/find-booking-by-id.eval.ts`.
+ *
+ * Trimmed to the one case unique to this tool: computing a date from
+ * "extend N nights" while leaving untouched fields unset. The `[booking-modify]`
+ * and `[booking-cancel]` card triggers are covered by
+ * `conversation/security-input.eval.ts` (first-party prompts → correct first
+ * tool) plus the deterministic junction file.
  */
 
 // --- MODIFY stated-change extraction ----------------------------------
@@ -73,102 +79,6 @@ evalite<{ name: string; message: string }, CaseResult, Record<string, unknown>>(
           toolCallArgs(output.toolCalls, "find_booking_by_id") ?? {},
         ),
       },
-    ],
-  },
-);
-
-// --- [booking-modify] card trigger: no stated change → open the form ---
-evalite<{ message: string }, CaseResult, Record<string, unknown>>(
-  "find_booking_by_id — [booking-modify] card carries no stay, so no requested* fields are set",
-  {
-    data: () => [
-      {
-        input: {
-          message: `[booking-modify] bookingId: ${FIXTURE_EXISTING_BOOKING.id}. I want to modify my booking for ${FIXTURE_EXISTING_BOOKING.room?.name}.`,
-        },
-        expected: {
-          requestedCheckInDate: undefined,
-          requestedCheckOutDate: undefined,
-          requestedGuests: undefined,
-        },
-      },
-    ],
-    task: (input) => runCase(input.message),
-    scorers: [
-      {
-        name: "find_booking_by_id(modify) called with none of the requested* fields",
-        scorer: ({ output, expected }) => {
-          const args = toolCallArgs(output.toolCalls, "find_booking_by_id");
-          if (!args) {
-            return scoreResult(false, "find_booking_by_id was never called");
-          }
-          const mismatches = diffArgs(args, expected!);
-          return scoreResult(
-            mismatches.length === 0,
-            mismatches.length === 0
-              ? `matched: ${JSON.stringify(args)}`
-              : `leaked stated change ${JSON.stringify(mismatches)} — full args: ${JSON.stringify(args)}`,
-          );
-        },
-      },
-      {
-        name: "Did not skip the edit form (no confirm_modify_booking this turn)",
-        scorer: ({ output }) =>
-          scoreResult(
-            !output.toolNames.includes("confirm_modify_booking"),
-            `tool calls: [${output.toolNames.join(", ") || "none"}]`,
-          ),
-      },
-    ],
-    columns: ({ output }) => [
-      { label: "Tool calls", value: output.toolNames.join(" → ") || "(none)" },
-      {
-        label: "find_booking_by_id args",
-        value: JSON.stringify(
-          toolCallArgs(output.toolCalls, "find_booking_by_id") ?? {},
-        ),
-      },
-    ],
-  },
-);
-
-// --- [booking-cancel] priority trigger --------------------------------
-evalite<{ message: string }, CaseResult, string[]>(
-  "find_booking_by_id — [booking-cancel] resolves by id then opens the cancel dialog",
-  {
-    data: () => [
-      {
-        input: {
-          message: `[booking-cancel]\nbookingId: ${FIXTURE_EXISTING_BOOKING.id}`,
-        },
-        expected: ["find_booking_by_id", "show_cancel_dialog_confirm"],
-      },
-    ],
-    task: (input) => runCase(input.message),
-    scorers: [
-      {
-        name: "find_booking_by_id → show_cancel_dialog_confirm, in order",
-        scorer: ({ output, expected }) => {
-          const names = output.toolNames;
-          const a = names.indexOf(expected![0]!);
-          const b = names.indexOf(expected![1]!, a + 1);
-          return scoreResult(
-            a !== -1 && b !== -1,
-            `expected [${expected!.join(" → ")}], got [${names.join(", ") || "none"}]`,
-          );
-        },
-      },
-      {
-        name: "Did not resolve via find_bookings (id was already known)",
-        scorer: ({ output }) =>
-          scoreResult(
-            !output.toolNames.includes("find_bookings"),
-            `tool calls: [${output.toolNames.join(", ") || "none"}]`,
-          ),
-      },
-    ],
-    columns: ({ output }) => [
-      { label: "Tool calls", value: output.toolNames.join(" → ") || "(none)" },
     ],
   },
 );

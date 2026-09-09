@@ -26,13 +26,7 @@ type CancelCase = {
 
 const cases: CancelCase[] = [
   {
-    name: "resolves by name → find_bookings then show_cancel_dialog_confirm, no cancel_booking",
-    message: "Please cancel my booking for the Riverside Twin Room",
-    mustAppearInOrder: ["find_bookings", "show_cancel_dialog_confirm"],
-    mustNotCall: ["find_room", "cancel_booking"],
-  },
-  {
-    name: "no bookingId, room named → never find_room, never find_booking_by_id, never cancel_booking",
+    name: "no bookingId, room named → find_bookings then show_cancel_dialog_confirm; never find_room / find_booking_by_id / cancel_booking",
     message: "Cancel my Riverside Twin Room booking",
     mustAppearInOrder: ["find_bookings", "show_cancel_dialog_confirm"],
     mustNotCall: ["find_room", "find_booking_by_id", "cancel_booking"],

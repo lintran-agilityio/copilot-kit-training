@@ -23,11 +23,12 @@ import { installFakeApi } from "../../support/fake-api";
  * the deterministic, timeless form of this guard). This is agent-level, not
  * per-tool.
  */
+// Trimmed 5 turns → 3: a search, then the repeated `get_bookings` request
+// (the exact shape that used to runaway the forced-tool loop). Three turns
+// is enough context growth to trip the old bug while costing fewer tokens.
 const MULTI_TURN_MESSAGES = [
   "Show me available rooms for 2 guests",
-  "Tell me about the Bamboo Family Suite",
   "Show my bookings",
-  "What rooms are available this weekend?",
   "Show my bookings again",
 ] as const;
 

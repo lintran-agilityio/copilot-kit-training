@@ -46,6 +46,11 @@ type ConversationCase = {
   finalOrder?: [string, string];
 };
 
+// Trimmed to the continuity case — the behavior unique to this file (a stay
+// stated on an earlier turn lets a later bare "book it" skip the form). The
+// "gates still hold after an unrelated turn" case was dropped; the gate
+// itself is proven single-turn in tools/update-booking.eval.ts and
+// end-to-end in conversation/booking-hitl-flow.eval.ts.
 const cases: ConversationCase[] = [
   {
     name: "continuity — dated search, then bare 'book it' reaches confirm_booking without reopening the form",
@@ -58,19 +63,6 @@ const cases: ConversationCase[] = [
     // from turn 1; and no mutation before a real HITL click.
     finalMustNotCall: ["get_room_by_id", "create_booking", "check_room_availability"],
     finalOrder: ["find_room", "confirm_booking"],
-  },
-  {
-    name: "gate discipline — modify after a 'show my bookings' turn still resolves + stops at the confirm card",
-    turns: [
-      { message: "Show me my bookings" },
-      {
-        message:
-          "Change the number of guests on my Bamboo Family Suite booking to 2",
-      },
-    ],
-    finalMustCall: ["find_booking_by_id", "confirm_modify_booking"],
-    finalMustNotCall: ["update_booking", "find_room", "get_bookings"],
-    finalOrder: ["find_booking_by_id", "confirm_modify_booking"],
   },
 ];
 

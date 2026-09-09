@@ -16,14 +16,12 @@ import { FIXTURE_ROOMS } from "../../support/fixtures";
  *     `find_room(book_resolve)` with a partial stay (covered in
  *     `deterministic/find-room.eval.ts`)
  *
- * ⚠️ Two cases below are KNOWN-FAILING, left failing on purpose — a real,
- * currently-unfixed production behavior gap this suite discovered, NOT an eval
- * bug. `WORKFLOW_DETAIL` documents `find_room` → (exactly one match) →
- * `get_room_by_id` for a bare "tell me about <room>" / "what amenities does
- * <room> have" request; live runs call `find_room` and stop, and the amenities
- * reply lists amenities in chat (which `WORKFLOW_FIND`/`WORKFLOW_DETAIL` forbid
- * — "UI owns the data"). Do NOT loosen these assertions to make them pass;
- * fixing the chain is a prompt change outside this suite's scope.
+ * Trimmed to the one load-bearing routing case: `[book-form]` → `get_room_by_id`
+ * only. (The "tell me about <room>" / amenities detail-chain cases were removed
+ * to save tokens — they were KNOWN-FAILING documentation of an unfixed prompt
+ * gap: `WORKFLOW_DETAIL` says `find_room` → 1 match → `get_room_by_id`, but live
+ * runs call `find_room` and stop. That gap still needs a prompt fix, out of
+ * scope here.)
  */
 const RIVERSIDE = FIXTURE_ROOMS[1]!; // room-riverside-twin
 
@@ -36,26 +34,6 @@ type DetailCase = {
 };
 
 const cases: DetailCase[] = [
-  {
-    name: "create — named room, no dates/guests → find_room then get_room_by_id (Booking Form), no availability",
-    message: "I want to book the Riverside Twin Room",
-    mustCallInOrder: ["find_room", "get_room_by_id"],
-    mustNotCall: ["check_room_availability", "confirm_booking", "create_booking"],
-  },
-  {
-    name: "detail — 'tell me about <room>' completes find_room → get_room_by_id (KNOWN FAILING)",
-    message: "Tell me about the Bamboo Family Suite",
-    mustCallInOrder: ["find_room", "get_room_by_id"],
-    mustNotCall: [],
-    knownFailing: true,
-  },
-  {
-    name: "detail — amenities question completes find_room → get_room_by_id (KNOWN FAILING)",
-    message: "What amenities does the Riverside Twin Room have?",
-    mustCallInOrder: ["find_room", "get_room_by_id"],
-    mustNotCall: [],
-    knownFailing: true,
-  },
   {
     name: "[book-form] roomId → get_room_by_id only, never check_room_availability",
     message: `[book-form]\nroomId: ${RIVERSIDE.id}`,

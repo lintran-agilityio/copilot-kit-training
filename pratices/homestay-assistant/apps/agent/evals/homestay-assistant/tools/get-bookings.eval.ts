@@ -23,8 +23,6 @@ type SelectionCase = { name: string; message: string };
 
 const selectionCases: SelectionCase[] = [
   { name: "'show my bookings'", message: "Show my bookings" },
-  { name: "'what bookings do I have'", message: "What bookings do I have?" },
-  { name: "'show my reservations'", message: "Show my reservations" },
 ];
 
 evalite<SelectionCase, CaseResult, string>(

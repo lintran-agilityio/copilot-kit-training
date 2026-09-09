@@ -29,4 +29,10 @@ export default defineConfig({
   // observed multi-step cases exceeding 60s under throttling. 120s gives
   // real headroom without letting a genuinely hung call run forever.
   testTimeout: 120_000,
+  // Serial execution alone still bursts past OpenAI's 200k TPM org cap on a
+  // fresh `evalite serve` deploy (Render). This setup file wraps
+  // `globalThis.fetch` in every worker/mode with a trailing-60s token budget
+  // (`EVAL_TPM_BUDGET`, default 150k) plus Retry-After–honoring 429 retries.
+  // See the file header for the full rationale.
+  setupFiles: ["./evals/support/model-rate-limit.setup.ts"],
 });

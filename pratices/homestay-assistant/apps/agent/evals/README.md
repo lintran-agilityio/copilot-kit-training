@@ -19,22 +19,24 @@ evals/
     │   ├── cancel-booking.eval.ts          show_cancel_dialog_confirm gate; cancel_booking → stop
     │   └── find-booking-by-id.eval.ts      find_booking_by_id(modify) junction → edit form vs confirm_modify_booking vs stop (incl. its own availability probe)
     ├── tools/                     real LLM calls through the real agent — structured (non-judge) scoring, per tool
-    │   ├── get-rooms.eval.ts               plain catalog browse only
-    │   ├── find-room.eval.ts               selection (discovery intent) + arguments (dates/guests/level/limit)
-    │   ├── get-room-by-id.eval.ts          detail & [book-form] routing  ⚠️ 2 KNOWN-FAILING cases
-    │   ├── create-booking.eval.ts          never mutates before the confirm gate
-    │   ├── update-booking.eval.ts          never mutates before confirm; no-op modify never opens the dialog
-    │   ├── cancel-booking.eval.ts          resolve by name, stop at the cancel dialog
-    │   ├── get-bookings.eval.ts            "show my bookings" routing; onDate discipline
-    │   ├── find-bookings.eval.ts           internal resolver, never find_room; not_found is a hard stop
-    │   └── find-booking-by-id.eval.ts      MODIFY stated-change extraction; [booking-cancel] trigger
+    │   ├── get-rooms.eval.ts               plain catalog browse only                                       (1 case)
+    │   ├── find-room.eval.ts               selection (discovery intent) + arguments (date/guests)          (4 cases)
+    │   ├── get-room-by-id.eval.ts          [book-form] → get_room_by_id only                               (1 case)
+    │   ├── create-booking.eval.ts          never mutates before the confirm gate; taken date stops        (2 cases)
+    │   ├── update-booking.eval.ts          never mutates before confirm; no-op modify never opens dialog  (2 cases)
+    │   ├── cancel-booking.eval.ts          resolve by name, stop at the cancel dialog                      (1 case)
+    │   ├── get-bookings.eval.ts            "show my bookings" routing; onDate discipline                   (3 cases)
+    │   ├── find-bookings.eval.ts           internal resolver, never find_room; not_found is a hard stop    (1 case)
+    │   └── find-booking-by-id.eval.ts      MODIFY "extend N nights" stated-change extraction               (1 case)
     └── conversation/              agent-level, not per-tool
-        ├── response-quality.eval.ts        rubric-graded reply quality  ⚠️ 5 KNOWN-FAILING cases (+ a judge call per case)
-        ├── multi-turn-context.eval.ts      token-limiter / step-count regression across one thread
-        ├── security-input.eval.ts          genuine injection blocked; first-party [book-form]/[book-stay]/[booking-cancel]/[booking-modify] NEVER blocked
-        ├── booking-hitl-flow.eval.ts       confirmed HITL click → terminal mutation (create / update / cancel) lands in the fixture API; dismissal → no-op
-        └── multi-turn-booking.eval.ts      stay continuity carries across turns; confirm/modify gates still hold after an unrelated turn
+        ├── response-quality.eval.ts        rubric-graded anti-hallucination (judge call per case)          (2 cases)
+        ├── multi-turn-context.eval.ts      token-limiter / step-count regression across one thread (3 turns)
+        ├── security-input.eval.ts          genuine injection blocked; first-party [book-form]/[booking-modify] NEVER blocked  (3 cases)
+        ├── booking-hitl-flow.eval.ts       confirmed HITL click → terminal mutation (create / cancel) lands; dismissal → no-op  (3 cases)
+        └── multi-turn-booking.eval.ts      stay continuity carries across turns                            (1 case)
 ```
+
+> **Case counts are deliberately lean** (~24 real-LLM cases across `tools/` + `conversation/`, plus the free `deterministic/` suite). Each `tools/`/`conversation/` case is one real agent turn (~30k tokens; `response-quality` adds a judge call). Redundant phrasing variants and permanently-failing "known gap" cases were removed — add a case back only when it guards a distinct behavior nothing else covers.
 
 > The `tools/` directory is the suite the older prose below still calls `behavioral/` — same role (real LLM turn, structured scoring), and `pnpm eval:tools` is its runner. The rename is not yet reflected everywhere in this file.
 
@@ -48,7 +50,7 @@ evals/
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `get_rooms`          | —                                                                                                                                                         | plain browse only; never `find_room` / `get_bookings` for it                                                                                                 |
 | `find_room`          | every result shape → transition; `book_resolve`·1-match → form vs `confirm_booking` (own availability probe) vs stop                                      | discovery intent routes here first; "available" wording never → `get_bookings`; date normalized, guests never invented, `level`/`limit`                      |
-| `get_room_by_id`     | _(forced target only — see `find-room.eval.ts`)_                                                                                                          | detail chain (⚠️ known-failing); `[book-form]` → `get_room_by_id` only, no availability                                                                      |
+| `get_room_by_id`     | _(forced target only — see `find-room.eval.ts`)_                                                                                                          | `[book-form]` → `get_room_by_id` only, no availability (the by-name detail chain is a documented unfixed gap — see Known limitations)                        |
 | `create_booking`     | `confirm_booking` confirmed→create / dismissed→stop; terminal→stop                                                                                        | never fires before `find_room`→`confirm_booking` (there is no `check_room_availability` tool); full stay skips the form                                      |
 | `update_booking`     | picker / edit-form / `confirm_modify_booking` gates; terminal→stop                                                                                        | never fires before the confirm gate; no-op modify never opens the dialog                                                                                     |
 | `cancel_booking`     | `find_bookings`→pass; `show_cancel_dialog_confirm` confirmed→cancel / dismissed→stop; terminal→stop                                                       | resolve by name → `find_bookings` → `show_cancel_dialog_confirm`, no `cancel_booking` this turn                                                              |
@@ -116,14 +118,15 @@ The no-`execute` stubs are exactly right for "the terminal mutation never fires 
 
 `CaseResult` carries two fields for these agent-level evals: `tripwire` (set when an input processor aborted the turn — a security block or the user-message token limit) and `apiBookings` (the fixture booking table after the turn, for asserting a mutation landed or didn't).
 
-## Concurrency note (important if you add eval files)
+## Concurrency & rate-limit notes (important if you add eval files)
 
-Two separate knobs, both set to fully serial:
+Three knobs, all aimed at staying under OpenAI's org-wide 200k TPM cap:
 
 - `evalite.config.ts` sets `maxConcurrency: 1` — serializes cases _within_ one `.eval.ts` file. The fixture `fetch` stub is installed on `globalThis.fetch` per case (`support/run-case.ts`) and restored afterward — evalite's default concurrency (5) would let two cases' install/restore race on that one global and leak the real network into a case still mid-flight. Don't raise `maxConcurrency` without also making the fetch stub properly scoped (e.g. per-case `AsyncLocalStorage`).
-- `vitest.config.ts` sets `test.fileParallelism: false` — serializes the _files_ themselves. Vitest otherwise runs `.eval.ts` files in parallel workers, and several real agent turns at once jointly exceed the OpenAI 200k TPM budget (each behavioral case ≈ a prompt-injection-detector call + a multi-step tool loop, ~30k tokens on gpt-4o-mini). Running one file at a time lets Mastra's built-in per-minute backoff ("Rate limit approaching, waiting 10 seconds") actually pace the whole suite. Evalite force-sets `testTimeout` / `maxConcurrency` / `setupFiles` but leaves `fileParallelism` to this file.
+- `vitest.config.ts` sets `test.fileParallelism: false` — serializes the _files_ themselves. Vitest otherwise runs `.eval.ts` files in parallel workers, and several real agent turns at once jointly exceed the OpenAI 200k TPM budget (each behavioral case ≈ a prompt-injection-detector call + a multi-step tool loop, ~30k tokens on gpt-4o-mini). Running one file at a time lets the pacing gate below see the whole run in one process's ledger. Evalite force-sets `testTimeout` / `maxConcurrency` / `setupFiles` but leaves `fileParallelism` to this file.
+- `evalite.config.ts` `setupFiles: ["./evals/support/model-rate-limit.setup.ts"]` — even fully serial, ~24 back-to-back turns still burst past 200k TPM on a fresh `evalite serve` deploy (Render was dying with `429 ... Limit 200000, Used 200000`). This setup file wraps `globalThis.fetch` in every worker and every mode (`eval`, `eval:watch`, `eval:serve`) to (1) pace model-provider requests through a trailing-60s token budget — `EVAL_TPM_BUDGET`, default `150_000`, shared across the run's sequential forks via a JSON ledger under `MASTRA_DATA_DIR` — and (2) retry a `429` honoring `Retry-After` up to `EVAL_RATE_LIMIT_RETRIES` (default 6) times, so a transient overage never surfaces as a failure. Set `EVAL_TPM_BUDGET=0` to disable pacing (429 retry stays on).
 
-Net effect: `pnpm eval:behavioral` runs every case strictly one after another. It's slower (expect ~10–20 min for `behavioral/`) but doesn't hit `429 rate_limit_exceeded`.
+Net effect: `pnpm eval` runs every case strictly one after another _and_ throttles the token rate. It's slower (expect ~10–20 min for `tools/`) but doesn't hit `429 rate_limit_exceeded`.
 
 ## Which tests are deterministic vs LLM-judged
 
@@ -144,11 +147,9 @@ Net effect: `pnpm eval:behavioral` runs every case strictly one after another. I
 
 - **COMPARE (`generate_a2ui`) is out of scope.** It's a CopilotKit-side generative-UI tool injected by the AG-UI bridge, not a tool registered on the Mastra agent (`homestay-assistant.ts`'s `tools:` map has no `generate_a2ui` entry) — it isn't reachable from a direct `agent.generate()` call. Testing it would require going through AG-UI/CopilotKit, which is explicitly out of scope for this suite.
 - **`resolve_booking_stay` / `resolve_booking_target` are not evaluated.** Per their own doc comments in `packages/constants/tool-keys.ts`, they're "not yet wired into any tool or the step machine" — nothing to evaluate yet.
-- **Two categories of currently-failing cases document real discovered production gaps, not eval bugs** — all verified by direct inspection before being left in place, per "clearly separate evaluation-infra issues from production bugs; never silently loosen an assertion to hide a failure":
-  - **Room detail by name never completes its documented tool chain** (`behavioral/get-room-by-id.eval.ts` — 2 cases, marked `knownFailing`). `WORKFLOW_DETAIL` documents that a bare "tell me about `<room name>`" / "what amenities does `<room name>` have" request resolves `find_room` → (exactly one match) → `get_room_by_id`. Observed live runs call `find_room` and stop; in the amenities case the reply also lists amenities directly in chat, which both `WORKFLOW_FIND` and `WORKFLOW_DETAIL` explicitly forbid ("UI owns the data").
-  - **Every observed reply appends a second boilerplate closer** ("Let me know if you need help!" / "Feel free to ask!"), failing the "single short sentence" rubric line in `conversation/response-quality.eval.ts` across all 5 cases. `GENERIC_UI_RENDERING`'s "emit exactly ONE very short plain sentence" rule appears to be a general habit gap, not confined to one workflow.
-
-  Both are left **failing on purpose**; do not edit the assertions to make them pass — fixing either is a prompt/behavior change outside this suite's scope.
+- **Two known production gaps are documented here but no longer have executing cases** — a permanently-failing eval gives no regression signal (it cannot get worse) while costing real tokens every run, so the cases were removed during the token trim. The gaps still need a prompt fix, out of scope for this suite:
+  - **Room detail by name never completes its documented tool chain.** `WORKFLOW_DETAIL` documents that a bare "tell me about `<room name>`" / "what amenities does `<room name>` have" request resolves `find_room` → (exactly one match) → `get_room_by_id`. Observed live runs call `find_room` and stop; in the amenities case the reply also lists amenities directly in chat, which both `WORKFLOW_FIND` and `WORKFLOW_DETAIL` explicitly forbid ("UI owns the data"). (Formerly 2 `knownFailing` cases in `tools/get-room-by-id.eval.ts` + 1 in `conversation/response-quality.eval.ts`.)
+  - **Every observed reply appends a second boilerplate closer** ("Let me know if you need help!" / "Feel free to ask!"), violating `GENERIC_UI_RENDERING`'s "emit exactly ONE very short plain sentence" rule. Appears to be a general habit gap, not confined to one workflow. (The "single short sentence" rubric lines that caught this were removed with the cases they lived on.)
 
 - **One tool-argument case showed model non-determinism across otherwise-identical runs**: "Extend my Riverside Twin Room booking by 2 nights" (`behavioral/find-booking-by-id.eval.ts`) correctly omitted `requestedGuests` in one run and attached an unprompted `requestedGuests: 2` (matching the fixture's _current_ value) in another. This didn't change the final outcome in either run (2 already equals the booking's guest count) but is worth watching — it's model sampling variance, not a reproducible bug.
 - **MODIFY availability has no tool step.** `find_booking_by_id(purpose:"modify")` probes `/bookings/availability` itself for a stated change (merging the stated value, excluding the booking) and attaches `availability` / `stayUnchanged`; the no-stated-change path checks client-side in the `edit_modify_booking` form. The step machine then forces `confirm_modify_booking` or stops — proven without an LLM in `deterministic/find-booking-by-id.eval.ts`. There is no `check_room_availability` tool.

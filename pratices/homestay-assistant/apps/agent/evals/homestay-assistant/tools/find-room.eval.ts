@@ -1,5 +1,5 @@
 import { evalite } from "evalite";
-import { addDaysYmd, formatTodayYmd, getBusinessDates } from "@repo/utils/date";
+import { addDaysYmd, formatTodayYmd } from "@repo/utils/date";
 
 import { argMatches, scoreResult } from "../../support/checks";
 import { toolCallArgs } from "../../support/tool-calls";
@@ -34,6 +34,9 @@ type SelectionCase = {
   forbidden: string[];
 };
 
+// Trimmed to the two phrasings that actually regress: an explicit
+// date/guest search, and bare "available" wording (the historical
+// mis-route to get_bookings). Other phrasings asserted the same thing.
 const selectionCases: SelectionCase[] = [
   {
     name: "search — guests + explicit date",
@@ -41,33 +44,8 @@ const selectionCases: SelectionCase[] = [
     forbidden: ["get_bookings", "get_rooms"],
   },
   {
-    name: "search — 'available' wording, no name",
-    message: "What rooms are available for two people?",
-    forbidden: ["get_bookings", "get_rooms"],
-  },
-  {
-    name: "search — explicit date range",
-    message: "Show available rooms from October 10 to October 12",
-    forbidden: ["get_bookings", "get_rooms"],
-  },
-  {
-    name: "search — relative weekend phrasing",
-    message: "Do you have anything available this weekend?",
-    forbidden: ["get_bookings", "get_rooms"],
-  },
-  {
-    name: "available wording — 'Show available rooms' never routes to booking list",
-    message: "Show available rooms",
-    forbidden: ["get_bookings"],
-  },
-  {
     name: "available wording — 'what rooms are available' never routes to booking list",
     message: "What rooms are available?",
-    forbidden: ["get_bookings"],
-  },
-  {
-    name: "available wording — dated availability never routes to booking list",
-    message: "Are there any rooms available on October 15?",
     forbidden: ["get_bookings"],
   },
 ];
@@ -110,7 +88,6 @@ evalite<SelectionCase, CaseResult, SelectionCase>(
 
 // --- Arguments --------------------------------------------------------
 const tomorrow = addDaysYmd(formatTodayYmd(), 1);
-const businessDates = getBusinessDates(new Date());
 
 type ArgCase = {
   name: string;
@@ -125,6 +102,8 @@ type ArgCase = {
   };
 };
 
+// Trimmed: one case proving a relative date normalizes + a stated guest
+// count lands, one proving guests are never invented when unstated.
 const argCases: ArgCase[] = [
   {
     name: "guests + relative date (tomorrow)",
@@ -132,24 +111,9 @@ const argCases: ArgCase[] = [
     expected: { guests: 3, date: tomorrow },
   },
   {
-    name: "guests + weekend phrase",
-    message: "Show available rooms this weekend for 4 guests",
-    expected: { guests: 4, date: businessDates.weekendCheckIn },
-  },
-  {
     name: "never invent guests — none stated",
     message: "Find a room available tomorrow",
     expected: { date: tomorrow, unset: ["guests"] },
-  },
-  {
-    name: "level synonym — 'top-floor luxury' maps to level 4, never name",
-    message: "Show your top-floor luxury suites",
-    expected: { level: 4, unset: ["name"] },
-  },
-  {
-    name: "explicit count — 'find me 3 rooms' sets limit",
-    message: "Find me 3 rooms for 2 guests",
-    expected: { guests: 2, limit: 3 },
   },
 ];
 

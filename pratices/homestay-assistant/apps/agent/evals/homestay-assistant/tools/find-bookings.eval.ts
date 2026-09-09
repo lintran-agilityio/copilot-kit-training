@@ -24,14 +24,11 @@ type FindBookingsCase = {
   mustNotCall: string[];
 };
 
+// Kept the not_found hard-stop case: it exercises find_bookings-first
+// routing (never find_room) AND that a no-match resolver result invents
+// nothing. The modify→find_booking_by_id continuation is covered in
+// tools/find-booking-by-id.eval.ts and conversation/booking-hitl-flow.eval.ts.
 const cases: FindBookingsCase[] = [
-  {
-    name: "modify, no bookingId, room named → find_bookings first, then find_booking_by_id",
-    message:
-      "I'd like to change the check-out date on my Riverside Twin Room booking to November 3",
-    mustCallInOrder: ["find_bookings", "find_booking_by_id"],
-    mustNotCall: ["find_room", "update_booking"],
-  },
   {
     name: "cancel a room with no booking → find_bookings runs, no dialog, no mutation",
     message: "Cancel my Lotus Single Room booking",

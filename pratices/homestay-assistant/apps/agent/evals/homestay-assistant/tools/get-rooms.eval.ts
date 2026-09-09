@@ -29,11 +29,6 @@ const cases: BrowseCase[] = [
     message: "Show me all the rooms you have",
     forbidden: ["find_room", "get_room_by_id", "get_bookings"],
   },
-  {
-    name: "browse — 'browse all rooms' phrasing",
-    message: "Browse all rooms",
-    forbidden: ["find_room", "get_room_by_id", "get_bookings"],
-  },
 ];
 
 evalite<BrowseCase, CaseResult, BrowseCase>("get_rooms — plain catalog browse only", {

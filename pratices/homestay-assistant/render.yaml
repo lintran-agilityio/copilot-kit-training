@@ -56,6 +56,13 @@ services:
       - key: OPENAI_API_KEY
         sync: false
 
+      # Trailing-60s token budget the eval run paces itself to, so a fresh
+      # `evalite serve` never bursts past OpenAI's org-wide 200k TPM cap
+      # (evals/support/model-rate-limit.setup.ts). Lower it if this key's org
+      # shares the cap with the other services; set 0 to disable pacing.
+      - key: EVAL_TPM_BUDGET
+        value: "150000"
+
       # Evals replace requests to this origin with fixture responses, so the
       # dashboard never reads or mutates the deployed NestJS database.
       - key: API_URL

@@ -113,33 +113,11 @@ const cases: FlowCase[] = [
           : `booking table grew to ${bookings.length}`,
     }),
   },
-  {
-    name: "MODIFY — stated date change, guest confirms → update_booking persists the new stay",
-    message:
-      "Change my Riverside Twin Room booking to check in November 1 and check out November 3",
-    hitlResolution: "confirm",
-    mustAppearInOrder: [
-      "find_bookings",
-      "find_booking_by_id",
-      "confirm_modify_booking",
-      "update_booking",
-    ],
-    mustNotCall: ["check_room_availability", "create_booking", "cancel_booking"],
-    expectApiState: (bookings) => {
-      const row = bookings.find((b) => b.id === FIXTURE_EXISTING_BOOKING.id);
-      if (!row) return { pass: false, reason: "existing booking row vanished" };
-      const ok =
-        /^\d{4}-11-01$/.test(row.checkInDate) &&
-        /^\d{4}-11-03$/.test(row.checkOutDate) &&
-        row.checkInDate !== FIXTURE_EXISTING_BOOKING.checkInDate;
-      return {
-        pass: ok,
-        reason: ok
-          ? `booking now ${row.checkInDate} → ${row.checkOutDate}`
-          : `booking is ${row.checkInDate} → ${row.checkOutDate} (expected …-11-01 → …-11-03)`,
-      };
-    },
-  },
+  // MODIFY end-to-end dropped to save tokens (longest chain: find_bookings →
+  // find_booking_by_id → confirm_modify_booking → update_booking). Its gate is
+  // proven no-LLM in deterministic/{update,find-booking-by-id}-booking.eval.ts,
+  // and the CONFIRMATION_FOLLOW_UPS pinning it relies on is exercised by the
+  // CREATE and CANCEL cases here.
   {
     name: "CANCEL — resolve by name, guest confirms → cancel_booking flips status to CANCELLED",
     message: "Please cancel my booking for the Riverside Twin Room",
