@@ -14,7 +14,11 @@ import { runWithAgentRequest } from "../../src/mastra/middleware/request-pipelin
 // step-machine) without going through AG-UI/CopilotKit transport at all.
 import { mastra } from "../../src/mastra/runtime";
 
-import { HITL_CLIENT_TOOLS } from "./client-tools";
+import {
+  buildResolvingHitlTools,
+  HITL_CLIENT_TOOLS,
+  type HitlResolution,
+} from "./client-tools";
 import { EVAL_USER_ID } from "./fixtures";
 
 export const getHomestayAgent = () => {
@@ -36,6 +40,13 @@ export type AgentTurnOptions = {
   /** Reuse a thread id to simulate a multi-turn conversation; defaults to a fresh thread per call. */
   threadId?: string;
   userId?: string;
+  /**
+   * Resolve every HITL card IN-TURN instead of stopping the turn at it —
+   * `"confirm"` clicks confirm, `"decline"` dismisses. Omit for the default
+   * emit-and-stop behavior (`HITL_CLIENT_TOOLS`). See `client-tools.ts` for
+   * why this switches the tools from `clientTools` to `toolsets`.
+   */
+  hitlResolution?: HitlResolution;
 };
 
 /**
@@ -64,14 +75,20 @@ export const runAgentTurn = async (
 
   const agent = getHomestayAgent();
 
+  // Default: HITL tools as `clientTools` with no `execute` — the turn stops at
+  // the card (what "never mutates before the gate" evals assert). When
+  // `hitlResolution` is set, the same tools go in via `toolsets` WITH an
+  // `execute` that answers the card in-turn, so the whole chain through the
+  // terminal mutation runs in one call (see client-tools.ts).
+  const hitlToolOptions = options.hitlResolution
+    ? { toolsets: { hitl: buildResolvingHitlTools(options.hitlResolution) } }
+    : { clientTools: HITL_CLIENT_TOOLS };
+
   const result = await runWithAgentRequest({ auth, requestContext }, () =>
     agent.generate(message, {
       memory: { thread: threadId, resource: resourceId },
       requestContext,
-      // See client-tools.ts — without these, the HITL confirm tools AG-UI
-      // normally injects don't exist in this context, and the booking
-      // step-machine's forced transition to them has nothing to call.
-      clientTools: HITL_CLIENT_TOOLS,
+      ...hitlToolOptions,
     }),
   );
 

@@ -18,7 +18,7 @@ evals/
     │   ├── update-booking.eval.ts          picker / edit-form / confirm_modify gates; update_booking → stop
     │   ├── cancel-booking.eval.ts          show_cancel_dialog_confirm gate; cancel_booking → stop
     │   └── find-booking-by-id.eval.ts      find_booking_by_id(modify) junction → edit form vs confirm_modify_booking vs stop (incl. its own availability probe)
-    ├── behavioral/                real LLM calls through the real agent — structured (non-judge) scoring
+    ├── tools/                     real LLM calls through the real agent — structured (non-judge) scoring, per tool
     │   ├── get-rooms.eval.ts               plain catalog browse only
     │   ├── find-room.eval.ts               selection (discovery intent) + arguments (dates/guests/level/limit)
     │   ├── get-room-by-id.eval.ts          detail & [book-form] routing  ⚠️ 2 KNOWN-FAILING cases
@@ -30,8 +30,13 @@ evals/
     │   └── find-booking-by-id.eval.ts      MODIFY stated-change extraction; [booking-cancel] trigger
     └── conversation/              agent-level, not per-tool
         ├── response-quality.eval.ts        rubric-graded reply quality  ⚠️ 5 KNOWN-FAILING cases (+ a judge call per case)
-        └── multi-turn-context.eval.ts      token-limiter / step-count regression across one thread
+        ├── multi-turn-context.eval.ts      token-limiter / step-count regression across one thread
+        ├── security-input.eval.ts          genuine injection blocked; first-party [book-form]/[book-stay]/[booking-cancel]/[booking-modify] NEVER blocked
+        ├── booking-hitl-flow.eval.ts       confirmed HITL click → terminal mutation (create / update / cancel) lands in the fixture API; dismissal → no-op
+        └── multi-turn-booking.eval.ts      stay continuity carries across turns; confirm/modify gates still hold after an unrelated turn
 ```
+
+> The `tools/` directory is the suite the older prose below still calls `behavioral/` — same role (real LLM turn, structured scoring), and `pnpm eval:tools` is its runner. The rename is not yet reflected everywhere in this file.
 
 **Why the split.** `deterministic/` proves the booking step-machine's ordering contract (`src/mastra/utils/step-machine.ts`) with zero API cost, zero network, in milliseconds — run it on every PR. `behavioral/` runs the _same_ gates through a real model turn, so a model that stops honoring them fails even though the deterministic gate still passes. `conversation/` is the only place an LLM judge is used, and the only multi-turn scenario.
 
@@ -58,11 +63,15 @@ The 5 HITL client tools (`confirm_booking`, `confirm_modify_booking`, `edit_modi
 ```bash
 # from apps/agent
 pnpm eval:deterministic   # homestay-assistant/deterministic/ only — no LLM, no network, runs in ms
-pnpm eval:behavioral      # homestay-assistant/behavioral/ — real LLM calls, structured scoring, costs tokens
-pnpm eval:conversation    # homestay-assistant/conversation/ — real LLM calls + a judge call per case
+pnpm eval:tools           # homestay-assistant/tools/ — real LLM calls, structured scoring, costs tokens
+pnpm eval:conversation    # homestay-assistant/conversation/ — real LLM calls; response-quality adds a judge call per case
 pnpm eval                 # everything
 pnpm eval:watch           # watch mode (opens the Evalite UI at localhost:3006)
 pnpm check-types          # tsc --noEmit, includes evals/
+
+# one file at a time — pass a single path substring (the CLI takes exactly one positional):
+pnpm eval security-input
+pnpm eval booking-hitl-flow
 ```
 
 `pnpm eval` and `pnpm eval:watch` invoke `node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run|watch` directly — the `evalite` CLI has no `run`-vs-`watch` env-loading of its own, and `apps/agent` isn't started through `mastra dev` (which loads `.env` itself) for eval runs. `--env-file-if-exists` (not `--env-file`) means a missing `.env` doesn't crash the command — CI is expected to inject `OPENAI_API_KEY` etc. as real environment variables instead of a file.
@@ -100,6 +109,12 @@ Auth is faked the same way production's request-pipeline middleware would popula
 ### The HITL confirm tools need an explicit stand-in (`support/client-tools.ts`)
 
 `confirm_booking`, `confirm_modify_booking`, `edit_modify_booking`, `show_cancel_dialog_confirm`, and `show_modify_dialog_select` are **not** in `homestayAssistant.tools` at all — they only exist because CopilotKit's `MastraAgent.getLocalAgents()` injects them as client tools from the frontend's `useHumanInTheLoop`/`useRenderTool` registrations. Calling the agent directly (as this suite deliberately does, to stay off AG-UI/CopilotKit) means those tools don't exist unless supplied — and without them, the booking step-machine's forced transition to e.g. `confirm_booking` has nothing to call, so the model falls through to whatever tool IS registered (which turned out to be `create_booking`/`update_booking`/`cancel_booking` itself during initial validation). That was a harness gap, not a production bug: `support/client-tools.ts` defines the same 5 tools with their real shared schemas (`@repo/schemas`) and no `execute` (deliberately — a client tool with no server-side `execute` is exactly what a real frontend-rendered tool looks like: the call is emitted and the turn ends there, awaiting an out-of-band result), passed via `generate()`'s `clientTools` option. `support/agent-harness.ts::runAgentTurn` wires this in for every eval automatically.
+
+#### Resolving the HITL card in-turn (`runCase(msg, { hitlResolution })`)
+
+The no-`execute` stubs are exactly right for "the terminal mutation never fires before a real click" — the turn stops at the card and there is nothing more to assert. To test the **other** half — the confirmed click actually reaching `create_booking` / `update_booking` / `cancel_booking` — `support/client-tools.ts::buildResolvingHitlTools("confirm" | "decline")` builds the same 5 tools **with** an `execute` that returns the real `…Result` payload the frontend hook returns on a click. It is passed via `generate({ toolsets })`, **not** `clientTools`, because Mastra strips `execute` from client tools (`listClientTools` does `const { execute, ...rest } = tool`) but keeps it for toolset tools. The step machine's `CONFIRMATION_FOLLOW_UPS` + `parseConfirmedStay` pinning then carry the confirmed stay to the terminal mutation exactly as in production — all inside one `agent.generate()` call. Opt in per turn with `runCase(msg, { hitlResolution: "confirm" })`; `conversation/booking-hitl-flow.eval.ts` is the only user today.
+
+`CaseResult` carries two fields for these agent-level evals: `tripwire` (set when an input processor aborted the turn — a security block or the user-message token limit) and `apiBookings` (the fixture booking table after the turn, for asserting a mutation landed or didn't).
 
 ## Concurrency note (important if you add eval files)
 

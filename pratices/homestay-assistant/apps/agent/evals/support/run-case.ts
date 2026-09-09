@@ -1,3 +1,5 @@
+import type { Booking } from "../../src/mastra/schemas/booking";
+
 import type { AgentTurnOptions } from "./agent-harness";
 import { runAgentTurn } from "./agent-harness";
 import { installFakeApi } from "./fake-api";
@@ -8,6 +10,22 @@ export type CaseResult = {
   toolNames: string[];
   toolCalls: EvalToolCall[];
   threadId: string;
+  /**
+   * Set when an input/output processor aborted the turn — a security block
+   * (`GuestPromptInjectionProcessor`, `strategy: "block"`) or the user-message
+   * token limit. `undefined` on a normal turn. Shape: Mastra's
+   * `StepTripwireData` (`{ reason, processorId?, ... }`).
+   */
+  tripwire: unknown;
+  /**
+   * Snapshot of the fixture API's booking table AFTER the turn. Use it to
+   * assert a terminal mutation actually landed (or, for the "never mutates"
+   * evals, that it did not) — compare against `support/fixtures.ts`'s
+   * `FIXTURE_BOOKINGS`. Only meaningful together with
+   * `AgentTurnOptions.hitlResolution` (otherwise the turn stops at the HITL
+   * gate and nothing mutates).
+   */
+  apiBookings: Booking[];
 };
 
 /**
@@ -30,6 +48,8 @@ export const runCase = async (
       toolNames: toolCalls.map((call) => call.toolName),
       toolCalls,
       threadId,
+      tripwire: (result as { tripwire?: unknown }).tripwire,
+      apiBookings: fakeApi.state.bookings.map((booking) => ({ ...booking })),
     };
   } finally {
     fakeApi.restore();

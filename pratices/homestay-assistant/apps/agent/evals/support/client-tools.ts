@@ -69,3 +69,100 @@ export const HITL_CLIENT_TOOLS = {
     inputSchema: modifyBookingByRoomSchema,
   }),
 };
+
+/** How `buildResolvingHitlTools` answers every HITL card in the turn. */
+export type HitlResolution = "confirm" | "decline";
+
+/**
+ * The same 5 HITL tools as {@link HITL_CLIENT_TOOLS}, but each one carries an
+ * `execute` that resolves the call IN-TURN with the exact `…Result` payload the
+ * real frontend hook returns on a click (`confirmed: true` + the stay, or
+ * `{ confirmed: false }`).
+ *
+ * Why not just add `execute` to `HITL_CLIENT_TOOLS`: Mastra strips it from
+ * anything passed as a *client* tool (`listClientTools` does
+ * `const { execute, ...rest } = tool`), so a client-tool stub can only ever
+ * emit-and-stop — which is what the "never mutates before the gate" evals want.
+ * A tool passed via `generate({ toolsets })` keeps its `execute`
+ * (`listToolsets` converts the whole object), so these drive the WHOLE booking
+ * chain — `find_room → confirm_booking → create_booking` — inside a single
+ * `agent.generate()` call, standing in for "the guest clicked confirm the
+ * instant the card appeared". `support/agent-harness.ts` swaps these in when
+ * `AgentTurnOptions.hitlResolution` is set.
+ *
+ * The step machine's `CONFIRMATION_FOLLOW_UPS` + `parseConfirmedStay` pinning
+ * (`src/mastra/utils/step-machine.ts`) then does the rest exactly as in
+ * production, so the terminal mutation runs against the fixture API with the
+ * guest-confirmed stay.
+ */
+export const buildResolvingHitlTools = (resolution: HitlResolution) => {
+  const confirmed = resolution === "confirm";
+  const declined = { confirmed: false as const };
+
+  return {
+    [TOOL_KEYS.ACTION.CONFIRM_BOOKING]: createTool({
+      id: TOOL_KEYS.ACTION.CONFIRM_BOOKING,
+      description: "Eval HITL stand-in — resolves confirm_booking in-turn.",
+      inputSchema: confirmBookingSchema,
+      execute: async ({ roomId, checkInDate, checkOutDate, guests }) =>
+        confirmed
+          ? { confirmed: true, roomId, checkInDate, checkOutDate, guests }
+          : declined,
+    }),
+    [TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING]: createTool({
+      id: TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
+      description:
+        "Eval HITL stand-in — resolves confirm_modify_booking in-turn.",
+      inputSchema: confirmModifyBookingSchema,
+      execute: async ({ bookingId, checkInDate, checkOutDate, guests }) =>
+        confirmed
+          ? { confirmed: true, bookingId, checkInDate, checkOutDate, guests }
+          : declined,
+    }),
+    [TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING]: createTool({
+      id: TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
+      description:
+        "Eval HITL stand-in — 'confirms' the modify form with the stay it was opened with.",
+      inputSchema: editModifyBookingSchema,
+      execute: async ({ bookingId, room, checkInDate, checkOutDate, guests }) =>
+        confirmed
+          ? {
+              confirmed: true,
+              bookingId,
+              roomId: room?.id,
+              checkInDate,
+              checkOutDate,
+              guests,
+            }
+          : declined,
+    }),
+    [TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM]: createTool({
+      id: TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
+      description:
+        "Eval HITL stand-in — resolves the cancel confirm dialog in-turn (picks the first row).",
+      inputSchema: cancelBookingByRoomSchema,
+      execute: async ({ bookings }) => {
+        const first = bookings?.[0];
+        return confirmed && first
+          ? {
+              confirmed: true,
+              bookingId: first.bookingId,
+              roomName: first.roomName,
+            }
+          : declined;
+      },
+    }),
+    [TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT]: createTool({
+      id: TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT,
+      description:
+        "Eval HITL stand-in — picks the first matching booking in-turn.",
+      inputSchema: modifyBookingByRoomSchema,
+      execute: async ({ bookingIds, bookings }) => {
+        const bookingId = bookingIds?.[0] ?? bookings?.[0]?.bookingId;
+        return confirmed && bookingId
+          ? { confirmed: true, bookingId, roomName: bookings?.[0]?.roomName ?? "" }
+          : declined;
+      },
+    }),
+  };
+};
