@@ -472,6 +472,11 @@ const pinModifyBookingId = (
     typeof input?.requestedCheckOutDate === "string"
       ? input.requestedCheckOutDate
       : undefined;
+  const requestedCheckOutDeltaDays =
+    typeof input?.requestedCheckOutDeltaDays === "number" &&
+    Number.isInteger(input.requestedCheckOutDeltaDays)
+      ? input.requestedCheckOutDeltaDays
+      : undefined;
   const requestedGuests =
     typeof input?.requestedGuests === "number"
       ? input.requestedGuests
@@ -479,6 +484,7 @@ const pinModifyBookingId = (
   if (
     requestedCheckInDate ||
     requestedCheckOutDate ||
+    requestedCheckOutDeltaDays !== undefined ||
     requestedGuests !== undefined
   ) {
     args.requestContext.set(
@@ -486,6 +492,7 @@ const pinModifyBookingId = (
       {
         checkInDate: requestedCheckInDate,
         checkOutDate: requestedCheckOutDate,
+        checkOutDeltaDays: requestedCheckOutDeltaDays,
         guests: requestedGuests,
       },
     );

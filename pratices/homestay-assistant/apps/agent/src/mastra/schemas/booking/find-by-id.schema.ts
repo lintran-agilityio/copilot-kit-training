@@ -47,7 +47,14 @@ export const findBookingByIdInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "MODIFY only. The NEW check-out (YYYY-MM-DD) the guest explicitly stated in the LATEST message (including a computed date from a stated night/day extend or shorten). Omit entirely if no new check-out was stated — never invent, infer, reuse an old value, or guess from context.",
+      "MODIFY only. The NEW check-out (YYYY-MM-DD) the guest explicitly stated as an ABSOLUTE date in the LATEST message (\"change checkout to Aug 22\"). For a RELATIVE extend/shorten (\"one more night\", \"extend 2 nights\") use requestedCheckOutDeltaDays instead and leave this unset — do NOT compute the date yourself. Omit entirely if no new check-out was stated — never invent, infer, reuse an old value, or guess from context. If requestedCheckOutDeltaDays is also set, the delta is used and this value is ignored.",
+    ),
+  requestedCheckOutDeltaDays: z
+    .number()
+    .int()
+    .optional()
+    .describe(
+      "MODIFY only. The guest's stated RELATIVE check-out change as a whole number of nights/days: positive to extend (\"one more night\" / \"count one more date\" → 1, \"extend 2 nights\" → 2), negative to shorten (\"shorten by one night\" → -1), 0 for an explicit no-op. Pass the stated count as-is and DO NOT also send requestedCheckOutDate — the app computes the resulting check-out from the RESOLVED booking's authoritative current check-out; you never do this arithmetic. When set, this is authoritative over any requestedCheckOutDate. Omit entirely when the guest gave an absolute date (use requestedCheckOutDate) or stated no check-out change.",
     ),
   requestedGuests: z
     .number()

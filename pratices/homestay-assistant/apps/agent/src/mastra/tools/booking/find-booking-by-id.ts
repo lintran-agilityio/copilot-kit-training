@@ -2,7 +2,7 @@ import { createTool } from "@mastra/core/tools";
 
 import { TOOL_KEYS } from "@repo/constants/tool-keys";
 import { TOOL_PURPOSE } from "@repo/constants";
-import { isAbortError, sanitizeBookingId } from "@repo/utils";
+import { addDaysYmd, isAbortError, sanitizeBookingId } from "@repo/utils";
 import {
   findBookingByIdInputSchema,
   findBookingByIdOutputSchema,
@@ -25,6 +25,26 @@ type ModifyStayInput = {
   requestedCheckInDate?: string;
   requestedCheckOutDate?: string;
   requestedGuests?: number;
+};
+
+/**
+ * Resolves a guest's stated RELATIVE check-out change ("one more night",
+ * "extend 2 nights", "shorten by one night", "count one more date") into an
+ * absolute YYYY-MM-DD, computed from the booking's own authoritative current
+ * check-out — the model never does this date math. Returns:
+ *   - the current check-out unchanged when `deltaDays === 0` (explicit no-op —
+ *     the stated-change path then reports `stayUnchanged` exactly as before)
+ *   - `undefined` when the shifted date would land on or before check-in (an
+ *     invalid stay) — the caller then treats it as "no check-out change" and
+ *     the edit form opens instead of probing an invalid range
+ */
+const applyCheckOutDelta = (
+  booking: { checkInDate: string; checkOutDate: string },
+  deltaDays: number,
+): string | undefined => {
+  if (deltaDays === 0) return booking.checkOutDate;
+  const shifted = addDaysYmd(booking.checkOutDate, deltaDays);
+  return shifted > booking.checkInDate ? shifted : undefined;
 };
 
 /**
@@ -163,12 +183,19 @@ export const findBookingByIdTool = createTool({
     Look up one specific active booking by its ID, for a CANCEL or MODIFY action.
       - Use only when a bookingId is already known — a bookingId: value in the message (including [booking-cancel] / [booking-modify] from BookingCard clicks), or a booking id chosen via a prior find_bookings result. If you only have a room name (no id), call find_bookings instead. For a guest-facing "show/list my bookings" request, call get_bookings instead — never this tool.
       - purpose selects CANCEL vs MODIFY eligibility rules; see the purpose parameter.
-      - For MODIFY, also set requestedCheckInDate / requestedCheckOutDate / requestedGuests when the guest's LATEST message states a new value for that field. When any is set, this tool probes availability for the merged stay itself (excluding this booking) — the app then forces confirm_modify_booking (available), stops with a BookingUnavailable card (taken / over capacity), or stops with an "already has those details" reply (no-op). Never call check_room_availability for MODIFY.
+      - For MODIFY, also set requestedCheckInDate / requestedCheckOutDate / requestedGuests when the guest's LATEST message states a new value for that field. For a stated RELATIVE extend/shorten ("one more night", "extend 2 nights", "shorten by one night"), pass requestedCheckOutDeltaDays: N (negative to shorten) — do NOT compute a date; the app adds N to the resolved booking's current check-out. When any requested* field is set, this tool probes availability for the merged stay itself (excluding this booking) — the app then forces confirm_modify_booking (available), stops with a BookingUnavailable card (taken / over capacity), or stops with an "already has those details" reply (no-op). Never call check_room_availability for MODIFY.
     `,
   inputSchema: findBookingByIdInputSchema,
   outputSchema: findBookingByIdOutputSchema,
   execute: async (
-    { bookingId, purpose, requestedCheckInDate, requestedCheckOutDate, requestedGuests },
+    {
+      bookingId,
+      purpose,
+      requestedCheckInDate,
+      requestedCheckOutDate,
+      requestedCheckOutDeltaDays,
+      requestedGuests,
+    },
     context,
   ) => {
     throwIfAborted(context.abortSignal);
@@ -190,10 +217,34 @@ export const findBookingByIdTool = createTool({
 
     const id = sanitizeBookingId(pinnedBookingId ?? bookingId);
     const resolvedCheckInDate = isModify ? requestedCheckInDate ?? pinnedRequestedFields?.checkInDate : undefined;
-    const resolvedCheckOutDate = isModify ? requestedCheckOutDate ?? pinnedRequestedFields?.checkOutDate : undefined;
+    const statedCheckOutDate = isModify ? requestedCheckOutDate ?? pinnedRequestedFields?.checkOutDate : undefined;
+    const resolvedCheckOutDeltaDays = isModify
+      ? requestedCheckOutDeltaDays ?? pinnedRequestedFields?.checkOutDeltaDays
+      : undefined;
     const resolvedGuests = isModify ? requestedGuests ?? pinnedRequestedFields?.guests : undefined;
 
     const result = await findBookingById(id, serviceContextFromTool(context), purpose);
+
+    // A stated RELATIVE check-out change ("one more night", "extend 2 nights",
+    // "shorten by one night", "count one more date") is resolved to an absolute
+    // date HERE, against the booking's own authoritative current check-out —
+    // the model never does this arithmetic.
+    //
+    // When a delta is present it is AUTHORITATIVE, even if the model also sent a
+    // requestedCheckOutDate: observed models over-helpfully compute the date
+    // themselves alongside the delta, and that self-computed value is exactly
+    // what this field exists to stop trusting (a wrong one reintroduces the
+    // "already has that checkout" no-op bug). A model-supplied absolute date is
+    // used only when there is no usable delta. A delta that would land on/before
+    // check-in is invalid → dropped, then the absolute (if any) is tried, else
+    // the edit form opens instead of probing an invalid range.
+    const currentBooking =
+      result.bookings.length === 1 ? result.bookings[0] : undefined;
+    const deltaCheckOutDate =
+      resolvedCheckOutDeltaDays !== undefined && currentBooking
+        ? applyCheckOutDelta(currentBooking, resolvedCheckOutDeltaDays)
+        : undefined;
+    const resolvedCheckOutDate = deltaCheckOutDate ?? statedCheckOutDate;
 
     const echoed = {
       ...result,

@@ -162,6 +162,8 @@ export const takePinnedBookingId = (
 export type PinnedModifyRequestedFields = {
   checkInDate?: string;
   checkOutDate?: string;
+  /** Relative check-out extend/shorten (nights/days) — applied against the picked booking's check-out. */
+  checkOutDeltaDays?: number;
   guests?: number;
 };
 
@@ -189,11 +191,21 @@ export const takePinnedModifyRequestedFields = (
     typeof fields.checkInDate === "string" ? fields.checkInDate : undefined;
   const checkOutDate =
     typeof fields.checkOutDate === "string" ? fields.checkOutDate : undefined;
+  const checkOutDeltaDays =
+    typeof fields.checkOutDeltaDays === "number" &&
+    Number.isInteger(fields.checkOutDeltaDays)
+      ? fields.checkOutDeltaDays
+      : undefined;
   const guests = typeof fields.guests === "number" ? fields.guests : undefined;
 
-  if (!checkInDate && !checkOutDate && guests === undefined) {
+  if (
+    !checkInDate &&
+    !checkOutDate &&
+    checkOutDeltaDays === undefined &&
+    guests === undefined
+  ) {
     return null;
   }
 
-  return { checkInDate, checkOutDate, guests };
+  return { checkInDate, checkOutDate, checkOutDeltaDays, guests };
 };

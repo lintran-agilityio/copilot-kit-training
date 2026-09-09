@@ -50,6 +50,7 @@ const findBookingByIdRenderParams = z.object({
   purpose: z.enum(["cancel", "modify"]).optional(),
   requestedCheckInDate: z.string().optional(),
   requestedCheckOutDate: z.string().optional(),
+  requestedCheckOutDeltaDays: z.number().int().optional(),
   requestedGuests: z.number().optional(),
 });
 
@@ -140,7 +141,7 @@ export const BookingToolsProvider = () => {
       agentId: AGENT_KEYS.HOMESTAY_ASSISTANT,
       name: TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT,
       description:
-        "After find_bookings returns status: \"ambiguous\" for a MODIFY without bookingId, show the selectable list. Pass { bookingIds: [all ids from find_bookings' bookings], queryName } — do NOT send full bookings[] rows (tool args truncate) — PLUS requestedCheckInDate/requestedCheckOutDate/requestedGuests on this SAME call when the guest's latest message already stated a new value (extract now, not after the pick — the app carries it forward across the pause). The UI hydrates dates/prices from find_bookings. Do NOT pick the first booking. Pair this UI with exactly one short selection sentence in the guest's language; never repeat list fields. When confirmed: true, the app calls find_booking_by_id with bookingId from the result for you, carrying forward any requested fields you set on this call, and routes automatically (edit_modify_booking or stated-change availability). When confirmed: false, reply that bookings were kept unchanged. Never call update_booking from this tool.",
+        "After find_bookings returns status: \"ambiguous\" for a MODIFY without bookingId, show the selectable list. Pass { bookingIds: [all ids from find_bookings' bookings], queryName } — do NOT send full bookings[] rows (tool args truncate) — PLUS the stated-change fields on this SAME call when the guest's latest message already stated a new value (extract now, not after the pick — the app carries it forward across the pause): requestedCheckInDate/requestedGuests for absolute values, requestedCheckOutDate for an absolute new checkout, or requestedCheckOutDeltaDays for a stated extend/shorten by N nights (never compute a date — the app applies N against the checkout of the booking the guest ultimately selects). The UI hydrates dates/prices from find_bookings. Do NOT pick the first booking. Pair this UI with exactly one short selection sentence in the guest's language; never repeat list fields. When confirmed: true, the app calls find_booking_by_id with bookingId from the result for you, carrying forward any requested fields you set on this call, and routes automatically (edit_modify_booking or stated-change availability). When confirmed: false, reply that bookings were kept unchanged. Never call update_booking from this tool.",
       parameters: modifyBookingByRoomSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
         <ModifyBookingByRoomModal

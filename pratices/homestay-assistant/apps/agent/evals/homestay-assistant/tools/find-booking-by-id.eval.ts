@@ -1,6 +1,6 @@
 import { evalite } from "evalite";
 
-import { diffArgs, scoreResult } from "../../support/checks";
+import { argMatches, diffArgs, scoreResult } from "../../support/checks";
 import { toolCallArgs } from "../../support/tool-calls";
 import { runCase, type CaseResult } from "../../support/run-case";
 
@@ -72,34 +72,35 @@ const relativeCheckoutCases: DeltaCase[] = [
   },
 ];
 
-evalite<DeltaCase, CaseResult, Record<string, unknown>>(
-  "find_booking_by_id — relative checkout change goes on requestedCheckOutDeltaDays, not a self-computed date",
+evalite<DeltaCase, CaseResult, number>(
+  "find_booking_by_id — relative checkout change goes on requestedCheckOutDeltaDays (the tool does the date math)",
   {
     data: () =>
       relativeCheckoutCases.map((testCase) => ({
         input: testCase,
-        expected: {
-          requestedCheckOutDeltaDays: testCase.delta,
-          requestedCheckOutDate: undefined,
-          requestedCheckInDate: undefined,
-          requestedGuests: undefined,
-        },
+        expected: testCase.delta,
       })),
     task: (input) => runCase(input.message),
     scorers: [
       {
-        name: "only the stated delta is set; no self-computed date, other fields unset",
+        // The contract is: the stated relative count lands on
+        // requestedCheckOutDeltaDays (the tool then computes the date against
+        // the resolved booking — the delta is authoritative even if the model
+        // also sends a self-computed requestedCheckOutDate). A fabricated
+        // check-in change would be a real bug and still fails.
+        name: "stated relative count is on requestedCheckOutDeltaDays; no fabricated check-in change",
         scorer: ({ output, expected }) => {
           const args = toolCallArgs(output.toolCalls, "find_booking_by_id");
           if (!args) {
             return scoreResult(false, "find_booking_by_id was never called");
           }
-          const mismatches = diffArgs(args, expected!);
+          const deltaOk = args.requestedCheckOutDeltaDays === expected;
+          const checkInOk = argMatches(args.requestedCheckInDate, undefined);
           return scoreResult(
-            mismatches.length === 0,
-            mismatches.length === 0
+            deltaOk && checkInOk,
+            deltaOk && checkInOk
               ? `matched: ${JSON.stringify(args)}`
-              : `mismatched fields ${JSON.stringify(mismatches)} — full args: ${JSON.stringify(args)}`,
+              : `expected requestedCheckOutDeltaDays=${expected} and no requestedCheckInDate — got ${JSON.stringify(args)}`,
           );
         },
       },

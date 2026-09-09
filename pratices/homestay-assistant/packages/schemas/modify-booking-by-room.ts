@@ -47,7 +47,14 @@ export const modifyBookingByRoomSchema = z.object({
     .string()
     .optional()
     .describe(
-      "The NEW check-out (YYYY-MM-DD) the guest explicitly stated in the LATEST message (including a computed date from a stated night/day extend or shorten), same extraction rule as find_booking_by_id's field of the same name. Pass it here too — the app carries it across the picker. Omit entirely if no new check-out was stated.",
+      "The NEW check-out (YYYY-MM-DD) the guest explicitly stated as an ABSOLUTE date in the LATEST message, same extraction rule as find_booking_by_id's field of the same name. For a RELATIVE extend/shorten use requestedCheckOutDeltaDays. Pass it here too — the app carries it across the picker. Omit entirely if no new check-out was stated.",
+    ),
+  requestedCheckOutDeltaDays: z
+    .number()
+    .int()
+    .optional()
+    .describe(
+      "The guest's stated RELATIVE check-out change as a whole number of nights/days (positive to extend, negative to shorten, 0 = explicit no-op), same meaning as find_booking_by_id's field of the same name. Pass it here too (and do NOT also send requestedCheckOutDate) — the app carries it across the picker and applies it against the check-out of the booking the guest ultimately selects (never computed before the pick, and authoritative over any requestedCheckOutDate). Omit entirely if the guest gave an absolute date or no check-out change.",
     ),
   requestedGuests: z
     .number()
