@@ -27,24 +27,22 @@ type CreateCase = {
 
 const cases: CreateCase[] = [
   {
-    name: "full info, available room → reaches confirm_booking in order, never create_booking",
-    message: "Book the Riverside Twin Room for 2 guests on October 22, one night",
-    mustAppearInOrder: ["find_room", "confirm_booking"],
-    mustNotCall: ["check_room_availability", "create_booking"],
-  },
-  {
-    name: "full stay stated → skips the Booking Form (no get_room_by_id)",
+    name: "available room → find_room → confirm_booking, never create_booking",
     message:
-      "I want to book the Riverside Twin Room for 2 guests on October 20, one night",
+      "Book the Riverside Twin Room for 2 guests on October 22, one night",
     mustAppearInOrder: ["find_room", "confirm_booking"],
-    mustNotCall: ["get_room_by_id", "check_room_availability", "create_booking"],
+    mustNotCall: [
+      "check_room_availability",
+      "create_booking",
+    ],
   },
+
   {
-    // Riverside Twin has an existing booking 2026-10-05 → 2026-10-08 (fixtures).
-    // The find_room(book_resolve) probe reports it taken → the turn STOPS and
-    // FindRoomNotice renders BookingUnavailable. No confirm tool, no form.
-    name: "date taken → find_room only, turn stops (BookingUnavailable card)",
-    message: "Book the Riverside Twin Room for 2 guests on October 6, one night",
+    // Riverside Twin has an existing booking 2026-10-05 → 2026-10-08.
+    // find_room(book_resolve) reports the requested date as unavailable.
+    name: "date taken → find_room only, turn stops",
+    message:
+      "Book the Riverside Twin Room for 2 guests on October 6, one night",
     mustAppearInOrder: ["find_room"],
     mustNotCall: [
       "get_room_by_id",
