@@ -16,7 +16,8 @@
     "eval:tools": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run tools",
     "eval:conversation": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run conversation",
 
-    "eval:serve": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js serve"
+    "eval:serve": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js serve",
+    "eval:serve:render": "node --import ./scripts/render-evalite-serve.mjs --env-file-if-exists=.env node_modules/evalite/dist/bin.js serve"
   },
   "keywords": [],
   "author": "",

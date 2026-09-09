@@ -174,8 +174,15 @@ and use the repository root as the root directory. Configure these fields:
 | Name              | `homestay-evalite`                                                                                  |
 | Runtime           | Node                                                                                                |
 | Build command     | `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm turbo build --filter=agent` |
-| Start command     | `pnpm --filter=agent eval:serve`                                                                    |
+| Start command     | `pnpm --filter=agent eval:serve:render`                                                             |
 | Health check path | `/api/server-state`                                                                                 |
+
+> **Use `eval:serve:render`, not `eval:serve`.** Evalite 0.19.0's dashboard
+> binds `127.0.0.1`, which Render can't route to — the deploy fails its port
+> scan (`no open ports detected on 0.0.0.0 ... Detected open ports on
+> localhost`) and times out. `eval:serve:render` preloads
+> `apps/agent/scripts/render-evalite-serve.mjs`, which forces the Fastify
+> server to bind `0.0.0.0:$PORT`. `EVALITE_HOST` overrides the host.
 
 Add the following environment variables:
 
@@ -185,6 +192,7 @@ Add the following environment variables:
 | `PORT`            | `10000`                                     |
 | `AI_PROVIDER`     | `openai`                                    |
 | `OPENAI_API_KEY`  | Render secret containing the evaluation key |
+| `EVAL_TPM_BUDGET` | `150000` (per-minute token pace; `0` = off) |
 | `API_URL`         | `https://evalite-fixture.invalid`           |
 | `MASTRA_DATA_DIR` | `/tmp/mastra-evalite`                       |
 
@@ -192,6 +200,9 @@ Add the following environment variables:
 make real model calls. The deterministic suite is also run, but is free and
 does not need the key. The default model is `openai/gpt-4o-mini`; add
 `AI_MODEL` if the dashboard should evaluate another supported router model.
+`EVAL_TPM_BUDGET` paces the suite under the key's org-wide TPM cap (see
+"Concurrency & rate-limit notes" above) — lower it if this key is shared with
+the `homestay-web` / `homestay-agent` services.
 
 The dashboard exposes prompts, outputs, scores, and tool traces. Keep it
 private to the evaluation team: set an IP allow list in the Render service

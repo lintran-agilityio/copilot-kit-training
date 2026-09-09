@@ -69,6 +69,45 @@ stepContractEval("find_booking_by_id — MODIFY: form vs confirm vs stop", [
     expected: `force:${TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING}`,
   },
   {
+    // The tool resolved a relative "one more night" (requestedCheckOutDeltaDays: 1)
+    // against the booking's current 2026-10-08 checkout and echoed the absolute
+    // 2026-10-09 on requestedCheckOutDate — the step machine only ever sees the
+    // resolved date, and must route it exactly like any other stated change.
+    name: "modify · relative checkout delta resolved to a new date → force confirm_modify_booking",
+    last: {
+      toolName: TOOL_KEYS.BOOKING.FIND_BY_ID,
+      input: { purpose: TOOL_PURPOSE.FIND_BOOKING_BY_ID.MODIFY },
+      output: {
+        bookings: [booking],
+        requestedCheckOutDate: "2026-10-09",
+        availability: {
+          available: true,
+          guestsWithinCapacity: true,
+          checkInDate: "2026-10-05",
+          checkOutDate: "2026-10-09",
+          guests: 2,
+        },
+      },
+    },
+    expected: `force:${TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING}`,
+  },
+  {
+    // requestedCheckOutDeltaDays: 0 (explicit no-op) — the tool echoes the
+    // unchanged checkout and flags stayUnchanged, same terminal stop as any
+    // genuine no-op.
+    name: "modify · relative checkout delta 0 (explicit no-op) → stop",
+    last: {
+      toolName: TOOL_KEYS.BOOKING.FIND_BY_ID,
+      input: { purpose: TOOL_PURPOSE.FIND_BOOKING_BY_ID.MODIFY },
+      output: {
+        bookings: [booking],
+        requestedCheckOutDate: booking.checkOutDate,
+        stayUnchanged: true,
+      },
+    },
+    expected: "stop",
+  },
+  {
     name: "modify · stated change · dates taken → stop (BookingUnavailable renders)",
     last: {
       toolName: TOOL_KEYS.BOOKING.FIND_BY_ID,

@@ -21,7 +21,10 @@ services:
       pnpm install --frozen-lockfile --prod=false
       pnpm turbo build --filter=agent
 
-    startCommand: pnpm --filter=agent eval:serve
+    # `eval:serve:render` (not `eval:serve`) preloads scripts/render-evalite-serve.mjs,
+    # which forces Evalite's Fastify dashboard to bind 0.0.0.0:$PORT. Evalite
+    # 0.19.0 otherwise binds 127.0.0.1 and Render's port scan times out.
+    startCommand: pnpm --filter=agent eval:serve:render
 
     # Unlike the human-facing UI, this endpoint is a small stable health probe
     # as soon as Evalite's Fastify server starts (before a long LLM eval ends).

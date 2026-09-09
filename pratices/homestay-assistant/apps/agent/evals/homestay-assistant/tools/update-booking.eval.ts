@@ -42,6 +42,21 @@ const cases: ModifyCase[] = [
     ],
     mustNotCall: ["check_room_availability", "update_booking"],
   },
+  {
+    // Regression: a loosely-phrased RELATIVE extend ("count one more date")
+    // must resolve to requestedCheckOutDeltaDays and flow to the confirm gate —
+    // it must NOT be swallowed as a "no changes needed" no-op (the original
+    // bug), so confirm_modify_booking has to appear.
+    name: "relative checkout extend ('count one more date') → reaches confirm_modify_booking, never no-op",
+    message:
+      "I want to change the checkout date for my Riverside Twin Room booking, count one more date",
+    mustAppearInOrder: [
+      "find_bookings",
+      "find_booking_by_id",
+      "confirm_modify_booking",
+    ],
+    mustNotCall: ["check_room_availability", "update_booking"],
+  },
 ];
 
 evalite<ModifyCase, CaseResult, ModifyCase>(
