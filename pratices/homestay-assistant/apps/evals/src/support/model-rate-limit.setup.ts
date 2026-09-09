@@ -24,7 +24,12 @@
  *      (`EVAL_TPM_BUDGET`, default 150_000) — the cost of a call is estimated
  *      from its request body, and the budget is shared across the run's
  *      sequential worker forks via a small JSON ledger on disk;
- *   2. on a 429, honors `Retry-After` / the `x-ratelimit-reset-tokens`
+ *   2. enforces a minimum gap between consecutive provider requests
+ *      (`EVAL_MIN_REQUEST_INTERVAL_MS`, default 0 = off). Mistral's free tier
+ *      caps at ~1 request/second, and a single agent turn fires several
+ *      sequential model calls (detector → tool loop), so the dashboard sets
+ *      this to ~1100ms to stay under that ceiling;
+ *   3. on a 429, honors `Retry-After` / the `x-ratelimit-reset-tokens`
  *      header / "try again in Xs" and retries up to `EVAL_RATE_LIMIT_RETRIES`
  *      (default 6) times, so a transient overage never surfaces as a failure.
  *
@@ -32,16 +37,26 @@
  * its own `globalThis.fetch` per case that short-circuits its own origin and
  * delegates everything else to the fetch it captured — which is this one.
  *
- * Set `EVAL_TPM_BUDGET=0` to disable pacing (the 429 retry stays active).
+ * Set `EVAL_TPM_BUDGET=0` to disable token pacing (429 retry + the request
+ * spacing gate stay active).
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-const PROVIDER_HOSTS = ["api.openai.com", "openrouter.ai", "api.cerebras.ai"];
+const PROVIDER_HOSTS = [
+  "api.openai.com",
+  "openrouter.ai",
+  "api.cerebras.ai",
+  "api.mistral.ai",
+];
 
 const WINDOW_MS = 60_000;
 const TPM_BUDGET = Number(process.env.EVAL_TPM_BUDGET ?? 150_000);
+const MIN_REQUEST_INTERVAL_MS = Math.max(
+  0,
+  Number(process.env.EVAL_MIN_REQUEST_INTERVAL_MS ?? 0) || 0,
+);
 const MAX_RETRIES = Math.max(
   0,
   Number(process.env.EVAL_RATE_LIMIT_RETRIES ?? 6) || 0,
@@ -49,6 +64,10 @@ const MAX_RETRIES = Math.max(
 const LEDGER_PATH =
   process.env.EVAL_TPM_LEDGER ??
   join(process.env.MASTRA_DATA_DIR || tmpdir(), "evalite-tpm-ledger.json");
+const RPS_MARKER_PATH = join(
+  process.env.MASTRA_DATA_DIR || tmpdir(),
+  "evalite-rps-marker",
+);
 
 /** `[epochMs, tokens]` — entries older than the window are pruned on read. */
 type LedgerEntry = [number, number];
@@ -97,6 +116,34 @@ const estimateTokens = (init?: RequestInit): number => {
     return Math.ceil(promptChars / 4) + reservedOutput;
   } catch {
     return FALLBACK;
+  }
+};
+
+/**
+ * Block until at least `MIN_REQUEST_INTERVAL_MS` has elapsed since the last
+ * provider request, then stamp "now" as the new last-request time. The marker
+ * is a file so the spacing survives across the run's sequential worker forks
+ * (Mistral's free tier is ~1 req/s and forks would otherwise burst at file
+ * boundaries).
+ */
+const spaceRequests = async (): Promise<void> => {
+  if (MIN_REQUEST_INTERVAL_MS <= 0) return;
+  for (;;) {
+    let last = 0;
+    try {
+      last = Number(readFileSync(RPS_MARKER_PATH, "utf8")) || 0;
+    } catch {
+      last = 0;
+    }
+    const waitMs = last + MIN_REQUEST_INTERVAL_MS - Date.now();
+    if (waitMs <= 0) break;
+    await sleep(Math.min(waitMs, MIN_REQUEST_INTERVAL_MS));
+  }
+  try {
+    mkdirSync(dirname(RPS_MARKER_PATH), { recursive: true });
+    writeFileSync(RPS_MARKER_PATH, String(Date.now()));
+  } catch {
+    // Best effort: without the marker we lose cross-fork request spacing.
   }
 };
 
@@ -173,7 +220,10 @@ const install = (): void => {
     const estimate = estimateTokens(init);
 
     for (let attempt = 0; ; attempt += 1) {
-      await throughGate(() => acquireBudget(estimate));
+      await throughGate(async () => {
+        await acquireBudget(estimate);
+        await spaceRequests();
+      });
       const res = await baseFetch(input, init);
       if (res.status !== 429 || attempt >= MAX_RETRIES) return res;
 

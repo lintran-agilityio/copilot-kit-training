@@ -2,38 +2,42 @@
 
 Evalite-based behavioral evaluations for the Mastra agent in `apps/agent`. This suite tests **AI behavior** — intent routing, tool selection, tool arguments, booking-workflow ordering, response quality, and regressions for previously-fixed bugs. It does **not** test the CopilotKit UI, AG-UI transport, or NestJS API — those have their own test suites (or none yet, in the API's case).
 
-## Why it lives in `apps/agent`
+## Where it lives
 
-`apps/agent` owns the Mastra agent, its tools, prompts, and the booking step-machine — the actual "AI layer" this suite evaluates. Evalite (`evalite@0.19.0`) and `autoevals` were already listed as devDependencies here (with an `eval:dev` script) before this suite was added.
+This is its own workspace package (`apps/evals`, name `evals`), a peer of `apps/agent` / `apps/web` / `apps/api`. It imports the agent's real runtime, tools, prompts, and booking step-machine straight from `apps/agent`'s source through the `@agent/*` path alias (`apps/evals/tsconfig.json` + `apps/evals/vitest.config.ts`) — the same technique `apps/web` uses to reach `../agent/src/mastra/*`. Evalite (`evalite@0.19.0`), `autoevals`, and the eval runner tooling are devDependencies of this package only; `apps/agent` no longer carries them.
 
 ## Directory layout — per agent, per tool
 
 ```
-evals/
-├── support/                       shared harness — fixtures, fake API, agent harness, scorers, step-contract runner
-└── homestay-assistant/            the one agent (a 2nd agent would get a sibling directory)
-    ├── deterministic/             no LLM, no network, milliseconds — the free every-PR gate
-    │   ├── find-room.eval.ts               find_room result → transition (discovery never forces; book_resolve fork)
-    │   ├── create-booking.eval.ts          confirm_booking gate; create_booking terminal → stop
-    │   ├── update-booking.eval.ts          picker / edit-form / confirm_modify gates; update_booking → stop
-    │   ├── cancel-booking.eval.ts          show_cancel_dialog_confirm gate; cancel_booking → stop
-    │   └── find-booking-by-id.eval.ts      find_booking_by_id(modify) junction → edit form vs confirm_modify_booking vs stop (incl. its own availability probe)
-    ├── tools/                     real LLM calls through the real agent — structured (non-judge) scoring, per tool
-    │   ├── get-rooms.eval.ts               plain catalog browse only                                       (1 case)
-    │   ├── find-room.eval.ts               selection (discovery intent) + arguments (date/guests)          (4 cases)
-    │   ├── get-room-by-id.eval.ts          [book-form] → get_room_by_id only                               (1 case)
-    │   ├── create-booking.eval.ts          never mutates before the confirm gate; taken date stops        (2 cases)
-    │   ├── update-booking.eval.ts          never mutates before confirm; no-op modify never opens dialog  (2 cases)
-    │   ├── cancel-booking.eval.ts          resolve by name, stop at the cancel dialog                      (1 case)
-    │   ├── get-bookings.eval.ts            "show my bookings" routing; onDate discipline                   (3 cases)
-    │   ├── find-bookings.eval.ts           internal resolver, never find_room; not_found is a hard stop    (1 case)
-    │   └── find-booking-by-id.eval.ts      MODIFY "extend N nights" stated-change extraction               (1 case)
-    └── conversation/              agent-level, not per-tool
-        ├── response-quality.eval.ts        rubric-graded anti-hallucination (judge call per case)          (2 cases)
-        ├── multi-turn-context.eval.ts      token-limiter / step-count regression across one thread (3 turns)
-        ├── security-input.eval.ts          genuine injection blocked; first-party [book-form]/[booking-modify] NEVER blocked  (3 cases)
-        ├── booking-hitl-flow.eval.ts       confirmed HITL click → terminal mutation (create / cancel) lands; dismissal → no-op  (3 cases)
-        └── multi-turn-booking.eval.ts      stay continuity carries across turns                            (1 case)
+apps/evals/
+├── evalite.config.ts             evalite runner config (maxConcurrency, timeouts, setup files)
+├── vitest.config.ts              @agent/@ aliases + fileParallelism:false for the eval runner
+├── scripts/                      render-evalite-serve.mjs (Render bind fix), vercel-build.mjs (static export)
+└── src/
+    ├── support/                       shared harness — fixtures, fake API, agent harness, scorers, step-contract runner
+    └── homestay-assistant/            the one agent (a 2nd agent would get a sibling directory)
+        ├── deterministic/             no LLM, no network, milliseconds — the free every-PR gate
+        │   ├── find-room.eval.ts               find_room result → transition (discovery never forces; book_resolve fork)
+        │   ├── create-booking.eval.ts          confirm_booking gate; create_booking terminal → stop
+        │   ├── update-booking.eval.ts          picker / edit-form / confirm_modify gates; update_booking → stop
+        │   ├── cancel-booking.eval.ts          show_cancel_dialog_confirm gate; cancel_booking → stop
+        │   └── find-booking-by-id.eval.ts      find_booking_by_id(modify) junction → edit form vs confirm_modify_booking vs stop (incl. its own availability probe)
+        ├── tools/                     real LLM calls through the real agent — structured (non-judge) scoring, per tool
+        │   ├── get-rooms.eval.ts               plain catalog browse only                                       (1 case)
+        │   ├── find-room.eval.ts               selection (discovery intent) + arguments (date/guests)          (4 cases)
+        │   ├── get-room-by-id.eval.ts          [book-form] → get_room_by_id only                               (1 case)
+        │   ├── create-booking.eval.ts          never mutates before the confirm gate; taken date stops        (2 cases)
+        │   ├── update-booking.eval.ts          never mutates before confirm; no-op modify never opens dialog  (2 cases)
+        │   ├── cancel-booking.eval.ts          resolve by name, stop at the cancel dialog                      (1 case)
+        │   ├── get-bookings.eval.ts            "show my bookings" routing; onDate discipline                   (3 cases)
+        │   ├── find-bookings.eval.ts           internal resolver, never find_room; not_found is a hard stop    (1 case)
+        │   └── find-booking-by-id.eval.ts      MODIFY "extend N nights" stated-change extraction               (1 case)
+        └── conversation/              agent-level, not per-tool
+            ├── response-quality.eval.ts        rubric-graded anti-hallucination (judge call per case)          (2 cases)
+            ├── multi-turn-context.eval.ts      token-limiter / step-count regression across one thread (3 turns)
+            ├── security-input.eval.ts          genuine injection blocked; first-party [book-form]/[booking-modify] NEVER blocked  (3 cases)
+            ├── booking-hitl-flow.eval.ts       confirmed HITL click → terminal mutation (create / cancel) lands; dismissal → no-op  (3 cases)
+            └── multi-turn-booking.eval.ts      stay continuity carries across turns                            (1 case)
 ```
 
 > **Case counts are deliberately lean** (~24 real-LLM cases across `tools/` + `conversation/`, plus the free `deterministic/` suite). Each `tools/`/`conversation/` case is one real agent turn (~30k tokens; `response-quality` adds a judge call). Redundant phrasing variants and permanently-failing "known gap" cases were removed — add a case back only when it guards a distinct behavior nothing else covers.
@@ -63,28 +67,28 @@ The 5 HITL client tools (`confirm_booking`, `confirm_modify_booking`, `edit_modi
 ## How to run
 
 ```bash
-# from apps/agent
+# from apps/evals  (or `pnpm --filter=evals <script>` from anywhere)
 pnpm eval:deterministic   # homestay-assistant/deterministic/ only — no LLM, no network, runs in ms
 pnpm eval:tools           # homestay-assistant/tools/ — real LLM calls, structured scoring, costs tokens
 pnpm eval:conversation    # homestay-assistant/conversation/ — real LLM calls; response-quality adds a judge call per case
 pnpm eval                 # everything
-pnpm eval:watch           # watch mode (opens the Evalite UI at localhost:3006)
-pnpm check-types          # tsc --noEmit, includes evals/
+pnpm eval:serve           # runs the suite once, keeps the Evalite UI at localhost:3006
+pnpm check-types          # tsc --noEmit over src/ (+ the two configs)
 
 # one file at a time — pass a single path substring (the CLI takes exactly one positional):
 pnpm eval security-input
 pnpm eval booking-hitl-flow
 ```
 
-`pnpm eval` and `pnpm eval:watch` invoke `node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run|watch` directly — the `evalite` CLI has no `run`-vs-`watch` env-loading of its own, and `apps/agent` isn't started through `mastra dev` (which loads `.env` itself) for eval runs. `--env-file-if-exists` (not `--env-file`) means a missing `.env` doesn't crash the command — CI is expected to inject `OPENAI_API_KEY` etc. as real environment variables instead of a file.
+The `eval:*` scripts invoke `node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run|serve` directly — the `evalite` CLI has no env-loading of its own, and this package isn't started through `mastra dev` (which loads `.env` itself). `--env-file-if-exists` (not `--env-file`) means a missing `apps/evals/.env` doesn't crash the command — CI is expected to inject `OPENAI_API_KEY` etc. as real environment variables instead of a file.
 
 The `deterministic` / `behavioral` / `conversation` argument to `evalite run` is a **filename substring filter** (Vitest's file filtering) — `evalite run <substring>` only runs `*.eval.ts` files whose path contains that substring. `pnpm eval:deterministic` relies on `deterministic` matching every file under `homestay-assistant/deterministic/` and nothing outside it. Keep each of the three bucket names a unique path segment and don't put one inside another bucket's path.
 
 ## Required environment variables
 
-Same as running the agent normally (`apps/agent/.env`, see `.env.example`):
+Same as running the agent normally (put them in `apps/evals/.env`, see `apps/evals/.env.example`):
 
-- `OPENAI_API_KEY` — required for every `behavioral/` and `conversation/` eval (the agent's own model calls, plus the LLM judge in `conversation/response-quality.eval.ts`, which reuses the same `AI_MODEL` resolution as production — see `src/mastra/constants/model.ts`).
+- `OPENAI_API_KEY` — required for every `tools/` and `conversation/` eval (the agent's own model calls, plus the LLM judge in `conversation/response-quality.eval.ts`, which reuses the same `AI_MODEL` resolution as production — see `apps/agent/src/mastra/constants/model.ts`).
 - `API_URL` — read by the harness's fixture layer (`support/fake-api.ts` calls the same `getApiUrl()` production uses) but **no live `apps/api` process needs to be running** — see "How fixtures work" below. It only needs to parse to a valid URL.
 - `AI_PROVIDER` / `AI_MODEL` / `CEREBRAS_API_KEY` — optional, same switch as production (`openai` default). Evals were written and validated against the OpenAI path.
 
@@ -95,12 +99,12 @@ No secrets are hardcoded anywhere in this suite.
 The agent is invoked **directly and in-process** — no CopilotKit, no AG-UI, no HTTP server for the agent itself:
 
 ```ts
-import { mastra } from "../../src/mastra/runtime"; // the SAME instance apps/web's CopilotKit route uses
+import { mastra } from "@agent/mastra/runtime"; // the SAME instance apps/web's CopilotKit route uses
 const agent = mastra.getAgent(AGENT_KEYS.HOMESTAY_ASSISTANT);
 await agent.generate(message, { memory: { thread, resource }, requestContext });
 ```
 
-`runtime.ts` (not the Studio instance in `mastra/index.ts`) is what `apps/agent/src/copilotkit.ts`'s `getCopilotkitAgents` actually wires up for production traffic, so evaluating it — real prompt, real tools, real input/output processors, real booking step-machine — is what makes these evals faithful without going through AG-UI at all.
+`runtime.ts` (not the Studio instance in `mastra/index.ts`) is what `apps/agent/src/copilotkit.ts`'s `getCopilotkitAgents` actually wires up for production traffic, so evaluating it — real prompt, real tools, real input/output processors, real booking step-machine — is what makes these evals faithful without going through AG-UI at all. `@agent/*` resolves to `apps/agent/src/*` (alias in `apps/evals/tsconfig.json` for `tsc` and `apps/evals/vitest.config.ts` for the runner).
 
 Room/booking **data** is a fixed, deterministic dataset (`support/fixtures.ts`) — 3 rooms, 2 bookings, dates chosen to always be in the future relative to whenever the suite runs. Every request the agent's tools would normally send to the NestJS API (`apps/api`) is instead served by a fixture-backed `fetch` stub (`support/fake-api.ts`) that only intercepts requests whose **origin** matches `getApiUrl()` — everything else (the actual OpenAI/Cerebras call, the judge's call) passes straight through to the real network.
 
@@ -124,13 +128,13 @@ Three knobs, all aimed at staying under OpenAI's org-wide 200k TPM cap:
 
 - `evalite.config.ts` sets `maxConcurrency: 1` — serializes cases _within_ one `.eval.ts` file. The fixture `fetch` stub is installed on `globalThis.fetch` per case (`support/run-case.ts`) and restored afterward — evalite's default concurrency (5) would let two cases' install/restore race on that one global and leak the real network into a case still mid-flight. Don't raise `maxConcurrency` without also making the fetch stub properly scoped (e.g. per-case `AsyncLocalStorage`).
 - `vitest.config.ts` sets `test.fileParallelism: false` — serializes the _files_ themselves. Vitest otherwise runs `.eval.ts` files in parallel workers, and several real agent turns at once jointly exceed the OpenAI 200k TPM budget (each behavioral case ≈ a prompt-injection-detector call + a multi-step tool loop, ~30k tokens on gpt-4o-mini). Running one file at a time lets the pacing gate below see the whole run in one process's ledger. Evalite force-sets `testTimeout` / `maxConcurrency` / `setupFiles` but leaves `fileParallelism` to this file.
-- `evalite.config.ts` `setupFiles: ["./evals/support/model-rate-limit.setup.ts"]` — even fully serial, ~24 back-to-back turns still burst past 200k TPM on a fresh `evalite serve` deploy (Render was dying with `429 ... Limit 200000, Used 200000`). This setup file wraps `globalThis.fetch` in every worker and every mode (`eval`, `eval:watch`, `eval:serve`) to (1) pace model-provider requests through a trailing-60s token budget — `EVAL_TPM_BUDGET`, default `150_000`, shared across the run's sequential forks via a JSON ledger under `MASTRA_DATA_DIR` — and (2) retry a `429` honoring `Retry-After` up to `EVAL_RATE_LIMIT_RETRIES` (default 6) times, so a transient overage never surfaces as a failure. Set `EVAL_TPM_BUDGET=0` to disable pacing (429 retry stays on).
+- `evalite.config.ts` `setupFiles: ["./src/support/model-rate-limit.setup.ts"]` — even fully serial, ~24 back-to-back turns still burst past 200k TPM on a fresh `evalite serve` deploy (Render was dying with `429 ... Limit 200000, Used 200000`). This setup file wraps `globalThis.fetch` in every worker and every mode (`eval`, `eval:watch`, `eval:serve`) to (1) pace model-provider requests through a trailing-60s token budget — `EVAL_TPM_BUDGET`, default `150_000`, shared across the run's sequential forks via a JSON ledger under `MASTRA_DATA_DIR` — and (2) retry a `429` honoring `Retry-After` up to `EVAL_RATE_LIMIT_RETRIES` (default 6) times, so a transient overage never surfaces as a failure. Set `EVAL_TPM_BUDGET=0` to disable pacing (429 retry stays on).
 
 Net effect: `pnpm eval` runs every case strictly one after another _and_ throttles the token rate. It's slower (expect ~10–20 min for `tools/`) but doesn't hit `429 rate_limit_exceeded`.
 
 ## Which tests are deterministic vs LLM-judged
 
-- **Fully deterministic, no LLM call at all**: everything under `homestay-assistant/deterministic/` — the no-op/availability pure functions from `src/mastra/utils/modify-booking.ts`, plus the `resolveEnforcedTransition` step-machine entry point from `src/mastra/utils/step-machine.ts` driven with each tool's own documented result shape (`support/step-contract.ts` is the shared runner). No `agent.generate()`, no fixture API, no network.
+- **Fully deterministic, no LLM call at all**: everything under `homestay-assistant/deterministic/` — the no-op/availability pure functions from `apps/agent/src/mastra/utils/modify-booking.ts`, plus the `resolveEnforcedTransition` step-machine entry point from `apps/agent/src/mastra/utils/step-machine.ts` driven with each tool's own documented result shape (`support/step-contract.ts` is the shared runner). No `agent.generate()`, no fixture API, no network.
 - **Deterministic assertions over a real LLM-driven agent run**: everything under `homestay-assistant/behavioral/` and the `multi-turn-context` regression — the _agent's_ output is non-deterministic (a real model call), but the _scoring_ is a structured assertion (tool name, argument value, call order), not a semantic judgment. A flaky model response can still fail these; that's the model's routing/argument reliability being tested, not test flakiness.
 - **LLM-judged**: `homestay-assistant/conversation/response-quality.eval.ts` only. Every rubric line is a single literal, independently-checkable claim (see `support/judge.ts`) — never an open "does this look good?" — to keep it as low-flake as an LLM judge can reasonably be.
 
@@ -160,61 +164,71 @@ Net effect: `pnpm eval` runs every case strictly one after another _and_ throttl
 
 ## Render dashboard
 
-This repository is ready to deploy the interactive Evalite UI as a dedicated
-Render **Web Service**. It uses `evalite serve`: the service starts the UI,
-runs the suite once, and keeps the resulting run available in the browser.
-The deployed run remains fixture-backed; it does not call or mutate the
-production NestJS API.
+`render.yaml`'s `homestay-evalite` **Web Service** deploys the dashboard. The
+suite runs **once at build time** and the result is exported to a static
+bundle; the running service is just a file server, not a live Evalite process.
 
-In the Render Dashboard, select **New > Web Service**, connect this repository,
-and use the repository root as the root directory. Configure these fields:
+```
+build:   pnpm --filter=evals build:dashboard   →  apps/evals/evalite-export/
+start:   pnpm --filter=evals serve:dashboard    →  serves that folder on 0.0.0.0:$PORT
+```
 
-| Field             | Value                                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------------------- |
-| Name              | `homestay-evalite`                                                                                  |
-| Runtime           | Node                                                                                                |
-| Build command     | `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm turbo build --filter=agent` |
-| Start command     | `pnpm --filter=agent eval:serve:render`                                                             |
-| Health check path | `/api/server-state`                                                                                 |
+`build-dashboard.mjs` (1) runs the suite into an in-memory store, (2)
+`exportStaticUI`s it to `evalite-export/report/` under basePath `/report`, and
+(3) renders `evalite-export/index.html` — the "Evalite Reports" landing page
+(one card per eval, overall score, run timestamp) via `render-landing-page.mjs`.
+`serve-static.mjs` serves the tree and falls unknown `/report/*` paths back to
+the report SPA shell (it uses a browser router).
 
-> **Use `eval:serve:render`, not `eval:serve`.** Evalite 0.19.0's dashboard
-> binds `127.0.0.1`, which Render can't route to — the deploy fails its port
-> scan (`no open ports detected on 0.0.0.0 ... Detected open ports on
-> localhost`) and times out. `eval:serve:render` preloads
-> `apps/agent/scripts/render-evalite-serve.mjs`, which forces the Fastify
-> server to bind `0.0.0.0:$PORT`. `EVALITE_HOST` overrides the host.
+Everything stays fixture-backed: no live `apps/api`, no production DB.
 
-Add the following environment variables:
+### Deploy from `render.yaml` (Blueprint)
 
-| Key               | Value                                       |
-| ----------------- | ------------------------------------------- |
-| `NODE_VERSION`    | `22`                                        |
-| `PORT`            | `10000`                                     |
-| `AI_PROVIDER`     | `openai`                                    |
-| `OPENAI_API_KEY`  | Render secret containing the evaluation key |
-| `EVAL_TPM_BUDGET` | `150000` (per-minute token pace; `0` = off) |
-| `API_URL`         | `https://evalite-fixture.invalid`           |
-| `MASTRA_DATA_DIR` | `/tmp/mastra-evalite`                       |
+Push the branch, then in Render: **New > Blueprint**, point it at this repo.
+It picks up the `homestay-evalite` service. Set the one secret it asks for:
 
-`OPENAI_API_KEY` is required because the behavioral and conversation suites
-make real model calls. The deterministic suite is also run, but is free and
-does not need the key. The default model is `openai/gpt-4o-mini`; add
-`AI_MODEL` if the dashboard should evaluate another supported router model.
-`EVAL_TPM_BUDGET` paces the suite under the key's org-wide TPM cap (see
-"Concurrency & rate-limit notes" above) — lower it if this key is shared with
-the `homestay-web` / `homestay-agent` services.
+| Key              | Value                                                             |
+| ---------------- | ---------------------------------------------------------------- |
+| `MISTRAL_API_KEY` | from console.mistral.ai — the free "Experiment" tier is enough (needs phone verification + an activated plan, or every call 429s with `x-ratelimit-limit-req-minute: 0`) |
 
-The dashboard exposes prompts, outputs, scores, and tool traces. Keep it
-private to the evaluation team: set an IP allow list in the Render service
-settings or place it behind your organization's access proxy before sharing its
-URL. Results are intentionally in memory, so a restart or redeploy performs a
-new run and discards prior dashboard history.
+All other env is in `render.yaml`: `AI_PROVIDER=mistral`,
+`EVAL_DASHBOARD_PATH=tools`, `AI_SECURITY_MODEL=mistral/mistral-small-latest`,
+`EVAL_TPM_BUDGET=150000`, `EVAL_MIN_REQUEST_INTERVAL_MS=1100`,
+`API_URL=https://evalite-fixture.invalid`, `MASTRA_DATA_DIR=/tmp/mastra-evalite`,
+`PORT=10000`.
+
+### Manual service (no Blueprint)
+
+**New > Web Service**, connect the repo, repo root as root directory:
+
+| Field             | Value                                                          |
+| ----------------- | ------------------------------------------------------------- |
+| Runtime           | Node                                                           |
+| Build command     | `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter=evals build:dashboard` |
+| Start command     | `pnpm --filter=evals serve:dashboard`                          |
+| Health check path | `/`                                                            |
+
+then add every env var listed above (`MISTRAL_API_KEY` as a secret).
+
+### Notes
+
+- **Build time.** The `tools` suite on Mistral's free tier (1 req/s + retries)
+  can run 15–25 min. If Render's build time limit bites, set
+  `EVAL_DASHBOARD_PATH=deterministic` (free, seconds) — the landing page and
+  report still build, just without the real-LLM rows.
+- **Fresh each deploy.** Storage is in-memory; a redeploy re-runs the suite and
+  discards prior history. There is no server-side "re-run" button.
+- **Access.** The report exposes prompts, outputs, scores, and tool traces. Put
+  an IP allow list / access proxy in front before sharing the URL.
+- `eval:serve` / `eval:serve:render` still work for a **local** live UI
+  (`render-evalite-serve.mjs` is the Fastify 0.0.0.0 bind fix for that path);
+  they are no longer what Render runs.
 
 ## Vercel deployment
 
 Vercel deploys the dashboard as a static artifact. The build runs the
 deterministic suite with one in-memory storage instance, then exports that run
-to `apps/agent/evalite-export/`. This avoids a long-running Evalite server and
+to `apps/evals/evalite-export/`. This avoids a long-running Evalite server and
 the native `better-sqlite3` dependency.
 
 From the repository root, create a Vercel project with the repository root as
@@ -225,9 +239,9 @@ vercel
 ```
 
 The root `vercel.json` already configures the pnpm install command, the
-`agent` build script, and the static output directory. Add these environment
-variables in Vercel if you later change the build to include behavioral or
-conversation evals:
+`evals` package's `vercel:build` script, and the static output directory. Add
+these environment variables in Vercel if you later change the build to include
+`tools/` or `conversation/` evals:
 
 - `OPENAI_API_KEY`
 - `API_URL` = `https://evalite-fixture.invalid`
@@ -241,6 +255,6 @@ API key. The deployed URL is a snapshot from the latest build; use Render's
 
 There is no CI pipeline in this repository yet (no `.github/workflows`, no other CI config) — this suite doesn't introduce one. If/when CI is added:
 
-- Run `pnpm eval:deterministic` on every PR — it's free (no API key, no network, milliseconds) and catches regressions in the booking step-machine's ordering contract directly.
-- Run `pnpm eval:behavioral` / `pnpm eval:conversation` separately from the fast PR gate — they cost real API tokens, take minutes (the OpenAI free/low tier throttles per-minute tokens; expect `Rate limit approaching, waiting…` pauses), and their non-deterministic-input-deterministic-scoring cases can occasionally fail on model variance even when nothing regressed. A nightly/manual/label-triggered job is more appropriate than a required PR check.
-- Either way, always run `pnpm check-types` (typechecks `src/**/*` and `evals/**/*` together) first — it's free and catches the most common eval-authoring mistakes before spending API budget.
+- Run `pnpm --filter=evals eval:deterministic` on every PR — it's free (no API key, no network, milliseconds) and catches regressions in the booking step-machine's ordering contract directly.
+- Run `pnpm --filter=evals eval:tools` / `pnpm --filter=evals eval:conversation` separately from the fast PR gate — they cost real API tokens, take minutes (the OpenAI free/low tier throttles per-minute tokens; expect `Rate limit approaching, waiting…` pauses), and their non-deterministic-input-deterministic-scoring cases can occasionally fail on model variance even when nothing regressed. A nightly/manual/label-triggered job is more appropriate than a required PR check.
+- Either way, always run `pnpm --filter=evals check-types` (typechecks `apps/evals/src/**/*`, following `@agent/*` into `apps/agent/src`) first — it's free and catches the most common eval-authoring mistakes before spending API budget.

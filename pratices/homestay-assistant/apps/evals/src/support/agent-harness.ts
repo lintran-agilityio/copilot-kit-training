@@ -4,15 +4,15 @@ import { RequestContext } from "@mastra/core/request-context";
 import { AGENT_KEYS } from "@repo/constants";
 import { getAgentResourceId } from "@repo/utils";
 
-import type { MastraAuthContext } from "../../src/mastra/middleware/authentication/authentication.types";
-import { REQUEST_CONTEXT_KEYS } from "../../src/mastra/middleware/constants";
-import { runWithAgentRequest } from "../../src/mastra/middleware/request-pipeline/agent-request-als";
+import type { MastraAuthContext } from "@agent/mastra/middleware/authentication/authentication.types";
+import { REQUEST_CONTEXT_KEYS } from "@agent/mastra/middleware/constants";
+import { runWithAgentRequest } from "@agent/mastra/middleware/request-pipeline/agent-request-als";
 // `runtime.ts` is the same Mastra instance apps/web's CopilotKit route uses
 // (`getCopilotkitAgents` in src/copilotkit.ts) — evaluating this instance,
 // not the Studio one in `mastra/index.ts`, is what makes these evals
 // faithful to production behavior (same tools, prompts, processors,
 // step-machine) without going through AG-UI/CopilotKit transport at all.
-import { mastra } from "../../src/mastra/runtime";
+import { mastra } from "@agent/mastra/runtime";
 
 import {
   buildResolvingHitlTools,

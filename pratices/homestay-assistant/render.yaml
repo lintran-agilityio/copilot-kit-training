@@ -2,36 +2,44 @@ services:
   # ============================================================
   # EVALITE DASHBOARD
   # ============================================================
-  # `evalite serve` executes the suite once at process startup and keeps its
-  # interactive results UI alive. It intentionally has in-memory storage:
-  # every deploy starts a fresh, fixture-backed evaluation run rather than
-  # retaining agent conversations or test artifacts on Render's filesystem.
+  # The suite runs ONCE at build time (`pnpm --filter=evals build:dashboard`),
+  # which exports a static Evalite report plus a landing page into
+  # apps/evals/evalite-export/. `serve:dashboard` then serves that folder — a
+  # ~40-line static server, no long-running Evalite/Fastify process. Storage is
+  # in-memory and fixture-backed: nothing is read from or written to the
+  # production NestJS database, and each deploy is a fresh run (no history).
   #
-  # The UI includes test prompts, outputs, and tool traces. Restrict access in
-  # Render (for example, with an IP allow list) before sharing this service.
+  #   evalite-export/index.html     "Evalite Reports" landing (render-landing-page.mjs)
+  #   evalite-export/report/        the Evalite report SPA  (evalite/export-static)
+  #
+  # The report exposes test prompts, outputs, and tool traces. Restrict access
+  # in Render (IP allow list / access proxy) before sharing this service's URL.
   - type: web
     name: homestay-evalite
     runtime: node
     plan: starter
 
-    # Evalite and the Mastra CLI are package devDependencies. Keep them in this
-    # service's production image because `evalite serve` runs at startup.
+    # `evalite` is a devDependency of the `evals` package, so keep dev deps in
+    # the image (`--prod=false`) — the eval run happens here, at build time.
+    # The harness imports the agent from `apps/agent` *source* (via the
+    # `@agent/*` alias) through Vitest's transpiler, so only the `@repo/*`
+    # packages need compiling — `prebuild:dashboard` does that. No `mastra build`.
     buildCommand: |
       corepack enable
       pnpm install --frozen-lockfile --prod=false
-      pnpm turbo build --filter=agent
+      pnpm --filter=evals build:dashboard
 
-    # `eval:serve:render` (not `eval:serve`) preloads scripts/render-evalite-serve.mjs,
-    # which forces Evalite's Fastify dashboard to bind 0.0.0.0:$PORT. Evalite
-    # 0.19.0 otherwise binds 127.0.0.1 and Render's port scan times out.
-    startCommand: pnpm --filter=agent eval:serve:render
+    # Static file server; binds 0.0.0.0:$PORT itself and adds the SPA fallback
+    # the `/report` subtree needs (apps/evals/scripts/serve-static.mjs).
+    startCommand: pnpm --filter=evals serve:dashboard
 
-    # Unlike the human-facing UI, this endpoint is a small stable health probe
-    # as soon as Evalite's Fastify server starts (before a long LLM eval ends).
-    healthCheckPath: /api/server-state
+    # The static server answers `/` as soon as it is listening.
+    healthCheckPath: /
 
     buildFilter:
       paths:
+        - apps/evals/**
+        # eval behavior is evaluated against the agent's source
         - apps/agent/**
         - packages/**
         - package.json
@@ -43,36 +51,48 @@ services:
       - key: NODE_VERSION
         value: "22"
 
-      # Evalite reads this through evalite.config.ts so it binds to Render's
-      # public HTTP port instead of its local default (3006).
+      # serve-static.mjs binds this; Render also expects the service on it.
       - key: PORT
         value: "10000"
 
       - key: NODE_ENV
         value: production
 
-      - key: AI_PROVIDER
-        value: openai
+      # Which suite the build evaluates (path substring filter). `tools` = the
+      # real-LLM per-tool routing suite. Set to `deterministic` (free, seconds)
+      # if the Mistral run makes the build exceed Render's build time limit.
+      - key: EVAL_DASHBOARD_PATH
+        value: tools
 
-      # Required for behavioral and conversation suites. Add this as a Render
-      # secret; never commit it.
-      - key: OPENAI_API_KEY
+      - key: AI_PROVIDER
+        value: mistral
+
+      # Mistral API key (console.mistral.ai) — the free "Experiment" tier is
+      # enough. Add as a Render secret; never commit it.
+      - key: MISTRAL_API_KEY
         sync: false
 
-      # Trailing-60s token budget the eval run paces itself to, so a fresh
-      # `evalite serve` never bursts past OpenAI's org-wide 200k TPM cap
-      # (evals/support/model-rate-limit.setup.ts). Lower it if this key's org
-      # shares the cap with the other services; set 0 to disable pacing.
+      # Prompt-injection detector model. Auto-resolves to Mistral when
+      # AI_PROVIDER=mistral, pinned here so a stray OPENAI_API_KEY can't flip it.
+      - key: AI_SECURITY_MODEL
+        value: mistral/mistral-small-latest
+
+      # Trailing-60s token budget the run paces itself to (default 150k). Mistral
+      # free tier is 500k TPM, so this is conservative; 0 disables token pacing.
       - key: EVAL_TPM_BUDGET
         value: "150000"
+
+      # Mistral free tier caps at ~1 request/second and one agent turn fires
+      # several sequential model calls — space provider requests out.
+      - key: EVAL_MIN_REQUEST_INTERVAL_MS
+        value: "1100"
 
       # Evals replace requests to this origin with fixture responses, so the
       # dashboard never reads or mutates the deployed NestJS database.
       - key: API_URL
         value: https://evalite-fixture.invalid
 
-      # Eval threads use ephemeral storage and must not be written into the
-      # source tree or mistaken for production agent history.
+      # Rate-limiter ledger / request-spacing marker + ephemeral Mastra storage.
       - key: MASTRA_DATA_DIR
         value: /tmp/mastra-evalite
 

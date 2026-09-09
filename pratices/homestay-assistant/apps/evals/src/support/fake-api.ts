@@ -1,8 +1,8 @@
 import { ROUTES } from "@repo/constants";
 import { BookingStatus } from "@repo/types";
 
-import type { Booking } from "../../src/mastra/schemas/booking";
-import { getApiUrl } from "../../src/mastra/services/common";
+import type { Booking } from "@agent/mastra/schemas/booking";
+import { getApiUrl } from "@agent/mastra/services/common";
 import {
   EVAL_USER_ID,
   FIXTURE_BOOKINGS,

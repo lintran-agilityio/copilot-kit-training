@@ -7,7 +7,7 @@ import type {
 import { RequestContext } from "@mastra/core/request-context";
 import { TOOL_KEYS, TOOL_PURPOSE } from "@repo/constants";
 
-import { enforceBookingStep } from "../../../src/mastra/utils/step-machine";
+import { enforceBookingStep } from "@agent/mastra/utils/step-machine";
 import { scoreResult } from "../../support/checks";
 
 /**

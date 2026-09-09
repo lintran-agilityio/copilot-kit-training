@@ -1,19 +1,27 @@
 import path from "node:path";
+
 import { defineConfig } from "vitest/config";
 
 /**
  * Evalite runs on Vitest under the hood but exposes no plugin/alias hook of
  * its own (`Evalite.Config` has no `plugins`/`resolve` field) — Vitest's
- * `createVitest` still auto-discovers a `vitest.config.ts` in the project
- * root, though, so this file exists to mirror tsconfig.json's `@/*` path
- * alias for the eval runner and to pin its execution model. It is not used
- * by `mastra dev`/`build` (those go through the Mastra CLI's own bundler) or
- * by `pnpm test` (plain `tsx`) — only by `evalite run|watch`.
+ * `createVitest` still auto-discovers a `vitest.config.ts` in this package's
+ * root, though, so this file exists to give the eval runner the same module
+ * aliases `tsconfig.json` gives `tsc`, and to pin its execution model. It is
+ * only consumed by `evalite run|serve` — nothing in `apps/agent` uses it.
+ *
+ * Both aliases point into `apps/agent`'s source:
+ *   - `@agent/*` is what the eval harness imports (`@agent/mastra/runtime`, …).
+ *   - `@/*` is what the agent's own source imports internally (`@/mastra/*`),
+ *     so the runner needs it too once it starts transpiling those files.
  */
+const agentSrc = path.resolve(import.meta.dirname, "../agent/src");
+
 export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@agent": agentSrc,
+      "@": agentSrc,
     },
   },
   test: {
