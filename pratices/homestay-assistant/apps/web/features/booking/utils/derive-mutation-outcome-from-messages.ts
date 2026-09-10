@@ -1,5 +1,5 @@
 import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
-import { parseToolResult } from "@repo/utils";
+import { parseToolResult, type ModifyEpisodeUpdate } from "@repo/utils";
 import { z } from "zod";
 
 import {
@@ -23,7 +23,6 @@ import {
   isUpdateBookingSuccess,
   buildCancelBookingCorrelationKey,
   buildCreateStayCorrelationKey,
-  buildModifyStayCorrelationKey,
   getCancelBookingFailureMessage,
   getCreateBookingFailureMessage,
   getModifyBookingFailureMessage,
@@ -296,55 +295,32 @@ export const deriveCancelBookingOutcomeFromMessages = (
   };
 };
 
-export const deriveModifyBookingOutcomeFromMessages = (
-  messages: MessageLike[] | undefined,
-  correlationKey: string | null,
+/**
+ * Card outcome for the `update_booking` attempt in a confirm_modify_booking
+ * card's own episode (see selectModifyEpisode) — a call still running reads as
+ * submitting, so a card never adopts another card's mutation.
+ */
+export const deriveModifyOutcomeFromEpisodeUpdate = (
+  update: ModifyEpisodeUpdate | null | undefined,
 ): ModifyBookingCardOutcome | null => {
-  const hits = collectMutationToolHits(
-    messages,
-    TOOL_KEYS.BOOKING.UPDATE_BOOKING,
-  );
-  const hit = pickHit(hits, Boolean(correlationKey), (candidate) => {
-    const candidateKey = buildModifyStayCorrelationKey({
-      bookingId: candidate.args.bookingId,
-      checkInDate: candidate.args.checkInDate,
-      checkOutDate: candidate.args.checkOutDate,
-      guests: candidate.args.guests,
-    });
-    return Boolean(correlationKey && candidateKey === correlationKey);
-  });
-
-  if (!hit?.resultContent) {
+  if (!update) {
     return null;
   }
 
-  const resolvedCorrelationKey =
-    correlationKey ??
-    buildModifyStayCorrelationKey({
-      bookingId: hit.args.bookingId,
-      checkInDate: hit.args.checkInDate,
-      checkOutDate: hit.args.checkOutDate,
-      guests: hit.args.guests,
-    }) ??
-    hit.toolCallId;
+  if (update.result == null) {
+    return { phase: BOOKING_MUTATION_PHASE.SUBMITTING };
+  }
 
-  if (isUpdateBookingSuccess(hit.resultContent)) {
-    const parsed = parseToolResult<UpdateBookingResult>(hit.resultContent);
-    const bookingId = parsed?.id?.trim() ?? hit.args.bookingId?.trim();
-    if (!bookingId) {
-      return null;
-    }
-
+  const result = update.result as UpdateBookingResult | string;
+  if (isUpdateBookingSuccess(result)) {
     return {
-      correlationKey: resolvedCorrelationKey,
       phase: BOOKING_MUTATION_PHASE.SUCCESS,
-      bookingId,
+      bookingId: parseToolResult<UpdateBookingResult>(result)?.id?.trim(),
     };
   }
 
   return {
-    correlationKey: resolvedCorrelationKey,
     phase: BOOKING_MUTATION_PHASE.FAILED,
-    errorMessage: getModifyBookingFailureMessage(hit.resultContent),
+    errorMessage: getModifyBookingFailureMessage(result),
   };
 };

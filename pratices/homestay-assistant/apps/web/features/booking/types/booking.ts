@@ -37,6 +37,13 @@ export type ModifyStaySnapshot = {
   guests: number;
 };
 
+/** Room fields the confirm_modify_booking card renders (web Room or model-authored args.room). */
+export type ModifyCardRoom = {
+  id: string;
+  name: string;
+  pricePerNight?: number;
+};
+
 /** Candidate stay chosen in edit_modify_booking — authoritative for confirm_modify UI. */
 export type PendingModifyStay = ModifyStaySnapshot & {
   bookingId: string;

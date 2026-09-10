@@ -425,6 +425,13 @@ const resolveBookingWorkflowTransition = (
     );
   }
 
+  // A painted RoomComparison owns the turn — stop so the model only adds its
+  // pointer sentence (never get_room_by_id per room, never another search).
+  // `no_candidates` painted nothing: leave the model free to search or ask.
+  if (toolName === TOOL_KEYS.GET.COMPARE_ROOMS) {
+    return outputRecord.status === "rendered" ? { type: "stop" } : undefined;
+  }
+
   const followUpTool = CONFIRMATION_FOLLOW_UPS[toolName];
   if (followUpTool) {
     return outputRecord.confirmed === true

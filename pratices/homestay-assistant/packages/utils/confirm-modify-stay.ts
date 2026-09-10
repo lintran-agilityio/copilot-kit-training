@@ -13,7 +13,10 @@
  * `buildModifyChangeRows()` returns `[]`, and it hides itself as a no-op — the
  * guest gets the companion sentence ("Please review and confirm the changes.")
  * and no card. Reading the merged stay off `result.availability` (and the
- * original off `result.bookings[0]`) makes the card deterministic.
+ * original off the booking row) makes the card deterministic.
+ *
+ * Which result a card may read is decided by `modify-episode.ts` — never scan
+ * the whole transcript for "the latest" lookup.
  */
 
 export type ConfirmModifyStaySnapshot = {
@@ -32,14 +35,20 @@ export type ConfirmModifyStayResolution<TRoom> = {
   original: ConfirmModifyStaySnapshot;
 };
 
-type FindBookingByIdResultLike<TRoom> = {
-  bookings?: {
-    bookingId?: string;
-    checkInDate?: string;
-    checkOutDate?: string;
-    guests?: number;
-  }[];
+export type FindBookingByIdRowLike = {
+  bookingId?: string;
+  roomId?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+};
+
+export type FindBookingByIdResultLike<TRoom> = {
+  bookings?: FindBookingByIdRowLike[];
   room?: TRoom;
+  requestedCheckInDate?: string;
+  requestedCheckOutDate?: string;
+  requestedGuests?: number;
   availability?: {
     available?: boolean;
     guestsWithinCapacity?: boolean;
@@ -47,45 +56,67 @@ type FindBookingByIdResultLike<TRoom> = {
     checkOutDate?: string;
     guests?: number;
   };
+  stayUnchanged?: boolean;
 };
 
+/** A booking row whose current stay is complete enough to diff against. */
+export type FindBookingByIdRow = FindBookingByIdRowLike &
+  ConfirmModifyStaySnapshot;
+
 /**
- * Authoritative confirm_modify_booking stay for the MODIFY *stated-change*
- * path, read off one resolved `find_booking_by_id` result.
+ * The booking row a `find_booking_by_id` result describes.
  *
- * Returns `null` when the result is not a free stated-change probe:
- *   - no `availability` block → no stated change (the edit form owns the turn), or
- *   - `available: false` / `guestsWithinCapacity: false` → the step machine
- *     stops the turn and BookingUnavailable renders — there is no confirm card.
+ * With a `bookingId` the match is strict. Falling back to `bookings[0]` let
+ * booking A's lookup answer a confirm card for booking B: B's card rendered
+ * A's room and stay, and its Confirm sent B's `bookingId` with A's dates, which
+ * `update_booking` then wrote to B.
  */
-export const selectConfirmModifyStayFromResult = <TRoom>(
-  result: FindBookingByIdResultLike<TRoom> | null | undefined,
+export const selectFindBookingRow = (
+  result: Pick<FindBookingByIdResultLike<unknown>, "bookings"> | null | undefined,
   bookingId?: string,
-): ConfirmModifyStayResolution<TRoom> | null => {
-  const availability = result?.availability;
-  if (
-    !availability ||
-    availability.available === false ||
-    availability.guestsWithinCapacity === false
-  ) {
-    return null;
-  }
-
+): FindBookingByIdRow | null => {
   const wanted = bookingId?.trim();
-  const booking =
-    (wanted
-      ? result?.bookings?.find((row) => row?.bookingId === wanted)
-      : undefined) ?? result?.bookings?.[0];
+  const row = wanted
+    ? result?.bookings?.find((candidate) => candidate?.bookingId?.trim() === wanted)
+    : result?.bookings?.[0];
 
   if (
-    !booking?.checkInDate?.trim() ||
-    !booking.checkOutDate?.trim() ||
-    typeof booking.guests !== "number"
+    !row?.checkInDate?.trim() ||
+    !row.checkOutDate?.trim() ||
+    typeof row.guests !== "number"
   ) {
     return null;
   }
 
-  const proposed: ConfirmModifyStaySnapshot = {
+  return row as FindBookingByIdRow;
+};
+
+export const toConfirmModifyStaySnapshot = (
+  stay: ConfirmModifyStaySnapshot,
+): ConfirmModifyStaySnapshot => ({
+  checkInDate: stay.checkInDate,
+  checkOutDate: stay.checkOutDate,
+  guests: stay.guests,
+});
+
+/** True when the probe ran and reported the merged stay taken / over capacity. */
+export const isModifyProbeUnavailable = (
+  result: Pick<FindBookingByIdResultLike<unknown>, "availability">,
+): boolean =>
+  result.availability?.available === false ||
+  result.availability?.guestsWithinCapacity === false;
+
+/** The merged stay a free availability probe cleared, or null without a free probe. */
+export const selectProbedModifyStay = (
+  result: Pick<FindBookingByIdResultLike<unknown>, "availability">,
+  booking: ConfirmModifyStaySnapshot,
+): ConfirmModifyStaySnapshot | null => {
+  const availability = result.availability;
+  if (!availability || isModifyProbeUnavailable(result)) {
+    return null;
+  }
+
+  return {
     checkInDate: availability.checkInDate?.trim() || booking.checkInDate,
     checkOutDate: availability.checkOutDate?.trim() || booking.checkOutDate,
     guests:
@@ -93,15 +124,41 @@ export const selectConfirmModifyStayFromResult = <TRoom>(
         ? availability.guests
         : booking.guests,
   };
+};
+
+/**
+ * Authoritative confirm_modify_booking stay for the MODIFY *stated-change*
+ * path, read off one resolved `find_booking_by_id` result.
+ *
+ * Returns `null` when the result is not a free stated-change probe for the
+ * requested booking:
+ *   - no `availability` block → no stated change (the edit form owns the turn), or
+ *   - `available: false` / `guestsWithinCapacity: false` → the step machine
+ *     stops the turn and BookingUnavailable renders — there is no confirm card, or
+ *   - `bookingId` is not a row of this result → it describes another booking.
+ */
+export const selectConfirmModifyStayFromResult = <TRoom>(
+  result: FindBookingByIdResultLike<TRoom> | null | undefined,
+  bookingId?: string,
+): ConfirmModifyStayResolution<TRoom> | null => {
+  if (!result) {
+    return null;
+  }
+
+  const booking = selectFindBookingRow(result, bookingId);
+  if (!booking) {
+    return null;
+  }
+
+  const proposed = selectProbedModifyStay(result, booking);
+  if (!proposed) {
+    return null;
+  }
 
   return {
     bookingId: booking.bookingId?.trim() || undefined,
-    room: result?.room,
+    room: result.room,
     proposed,
-    original: {
-      checkInDate: booking.checkInDate,
-      checkOutDate: booking.checkOutDate,
-      guests: booking.guests,
-    },
+    original: toConfirmModifyStaySnapshot(booking),
   };
 };

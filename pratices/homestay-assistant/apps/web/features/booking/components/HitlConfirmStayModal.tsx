@@ -10,6 +10,7 @@ import {
   HOMESTAY_AGENT_TASK_TYPE,
 } from "@repo/constants";
 import { MODEL_NAME } from "@repo/types";
+import { selectConfirmModifyCardView } from "@repo/utils";
 import type {
   ConfirmBookingArgs,
   ConfirmBookingResult,
@@ -30,7 +31,7 @@ import {
 import {
   useConfirmBookingRoom,
   useHitlConfirmDialog,
-  useModifyBookingResolution,
+  useModifyBookingEpisode,
   useRetryCreateBooking,
   useRetryModifyBooking,
 } from "@/features/booking/hooks";
@@ -42,17 +43,18 @@ import { useReportHomestayAgentUiFocus } from "@/features/chatbot/hooks";
 import {
   buildCreateStayCorrelationKey,
   buildModifyChangeRows,
-  buildModifyStayCorrelationKey,
   coalesceBookingCardOutcome,
   deriveCreateBookingOutcomeFromMessages,
-  deriveModifyBookingOutcomeFromMessages,
+  deriveModifyOutcomeFromEpisodeUpdate,
   hasRequiredCreateArgs,
   hasRoomStayFields,
   resolveHitlCardPhase,
-  resolveOriginalStay,
   shouldRenderHitlCard,
 } from "@/features/booking/utils";
-import type { HitlToolResult } from "@/features/booking/types";
+import type {
+  HitlToolResult,
+  ModifyCardRoom,
+} from "@/features/booking/types";
 
 type HitlConfirmStayModalProps =
   | {
@@ -273,10 +275,6 @@ const HitlConfirmModifyStayModal = ({
   } = CONFIRM_BOOKING.MODIFY;
   const router = useRouter();
 
-  const pendingModifyStay = useBookingStore((state) => state.pendingModifyStay);
-  const setPendingModifyStay = useBookingStore(
-    (state) => state.setPendingModifyStay,
-  );
   const markSubmitting = useModifyBookingCardStore(
     (state) => state.markSubmitting,
   );
@@ -303,65 +301,48 @@ const HitlConfirmModifyStayModal = ({
   // disable the controls needed to resolve that run.
   const isAgentBusy = agent.isRunning && !canRespond;
 
-  // Stated-change path: the merged/proposed stay, room, and originals are
-  // authoritative on the find_booking_by_id result — NOT on the model-authored
-  // confirm_modify_booking args (a weak model routinely copies the booking's
-  // original check-out into `checkOutDate`, collapsing the before → after diff
-  // so this card hides itself as a no-op). The edit-form path has no such
-  // result (no `availability` block) and keeps using pendingModifyStay.
-  const resolution = useModifyBookingResolution(args.bookingId);
-
-  const bookingId = (args.bookingId ?? resolution?.bookingId ?? "").trim();
-  const room = resolution?.room ?? args.room;
-
-  // The edit-form path is fully described by pendingModifyStay (proposed +
-  // original). Only fall back to the find_booking_by_id resolution on the
-  // stated-change path — an earlier stated-change result left in the transcript
-  // must not leak into a later form-path modify of the same booking.
-  const stayFromEdit =
-    pendingModifyStay?.bookingId != null &&
-    pendingModifyStay.bookingId === bookingId
-      ? pendingModifyStay
-      : null;
-  const resolvedStay = stayFromEdit ? null : resolution;
-
-  // Prefer dates/guests the guest chose in edit_modify_booking, then the
-  // find_booking_by_id merged stay, and only then the model's args.
-  const checkInDate =
-    stayFromEdit?.checkInDate ??
-    resolvedStay?.proposed.checkInDate ??
-    args.checkInDate ??
-    "";
-  const checkOutDate =
-    stayFromEdit?.checkOutDate ??
-    resolvedStay?.proposed.checkOutDate ??
-    args.checkOutDate ??
-    "";
-  const guests =
-    stayFromEdit?.guests ??
-    resolvedStay?.proposed.guests ??
-    (typeof args.guests === "number" ? args.guests : 0);
+  // Everything booking-scoped on this card comes from ITS OWN modify episode —
+  // the find_booking_by_id / edit form / update_booking around this card's tool
+  // call (see selectModifyEpisode). confirm_modify_booking args are
+  // model-authored: a weak model copies the booking's original check-out into
+  // `checkOutDate`, drops `room`, or re-sends the previous modify's booking —
+  // and a whole-transcript scan let modify A's lookup answer modify B's card.
+  const episode = useModifyBookingEpisode({
+    toolCallId,
+    bookingId: args.bookingId,
+  });
+  const editToolCallId = episode?.edit?.toolCallId;
+  const editStash = useBookingStore((state) =>
+    editToolCallId ? (state.pendingModifyStays[editToolCallId] ?? null) : null,
+  );
+  // `bookingId` is also what Confirm sends to update_booking, so the card can
+  // never confirm one booking with another booking's stay.
+  const {
+    bookingId,
+    room,
+    checkInDate,
+    checkOutDate,
+    guests,
+    original: episodeOriginal,
+  } = selectConfirmModifyCardView<ModifyCardRoom>({
+    episode,
+    args,
+    editStash,
+  });
 
   const hasArgs =
     Boolean(bookingId) &&
     hasRoomStayFields({ room, checkInDate, checkOutDate, guests });
 
-  const correlationKey = hasArgs
-    ? buildModifyStayCorrelationKey({
-        bookingId,
-        checkInDate,
-        checkOutDate,
-        guests,
-      })
-    : null;
+  // Phase is per card: the optimistic "submitting" mark is keyed by this
+  // card's toolCallId and the settled outcome is the update_booking in its own
+  // episode — confirming another card can never flip this one.
   const storeModifyOutcome = useModifyBookingCardStore((state) =>
-    correlationKey
-      ? (state.outcomesByCorrelationKey[correlationKey] ?? null)
-      : null,
+    toolCallId ? (state.outcomesByCardId[toolCallId] ?? null) : null,
   );
   const modifyOutcome = coalesceBookingCardOutcome(
     storeModifyOutcome,
-    deriveModifyBookingOutcomeFromMessages(agent.messages, correlationKey),
+    deriveModifyOutcomeFromEpisodeUpdate(episode?.update),
   );
   const modifyPhase = expiredBySupersede
     ? HITL_CARD_PHASE.EXPIRED
@@ -371,15 +352,7 @@ const HitlConfirmModifyStayModal = ({
         outcome: modifyOutcome,
       });
 
-  // Stated-change path: resolvedStay.original (the booking's real current stay,
-  // from find_booking_by_id.bookings[0]) is authoritative over any original*
-  // the model may have mis-filled. The edit-form path has no resolvedStay, so
-  // resolveOriginalStay falls through to pendingModifyStay.original.
-  const original = hasArgs
-    ? (resolvedStay?.original ??
-      resolveOriginalStay(pendingModifyStay, bookingId, args) ??
-      null)
-    : null;
+  const original = hasArgs ? episodeOriginal : null;
   const hasNoFieldChanges =
     Boolean(original) &&
     hasArgs &&
@@ -395,9 +368,8 @@ const HitlConfirmModifyStayModal = ({
       return;
     }
     dismissedNoopRef.current = true;
-    setPendingModifyStay(null);
     handleDismiss();
-  }, [hasNoFieldChanges, canRespond, handleDismiss, setPendingModifyStay]);
+  }, [hasNoFieldChanges, canRespond, handleDismiss]);
 
   useReportHomestayAgentUiFocus(
     shouldRender && hasArgs && canRespond && !hasNoFieldChanges,
@@ -428,21 +400,22 @@ const HitlConfirmModifyStayModal = ({
     </>
   );
 
-  const clearPendingAndDismiss = () => {
+  const handleCancel = () => {
     if (isAgentBusy) {
       return;
     }
 
-    setPendingModifyStay(null);
     handleDismiss();
   };
 
   const handleConfirm = () => {
-    if (isAgentBusy || !correlationKey) {
+    if (isAgentBusy) {
       return;
     }
 
-    markSubmitting(correlationKey);
+    if (toolCallId) {
+      markSubmitting(toolCallId);
+    }
     void confirm({
       confirmed: true,
       bookingId,
@@ -453,11 +426,13 @@ const HitlConfirmModifyStayModal = ({
   };
 
   const handleRetry = () => {
-    if (isAgentBusy || !correlationKey || isRetrying || !isActionable) {
+    if (isAgentBusy || isRetrying || !isActionable) {
       return;
     }
 
-    markSubmitting(correlationKey);
+    if (toolCallId) {
+      markSubmitting(toolCallId);
+    }
     retryModifyBooking();
   };
 
@@ -495,7 +470,7 @@ const HitlConfirmModifyStayModal = ({
           failureReason={modifyOutcome?.errorMessage}
           errorMessage={errorMessage}
           allActionsDisabled={isAgentBusy}
-          onCancel={clearPendingAndDismiss}
+          onCancel={handleCancel}
           onConfirm={handleConfirm}
           onViewBookings={viewBookings}
           onRetry={retry}
@@ -521,7 +496,7 @@ const HitlConfirmModifyStayModal = ({
         failureReason={modifyOutcome?.errorMessage}
         errorMessage={errorMessage}
         allActionsDisabled={isAgentBusy}
-        onCancel={clearPendingAndDismiss}
+        onCancel={handleCancel}
         onConfirm={handleConfirm}
         onViewBookings={viewBookings}
         onRetry={retry}

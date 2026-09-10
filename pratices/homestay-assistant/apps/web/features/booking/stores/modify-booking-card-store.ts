@@ -6,103 +6,36 @@ import {
 } from "@/features/booking/constants";
 
 export type ModifyBookingCardOutcome = {
-  correlationKey: string;
   phase: BookingMutationPhase;
   bookingId?: string;
   errorMessage?: string;
 };
 
+/**
+ * Optimistic phase per `confirm_modify_booking` card, keyed by the card's OWN
+ * toolCallId. Settled outcomes are not stored here — each card reads them from
+ * the `update_booking` attempt in its own episode (see selectModifyEpisode).
+ *
+ * Never key this by stay (bookingId|dates|guests): two cards can resolve to the
+ * same stay, and a shared slot made confirming booking B flip the settled
+ * booking-A card back to "Updating booking…".
+ */
 type ModifyBookingCardStore = {
-  outcomesByCorrelationKey: Record<string, ModifyBookingCardOutcome>;
-  /** Correlation key of the most recently confirmed modify HITL awaiting update_booking. */
-  latestPendingCorrelationKey: string | null;
-  markSubmitting: (correlationKey: string) => void;
-  markSuccess: (correlationKey: string, data: { bookingId: string }) => void;
-  markFailed: (correlationKey: string, errorMessage: string) => void;
-  /**
-   * Resolve which outcome slot to update for an update_booking result.
-   * Preferred: exact correlation key. Fallback: latest pending modify card.
-   */
-  resolveTargetCorrelationKey: (
-    correlationKey: string | null,
-  ) => string | null;
-  getOutcome: (
-    correlationKey: string | null,
-  ) => ModifyBookingCardOutcome | null;
+  outcomesByCardId: Record<string, ModifyBookingCardOutcome>;
+  /** Hold the card's spinner from its Confirm/Retry click until update_booking streams. */
+  markSubmitting: (cardId: string) => void;
 };
 
 export const useModifyBookingCardStore = create<ModifyBookingCardStore>()(
-  (set, get) => ({
-    outcomesByCorrelationKey: {},
-    latestPendingCorrelationKey: null,
+  (set) => ({
+    outcomesByCardId: {},
 
-    markSubmitting: (correlationKey) =>
+    markSubmitting: (cardId) =>
       set((state) => ({
-        latestPendingCorrelationKey: correlationKey,
-        outcomesByCorrelationKey: {
-          ...state.outcomesByCorrelationKey,
-          [correlationKey]: {
-            correlationKey,
-            phase: BOOKING_MUTATION_PHASE.SUBMITTING,
-          },
+        outcomesByCardId: {
+          ...state.outcomesByCardId,
+          [cardId]: { phase: BOOKING_MUTATION_PHASE.SUBMITTING },
         },
       })),
-
-    markSuccess: (correlationKey, data) =>
-      set((state) => ({
-        latestPendingCorrelationKey:
-          state.latestPendingCorrelationKey === correlationKey
-            ? null
-            : state.latestPendingCorrelationKey,
-        outcomesByCorrelationKey: {
-          ...state.outcomesByCorrelationKey,
-          [correlationKey]: {
-            correlationKey,
-            phase: BOOKING_MUTATION_PHASE.SUCCESS,
-            bookingId: data.bookingId,
-          },
-        },
-      })),
-
-    markFailed: (correlationKey, errorMessage) =>
-      set((state) => ({
-        latestPendingCorrelationKey:
-          state.latestPendingCorrelationKey === correlationKey
-            ? null
-            : state.latestPendingCorrelationKey,
-        outcomesByCorrelationKey: {
-          ...state.outcomesByCorrelationKey,
-          [correlationKey]: {
-            correlationKey,
-            phase: BOOKING_MUTATION_PHASE.FAILED,
-            errorMessage,
-          },
-        },
-      })),
-
-    resolveTargetCorrelationKey: (correlationKey) => {
-      const { outcomesByCorrelationKey, latestPendingCorrelationKey } = get();
-
-      if (correlationKey && outcomesByCorrelationKey[correlationKey]) {
-        return correlationKey;
-      }
-
-      if (
-        latestPendingCorrelationKey &&
-        outcomesByCorrelationKey[latestPendingCorrelationKey]
-      ) {
-        return latestPendingCorrelationKey;
-      }
-
-      return correlationKey ?? latestPendingCorrelationKey;
-    },
-
-    getOutcome: (correlationKey) => {
-      if (!correlationKey) {
-        return null;
-      }
-
-      return get().outcomesByCorrelationKey[correlationKey] ?? null;
-    },
   }),
 );

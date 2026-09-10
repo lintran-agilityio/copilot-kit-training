@@ -89,11 +89,15 @@ const createRuntime = () => {
   return new CopilotRuntime({
     intelligence,
     // Advertise A2UI on /info so the client mounts the surface renderer and the
-    // run path applies A2UIMiddleware (injects the `render_a2ui` tool + the
-    // homestay catalog schema/guidelines as agent context). The catalog itself
-    // is supplied client-side via `a2ui={{ catalog }}` in
+    // run path applies A2UIMiddleware, which paints any tool result carrying
+    // `{ a2ui_operations }` — the agent's `compare_rooms` tool builds that
+    // RoomComparison envelope in code. `injectA2UITool: false` stops the
+    // middleware injecting `render_a2ui` and forwarding the flag that makes the
+    // Mastra bridge auto-inject `generate_a2ui`: that designer subagent never
+    // receives tool results, so it invented rooms. The catalog itself is
+    // supplied client-side via `a2ui={{ catalog }}` in
     // features/chatbot/provider.tsx.
-    a2ui: {},
+    a2ui: { injectA2UITool: false },
     agents: async () => {
       const agentRequest = getCurrentAgentRequest();
 

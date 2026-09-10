@@ -1,12 +1,8 @@
-import type { ModifyBookingPickerItem, ConfirmModifyBookingArgs } from "@repo/schemas";
+import type { ModifyBookingPickerItem } from "@repo/schemas";
 import { parseToolResult } from "@repo/utils";
 import { MESSAGE_ROLE, TOOL_KEYS } from "@repo/constants";
 import type { BookingPickerCopy } from "@/features/booking/constants";
 import { type HitlDecisionStatus } from "./hitl-status";
-import type {
-  ModifyStaySnapshot,
-  PendingModifyStay,
-} from "@/features/booking/types";
 import { MessageLike } from "@/features/chatbot/types";
 import { HITL_DECISION_STATUS } from "@/constants";
 
@@ -46,35 +42,6 @@ export const resolvePickerCompletedTitle = (
   }
 
   return expiredTitle;
-};
-
-/**
- * Prefer stashed pending-modify originals; fall back to original* args on the
- * confirm_modify tool call.
- */
-export const resolveOriginalStay = (
-  pending: PendingModifyStay | null | undefined,
-  bookingId: string,
-  args: Partial<ConfirmModifyBookingArgs>,
-): ModifyStaySnapshot | null => {
-  if (pending?.bookingId === bookingId) {
-    return pending.original;
-  }
-
-  if (
-    args.originalCheckInDate?.trim() &&
-    args.originalCheckOutDate?.trim() &&
-    typeof args.originalGuests === "number" &&
-    args.originalGuests > 0
-  ) {
-    return {
-      checkInDate: args.originalCheckInDate,
-      checkOutDate: args.originalCheckOutDate,
-      guests: args.originalGuests,
-    };
-  }
-
-  return null;
 };
 
 const toPickerItem = (

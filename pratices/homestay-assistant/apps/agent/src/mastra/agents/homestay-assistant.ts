@@ -30,12 +30,14 @@ import {
   updateBookingTool,
 } from "@/mastra/tools/booking";
 import {
+  compareRoomsTool,
   findRoomTool,
   getRoomByIdTool,
   getRoomsTool,
 } from "@/mastra/tools/rooms";
 import { securityInputProcessor } from "@/mastra/processors/security-input.processors";
 import { BookingFormPrefillProcessor } from "@/mastra/processors/booking-form-prefill.processor";
+import { CompareRoomsCandidatesProcessor } from "@/mastra/processors/compare-rooms-candidates.processor";
 import { enforceBookingStep } from "@/mastra/utils/step-machine";
 console.log("=== AI_MODEL ===", AI_MODEL);
 export const homestayAssistant = new Agent({
@@ -66,6 +68,7 @@ export const homestayAssistant = new Agent({
   tools: {
     [TOOL_KEYS.GET.ROOMS]: getRoomsTool,
     [TOOL_KEYS.GET.FIND_ROOM]: findRoomTool,
+    [TOOL_KEYS.GET.COMPARE_ROOMS]: compareRoomsTool,
     [TOOL_KEYS.BOOKING.GET_ROOM_BY_ID]: getRoomByIdTool,
     [TOOL_KEYS.BOOKING.CREATE_BOOKING]: createBookingTool,
     [TOOL_KEYS.BOOKING.UPDATE_BOOKING]: updateBookingTool,
@@ -77,6 +80,7 @@ export const homestayAssistant = new Agent({
   inputProcessors: [
     ...securityInputProcessor,
     new BookingFormPrefillProcessor(),
+    new CompareRoomsCandidatesProcessor(),
     // Cerebras only (gpt-oss-120b is a reasoning model). @ai-sdk/openai-compatible
     // serializes assistant `reasoning` parts from recalled history as
     // `reasoning_content`, which Cerebras's API rejects (HTTP 400,

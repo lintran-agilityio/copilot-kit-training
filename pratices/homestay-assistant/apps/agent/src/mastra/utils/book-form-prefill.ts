@@ -20,23 +20,15 @@ import {
 import { addDaysYmd } from "@repo/utils";
 
 import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
-import { asRecord, asUnknownRecord, JsonValue } from "@/mastra/utils/json-value";
+import { asRecord, JsonValue } from "@/mastra/utils/json-value";
 import { extractMessageText, findLatestUserMessage } from "@/mastra/utils/latest-user-message";
+import { getMessageParts } from "@/mastra/utils/message-parts";
 import { parseFindRoomOutput } from "@/mastra/utils/parse-tool-output";
 
 export type BookingFormStayHint = {
   checkInDate?: string;
   checkOutDate?: string;
   guests?: number;
-};
-
-const getMessageParts = (
-  message: ProcessInputStepArgs["messages"][number],
-): JsonValue[] | null => {
-  const content = asUnknownRecord(message?.content);
-  const parts = content?.parts;
-
-  return Array.isArray(parts) ? parts : null;
 };
 
 const isValidYmd = (value: unknown): value is string => {

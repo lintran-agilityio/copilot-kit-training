@@ -97,26 +97,18 @@ export const normalizeFindRoomInput = (
 };
 
 /**
- * FIND / RECOMMEND results the model may turn into a RoomComparison A2UI surface
- * (see COMPARE workflow / `render_a2ui`). `book_resolve` / `resolve` lookups are
- * never compared and must stay ID-only during a booking flow.
+ * FIND / RECOMMEND results — the Room List cards the guest sees, and so the
+ * only rooms `compare_rooms` may compare (see `resolveCompareCandidates`).
+ * `book_resolve` / `resolve` lookups are never compared and must stay ID-only
+ * during a booking flow.
  */
-const COMPARE_ELIGIBLE_PURPOSES: ReadonlySet<FindRoomOutput["purpose"]> = new Set(
-  [TOOL_PURPOSE.FIND_ROOM.SEARCH, TOOL_PURPOSE.FIND_ROOM.RECOMMEND, undefined],
-);
+export const COMPARE_ELIGIBLE_PURPOSES: ReadonlySet<FindRoomOutput["purpose"]> =
+  new Set([
+    TOOL_PURPOSE.FIND_ROOM.SEARCH,
+    TOOL_PURPOSE.FIND_ROOM.RECOMMEND,
+    undefined,
+  ]);
 
-/**
- * Model payload for find_room.
- *
- * FIND / RECOMMEND: include the room facts the model needs to build a
- * RoomComparison surface (name, level, capacity, price, top amenities). The
- * model is still told never to list these in chat text — only inside a
- * `render_a2ui` call (see GENERIC UI RENDERING carve-out). The UI keeps
- * rendering full cards from the raw tool result.
- *
- * book_resolve / resolve: IDs only, so an internal lookup can never surface
- * names/prices mid-booking.
- */
 /**
  * Hard reply hint when the book_resolve availability probe came back
  * unavailable — mirrors `toCheckRoomAvailabilityModelOutput`'s
@@ -126,9 +118,21 @@ const COMPARE_ELIGIBLE_PURPOSES: ReadonlySet<FindRoomOutput["purpose"]> = new Se
 const BOOK_RESOLVE_UNAVAILABLE_REPLY_HINT =
   'BookingUnavailable Generic UI is already rendered and the turn is stopping. Reply with exactly ONE very short sentence in the guest\'s language offering to help with other dates or another room. Do NOT repeat the room name, reason, capacity, dates, guests, or any availability value — the card shows them. English example: "I can help you find other dates or another room."';
 
+/**
+ * Model payload for find_room.
+ *
+ * FIND / RECOMMEND: `{ id, name }` per room — just enough to map "compare
+ * Moonlight and Bamboo" / "the first two" onto `compare_rooms.roomIds`. No
+ * prices, capacities or amenities: `compare_rooms` reads those from the raw
+ * result itself, and the UI renders full cards from it, so the model never
+ * holds a room fact it could leak into chat text.
+ *
+ * book_resolve / resolve: IDs only, so an internal lookup can never surface
+ * names mid-booking.
+ */
 export const toFindRoomModelOutput = (output: FindRoomOutput) => {
   const matchCount = output.rooms.length;
-  const includeRoomFacts = COMPARE_ELIGIBLE_PURPOSES.has(output.purpose);
+  const includeRoomNames = COMPARE_ELIGIBLE_PURPOSES.has(output.purpose);
 
   const probe = output.availability;
   const probeUnavailable =
@@ -162,17 +166,7 @@ export const toFindRoomModelOutput = (output: FindRoomOutput) => {
       level: output.level,
       purpose: output.purpose,
       rooms: output.rooms.map((room) =>
-        includeRoomFacts
-          ? {
-              id: room.id,
-              name: room.name,
-              level: room.level,
-              capacity: room.capacity,
-              pricePerNight: room.pricePerNight,
-              availableSlots: room.availableSlots,
-              amenities: room.amenities.slice(0, 5),
-            }
-          : { id: room.id },
+        includeRoomNames ? { id: room.id, name: room.name } : { id: room.id },
       ),
       // book_resolve + 1 match, room free: the CREATE flow reads these
       // dates/guests into confirm_booking instead of calling

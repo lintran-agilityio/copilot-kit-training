@@ -105,16 +105,19 @@ export const ChatAssistantMessage = ({
   });
 
   // COMPARE turn: the RoomComparison A2UI surface owns every room fact. The
-  // message that fired `generate_a2ui` renders no chat line at all — the
+  // message that fired `compare_rooms` renders no chat line at all — the
   // painted surface sits in its own timeline slot, and the fixed
   // "Here is the room comparison." pointer renders on the first assistant
   // reply AFTER it (so the pointer lands below the card, like the Room List's
   // text sits below its card). Any further re-listing lines are dropped.
+  // A `compare_rooms` that painted nothing (`no_candidates`) is not a
+  // comparison turn — the model's own reply shows.
   const messagesForTurn = messages as Parameters<
     typeof turnRendersRoomComparison
   >[0];
   const messageRendersComparison = messageHasRoomComparisonCall(
     message as Parameters<typeof messageHasRoomComparisonCall>[0],
+    messagesForTurn,
   );
   const inComparisonTurn = turnRendersRoomComparison(
     messagesForTurn,
