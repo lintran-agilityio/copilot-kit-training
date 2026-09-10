@@ -2,11 +2,13 @@ import type { ClientIdentity } from "@repo/schemas";
 
 /**
  * Optional `## GUEST` block prepended to the system prompt when the browser
- * forwarded a reconciled identity with a usable name or email.
+ * forwarded a reconciled identity with a usable name or locale.
  *
  * Personalization only. The block spells out that the model must not infer
  * booking ownership from it — the eval harness never sets `forwardedProps`, so
- * this is a no-op there and cannot shift deterministic runs.
+ * this is a no-op there and cannot shift deterministic runs. The locale is
+ * explicitly subordinate to LANGUAGE SUPPORT (reply in the language of the
+ * guest's latest message), so a `vi-VN` browser never flips an English chat.
  *
  * Prepended OUTSIDE buildHomestayAssistantPrompt / withDateContext so it never
  * disturbs the golden playbook section order.
@@ -15,19 +17,24 @@ export const withGuestContext = (
   basePrompt: string,
   identity: ClientIdentity | undefined,
 ): string => {
-  const name = identity?.firstName ?? identity?.fullName ?? undefined;
-  const email = identity?.email ?? undefined;
+  const name = identity?.fullName ?? undefined;
+  const locale = identity?.locale ?? undefined;
 
-  if (!name && !email) {
+  if (!name && !locale) {
     return basePrompt;
   }
 
   const lines = ["## GUEST"];
   if (name) lines.push(`Name: ${name}`);
-  if (email) lines.push(`Email: ${email}`);
+  if (locale) lines.push(`Browser locale: ${locale}`);
   lines.push(
     "Use only to address the guest naturally. Do not assume which bookings or rooms are theirs from this — always resolve bookings through tools.",
   );
+  if (locale) {
+    lines.push(
+      "The browser locale is not the reply language — keep following LANGUAGE SUPPORT (the guest's latest message decides).",
+    );
+  }
 
   return `${lines.join("\n")}\n\n${basePrompt}`;
 };

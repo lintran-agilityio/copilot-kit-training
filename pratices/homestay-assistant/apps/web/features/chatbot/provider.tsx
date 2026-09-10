@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import {
   CopilotKitProvider,
   useCopilotKit,
@@ -10,6 +10,7 @@ import {
 } from "@copilotkit/react-core/v2";
 
 import { AGENT_URLS } from "@repo/constants";
+import type { ClientIdentity } from "@repo/schemas";
 import { ROUTES } from "@/constants";
 import { homestayA2UICatalog } from "@/features/chatbot/declarative-ui/a2ui/homestay-a2ui-catalog";
 import { RoomComparisonLoadingSurface } from "@/features/chatbot/declarative-ui/a2ui/RoomComparisonLoadingSurface";
@@ -35,6 +36,10 @@ const CLERK_TOKEN_HEADER = "x-clerk-token";
 
 const isLoginRoute = (pathname: string) =>
   pathname === ROUTES.LOGIN || pathname.startsWith(`${ROUTES.LOGIN}/`);
+
+/** BCP 47 browser locale (e.g. `vi-VN`); null outside the browser. */
+const getBrowserLocale = () =>
+  typeof navigator === "undefined" ? null : navigator.language || null;
 
 /**
  * Replaces CopilotKit's built-in fallback logger so Stop / thread reset does
@@ -109,7 +114,9 @@ const ClerkTokenSync = ({ initialToken }: { initialToken: string }) => {
 const ChatbotProvider = ({ children }: ChatbotProviderProps) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, userId, getToken } = useAuth();
+  const { isLoaded: isUserLoaded, user } = useUser();
+  const fullName = user?.fullName || null;
   const [clerkToken, setClerkToken] = useState<string | null>(null);
 
   // Signing out flips isSignedIn before Clerk's own redirect lands, so the
@@ -154,6 +161,16 @@ const ChatbotProvider = ({ children }: ChatbotProviderProps) => {
     [clerkToken],
   );
 
+  // Rides every AG-UI run and HITL resume as flat `forwardedProps`; the agent
+  // trusts it only after matching `userId` to the verified Clerk token (see
+  // apps/agent/src/mastra/middleware/client-identity.ts). Stable reference for
+  // the same reason as `headers` — a new one re-runs the provider effect, which
+  // also re-applies `headers` over the token ClerkTokenSync rotated in.
+  const properties = useMemo<ClientIdentity | null>(
+    () => (userId ? { userId, locale: getBrowserLocale(), fullName } : null),
+    [userId, fullName],
+  );
+
   // Login has no Copilot hooks. Keep QueryClient for any shared client pages.
   if (isLoginRoute(pathname)) {
     return <AppProvider withCopilot={false}>{children}</AppProvider>;
@@ -162,7 +179,15 @@ const ChatbotProvider = ({ children }: ChatbotProviderProps) => {
   // MainLayout / chat children call useCopilotKit() unconditionally.
   // Wait for Clerk session AND the first JWT so /api/copilotkit/info is not
   // fired unauthenticated (which leaves the registry empty → "agent not found").
-  if (!isLoaded || !isSignedIn || !clerkToken || !headers) {
+  // Also wait for the Clerk user so `properties` is final before the first run.
+  if (
+    !isLoaded ||
+    !isSignedIn ||
+    !isUserLoaded ||
+    !clerkToken ||
+    !headers ||
+    !properties
+  ) {
     return (
       <AppProvider withCopilot={false}>
         <AuthLoadingFallback />
@@ -179,6 +204,7 @@ const ChatbotProvider = ({ children }: ChatbotProviderProps) => {
       credentials="include"
       runtimeUrl={AGENT_URLS.HOMESTAY_ASSISTANT}
       headers={headers}
+      properties={properties}
       // Intelligence thread routes (/threads*) require REST transport.
       // Single-endpoint /info always reports threadEndpoints.list=false.
       useSingleEndpoint={false}

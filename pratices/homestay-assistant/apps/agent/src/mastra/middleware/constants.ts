@@ -60,12 +60,12 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   PROMPT_FLOW_HINT: "promptFlowHint",
   /**
-   * Browser-asserted identity/session forwarded via CopilotKit v2 `properties`
-   * (AG-UI `forwardedProps.identity`), already reconciled against the verified
-   * Clerk token in the request pipeline (see middleware/client-identity.ts).
-   * Advisory display data — email / names / per-tab id — layered on top of the
-   * verified AUTH context; never an authorization signal. Undefined for any
-   * request that did not carry a well-formed, matching identity.
+   * Browser-asserted identity forwarded via CopilotKit v2 `properties` (flat
+   * AG-UI `forwardedProps.userId` / `.locale` / `.fullName`), already
+   * reconciled against the verified Clerk token in the request pipeline (see
+   * middleware/client-identity.ts). Advisory display data — name / locale —
+   * layered on top of the verified AUTH context; never an authorization signal.
+   * Undefined for any request that did not carry a well-formed, matching identity.
    */
   CLIENT_IDENTITY: "clientIdentity",
 } as const;

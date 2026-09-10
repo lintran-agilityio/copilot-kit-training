@@ -11,9 +11,9 @@ import { REQUEST_CONTEXT_KEYS } from "@/mastra/middleware/constants";
  * token in the request pipeline before it was set, so this is a bare read — no
  * re-parse, mirroring `getAuthFromContext` in services/common.ts.
  *
- * Advisory only: use it to greet the guest or echo their email back. Never use
- * it to decide which bookings are theirs — resolve those through tools, which
- * carry the verified JWT.
+ * Advisory only: use it to greet the guest by name or read their browser
+ * locale. Never use it to decide which bookings are theirs — resolve those
+ * through tools, which carry the verified JWT.
  */
 export const getClientIdentity = (
   requestContext: RequestContext | undefined,

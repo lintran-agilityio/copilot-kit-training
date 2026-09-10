@@ -3,12 +3,14 @@ import { clientIdentitySchema, type ClientIdentity } from "@repo/schemas";
 
 /**
  * Pulls the browser-asserted identity out of this request's AG-UI
- * `forwardedProps.identity` — set by `<CopilotKitProvider properties>` on the
- * web app (see apps/web/features/chatbot/copilot/ClientIdentitySync.tsx).
+ * `forwardedProps` — the flat `{ userId, locale, fullName }` set by
+ * `<CopilotKitProvider properties>` on the web app (see
+ * apps/web/features/chatbot/provider.tsx). The schema strips CopilotKit's own
+ * keys (`a2uiCatalogAvailable`, `a2uiAction`, `command`, …) sharing that object.
  *
  * Fail-open, exactly like {@link detectPromptFlowHint}: a non-run request (GET
- * /info, /threads), a body that is not a RunAgentInput, a missing or malformed
- * `identity` — every miss silently yields `undefined`. Callers MUST still
+ * /info, /threads), a body that is not a RunAgentInput, a missing `userId` or a
+ * malformed field — every miss silently yields `undefined`. Callers MUST still
  * reconcile `userId` against the verified Clerk token before trusting the
  * result (see {@link reconcileClientIdentity}).
  *
@@ -24,12 +26,9 @@ export const extractClientIdentity = async (
     const parsed = RunAgentInputSchema.safeParse(body);
     if (!parsed.success) return undefined;
 
-    const raw = (
-      parsed.data.forwardedProps as { identity?: unknown } | null | undefined
-    )?.identity;
-    if (raw == null) return undefined;
-
-    const identity = clientIdentitySchema.safeParse(raw);
+    const identity = clientIdentitySchema.safeParse(
+      parsed.data.forwardedProps,
+    );
     return identity.success ? identity.data : undefined;
   } catch {
     return undefined;
