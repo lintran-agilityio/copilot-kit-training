@@ -13,7 +13,6 @@ import { AGENT_URLS } from "@repo/constants";
 import type { ClientIdentity } from "@repo/schemas";
 import { ROUTES } from "@/constants";
 import { homestayA2UICatalog } from "@/features/chatbot/declarative-ui/a2ui/homestay-a2ui-catalog";
-import { RoomComparisonLoadingSurface } from "@/features/chatbot/declarative-ui/a2ui/RoomComparisonLoadingSurface";
 import { RATE_LIMIT_MESSAGE } from "@/features/chatbot/constants";
 import {
   isExpectedAgentError,
@@ -208,15 +207,10 @@ const ChatbotProvider = ({ children }: ChatbotProviderProps) => {
       // Intelligence thread routes (/threads*) require REST transport.
       // Single-endpoint /info always reports threadEndpoints.list=false.
       useSingleEndpoint={false}
-      // The catalog is sent with each AG-UI run, which enables the runtime's
-      // generated A2UI tool without changing the Mastra agent or booking tools.
-      // `loadingComponent` replaces CopilotKit's generic "Building interface"
-      // skeleton so a comparison-in-progress matches the other in-chat results
-      // (assistant avatar + framed card at the shared chat width).
-      a2ui={{
-        catalog: homestayA2UICatalog,
-        loadingComponent: RoomComparisonLoadingSurface,
-      }}
+      // The catalog renders the RoomComparison surface the agent's
+      // `compare_rooms` tool emits as a complete `a2ui_operations` envelope —
+      // nothing streams in, so there is no "building" state to skin.
+      a2ui={{ catalog: homestayA2UICatalog }}
       onError={handleCopilotError}
     >
       <ClerkTokenSync initialToken={clerkToken} />

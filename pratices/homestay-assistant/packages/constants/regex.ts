@@ -74,6 +74,14 @@ export const WEEKDAY_CUE =
 export const VI_DATE_CUE =
   /\b(hôm\s*nay|tối\s*nay|ngày\s*mai|cuối\s*tuần|th(ứ|u)\s*[2-7]|chủ\s*nhật|ngày\s*\d{1,2})\b/i;
 
+/**
+ * Vietnamese-specific letters — enough to tell a VI guest message apart from
+ * EN. Shared by the agent (RoomComparison heading language) and the web chat
+ * (fixed compare pointer line) so both pick the same language.
+ */
+export const VIETNAMESE_LETTER =
+  /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+
 
 // -----------------------------------------------------------------------------
 // Weekend patterns

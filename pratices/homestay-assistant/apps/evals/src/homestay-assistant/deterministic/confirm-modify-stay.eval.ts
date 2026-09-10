@@ -20,9 +20,8 @@ import { scoreResult } from "../../support/checks";
  *
  * This helper takes the `find_booking_by_id` result as the single source of
  * truth: `proposed` = `result.availability` (the merged stay the probe
- * cleared), `original` = `result.bookings[0]`. The FE hook
- * (`useModifyBookingResolution`) reads it off the transcript so the card never
- * depends on the model re-transcribing those values.
+ * cleared), `original` = the booking row. Which result a card may read is
+ * scoped to its own modify episode — see `modify-episode-isolation.eval.ts`.
  */
 
 const ROOM = {
@@ -181,6 +180,17 @@ const cases: Case[] = [
       originalCheckOutDate: "2026-12-04",
       room: true,
     },
+  },
+  {
+    name: "bookingId not in this result → null (never another booking's bookings[0])",
+    bookingId: "booking-other",
+    result: {
+      bookings: [BOOKING],
+      room: ROOM,
+      requestedCheckOutDate: "2026-10-09",
+      availability: freeProbe({ checkOutDate: "2026-10-09" }),
+    },
+    expected: null,
   },
 ];
 

@@ -6,6 +6,13 @@ export const TOOL_KEYS = {
      * Search/filter/recommend rooms by name, date, guests, level.
      */
     FIND_ROOM: "find_room",
+    /**
+     * Mastra registration / createTool id. Compares rooms from the latest
+     * search/recommend find_room the guest already sees — returns an A2UI
+     * `a2ui_operations` envelope (RoomComparison) built in code from that
+     * result; no LLM designs the surface or touches room data.
+     */
+    COMPARE_ROOMS: "compare_rooms",
   },
   BOOKING: {
     /** Guest-facing "show/list my bookings" — always the full list, no purpose. */

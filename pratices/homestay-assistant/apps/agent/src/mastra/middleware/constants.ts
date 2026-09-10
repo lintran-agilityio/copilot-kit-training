@@ -42,6 +42,14 @@ export const REQUEST_CONTEXT_KEYS = {
    */
   PENDING_BOOKING_FORM_STAY_HINT: "pendingBookingFormStayHint",
   /**
+   * {rooms, language} — the rooms of the latest search/recommend find_room in
+   * the conversation (exactly the Room List cards the guest sees) plus the
+   * guest's latest-message language. Re-pinned before every step by
+   * CompareRoomsCandidatesProcessor so compare_rooms builds its RoomComparison
+   * from those rooms instead of anything the model supplies.
+   */
+  PENDING_COMPARE_ROOMS: "pendingCompareRooms",
+  /**
    * Vestigial: {roomId, checkInDate, guests} pin from the old CREATE flow that
    * forced check_room_availability(flow=create). Since that tool was removed
    * (availability is probed inside find_room(book_resolve)), nothing sets or

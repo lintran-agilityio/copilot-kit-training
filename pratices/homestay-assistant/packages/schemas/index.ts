@@ -13,3 +13,4 @@ export * from "./modify-booking-by-room.js";
 export * from "./booking-unavailable.js";
 export * from "./get-bookings.js";
 export * from "./find-bookings.js";
+export * from "./room-comparison.js";

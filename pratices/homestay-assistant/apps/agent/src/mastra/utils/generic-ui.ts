@@ -15,6 +15,14 @@ export type FindBookingsReplyStatus = "not_found" | "resolved" | "ambiguous";
 export const REPLY_HINT_GET_ROOM_BY_ID =
   'Room Detail / Booking Form Generic UI is already rendered. Reply with exactly ONE very short sentence in the guest\'s language acknowledging that the details are ready or offering help. Do NOT mention the room name, price, capacity, amenities, description, dates, guests, controls, or any previous result. Do NOT use bullets or markdown. English example: "The room details are ready; let me know if you need help."';
 
+/** Companion copy after compare_rooms paints the RoomComparison surface. */
+export const REPLY_HINT_COMPARE_ROOMS_RENDERED =
+  'RoomComparison is already rendered from the rooms the guest searched, and the turn is stopping. Reply with exactly ONE very short sentence in the guest\'s language that only points at the comparison. Do NOT mention any room name, price, capacity, availability, amenity, or count. Do NOT use bullets, markdown, or a table. English: "Here is the room comparison." Vietnamese: "Đây là bảng so sánh phòng."';
+
+/** compare_rooms had no searched rooms on screen to compare. */
+export const REPLY_HINT_COMPARE_ROOMS_NO_CANDIDATES =
+  'Nothing was rendered — no searched rooms are on screen to compare yet. If the guest described what they want (dates / guests / level), call find_room with purpose "search" for it; otherwise reply with ONE short sentence in the guest\'s language asking which rooms they would like to compare. Never call get_room_by_id or invent rooms.';
+
 const buildResolveReplyHint = (matchCount: number): string => {
   switch (matchCount) {
     case 0:

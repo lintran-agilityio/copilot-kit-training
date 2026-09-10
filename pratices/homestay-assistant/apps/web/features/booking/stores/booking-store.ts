@@ -8,7 +8,15 @@ import type { Room } from "@/features/room/types/room";
 import { useHomestayAgentUiStore } from "@/features/chatbot/stores/homestay-agent-ui-store";
 
 export interface BookingStore extends BookingDraft {
-  pendingModifyStay: PendingModifyStay | null;
+  /**
+   * Stay the guest confirmed in an edit_modify_booking form, keyed by that
+   * form's toolCallId — the confirm_modify_booking card of the SAME episode
+   * reads it (see selectModifyEpisode). One slot per form, never cleared: a
+   * single shared slot was overwritten by the next modify, and clearing it on
+   * success blanked the card that had just succeeded. Stale entries are inert
+   * because no other card's episode holds their toolCallId.
+   */
+  pendingModifyStays: Record<string, PendingModifyStay>;
   /**
    * Full room the guest is booking, stashed by the Booking Form when it emits
    * `[book-stay]`. `confirm_booking` args carry only `roomId`, so the confirm
@@ -16,7 +24,10 @@ export interface BookingStore extends BookingDraft {
    */
   bookingRoom: Room | null;
   updateBookingDraft: (input: Partial<BookingDraft>) => void;
-  setPendingModifyStay: (stay: PendingModifyStay | null) => void;
+  stashPendingModifyStay: (
+    editToolCallId: string,
+    stay: PendingModifyStay,
+  ) => void;
   setBookingRoom: (room: Room | null) => void;
   resetBooking: () => void;
 }
@@ -30,7 +41,7 @@ const DEFAULT_DRAFT: BookingDraft = {
 
 export const useBookingStore = create<BookingStore>()((set) => ({
   ...DEFAULT_DRAFT,
-  pendingModifyStay: null,
+  pendingModifyStays: {},
   bookingRoom: null,
 
   updateBookingDraft: (input) =>
@@ -47,7 +58,13 @@ export const useBookingStore = create<BookingStore>()((set) => ({
       return next;
     }),
 
-  setPendingModifyStay: (stay) => set({ pendingModifyStay: stay }),
+  stashPendingModifyStay: (editToolCallId, stay) =>
+    set((state) => ({
+      pendingModifyStays: {
+        ...state.pendingModifyStays,
+        [editToolCallId]: stay,
+      },
+    })),
 
   setBookingRoom: (room) => set({ bookingRoom: room }),
 
@@ -56,7 +73,6 @@ export const useBookingStore = create<BookingStore>()((set) => ({
     set((state) => ({
       ...state,
       ...DEFAULT_DRAFT,
-      pendingModifyStay: null,
       bookingRoom: null,
     }));
   },

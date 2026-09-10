@@ -23,19 +23,13 @@ import {
   readResolvedFindBookingByIdResult,
   resolveModifyResolveUnavailable,
 } from "@/features/booking/utils";
-import { hasLaterToolCallInTurn } from "@/features/chatbot/utils/normalize-messages";
+import {
+  hasLaterToolCallInTurn,
+  ROOM_COMPARISON_TOOL_NAMES,
+} from "@/features/chatbot/utils/normalize-messages";
 import type { MessageLike, ToolCallLike } from "@/features/chatbot/types";
 
 const { ACTION, BOOKING, GET } = TOOL_KEYS;
-
-/**
- * A2UI generation tools. `generate_a2ui` (Mastra bridge, `@ag-ui/a2ui-toolkit`)
- * is what the model calls; `render_a2ui` (`@ag-ui/a2ui-middleware`) is the
- * synthetic inner call the surface stream is delivered on. Both are painted by
- * the auto-mounted `createA2UIMessageRenderer` on the `a2ui-surface` activity —
- * the raw tool calls must never draw their own chat row.
- */
-const A2UI_TOOL_NAMES = ["generate_a2ui", "render_a2ui"] as const;
 
 /** Mastra backend tools — LLM registration keys. */
 const MASTRA_BACKEND_TOOL_NAMES = [
@@ -47,6 +41,7 @@ const MASTRA_BACKEND_TOOL_NAMES = [
   BOOKING.UPDATE_BOOKING,
   GET.ROOMS,
   GET.FIND_ROOM,
+  GET.COMPARE_ROOMS,
   BOOKING.GET_ROOM_BY_ID,
 ] as const;
 
@@ -79,11 +74,15 @@ const LEGACY_HIDDEN_TOOL_NAMES = [
   "getRooms",
 ] as const;
 
-/** Room/data tools and page UI actions - hidden from chat; effects render on the page. */
+/**
+ * Room/data tools and page UI actions - hidden from chat; effects render on the
+ * page. RoomComparison tools are painted by the auto-mounted A2UI renderer on
+ * the `a2ui-surface` activity, so their raw calls never draw a chat row.
+ */
 export const CHAT_HIDDEN_TOOLS = new Set<string>([
   ACTION.UPDATE_ROOM_LIST,
   GET.ROOMS,
-  ...A2UI_TOOL_NAMES,
+  ...ROOM_COMPARISON_TOOL_NAMES,
   ...LEGACY_HIDDEN_TOOL_NAMES,
   ...MASTRA_BACKEND_TOOL_NAMES.filter(
     (name) => !(RENDER_BACKEND_TOOLS as readonly string[]).includes(name),

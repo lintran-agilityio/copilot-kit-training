@@ -107,14 +107,13 @@ export const EditModifyBookingModal = ({
   const { copilotkit } = useCopilotKit();
   const { respondOnce, canRespond: canRespondHitl } =
     useHitlRespondOnce<EditModifyBookingResult>(respond);
-  const setPendingModifyStay = useBookingStore(
-    (state) => state.setPendingModifyStay,
+  const stashPendingModifyStay = useBookingStore(
+    (state) => state.stashPendingModifyStay,
   );
 
   const supersedeDismiss = useCallback(() => {
-    setPendingModifyStay(null);
     void respondOnce({ confirmed: false });
-  }, [respondOnce, setPendingModifyStay]);
+  }, [respondOnce]);
 
   const { isActionable, expiredBySupersede } = useSupersedeHitlOnNewInteraction({
     toolCallId,
@@ -241,7 +240,6 @@ export const EditModifyBookingModal = ({
       return;
     }
 
-    setPendingModifyStay(null);
     await respondOnce({ confirmed: false });
     copilotkit.stopAgent({ agent });
   };
@@ -280,18 +278,22 @@ export const EditModifyBookingModal = ({
 
     try {
       // Persist the guest-selected stay + originals so confirm_modify_booking
-      // can render before→after diffs without trusting stale LLM args.
-      setPendingModifyStay({
-        bookingId,
-        checkInDate,
-        checkOutDate,
-        guests,
-        original: {
-          checkInDate: originalCheckInDate,
-          checkOutDate: originalCheckOutDate,
-          guests: originalGuests,
-        },
-      });
+      // can render before→after diffs without trusting stale LLM args. Keyed
+      // by this form's toolCallId: only the confirm card of the same modify
+      // episode reads it (see selectModifyEpisode).
+      if (toolCallId) {
+        stashPendingModifyStay(toolCallId, {
+          bookingId,
+          checkInDate,
+          checkOutDate,
+          guests,
+          original: {
+            checkInDate: originalCheckInDate,
+            checkOutDate: originalCheckOutDate,
+            guests: originalGuests,
+          },
+        });
+      }
       await respondOnce({
         confirmed: true,
         bookingId,

@@ -1,54 +1,15 @@
 import { createCatalog, type RendererProps } from "@copilotkit/a2ui-renderer";
-import { z } from "zod";
 
+import {
+  ROOM_COMPARISON_CATALOG_ID,
+  ROOM_COMPARISON_COMPONENT,
+  roomComparisonPropsSchema,
+  type RoomComparisonProps,
+} from "@repo/schemas";
 import { cn } from "@repo/utils";
 import { ChatAgentAvatar } from "@/features/chatbot/components/ChatAvatars";
 import { EmbeddedWidget } from "@/features/chatbot/components/EmbeddedWidget";
-
-const roomComparisonPropsSchema = z.object({
-  eyebrow: z
-    .string()
-    .optional()
-    .describe("A short label, such as 'Your shortlisted stays'."),
-  title: z
-    .string()
-    .describe("A concise heading that helps the guest compare options."),
-  note: z
-    .string()
-    .optional()
-    .describe("Optional context about the comparison or the guest request."),
-  rooms: z
-    .array(
-      z.object({
-        id: z.string().describe("The stable room id."),
-        name: z.string().describe("The room name."),
-        location: z
-          .string()
-          .optional()
-          .describe("Optional location or area label."),
-        nightlyRate: z
-          .string()
-          .optional()
-          .describe("A preformatted nightly price supplied by the agent."),
-        availability: z
-          .string()
-          .optional()
-          .describe(
-            "A preformatted availability status supplied by the agent.",
-          ),
-        highlights: z
-          .array(z.string())
-          .max(5)
-          .optional()
-          .describe("Up to five factual room highlights."),
-      }),
-    )
-    .min(1)
-    .max(4)
-    .describe("One to four verified rooms to compare."),
-});
-
-type RoomComparisonProps = z.infer<typeof roomComparisonPropsSchema>;
+import { RoomImage } from "@/features/room/components/RoomImage";
 
 /**
  * Highlights rendered per card. Capped so a room with five facts does not make
@@ -58,31 +19,31 @@ type RoomComparisonProps = z.infer<typeof roomComparisonPropsSchema>;
 const HIGHLIGHT_LIMIT = 4;
 
 /** Non-breaking space — holds the row height when an optional line is absent. */
-const PLACEHOLDER = " ";
+const PLACEHOLDER = " ";
 
 /**
- * Copy for the empty state — shown when the agent opens the surface without any
- * verified rooms, or while the room list is still streaming in. Keeps the card
- * chrome intact instead of collapsing to a zero-height grid.
+ * Copy for the empty state — shown if the surface binds before its rooms
+ * resolve. Keeps the card chrome intact instead of collapsing to a
+ * zero-height grid.
  */
 const EMPTY_STATE_MESSAGE =
   "Share the dates or the stays you're weighing and I'll line them up side by side here.";
 
 /**
- * Renders a room comparison surface from verified agent-provided values.
+ * Renders the room comparison the agent's `compare_rooms` tool builds in code
+ * from the guest's latest room search — the same rooms as the Room List cards
+ * above it, which is why each card reuses `RoomImage` (image + level badge +
+ * capacity) from those cards.
  *
  * Chrome matches the in-chat Room List: an assistant avatar next to a framed
- * card at the shared chat zoom (gold rule + serif heading). This mirrors the
+ * card at the shared chat zoom (gold rule + serif heading), mirroring the
  * `data-chat-message-row="assistant"` row `ChatAssistantMessage` wraps a
- * tool-only turn in, and the identical row in `RoomComparisonLoadingSurface`,
- * so the avatar stays put when the surface paints over the skeleton. Every
- * card is `flex h-full flex-col` inside an `auto-rows-fr` grid and every
- * optional line (location, highlights, availability) reserves a fixed slot, so
- * the layout never shifts with how much detail a given room carries.
+ * tool-only turn in. Every card is `flex h-full flex-col` inside an
+ * `auto-rows-fr` grid and every line (name, rate, highlights, availability)
+ * reserves a fixed slot, so the layout never shifts with a room's detail.
  *
- * Props are destructured with defaults so a partial payload (mid-stream, or a
- * rooms array the agent left empty) renders the header + empty state rather
- * than throwing on `rooms.map`.
+ * Props are destructured with defaults so a partial payload renders the
+ * header + empty state rather than throwing on `rooms.map`.
  */
 const RoomComparison = ({ props }: RendererProps<RoomComparisonProps>) => {
   const { eyebrow = "", note = "", rooms = [], title = "" } = props;
@@ -127,7 +88,10 @@ const RoomComparison = ({ props }: RendererProps<RoomComparisonProps>) => {
                   const {
                     id = "",
                     name = "",
-                    location = "",
+                    level = 0,
+                    levelColor = "",
+                    capacity = 0,
+                    imageUrl = "",
                     nightlyRate = "",
                     availability = "",
                     highlights = [],
@@ -137,38 +101,48 @@ const RoomComparison = ({ props }: RendererProps<RoomComparisonProps>) => {
                   return (
                     <article
                       key={id || `room-${index}`}
-                      className="flex h-full flex-col rounded-xl border border-border bg-background/60 p-2.5"
+                      className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-background/60"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="line-clamp-2 font-serif text-sm leading-tight font-medium text-foreground">
-                          {name}
+                      <RoomImage
+                        compact
+                        imageUrl={imageUrl}
+                        name={name}
+                        level={level}
+                        levelColor={levelColor}
+                        capacity={capacity}
+                      />
+
+                      <div className="flex flex-1 flex-col p-2.5">
+                        <h4 className="line-clamp-1 font-serif text-sm leading-tight font-medium text-foreground">
+                          {name || PLACEHOLDER}
                         </h4>
-                        {nightlyRate ? (
-                          <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
-                            {nightlyRate}
-                          </span>
-                        ) : null}
+
+                        <p className="mt-1.5 min-h-5">
+                          {nightlyRate ? (
+                            <span className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
+                              {nightlyRate}
+                            </span>
+                          ) : (
+                            PLACEHOLDER
+                          )}
+                        </p>
+
+                        <ul className="mt-2 min-h-[4.75rem] space-y-1 text-xs text-muted-foreground">
+                          {visibleHighlights.map((highlight) => (
+                            <li key={highlight} className="flex gap-1.5">
+                              <span
+                                aria-hidden
+                                className="mt-1.5 size-1 shrink-0 rounded-full bg-gold"
+                              />
+                              <span className="line-clamp-1">{highlight}</span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        <p className="mt-auto min-h-4 border-t border-border pt-2 text-[11px] font-medium text-primary">
+                          {availability || PLACEHOLDER}
+                        </p>
                       </div>
-
-                      <p className="mt-0.5 line-clamp-1 min-h-4 text-xs text-muted-foreground">
-                        {location || PLACEHOLDER}
-                      </p>
-
-                      <ul className="mt-2 min-h-[4.75rem] space-y-1 text-xs text-muted-foreground">
-                        {visibleHighlights.map((highlight) => (
-                          <li key={highlight} className="flex gap-1.5">
-                            <span
-                              aria-hidden
-                              className="mt-1.5 size-1 shrink-0 rounded-full bg-gold"
-                            />
-                            <span className="line-clamp-1">{highlight}</span>
-                          </li>
-                        ))}
-                      </ul>
-
-                      <p className="mt-auto min-h-4 border-t border-border pt-2 text-[11px] font-medium text-primary">
-                        {availability || PLACEHOLDER}
-                      </p>
                     </article>
                   );
                 })}
@@ -195,20 +169,21 @@ const RoomComparison = ({ props }: RendererProps<RoomComparisonProps>) => {
 };
 
 /**
- * A2UI surface for comparing verified room options without exposing any booking
- * mutation controls. The main agent remains responsible for availability and
- * booking decisions; this surface only presents information it already found.
+ * A2UI catalog for the room comparison. The surface is emitted only by the
+ * agent's `compare_rooms` tool (a fixed-schema envelope built from verified
+ * room data — no LLM designs it), so a custom-only catalog with this single
+ * root component is enough. Informational only: no booking controls.
  */
 export const homestayA2UICatalog = createCatalog(
   {
-    RoomComparison: {
+    [ROOM_COMPARISON_COMPONENT]: {
       description:
-        "A compact comparison of up to four rooms. Use only with room details already returned by the homestay tools; never invent prices, availability, or amenities. This is informational and must not be used to confirm or create a booking.",
+        "Side-by-side comparison of up to four rooms from the guest's latest room search. Rendered by the compare_rooms tool from verified room data; informational only — never used to confirm or create a booking.",
       props: roomComparisonPropsSchema,
     },
   },
   {
-    RoomComparison,
+    [ROOM_COMPARISON_COMPONENT]: RoomComparison,
   },
-  { catalogId: "homestay-assistant" },
+  { catalogId: ROOM_COMPARISON_CATALOG_ID },
 );

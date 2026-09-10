@@ -1,4 +1,10 @@
-import { MESSAGE_ROLE, MessageRole } from "@repo/constants";
+import {
+  MESSAGE_ROLE,
+  MessageRole,
+  TOOL_KEYS,
+  VIETNAMESE_LETTER,
+} from "@repo/constants";
+import { parseToolResult } from "@repo/utils";
 import type {
   ChatToolCall,
   MessageLike,
@@ -503,26 +509,65 @@ export const hasLaterToolCallInTurn = (
 };
 
 /**
- * A2UI generation tools: `generate_a2ui` is what the agent calls; `render_a2ui`
- * is the synthetic inner call the surface stream arrives on. RoomComparison is
- * the only catalog surface, so either one in a turn means a compare turn.
+ * Tool calls whose turn paints the RoomComparison A2UI surface (the only
+ * catalog surface). `compare_rooms` returns the surface as an
+ * `a2ui_operations` envelope the auto-mounted A2UI renderer paints on the
+ * `a2ui-surface` activity; `generate_a2ui` / `render_a2ui` are the retired
+ * designer path, kept so older threads still hide their raw calls. None of
+ * them may draw their own chat row.
  */
-const A2UI_TOOL_NAMES = new Set(["generate_a2ui", "render_a2ui"]);
+export const ROOM_COMPARISON_TOOL_NAMES: ReadonlySet<string> = new Set([
+  TOOL_KEYS.GET.COMPARE_ROOMS,
+  "generate_a2ui",
+  "render_a2ui",
+]);
 
 const toolCallName = (call: ToolCallLike): string | undefined =>
   call.function?.name ?? call.name;
 
-/** True when this one message carries an A2UI generation tool call. */
+/**
+ * A `compare_rooms` call whose result came back `no_candidates` — nothing was
+ * painted (no search on screen yet), so the model's own reply must show, not
+ * the fixed comparison pointer. Unresolved calls still count as comparisons.
+ */
+const isUnpaintedCompareCall = (
+  call: ToolCallLike,
+  messages: MessageLike[] | undefined,
+): boolean => {
+  if (toolCallName(call) !== TOOL_KEYS.GET.COMPARE_ROOMS || !call.id) {
+    return false;
+  }
+
+  const resultMessage = messages?.find(
+    (message) =>
+      message.role === MESSAGE_ROLE.TOOL && message.toolCallId === call.id,
+  );
+  const result = parseToolResult<{ status?: unknown }>(
+    resultMessage?.content as { status?: unknown } | string | null | undefined,
+  );
+
+  return result?.status === "no_candidates";
+};
+
+/**
+ * True when this one message carries a RoomComparison tool call. Pass the
+ * transcript so a `compare_rooms` that painted nothing is not counted.
+ */
 export const messageHasRoomComparisonCall = (
   message: MessageLike | undefined,
+  messages?: MessageLike[],
 ): boolean =>
   (message?.toolCalls ?? []).some((call) => {
     const name = toolCallName(call);
-    return !!name && A2UI_TOOL_NAMES.has(name);
+    return (
+      !!name &&
+      ROOM_COMPARISON_TOOL_NAMES.has(name) &&
+      !isUnpaintedCompareCall(call, messages)
+    );
   });
 
 /**
- * True when an A2UI generation call fired in the same turn as `messageId`
+ * True when a RoomComparison call painted in the same turn as `messageId`
  * (scanning back to the previous user message). RoomComparison is the only
  * surface, so the assistant's chat line on that turn is replaced with a fixed
  * short pointer (see `compareCompanionText`) — the model is told to keep it to
@@ -550,7 +595,7 @@ export const turnRendersRoomComparison = (
 
     if (
       message?.role === MESSAGE_ROLE.ASSISTANT &&
-      messageHasRoomComparisonCall(message)
+      messageHasRoomComparisonCall(message, messages)
     ) {
       return true;
     }
@@ -558,10 +603,6 @@ export const turnRendersRoomComparison = (
 
   return false;
 };
-
-/** Vietnamese-specific letters — enough to tell VI apart from EN input. */
-const VIETNAMESE_LETTER =
-  /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
 const ROOM_COMPARISON_POINTER = {
   en: "Here is the room comparison.",
@@ -618,7 +659,7 @@ export const compareCompanionText = (
 
 /**
  * The message that should carry the "Here is the room comparison." pointer —
- * the FIRST assistant message that lands after the `generate_a2ui` call in the
+ * the FIRST assistant message that lands after the `compare_rooms` call in the
  * same turn (the model's own closing line, replaced with the fixed pointer).
  *
  * Placing it here (rather than on the call-carrying message) keeps the pointer
@@ -643,7 +684,7 @@ export const isComparisonPointerMessage = (
   const message = messages[index];
   if (
     message?.role !== MESSAGE_ROLE.ASSISTANT ||
-    messageHasRoomComparisonCall(message)
+    messageHasRoomComparisonCall(message, messages)
   ) {
     return false;
   }
@@ -658,7 +699,7 @@ export const isComparisonPointerMessage = (
     if (previous?.role === MESSAGE_ROLE.ASSISTANT) {
       // First assistant reply after the call → this is the pointer row.
       // An earlier non-call assistant message already took that slot → not this one.
-      return messageHasRoomComparisonCall(previous);
+      return messageHasRoomComparisonCall(previous, messages);
     }
   }
 
