@@ -110,7 +110,13 @@ const HitlConfirmCreateStayModal = ({
     decisionStatus,
     handleDismiss,
     confirm,
-  } = useHitlConfirmDialog(status, respond, CREATE_ERROR.confirm, result, toolCallId);
+  } = useHitlConfirmDialog(
+    status,
+    respond,
+    CREATE_ERROR.confirm,
+    result,
+    toolCallId,
+  );
 
   const { agent } = useAgent({ agentId: AGENT_KEYS.HOMESTAY_ASSISTANT });
   // A transport may keep isRunning true while HITL awaits respond(). Keep the
@@ -527,25 +533,34 @@ const HitlConfirmModifyStayModal = ({
 };
 
 export const HitlConfirmStayModal = (props: HitlConfirmStayModalProps) => {
-  if (props.variant === MODEL_NAME.CREATE) {
+  const { variant, status, args, respond, result, toolCallId } = props || {
+    variant: MODEL_NAME.MODIFY,
+    status: ToolCallStatus.Complete,
+    args: {},
+    respond: undefined,
+    result: undefined,
+    toolCallId: undefined,
+  };
+
+  if (variant === MODEL_NAME.CREATE) {
     return (
       <HitlConfirmCreateStayModal
-        status={props.status}
-        args={props.args}
-        respond={props.respond}
-        result={props.result}
-        toolCallId={props.toolCallId}
+        status={status}
+        args={args}
+        respond={respond}
+        result={result}
+        toolCallId={toolCallId}
       />
     );
   }
 
   return (
     <HitlConfirmModifyStayModal
-      status={props.status}
-      args={props.args}
-      respond={props.respond}
-      result={props.result}
-      toolCallId={props.toolCallId}
+      status={status}
+      args={args}
+      respond={respond}
+      result={result}
+      toolCallId={toolCallId}
     />
   );
 };

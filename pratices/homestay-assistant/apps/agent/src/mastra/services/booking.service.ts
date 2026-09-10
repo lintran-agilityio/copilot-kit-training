@@ -118,24 +118,27 @@ export const updateBooking = async (
   input: UpdateBookingPayload,
   serviceContext?: ServiceContext,
 ): Promise<Booking> => {
+  const { checkInDate, checkOutDate, guests } = input;
   assertClerkTokenForApi(serviceContext?.requestContext);
   const bookingId = sanitizeBookingId(input.bookingId);
-
-  return update(
+console.log("=== UPDATE BOOKING ===", bookingId, input)
+  const res = update(
     `${ROUTES.BOOKINGS}/${encodeURIComponent(bookingId)}`,
     {
-      ...(input.checkInDate !== undefined
-        ? { checkInDate: input.checkInDate }
+      ...(checkInDate !== undefined
+        ? { checkInDate }
         : {}),
-      ...(input.checkOutDate !== undefined
-        ? { checkOutDate: input.checkOutDate }
+      ...(checkOutDate !== undefined
+        ? { checkOutDate: checkOutDate }
         : {}),
-      ...(input.guests !== undefined ? { guests: input.guests } : {}),
+      ...(guests !== undefined ? { guests: guests } : {}),
     },
     bookingSchema,
     "Failed to update booking",
     serviceContext,
   );
+console.log("=== UPDATE BOOKING ===", res)
+  return res;
 };
 
 export const cancelBooking = async (

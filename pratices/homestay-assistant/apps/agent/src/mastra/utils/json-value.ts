@@ -12,8 +12,23 @@ export type JsonValue =
   | JsonValue[]
   | JsonObject;
 
+/** Values `JSON.stringify` drops from an object (and writes as `null` in an array). */
+const isOmittedByJson = (value: unknown): boolean =>
+  value === undefined ||
+  typeof value === "function" ||
+  typeof value === "symbol";
+
 /**
  * Narrows a value to JsonValue when it is JSON-serializable; otherwise undefined.
+ *
+ * Follows `JSON.stringify` for the values it skips: an object property holding
+ * `undefined` / a function / a symbol is omitted, and such an array element
+ * becomes `null`. Live Mastra messages routinely carry these — a HITL answer
+ * merged in from an AG-UI `tool` message lands as a `tool-invocation` part with
+ * `step: undefined`, and a tool output can hold an optional key set to
+ * `undefined`. Rejecting the whole value over one such key made the booking
+ * step machine skip every message a HITL answer touched, so nothing after the
+ * first guest click was ever forced.
  */
 export const asJsonValue = (value: unknown): JsonValue | undefined => {
   if (
@@ -28,6 +43,10 @@ export const asJsonValue = (value: unknown): JsonValue | undefined => {
   if (Array.isArray(value)) {
     const items: JsonValue[] = [];
     for (const item of value) {
+      if (isOmittedByJson(item)) {
+        items.push(null);
+        continue;
+      }
       const parsed = asJsonValue(item);
       if (parsed === undefined) {
         return undefined;
@@ -40,6 +59,9 @@ export const asJsonValue = (value: unknown): JsonValue | undefined => {
   if (value && typeof value === "object") {
     const record: JsonObject = {};
     for (const [key, entry] of Object.entries(value)) {
+      if (isOmittedByJson(entry)) {
+        continue;
+      }
       const parsed = asJsonValue(entry);
       if (parsed === undefined) {
         return undefined;

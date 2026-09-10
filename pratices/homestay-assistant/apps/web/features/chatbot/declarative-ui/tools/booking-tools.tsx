@@ -30,6 +30,7 @@ import {
   ConfirmBookingModal,
   EditModifyBookingModal,
   MyBookingsNotice,
+  ConfirmModifyModal,
 } from "@/features/booking/components";
 import {
   CancelBookingToolProps,
@@ -103,8 +104,7 @@ export const BookingToolsProvider = () => {
         "Show the read-only before→after card. The app forces this after edit_modify_booking confirms (form path) or straight after find_booking_by_id on the stated-change path (that tool already probed availability). Pass { bookingId, room, checkInDate, checkOutDate, guests }: from edit_modify_booking confirmed:true, OR from find_booking_by_id.result.availability (the merged stay it probed); plus originalCheckInDate/originalCheckOutDate/originalGuests from edit_modify_booking args or find_booking_by_id.result.bookings[0] — never reconstruct, merge, or replace any field from UI state or memory. Pair this UI with exactly one short review sentence in the guest's language; never repeat card fields. Wait for explicit confirmation. On confirmed:true, the app forces update_booking with the confirmed fields; its success companion may name the room exactly once but must not repeat any other card field. On confirmed:false, call no mutation and keep the booking unchanged.",
       parameters: confirmModifyBookingSchema,
       render: ({ status, args, respond, result, toolCallId }) => (
-        <HitlConfirmStayModal
-          variant={MODEL_NAME.MODIFY}
+        <ConfirmModifyModal
           status={status}
           args={args}
           respond={respond}

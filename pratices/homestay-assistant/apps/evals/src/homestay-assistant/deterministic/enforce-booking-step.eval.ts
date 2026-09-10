@@ -193,3 +193,142 @@ enforceStepEval("enforceBookingStep — whole MODIFY turns through prepareStep",
     expected: "pass",
   },
 ]);
+
+const editFormConfirmed = {
+  toolName: TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
+  output: {
+    confirmed: true,
+    bookingId: BOOKING_ID,
+    roomId: ROOM_ID,
+    checkInDate: "2026-10-05",
+    checkOutDate: "2026-10-10",
+    guests: 2,
+  },
+};
+
+/**
+ * The same junctions, in the message shape the live runtime actually hands
+ * `prepareStep` after a guest answers a HITL card (see `liveTurnMessages`): one
+ * merged assistant message whose parts carry `step: undefined`, HITL results as
+ * JSON strings. Every case above uses clean fixture JSON, so all of them stayed
+ * green while production was broken: `asJsonValue` rejected the whole message
+ * content over that one `undefined`, the transcript scan skipped it, and the
+ * machine forced nothing for the rest of the turn. Reported as "the modify
+ * picker never leads to the confirm_modify_booking card".
+ */
+enforceStepEval(
+  "enforceBookingStep — MODIFY turns in the live post-HITL message shape",
+  [
+    {
+      name: "live · picker confirmed → force find_booking_by_id",
+      liveMessageShape: true,
+      transcript: [pickerConfirmed],
+      expected: `force:${TOOL_KEYS.BOOKING.FIND_BY_ID}`,
+    },
+    {
+      name: "live · picker → find_booking_by_id, nothing stated → force the edit form",
+      liveMessageShape: true,
+      transcript: [pickerConfirmed, findByIdNoStatedChange],
+      expected: `force:${TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING}`,
+    },
+    {
+      // The reported bug: after Continue the unguided model reopened the
+      // picker instead — confirm_modify_booking never rendered.
+      name: "live · edit form submitted → force confirm_modify_booking",
+      liveMessageShape: true,
+      transcript: [ambiguousFindBookings, editFormConfirmed],
+      expected: `force:${TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING}`,
+    },
+    {
+      name: "live · picker → stated change, probe free → force confirm_modify_booking",
+      liveMessageShape: true,
+      transcript: [
+        pickerConfirmed,
+        {
+          toolName: TOOL_KEYS.BOOKING.FIND_BY_ID,
+          input: {
+            bookingId: BOOKING_ID,
+            purpose: TOOL_PURPOSE.FIND_BOOKING_BY_ID.MODIFY,
+          },
+          output: {
+            bookings: [resolvedBooking],
+            bookingId: BOOKING_ID,
+            requestedCheckOutDate: "2026-10-10",
+            availability: {
+              available: true,
+              guestsWithinCapacity: true,
+              checkInDate: "2026-10-05",
+              checkOutDate: "2026-10-10",
+              guests: 2,
+            },
+          },
+        },
+      ],
+      expected: `force:${TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING}`,
+    },
+    {
+      // Same bug class one level down: a backend output with an optional key
+      // left `undefined` (room lookup failed) used to null the whole output.
+      name: "live · find_booking_by_id output with an undefined optional key → still force the edit form",
+      liveMessageShape: true,
+      transcript: [
+        pickerConfirmed,
+        {
+          ...findByIdNoStatedChange,
+          output: {
+            ...findByIdNoStatedChange.output,
+            room: undefined,
+            reason: undefined,
+          },
+        },
+      ],
+      expected: `force:${TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING}`,
+    },
+    {
+      name: "live · modify confirmed → force the terminal update_booking",
+      liveMessageShape: true,
+      transcript: [
+        ambiguousFindBookings,
+        {
+          toolName: TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
+          output: {
+            confirmed: true,
+            bookingId: BOOKING_ID,
+            checkInDate: "2026-10-05",
+            checkOutDate: "2026-10-10",
+            guests: 2,
+          },
+        },
+      ],
+      expected: `force:${TOOL_KEYS.BOOKING.UPDATE_BOOKING}`,
+    },
+    {
+      name: "live · update_booking returned → stop the turn",
+      liveMessageShape: true,
+      transcript: [
+        ambiguousFindBookings,
+        {
+          toolName: TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
+          output: { confirmed: true, bookingId: BOOKING_ID },
+        },
+        {
+          toolName: TOOL_KEYS.BOOKING.UPDATE_BOOKING,
+          output: { id: BOOKING_ID, status: "confirmed" },
+        },
+      ],
+      expected: "stop",
+    },
+    {
+      name: "live · edit form declined → stop the turn",
+      liveMessageShape: true,
+      transcript: [
+        ambiguousFindBookings,
+        {
+          toolName: TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
+          output: { confirmed: false },
+        },
+      ],
+      expected: "stop",
+    },
+  ],
+);
