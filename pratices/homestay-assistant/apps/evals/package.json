@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:deps": "pnpm exec turbo run build --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
+    "build:deps": "pnpm exec turbo run build --concurrency=1 --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
     "preeval": "pnpm run build:deps",
     "eval": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run",
     "preeval:deterministic": "pnpm run build:deps",
