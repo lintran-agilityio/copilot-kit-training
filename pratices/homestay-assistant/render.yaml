@@ -58,34 +58,49 @@ services:
       - key: NODE_ENV
         value: production
 
-      # Which suite the build evaluates (path substring filter). `tools` = the
-      # real-LLM per-tool routing suite. Set to `deterministic` (free, seconds)
-      # if the Mistral run makes the build exceed Render's build time limit.
+      # Which suite the build evaluates (path substring filter). The
+      # deterministic suite is free and completes within Render's build
+      # window; run the real-LLM `tools` suite locally or in a separate job.
       - key: EVAL_DASHBOARD_PATH
-        value: tools
+        value: deterministic
 
+      # OpenRouter fronts many upstream models on one key, and a ":free" slug
+      # bills nothing — the zero-cost path for this dashboard. Mistral was the
+      # previous choice but its free-tier quota reads
+      # `x-ratelimit-limit-req-minute: 0`, so every call 429s regardless of
+      # pacing; switch back only after activating that tier.
       - key: AI_PROVIDER
-        value: mistral
+        value: openrouter
 
-      # Mistral API key (console.mistral.ai) — the free "Experiment" tier is
-      # enough. Add as a Render secret; never commit it.
-      - key: MISTRAL_API_KEY
+      # OpenRouter API key (openrouter.ai/keys). Add as a Render secret; never
+      # commit it. Free slugs need a key but are not billed.
+      - key: OPENROUTER_API_KEY
         sync: false
 
-      # Prompt-injection detector model. Auto-resolves to Mistral when
-      # AI_PROVIDER=mistral, pinned here so a stray OPENAI_API_KEY can't flip it.
+      # Chat model. Benchmarked against the real agent — the only free
+      # tool-caller tested that reproduced gpt-4o-mini's tool sequence on all
+      # four booking flows, forced tool_choice included. Pinned so a default
+      # change can never silently promote this service to a billed slug.
+      - key: OPENROUTER_MODEL
+        value: openrouter/nvidia/nemotron-3.5-lightning:free
+
+      # Prompt-injection detector — fires on EVERY screened message, so it is
+      # pinned free too. A billed slug here outcosts the chat model over a run.
       - key: AI_SECURITY_MODEL
-        value: mistral/mistral-small-latest
+        value: openrouter/nvidia/nemotron-3.5-lightning:free
 
-      # Trailing-60s token budget the run paces itself to (default 150k). Mistral
-      # free tier is 500k TPM, so this is conservative; 0 disables token pacing.
+      # Free routes are capped per REQUEST (~20/min), not per token: token
+      # pacing off, request spacing does the work (3100ms => ~19 req/min).
+      # DAILY CEILING: the free tier allows 50 free-model requests/day (1000
+      # once the account holds $10 lifetime credit, which ":free" slugs never
+      # spend). EVAL_DASHBOARD_PATH stays `deterministic` — that suite makes
+      # ZERO provider calls, so a build can never exhaust the quota. Point it
+      # at `tools`/`conversation` only on an account with the raised limit.
       - key: EVAL_TPM_BUDGET
-        value: "150000"
+        value: "0"
 
-      # Mistral free tier caps at ~1 request/second and one agent turn fires
-      # several sequential model calls — space provider requests out.
       - key: EVAL_MIN_REQUEST_INTERVAL_MS
-        value: "1100"
+        value: "3100"
 
       # Evals replace requests to this origin with fixture responses, so the
       # dashboard never reads or mutates the deployed NestJS database.

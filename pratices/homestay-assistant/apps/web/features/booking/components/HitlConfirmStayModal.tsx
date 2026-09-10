@@ -30,6 +30,7 @@ import {
 import {
   useConfirmBookingRoom,
   useHitlConfirmDialog,
+  useModifyBookingResolution,
   useRetryCreateBooking,
   useRetryModifyBooking,
 } from "@/features/booking/hooks";
@@ -46,7 +47,7 @@ import {
   deriveCreateBookingOutcomeFromMessages,
   deriveModifyBookingOutcomeFromMessages,
   hasRequiredCreateArgs,
-  hasRequiredModifyArgs,
+  hasRoomStayFields,
   resolveHitlCardPhase,
   resolveOriginalStay,
   shouldRenderHitlCard,
@@ -296,23 +297,52 @@ const HitlConfirmModifyStayModal = ({
   // disable the controls needed to resolve that run.
   const isAgentBusy = agent.isRunning && !canRespond;
 
-  const hasArgs = hasRequiredModifyArgs(args);
-  // Prefer dates/guests the guest chose in edit_modify_booking over tool args
-  // the model may fill with stale working-memory or pre-edit values.
+  // Stated-change path: the merged/proposed stay, room, and originals are
+  // authoritative on the find_booking_by_id result — NOT on the model-authored
+  // confirm_modify_booking args (a weak model routinely copies the booking's
+  // original check-out into `checkOutDate`, collapsing the before → after diff
+  // so this card hides itself as a no-op). The edit-form path has no such
+  // result (no `availability` block) and keeps using pendingModifyStay.
+  const resolution = useModifyBookingResolution(args.bookingId);
+
+  const bookingId = (args.bookingId ?? resolution?.bookingId ?? "").trim();
+  const room = resolution?.room ?? args.room;
+
+  // The edit-form path is fully described by pendingModifyStay (proposed +
+  // original). Only fall back to the find_booking_by_id resolution on the
+  // stated-change path — an earlier stated-change result left in the transcript
+  // must not leak into a later form-path modify of the same booking.
   const stayFromEdit =
-    hasArgs && pendingModifyStay?.bookingId === args.bookingId
+    pendingModifyStay?.bookingId != null &&
+    pendingModifyStay.bookingId === bookingId
       ? pendingModifyStay
       : null;
-  const checkInDate = hasArgs
-    ? (stayFromEdit?.checkInDate ?? args.checkInDate)
-    : "";
-  const checkOutDate = hasArgs
-    ? (stayFromEdit?.checkOutDate ?? args.checkOutDate)
-    : "";
-  const guests = hasArgs ? (stayFromEdit?.guests ?? args.guests) : 0;
+  const resolvedStay = stayFromEdit ? null : resolution;
+
+  // Prefer dates/guests the guest chose in edit_modify_booking, then the
+  // find_booking_by_id merged stay, and only then the model's args.
+  const checkInDate =
+    stayFromEdit?.checkInDate ??
+    resolvedStay?.proposed.checkInDate ??
+    args.checkInDate ??
+    "";
+  const checkOutDate =
+    stayFromEdit?.checkOutDate ??
+    resolvedStay?.proposed.checkOutDate ??
+    args.checkOutDate ??
+    "";
+  const guests =
+    stayFromEdit?.guests ??
+    resolvedStay?.proposed.guests ??
+    (typeof args.guests === "number" ? args.guests : 0);
+
+  const hasArgs =
+    Boolean(bookingId) &&
+    hasRoomStayFields({ room, checkInDate, checkOutDate, guests });
+
   const correlationKey = hasArgs
     ? buildModifyStayCorrelationKey({
-        bookingId: args.bookingId,
+        bookingId,
         checkInDate,
         checkOutDate,
         guests,
@@ -335,8 +365,14 @@ const HitlConfirmModifyStayModal = ({
         outcome: modifyOutcome,
       });
 
+  // Stated-change path: resolvedStay.original (the booking's real current stay,
+  // from find_booking_by_id.bookings[0]) is authoritative over any original*
+  // the model may have mis-filled. The edit-form path has no resolvedStay, so
+  // resolveOriginalStay falls through to pendingModifyStay.original.
   const original = hasArgs
-    ? resolveOriginalStay(pendingModifyStay, args.bookingId, args)
+    ? (resolvedStay?.original ??
+      resolveOriginalStay(pendingModifyStay, bookingId, args) ??
+      null)
     : null;
   const hasNoFieldChanges =
     Boolean(original) &&
@@ -344,7 +380,7 @@ const HitlConfirmModifyStayModal = ({
     buildModifyChangeRows(
       original!,
       { checkInDate, checkOutDate, guests },
-      args.room.pricePerNight,
+      room?.pricePerNight ?? 0,
     ).length === 0;
 
   const dismissedNoopRef = useRef(false);
@@ -364,19 +400,20 @@ const HitlConfirmModifyStayModal = ({
       type: HOMESTAY_AGENT_TASK_TYPE.MANAGE,
       status: HOMESTAY_AGENT_TASK_STATUS.AWAITING_CONFIRMATION,
     },
-    hasArgs ? { type: "booking", id: args.bookingId } : undefined,
+    hasArgs ? { type: "booking", id: bookingId } : undefined,
   );
 
   if (
     !shouldRenderHitlCard(status, hasArgs) ||
     !shouldRender ||
     !hasArgs ||
+    !room ||
+    typeof room.pricePerNight !== "number" ||
     hasNoFieldChanges
   ) {
     return null;
   }
 
-  const { bookingId, room } = args;
   const description: ReactNode = (
     <>
       Review the changes for your stay at{" "}

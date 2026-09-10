@@ -92,6 +92,49 @@ stepContractEval("find_booking_by_id — MODIFY: form vs confirm vs stop", [
     expected: `force:${TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING}`,
   },
   {
+    // An ABSOLUTE stated checkout ("change checkout to 2026-10-20") echoes on
+    // requestedCheckOutDate exactly like a resolved delta — same routing.
+    name: "modify · explicit absolute checkout stated → force confirm_modify_booking",
+    last: {
+      toolName: TOOL_KEYS.BOOKING.FIND_BY_ID,
+      input: { purpose: TOOL_PURPOSE.FIND_BOOKING_BY_ID.MODIFY },
+      output: {
+        bookings: [booking],
+        requestedCheckOutDate: "2026-10-20",
+        availability: {
+          available: true,
+          guestsWithinCapacity: true,
+          checkInDate: "2026-10-05",
+          checkOutDate: "2026-10-20",
+          guests: 2,
+        },
+      },
+    },
+    expected: `force:${TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING}`,
+  },
+  {
+    // "shorten by one night" (requestedCheckOutDeltaDays: -1) → the tool
+    // resolves the EARLIER checkout against the booking's current 2026-10-08
+    // and echoes 2026-10-07; the step machine only sees the resolved date.
+    name: "modify · relative checkout delta -1 (shorten) resolved to an earlier date → force confirm_modify_booking",
+    last: {
+      toolName: TOOL_KEYS.BOOKING.FIND_BY_ID,
+      input: { purpose: TOOL_PURPOSE.FIND_BOOKING_BY_ID.MODIFY },
+      output: {
+        bookings: [booking],
+        requestedCheckOutDate: "2026-10-07",
+        availability: {
+          available: true,
+          guestsWithinCapacity: true,
+          checkInDate: "2026-10-05",
+          checkOutDate: "2026-10-07",
+          guests: 2,
+        },
+      },
+    },
+    expected: `force:${TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING}`,
+  },
+  {
     // requestedCheckOutDeltaDays: 0 (explicit no-op) — the tool echoes the
     // unchanged checkout and flags stayUnchanged, same terminal stop as any
     // genuine no-op.

@@ -73,6 +73,7 @@ export const ConfirmModifyHitlCard = ({
   viewBookingsDisabled = false,
   retryDisabled = false,
 }: ConfirmModifyHitlCardProps) => {
+  console.log("CONFIRM MODIFY BOOKING")
   const actionsDisabled = !canRespond || isSubmitting;
   const changes = buildModifyChangeRows(original, next, pricePerNight);
   const phase = modifyPhase ?? HITL_CARD_PHASE.REVIEW;

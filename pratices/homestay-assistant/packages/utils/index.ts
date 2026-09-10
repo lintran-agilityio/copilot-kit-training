@@ -3,6 +3,7 @@ export * from "./list-my-bookings.js";
 export * from "./common.js";
 export * from "./resource.js";
 export * from "./format.js";
+export * from "./confirm-modify-stay.js";
 export * from "./room-name.js";
 export * from "./transcript.js";
 export * from "./abort.js";

@@ -55,7 +55,7 @@ export const resolvePickerCompletedTitle = (
 export const resolveOriginalStay = (
   pending: PendingModifyStay | null | undefined,
   bookingId: string,
-  args: ConfirmModifyBookingArgs,
+  args: Partial<ConfirmModifyBookingArgs>,
 ): ModifyStaySnapshot | null => {
   if (pending?.bookingId === bookingId) {
     return pending.original;
