@@ -73,7 +73,11 @@ const server = http.createServer(async (req, res) => {
   // SPA fallback: unknown paths under /report serve the report shell;
   // anything else serves the landing page.
   if (!file) {
-    const underReport = (req.url || "").replace(/^\/+/, "").startsWith("report/");
+    // const underReport = (req.url || "").replace(/^\/+/, "").startsWith("report/");
+    const requestPath = (req.url || "").split("?")[0];
+    const underReport =
+      requestPath === "/report" ||
+      requestPath.startsWith("/report/");
     file = underReport
       ? await tryFile(path.join(ROOT, "report", "index.html"))
       : await tryFile(path.join(ROOT, "index.html"));

@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build:deps": "pnpm exec turbo run build --concurrency=1 --filter=@repo/constants --filter=@repo/schemas --filter=@repo/types --filter=@repo/utils",
+    "build:dashboard": "pnpm run build:deps && node --env-file-if-exists=.env scripts/build-dashboard.mjs",
     "preeval": "pnpm run build:deps",
     "eval": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js run",
     "preeval:deterministic": "pnpm run build:deps",
@@ -17,8 +18,6 @@
     "preeval:serve": "pnpm run build:deps",
     "eval:serve": "node --env-file-if-exists=.env node_modules/evalite/dist/bin.js serve",
     "eval:serve:render": "node --import ./scripts/render-evalite-serve.mjs --env-file-if-exists=.env node_modules/evalite/dist/bin.js serve",
-    "prebuild:dashboard": "pnpm run build:deps",
-    "build:dashboard": "node --env-file-if-exists=.env scripts/build-dashboard.mjs",
     "serve:dashboard": "node scripts/serve-static.mjs",
     "vercel:build": "pnpm run build:deps && node scripts/vercel-build.mjs",
     "check-types": "tsc --noEmit"
