@@ -193,6 +193,22 @@ const isProviderRequest = (input: RequestInfo | URL): boolean => {
     : false;
 };
 
+/**
+ * True for a 429 this run cannot wait out — a per-DAY quota rather than a
+ * per-minute burst. OpenRouter's free tier allows 50 free-model requests/day
+ * (1000 once the account has $10 of lifetime credit) and answers with
+ * `limit_source: openrouter_free_tier_daily` plus an absolute epoch-ms
+ * `x-ratelimit-reset` hours away. Retrying that is pure dead time: six
+ * attempts x a 10s default wait per call, on every call, for the rest of the
+ * run — so surface it once, loudly, and let the case fail fast.
+ */
+const isExhaustedQuota = (res: Response, body: string): boolean => {
+  if (/per-?day|daily/i.test(body)) return true;
+  const reset = Number(res.headers.get("x-ratelimit-reset"));
+  // Absolute epoch-ms reset more than a couple of minutes out = long window.
+  return Number.isFinite(reset) && reset - Date.now() > 120_000;
+};
+
 const retryAfterMs = (res: Response): number => {
   const header = res.headers.get("retry-after");
   if (header) {
@@ -226,6 +242,18 @@ const install = (): void => {
       });
       const res = await baseFetch(input, init);
       if (res.status !== 429 || attempt >= MAX_RETRIES) return res;
+
+      const body = await res.clone().text().catch(() => "");
+      if (isExhaustedQuota(res, body)) {
+        console.error(
+          `[eval-rate-limit] ${
+            toUrl(input)?.hostname ?? "provider"
+          } quota exhausted for this window — NOT retrying. ${
+            body.slice(0, 200) || "(no body)"
+          }`,
+        );
+        return res;
+      }
 
       const waitMs = retryAfterMs(res);
       await res.arrayBuffer().catch(() => undefined);

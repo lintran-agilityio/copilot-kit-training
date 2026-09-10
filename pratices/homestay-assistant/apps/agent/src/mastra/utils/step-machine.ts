@@ -72,11 +72,20 @@ type TransitionSideEffect = (
   result: ToolStepResult,
 ) => void;
 
-/** The last tool result of the most recent step, or `null` when there is none. */
+/**
+ * The last tool result of the most recent step, or `null` when there is none.
+ *
+ * ⚠️ Fallback only — do NOT route off this directly. On @mastra/core 1.43
+ * (`StepResult.toolResults` is a getter over `StepResult.content`) every step
+ * object handed to `prepareStep` arrives with `content: []`, so this returns
+ * `null` on EVERY step and the whole routing table silently never fires. See
+ * {@link trailingToolStep} for the transcript-based source of truth.
+ */
 const lastToolStepResult = (
   args: ProcessInputStepArgs,
 ): ToolStepResult | null =>
-  (args.steps.at(-1)?.toolResults.at(-1) as ToolStepResult | undefined) ?? null;
+  (args.steps?.at(-1)?.toolResults?.at(-1) as ToolStepResult | undefined) ??
+  null;
 
 // --- Routing tables ------------------------------------------------------
 
@@ -228,6 +237,36 @@ const reconcileTrailingToolStep = (
 
   return hitl;
 };
+
+/**
+ * The tool step the machine routes off — the newest settled tool result in the
+ * current turn's transcript.
+ *
+ * The transcript, not `args.steps`, is the source of truth. `args.steps[]`
+ * exposes tool results through `StepResult.toolResults`, a getter over
+ * `StepResult.content` — and on @mastra/core 1.43 every step object handed to
+ * `prepareStep` arrives with `content: []`. `lastToolStepResult` therefore
+ * returned `null` on every step, which made `resolveEnforcedTransition` a no-op
+ * for every backend junction: `find_booking_by_id` never forced the modify edit
+ * form or confirm card, `find_room(book_resolve)` never forced `confirm_booking`,
+ * and the terminal mutations never stopped the turn. The only routing that still
+ * fired came from {@link reconcileTrailingToolStep}'s HITL fallback, which by
+ * design only ever returns a self-resolving HITL result — so once the modify
+ * picker settled, `show_modify_dialog_select` stayed the newest HITL forever and
+ * the machine re-forced `find_booking_by_id` on every step (an ambiguous MODIFY
+ * looped until the step budget ran out, and no card ever opened).
+ *
+ * `currentTurnTranscriptToolResults` carries every settled tool result of the
+ * turn — backend tools and client HITL results alike, in execution order — so
+ * taking its last entry is both the correct trailing step AND subsumes the
+ * resume-staleness repair `reconcileTrailingToolStep` was written for.
+ *
+ * `args.steps` stays the fallback for a runtime that does populate it but gives
+ * us no transcript, and keeps the pre-existing reconciliation behavior there.
+ */
+const trailingToolStep = (args: ProcessInputStepArgs): ToolStepResult | null =>
+  currentTurnTranscriptToolResults(args).at(-1) ??
+  reconcileTrailingToolStep(args, lastToolStepResult(args));
 
 // --- Transition resolution: per-tool junctions --------------------------
 
@@ -606,10 +645,9 @@ export const enforceBookingStep = (
     return stopToolExecution();
   }
 
-  // `steps.at(-1)` can be stale on a HITL-resume continuation — repair it from
-  // the turn transcript before routing, or the modify form loops forever (see
-  // reconcileTrailingToolStep).
-  const result = reconcileTrailingToolStep(args, lastToolStepResult(args));
+  // Route off the turn transcript, not `args.steps` — see trailingToolStep for
+  // why `args.steps[].toolResults` is empty on every step and what that broke.
+  const result = trailingToolStep(args);
   if (!result) {
     return undefined;
   }

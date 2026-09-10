@@ -24,11 +24,12 @@ export default defineConfig({
   // isn't worth the complexity for a suite this size.
   maxConcurrency: 1,
   // Agent turns are real LLM calls through the full tool-loop (search →
-  // availability → confirm, etc.), and the OpenAI key used in development
-  // hits per-minute token throttling that adds ~10s backoff waits on top —
-  // observed multi-step cases exceeding 60s under throttling. 120s gives
-  // real headroom without letting a genuinely hung call run forever.
-  testTimeout: 120_000,
+  // availability → confirm, etc.). On the free OpenRouter route the suite now
+  // runs on, a single turn measured 45-77s (free slugs are queued upstream),
+  // and EVAL_MIN_REQUEST_INTERVAL_MS adds ~3.1s per call on top of that — so
+  // the old 120s ceiling would fail healthy cases. 300s keeps real headroom
+  // without letting a genuinely hung call run forever.
+  testTimeout: 300_000,
   // Serial execution alone still bursts past OpenAI's 200k TPM org cap on a
   // fresh `evalite serve` deploy (Render). This setup file wraps
   // `globalThis.fetch` in every worker/mode with a trailing-60s token budget
