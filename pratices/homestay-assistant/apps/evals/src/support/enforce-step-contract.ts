@@ -40,6 +40,12 @@ export type EnforceStepCase = {
   /** The turn's settled tool results, oldest → newest. */
   transcript: TranscriptToolResult[];
   expected: StepOutcome;
+  /**
+   * Build the turn the way the live runtime hands it over after a guest
+   * answered a HITL card, instead of as hand-written clean JSON — see
+   * {@link liveTurnMessages}.
+   */
+  liveMessageShape?: boolean;
 };
 
 /**
@@ -91,6 +97,66 @@ const toolResultMessage = (
     },
   }) as unknown as MastraDBMessage;
 
+/** Frontend HITL tools — their result reaches Mastra as an AG-UI `tool` message. */
+const HITL_TOOL_NAMES: ReadonlySet<string> = new Set([
+  TOOL_KEYS.ACTION.CONFIRM_BOOKING,
+  TOOL_KEYS.ACTION.EDIT_MODIFY_BOOKING,
+  TOOL_KEYS.ACTION.CONFIRM_MODIFY_BOOKING,
+  TOOL_KEYS.BOOKING.SHOW_CANCEL_DIALOG_CONFIRM,
+  TOOL_KEYS.BOOKING.SHOW_MODIFY_DIALOG_SELECT,
+]);
+
+/**
+ * The turn exactly as @mastra/core 1.43 hands it to `prepareStep` once the guest
+ * has answered a HITL card through CopilotKit (captured from the real
+ * getCopilotkitAgents → MastraAgent bridge):
+ *   - the continuation is merged into the ONE stored assistant message, so every
+ *     settled part of the turn sits in a single `content.parts` array;
+ *   - each `tool-invocation` part carries `step: undefined`, the key the AG-UI
+ *     `tool` message is converted with;
+ *   - a HITL result is the raw `tool` message content — a JSON string;
+ *   - the user message carries `toolInvocations: undefined`.
+ *
+ * Fixture JSON never holds an `undefined` value, which is how a strict JSON
+ * narrowing that rejected the whole message on that key passed every clean-shape
+ * case: the step machine went blind after the first guest click — the modify
+ * picker/edit form never led to `confirm_modify_booking`, and the unguided model
+ * reopened the picker or even called `cancel_booking` on another booking.
+ */
+const liveTurnMessages = (transcript: TranscriptToolResult[]): MastraDBMessage[] => [
+  {
+    id: "eval-user-msg",
+    role: "user",
+    createdAt: new Date(),
+    content: {
+      format: 2,
+      parts: [{ type: "text", text: "I want to modify my booking" }],
+      toolInvocations: undefined,
+    },
+  } as unknown as MastraDBMessage,
+  {
+    id: "eval-live-assistant-msg",
+    role: "assistant",
+    createdAt: new Date(),
+    content: {
+      format: 2,
+      parts: transcript.map((result, index) => ({
+        type: "tool-invocation",
+        toolInvocation: {
+          state: "result",
+          step: undefined,
+          toolCallId: `eval-call-${index}`,
+          toolName: result.toolName,
+          args: result.input ?? {},
+          result: HITL_TOOL_NAMES.has(result.toolName)
+            ? JSON.stringify(result.output)
+            : result.output,
+        },
+      })),
+    },
+  } as unknown as MastraDBMessage,
+];
+
 /** Every tool the machine can force, so `hasTool` never short-circuits a case. */
 const ALL_TOOLS: Record<string, unknown> = Object.fromEntries(
   [
@@ -100,14 +166,19 @@ const ALL_TOOLS: Record<string, unknown> = Object.fromEntries(
   ].map((toolName) => [toolName, {}]),
 );
 
-export const runEnforceStep = ({ transcript }: EnforceStepCase): StepOutcome => {
+export const runEnforceStep = ({
+  transcript,
+  liveMessageShape,
+}: EnforceStepCase): StepOutcome => {
   const args = {
     stepNumber: transcript.length,
     steps: transcript.map(() => emptyMastraStep()),
-    messages: [
-      userMessage("I want to modify my booking"),
-      ...transcript.map(toolResultMessage),
-    ],
+    messages: liveMessageShape
+      ? liveTurnMessages(transcript)
+      : [
+          userMessage("I want to modify my booking"),
+          ...transcript.map(toolResultMessage),
+        ],
     tools: ALL_TOOLS,
     requestContext: new RequestContext(),
   } as unknown as ProcessInputStepArgs;
