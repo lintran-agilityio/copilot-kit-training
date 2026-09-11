@@ -7,6 +7,9 @@ settings:
 overrides:
   typeorm>better-sqlite3: '-'
 
+patchedDependencies:
+  '@copilotkit/react-core': d56b87e8981e13c66e45b5254437371eec1811c0853215b4ac96b7c3835d86ff
+
 importers:
 
   .:
@@ -278,7 +281,7 @@ importers:
         version: 1.62.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@copilotkit/react-core':
         specifier: ^1.62.2
-        version: 1.62.2(@types/mdast@4.0.4)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(graphql@16.14.2)(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@3.25.76)
+        version: 1.62.2(patch_hash=d56b87e8981e13c66e45b5254437371eec1811c0853215b4ac96b7c3835d86ff)(@types/mdast@4.0.4)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(graphql@16.14.2)(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@3.25.76)
       '@copilotkit/runtime':
         specifier: ^1.62.2
         version: 1.62.2(@cfworker/json-schema@4.1.1)(@langchain/core@1.2.0(@opentelemetry/api@1.9.1)(openai@6.49.0(ws@8.21.2)(zod@3.25.76))(ws@8.21.2))(@langchain/langgraph-sdk@1.9.23(@langchain/core@1.2.0(@opentelemetry/api@1.9.1)(openai@6.49.0(ws@8.21.2)(zod@3.25.76))(ws@8.21.2))(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@opentelemetry/api@1.9.1)(langchain@1.4.6(@langchain/core@1.2.0(@opentelemetry/api@1.9.1)(openai@6.49.0(ws@8.21.2)(zod@3.25.76))(ws@8.21.2))(@opentelemetry/api@1.9.1)(openai@6.49.0(ws@8.21.2)(zod@3.25.76))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(ws@8.21.2)(zod-to-json-schema@3.25.2(zod@3.25.76)))(openai@6.49.0(ws@8.21.2)(zod@3.25.76))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod-to-json-schema@3.25.2(zod@3.25.76))
@@ -10360,7 +10363,7 @@ snapshots:
 
   '@copilotkit/license-verifier@0.5.0': {}
 
-  '@copilotkit/react-core@1.62.2(@types/mdast@4.0.4)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(graphql@16.14.2)(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@3.25.76)':
+  '@copilotkit/react-core@1.62.2(patch_hash=d56b87e8981e13c66e45b5254437371eec1811c0853215b4ac96b7c3835d86ff)(@types/mdast@4.0.4)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(graphql@16.14.2)(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@3.25.76)':
     dependencies:
       '@ag-ui/client': 0.0.57
       '@ag-ui/core': 0.0.57

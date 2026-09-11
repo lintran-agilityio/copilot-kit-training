@@ -8,6 +8,8 @@ COPY package.json .
 COPY pnpm-lock.yaml .
 COPY pnpm-workspace.yaml .
 COPY turbo.json .
+# pnpm-workspace.yaml `patchedDependencies` — install fails without these.
+COPY patches ./patches
 
 COPY apps ./apps
 COPY packages ./packages
