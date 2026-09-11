@@ -10,3 +10,5 @@ allowBuilds:
   unrs-resolver: false
 overrides:
   "typeorm>better-sqlite3": "-"
+patchedDependencies:
+  '@copilotkit/react-core': patches/@copilotkit__react-core.patch
